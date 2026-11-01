@@ -5069,7 +5069,7 @@ function loadDialog() {
 }
 function refreshTitle() {
   const has = !!lastSlot();
-  document.querySelectorAll('#title .hit').forEach(el => { const t = el.dataset.t; el.classList.toggle('off', (t === 'continue' || t === 'load') && !has); });
+  document.querySelectorAll('#title .hit').forEach(el => { const t = el.dataset.t; el.classList.toggle('off', t === 'continue' && !has);   // Load stays on: it also restores backups });
 }
 function layoutTitle() {
   // fill the whole screen without stretching: scale evenly and trim the edges ("cover")
