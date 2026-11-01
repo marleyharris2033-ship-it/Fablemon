@@ -20,6 +20,13 @@ html = open(tmp).read(); os.remove(tmp)
 phaser = open(os.path.join(SRC, 'vendor', 'phaser.min.js')).read().replace('</script>', '<\\/script>')
 tag = '<script src="PHASER_INLINE"></script>'; assert tag in html
 single = html.replace(tag, '<script>' + phaser + '</script>')
+# safety check: refuse to publish a build whose scripts don't parse (needs Node; skipped if it isn't installed)
+import re, shutil, tempfile
+if shutil.which('node'):
+    js = '\n;\n'.join(re.findall(r'<script>([\s\S]*?)</script>', html))
+    with tempfile.NamedTemporaryFile('w', suffix='.js', delete=False) as f: f.write(js)
+    r = subprocess.run(['node', '--check', f.name], capture_output=True, text=True); os.remove(f.name)
+    if r.returncode: raise SystemExit('Build stopped: the game code has a syntax error.\n' + r.stderr[-1500:])
 open(os.path.join(DOCS, 'downloads', 'Fablemon_Wild_Roots.html'), 'w').write(single)
 with zipfile.ZipFile(os.path.join(DOCS, 'downloads', 'Fablemon_itch.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z: z.writestr('index.html', single)
 # the installable web app: same game plus a manifest, icons and a service worker
