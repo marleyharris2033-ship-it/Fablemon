@@ -247,15 +247,15 @@ body.ctlEdit #ctlbar{display:block}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261101-224244">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261101-224244">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261101-224244">
+<link rel="manifest" href="manifest.webmanifest?v=20261101-224859">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261101-224859">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261101-224859">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261101-224244').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261101-224859').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -5081,14 +5081,31 @@ function refreshTitle() {
   document.querySelectorAll('#title .hit').forEach(el => { const t = el.dataset.t; el.classList.toggle('off', (t === 'continue' || t === 'load') && !has); });
 }
 function layoutTitle() {
-  const img = $('titleImg'), wrap = img.parentElement, vw = window.innerWidth, vh = window.innerHeight;
+  // fill the whole screen without stretching: scale evenly and trim the edges ("cover")
+  const img = $('titleImg'), wrap = img.parentElement, bg = document.querySelector('#title .bg'), vw = window.innerWidth, vh = window.innerHeight;
   const boxes = { continue: [400, 410, 384, 92], new: [400, 516, 384, 82], load: [400, 610, 384, 80], settings: [400, 702, 384, 80] };
-  // on tall phone screens, crop to the logo and buttons so they're big enough to tap
-  const crop = vw / vh < .9 ? [170, 80, 860, 720] : [0, 0, 1536, 1024];
-  const [cx, cy, cw, ch] = crop, s = Math.min(vw * (crop[2] < 1536 ? .98 : 1) / cw, vh / ch);
-  Object.assign(wrap.style, { width: cw * s + 'px', height: ch * s + 'px', overflow: 'hidden' });
-  Object.assign(img.style, { width: 1536 * s + 'px', height: 1024 * s + 'px', marginLeft: -cx * s + 'px', marginTop: -cy * s + 'px', maxWidth: 'none' });
-  wrap.querySelectorAll('.hit').forEach(el => { const [x, y, bw, bh] = boxes[el.dataset.t]; Object.assign(el.style, { left: (x - cx) * s + 'px', top: (y - cy) * s + 'px', width: bw * s + 'px', height: bh * s + 'px' }); });
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const place = (cx, cy, cw, ch, s, left, top) => {
+    Object.assign(wrap.style, { position: 'absolute', left: left + 'px', top: top + 'px', width: cw * s + 'px', height: ch * s + 'px', overflow: 'hidden' });
+    Object.assign(img.style, { width: 1536 * s + 'px', height: 1024 * s + 'px', marginLeft: -cx * s + 'px', marginTop: -cy * s + 'px', maxWidth: 'none' });
+    wrap.querySelectorAll('.hit').forEach(el => { const [x, y, bw, bh] = boxes[el.dataset.t]; Object.assign(el.style, { left: (x - cx) * s + 'px', top: (y - cy) * s + 'px', width: bw * s + 'px', height: bh * s + 'px' }); });
+  };
+  if (vw / vh >= .9) {
+    // wide screens: the picture covers the screen, keeping the logo and buttons in view
+    const s = Math.max(vw / 1536, vh / 1024), F = [180, 95, 1190, 800];
+    const ox = clamp((F[0] + F[2]) / 2 * s - vw / 2, 0, 1536 * s - vw), oy = clamp(Math.min((F[1] + F[3]) / 2 * s - vh / 2, F[1] * s - 6), 0, 1024 * s - vh);
+    bg.style.display = 'none'; wrap.style.webkitMaskImage = wrap.style.maskImage = '';
+    place(ox / s, oy / s, vw / s, vh / s, s, 0, 0);
+  } else {
+    // tall phone screens: the farm half of the picture fills the screen, with the logo and buttons on top
+    const sb = vh / 1024 * 1.08, bx = clamp(1035 * sb, 0, 1536 * sb - vw);   // the farm side, starting just past the logo
+    Object.assign(bg.style, { display: 'block', inset: '0', filter: 'none', backgroundSize: `${1536 * sb}px ${1024 * sb}px`, backgroundPosition: `${-bx}px ${vh - 1024 * sb}px`, backgroundRepeat: 'no-repeat' });
+    const C = [120, 60, 1010, 770], s = Math.min(vw / C[2], vh * .62 / C[3]);
+    // only the logo band and the buttons show through, so nothing from the scene appears twice
+    const fade = 'linear-gradient(to bottom, transparent 0, #000 7%, #000 43%, transparent 52%), radial-gradient(ellipse 31% 35% at 47% 70%, #000 80%, transparent 100%)';
+    place(C[0], C[1], C[2], C[3], s, (vw - C[2] * s) / 2, Math.max(8, vh * .06));
+    wrap.style.webkitMaskImage = wrap.style.maskImage = fade;
+  }
 }
 async function initTitle() {
   await loadIcons(); await loadMonPics(); await loadExtraIcons(); await loadTrainerPics(); await loadVillPics();
