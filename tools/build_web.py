@@ -24,9 +24,9 @@ open(os.path.join(DOCS, 'downloads', 'Fablemon_Wild_Roots.html'), 'w').write(sin
 with zipfile.ZipFile(os.path.join(DOCS, 'downloads', 'Fablemon_itch.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z: z.writestr('index.html', single)
 # the installable web app: same game plus a manifest, icons and a service worker
 version = time.strftime('%Y%m%d-%H%M%S')
-head = f'''<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" type="image/png" href="icon-192.png">
+head = f'''<link rel="manifest" href="manifest.webmanifest?v={version}">
+<link rel="apple-touch-icon" href="icon-180.png?v={version}">
+<link rel="icon" type="image/png" href="icon-192.png?v={version}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -40,7 +40,7 @@ icon = Image.open(os.path.join(HERE, 'icon_source.png')).convert('RGB')
 for s in (180, 192, 512): icon.resize((s, s), Image.LANCZOS).save(os.path.join(DOCS, f'icon-{s}.png'))
 json.dump({'name': 'Fablemon: Wild Roots', 'short_name': 'Fablemon', 'start_url': './', 'scope': './', 'display': 'standalone', 'orientation': 'any',
            'background_color': '#1f2a1e', 'theme_color': '#1f2a1e',
-           'icons': [{'src': 'icon-192.png', 'sizes': '192x192', 'type': 'image/png'}, {'src': 'icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]},
+           'icons': [{'src': f'icon-192.png?v={version}', 'sizes': '192x192', 'type': 'image/png'}, {'src': f'icon-512.png?v={version}', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]},
           open(os.path.join(DOCS, 'manifest.webmanifest'), 'w'), indent=1)
 open(os.path.join(DOCS, 'sw.js'), 'w').write(f'''// Fablemon offline cache, build {version}. Network first, so players always get the newest version when online.
 const CACHE = 'fablemon-{version}';
