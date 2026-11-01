@@ -39,7 +39,7 @@ Object.assign(ITEMS, {
   hearth_sapling: { name: 'Hearthroot Sapling', stack: 99, place: 'obj', obj: 'hearthsap', desc: 'A cutting from the great tree. It will never grow big, but it glows. Decoration.' },
   tonic: { name: 'Hearth Tonic', stack: 99, heal: 50, cure: 1, sell: 80, desc: "Willa's herbal tonic. Restores half a Fablemon's HP and cures poison, burns, sleep and paralysis." },
   premium_feed: { name: 'Premium Feed', stack: 999, sell: 15, desc: "Hattie's best mix. Only a Deluxe Trough takes it: Fablemon who eat it work 30% faster the next day." },
-  trainers_breakfast: { name: "Trainer's Breakfast", stack: 99, eat: 60, sell: 160, xpBoost: 1, desc: "Barney's recipe. Restores 60 energy, and your Fablemon earn 50% more battle XP for the rest of the day." },
+  trainers_breakfast: { name: "Trainer's Breakfast", stack: 99, eat: 60, sell: 250, xpBoost: 1, desc: "Barney's recipe. Restores 60 energy, and your Fablemon earn 50% more battle XP for the rest of the day." },
   fen_chowder: { name: 'Fen Chowder', stack: 99, eat: 320, sell: 950, desc: "Barney's recipe. A rich fish stew. Restores 320 energy." },
   hearth_roast: { name: 'Hearthroot Roast', stack: 99, eat: 450, sell: 1400, desc: "Barney's finest. Restores 450 energy." },
   minnow: { name: 'Minnow', stack: 999, sell: 30, desc: 'A tiny silver fish. Sells for 30g.' },

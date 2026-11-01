@@ -77,12 +77,12 @@ const ITEMS = {
   honey: { name: 'Honey', stack: 99, sell: 80, heal: 40, desc: 'Sweet golden honey. Sells for 80g. In battle, or from a Fablemon\'s Info page, it restores 40% of a Fablemon\'s HP.' },
   berry: { name: 'Hearthberry', stack: 99, heal: 25, desc: 'A sweet berry. In battle, or from a Fablemon\'s Info page, it restores 25% of a Fablemon\'s HP.', sell: 10 },
   pot: { name: 'Cooking Pot', stack: 99, place: 'obj', obj: 'pot', desc: 'A pot over a little fire. Tap it to cook meals from your crops. Each meal uses 1 wood for the fire.' },
-  roast_turnip: { name: 'Roasted Turnip', stack: 99, eat: 45, sell: 90, desc: 'Crispy and golden. Restores 45 energy.' },
-  veg_soup: { name: 'Garden Soup', stack: 99, eat: 100, sell: 190, desc: 'A warming bowl of turnip, carrot and potato. Restores 100 energy.' },
-  glazed_carrots: { name: 'Honey Carrots', stack: 99, eat: 80, sell: 230, desc: 'Sweet, sticky and shiny. Restores 80 energy.' },
-  jacket_potato: { name: 'Jacket Potato', stack: 99, eat: 70, sell: 120, desc: 'Fluffy inside, crisp outside. Restores 70 energy.' },
-  tomato_salad: { name: 'Tomato Salad', stack: 99, eat: 60, sell: 140, desc: 'Fresh summer tomatoes. Restores 60 energy.' },
-  corn_chowder: { name: 'Corn Chowder', stack: 99, eat: 140, sell: 380, desc: 'Creamy and filling. Restores 140 energy.' },
+  roast_turnip: { name: 'Roasted Turnip', stack: 99, eat: 45, sell: 105, desc: 'Crispy and golden. Restores 45 energy.' },
+  veg_soup: { name: 'Garden Soup', stack: 99, eat: 100, sell: 280, desc: 'A warming bowl of turnip, carrot and potato. Restores 100 energy.' },
+  glazed_carrots: { name: 'Honey Carrots', stack: 99, eat: 80, sell: 280, desc: 'Sweet, sticky and shiny. Restores 80 energy.' },
+  jacket_potato: { name: 'Jacket Potato', stack: 99, eat: 70, sell: 135, desc: 'Fluffy inside, crisp outside. Restores 70 energy.' },
+  tomato_salad: { name: 'Tomato Salad', stack: 99, eat: 60, sell: 290, desc: 'Fresh summer tomatoes. Restores 60 energy.' },
+  corn_chowder: { name: 'Corn Chowder', stack: 99, eat: 140, sell: 630, desc: 'Creamy and filling. Restores 140 energy.' },
   pumpkin_pie: { name: 'Pumpkin Pie', stack: 99, eat: 220, sell: 650, desc: 'A proper autumn treat. Restores 220 energy.' },
   berry_crumble: { name: 'Berry Crumble', stack: 99, heal: 50, sell: 60, desc: 'A Fablemon favourite. In battle, or from a Fablemon\'s Info page, it restores half a Fablemon\'s HP.' },
   feed: { name: 'Fablemon Feed', stack: 999, sell: 5, desc: "Hattie's own mix of grains and dried berries. Put it in a Feeding Trough like a crop." },
@@ -95,17 +95,17 @@ const ITEMS = {
   pine_sapling: { name: 'Pine Sapling', stack: 99, place: 'obj', obj: 'sap_pine', desc: 'Plant it on grass. Grows into a pine tree in 7 days.' },
   apple_sapling: { name: 'Apple Sapling', stack: 99, place: 'obj', obj: 'sap_apple', desc: 'Plant it on grass. Grows into an apple tree in 7 days.' },
   turnip_seeds: { name: 'Turnip Seeds', stack: 999, seed: 'turnip', sell: 10, desc: 'Spring. Plant in tilled soil and water daily. Ready in 4 days.' },
-  turnip: { name: 'Turnip', stack: 999, sell: 35, desc: 'A crisp spring turnip. Sells for 35g.' },
+  turnip: { name: 'Turnip', stack: 999, sell: 45, desc: 'A crisp spring turnip. Sells for 45g.' },
   carrot_seeds: { name: 'Carrot Seeds', stack: 999, seed: 'carrot', sell: 15, desc: 'Spring. Ready in 5 days.' },
-  carrot: { name: 'Carrot', stack: 999, sell: 60, desc: 'Sweet and crunchy. Sells for 60g.' },
+  carrot: { name: 'Carrot', stack: 999, sell: 80, desc: 'Sweet and crunchy. Sells for 80g.' },
   potato_seeds: { name: 'Potato Seeds', stack: 999, seed: 'potato', sell: 25, desc: 'Spring. Ready in 6 days.' },
-  potato: { name: 'Potato', stack: 999, sell: 85, desc: 'A hearty spud. Sells for 85g.' },
+  potato: { name: 'Potato', stack: 999, sell: 110, desc: 'A hearty spud. Sells for 110g.' },
   tomato_seeds: { name: 'Tomato Seeds', stack: 999, seed: 'tomato', sell: 25, desc: 'Summer. Ready in 7 days.' },
-  tomato: { name: 'Tomato', stack: 999, sell: 95, desc: 'Sun-ripened and juicy. Sells for 95g.' },
+  tomato: { name: 'Tomato', stack: 999, sell: 125, desc: 'Sun-ripened and juicy. Sells for 125g.' },
   corn_seeds: { name: 'Corn Seeds', stack: 999, seed: 'corn', sell: 40, desc: 'Summer and fall. Ready in 10 days.' },
-  corn: { name: 'Corn', stack: 999, sell: 170, desc: 'Golden sweetcorn. Sells for 170g.' },
+  corn: { name: 'Corn', stack: 999, sell: 220, desc: 'Golden sweetcorn. Sells for 220g.' },
   pumpkin_seeds: { name: 'Pumpkin Seeds', stack: 999, seed: 'pumpkin', sell: 50, desc: 'Fall. Ready in 12 days.' },
-  pumpkin: { name: 'Pumpkin', stack: 999, sell: 300, desc: 'A proper prize pumpkin. Sells for 300g.' },
+  pumpkin: { name: 'Pumpkin', stack: 999, sell: 380, desc: 'A proper prize pumpkin. Sells for 380g.' },
 };
 const needOf = r => (r.out && S.town && S.town.done.carpenter && r.need.wood) ? { ...r.need, wood: Math.max(1, Math.ceil(r.need.wood * .75)) } : r.need;
 const goldCut = g => S.town && S.town.done.carpenter ? Math.round(g * .85 / 10) * 10 : g;
@@ -4233,8 +4233,9 @@ class Route extends World {
     const TT = TRAINER_TYPES[t.kind], pic = trainerPic(t.kind), who = `${TT.label} ${t.name}`;
     this.paused = true;
     Talk.say([{ who: 'trainer', name: who, img: pic, t: pick(TT.challenge) }], () => {
-      const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => wildMon(sp, lv));
-      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * 40, lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); } });
+      const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => wildMon(sp, lv)), again = beatTrainer(t.id);
+      // prize money: 25g per level of their strongest Fablemon the first time, 12g per level in rematches
+      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); } });
     });
   }
   talkTrainer(t) {
