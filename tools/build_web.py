@@ -37,7 +37,7 @@ head = f'''<link rel="manifest" href="manifest.webmanifest">
 app = single.replace('</head>', head + '</head>', 1)
 open(os.path.join(DOCS, 'index.html'), 'w').write(app)
 icon = Image.open(os.path.join(HERE, 'icon_source.png')).convert('RGB')
-for s in (180, 192, 512): icon.resize((s, s), Image.LANCZOS if s < 512 else Image.NEAREST).save(os.path.join(DOCS, f'icon-{s}.png'))
+for s in (180, 192, 512): icon.resize((s, s), Image.LANCZOS).save(os.path.join(DOCS, f'icon-{s}.png'))
 json.dump({'name': 'Fablemon: Wild Roots', 'short_name': 'Fablemon', 'start_url': './', 'scope': './', 'display': 'standalone', 'orientation': 'any',
            'background_color': '#1f2a1e', 'theme_color': '#1f2a1e',
            'icons': [{'src': 'icon-192.png', 'sizes': '192x192', 'type': 'image/png'}, {'src': 'icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]},
