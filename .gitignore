@@ -1,0 +1,4 @@
+tools/_build.html
+tools/preview_*.png
+__pycache__/
+.DS_Store

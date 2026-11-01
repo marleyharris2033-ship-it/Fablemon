@@ -1,0 +1,15 @@
+import base64, json, sys
+def uri(p, mime): return f'data:{mime};base64,' + base64.b64encode(open(p, 'rb').read()).decode()
+phaser = sys.argv[1]; out = sys.argv[2]
+assets = {
+  'terrain': uri('terrain.png', 'image/png'), 'objects': uri('objects.png', 'image/png'),
+  'objectsJson': json.load(open('objects.json')), 'walk': uri('farmer_walk.png', 'image/png'),
+  'tools': uri('farmer_tools.png', 'image/png'), 'icons': uri('icons.png', 'image/png'), 'iconsMap': json.load(open('icons.json')), 'intro': [uri(f'intro/s{i}.jpg', 'image/jpeg') for i in range(1, 10)], 'title': uri('title.jpg', 'image/jpeg'),
+  'town': uri('town.png', 'image/png'), 'townJson': json.load(open('town.json')), 'portraits': uri('portraits.png', 'image/png'), 'houses': uri('houses.png', 'image/png'), 'housesJson': json.load(open('houses.json')), 'monIcons': uri('mon_icons.png', 'image/png'), 'monBattle': uri('mon_battle.png', 'image/png'),
+  **{'mon_' + n: uri(f'mon_{n}.png', 'image/png') for n in ['hedglet', 'cindimple', 'rillip', 'tusskip', 'whirplet', 'cloverclasp', 'flintuck', 'fuzzwick', 'duskwick', 'mortoad', 'brashlet', 'brooknook', 'briamble', 'kilnook', 'weirlet', 'fleecebolt', 'whirlwyn', 'cloverguard', 'flintburrow', 'staticwing', 'duskcloak', 'rampartoad', 'pyrebrash', 'brookstride', 'muddlebub', 'lotling', 'puffpiper', 'puffpiper_cotton', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom', 'fenfang', 'mirebellows', 'lotveil', 'reefarer', 'reefarer_cotton', 'yawnox', 'brimbramble', 'stormveil', 'hollowbark', 'marshviper']}, 'bgMeadow': uri('battle_meadow.jpg', 'image/jpeg'), 'bgBog': uri('battle_bog.jpg', 'image/jpeg'),
+  **{'tr_' + n: uri(f'tr_{n}.png', 'image/png') for n in ['rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment', 'delphine', 'reedcutter', 'wispwatcher']}, 'trPortraits': uri('tr_portraits.png', 'image/png'),
+  **{'npc_' + n: uri(f'npc_{n}.png', 'image/png') for n in ['bramble', 'marigold', 'willa', 'gideon', 'robin', 'barney', 'hattie', 'stanley', 'rowan', 'poppy', 'finn', 'ivy', 'fenwick']}, 'villPortraits': uri('vill_portraits.png', 'image/png'),
+  **{'g_' + n: uri(f'ground_{n}.png', 'image/png') for n in ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']}, 'bog': uri('bog.png', 'image/png'), 'bogJson': json.load(open('bog.json')), 'bh': uri('brookholt.png', 'image/png'), 'seasonal': uri('seasonal.png', 'image/png'), 'wetland': json.load(open('wetland.json')), 'seasonalJson': json.load(open('seasonal.json')), 'bhJson': json.load(open('brookholt.json')),
+}
+html = open('template.html').read().replace('__FRAME_BIG__', uri('frame_big.png', 'image/png')).replace('__FRAME_SM__', uri('frame_sm.png', 'image/png')).replace('__PHASER__', phaser).replace('__ASSETS__', json.dumps(assets)).replace('__GAMEJS__', open('villagers.js').read() + '\n' + open('game.js').read() + '\n' + open('hearth.js').read() + '\n' + open('moves.js').read() + '\n' + open('brookholt.js').read() + '\n' + open('social.js').read())
+open(out, 'w').write(html); print(out, len(html))

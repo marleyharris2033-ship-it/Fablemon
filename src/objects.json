@@ -1,0 +1,1112 @@
+{
+ "frames": {
+  "cottage": {
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 80,
+    "h": 61
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 80,
+    "h": 61
+   },
+   "sourceSize": {
+    "w": 80,
+    "h": 61
+   }
+  },
+  "tree_pine": {
+   "frame": {
+    "x": 81,
+    "y": 0,
+    "w": 43,
+    "h": 54
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 43,
+    "h": 54
+   },
+   "sourceSize": {
+    "w": 43,
+    "h": 54
+   }
+  },
+  "tree_oak": {
+   "frame": {
+    "x": 125,
+    "y": 0,
+    "w": 48,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 50
+   }
+  },
+  "tree_apple": {
+   "frame": {
+    "x": 174,
+    "y": 0,
+    "w": 48,
+    "h": 50
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 48,
+    "h": 50
+   },
+   "sourceSize": {
+    "w": 48,
+    "h": 50
+   }
+  },
+  "lantern_post": {
+   "frame": {
+    "x": 223,
+    "y": 0,
+    "w": 18,
+    "h": 26
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 26
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 26
+   }
+  },
+  "fence_post_v": {
+   "frame": {
+    "x": 242,
+    "y": 0,
+    "w": 9,
+    "h": 19
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 19
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 19
+   }
+  },
+  "signpost": {
+   "frame": {
+    "x": 0,
+    "y": 62,
+    "w": 15,
+    "h": 18
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 18
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 18
+   }
+  },
+  "fence_end": {
+   "frame": {
+    "x": 16,
+    "y": 62,
+    "w": 8,
+    "h": 17
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 17
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 17
+   }
+  },
+  "shipping_bin": {
+   "frame": {
+    "x": 25,
+    "y": 62,
+    "w": 30,
+    "h": 17
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 17
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 17
+   }
+  },
+  "fence_corner_a": {
+   "frame": {
+    "x": 56,
+    "y": 62,
+    "w": 25,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 25,
+    "h": 16
+   }
+  },
+  "fence_corner_b": {
+   "frame": {
+    "x": 82,
+    "y": 62,
+    "w": 23,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 23,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 23,
+    "h": 16
+   }
+  },
+  "fence_corner_c": {
+   "frame": {
+    "x": 106,
+    "y": 62,
+    "w": 22,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 16
+   }
+  },
+  "fence_corner_d": {
+   "frame": {
+    "x": 129,
+    "y": 62,
+    "w": 22,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 22,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 22,
+    "h": 16
+   }
+  },
+  "gate": {
+   "frame": {
+    "x": 152,
+    "y": 62,
+    "w": 32,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 16
+   }
+  },
+  "barrel": {
+   "frame": {
+    "x": 185,
+    "y": 62,
+    "w": 14,
+    "h": 16
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 16
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 16
+   }
+  },
+  "fence_h": {
+   "frame": {
+    "x": 200,
+    "y": 62,
+    "w": 32,
+    "h": 15
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 15
+   },
+   "sourceSize": {
+    "w": 32,
+    "h": 15
+   }
+  },
+  "crate": {
+   "frame": {
+    "x": 233,
+    "y": 62,
+    "w": 16,
+    "h": 15
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 15
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 15
+   }
+  },
+  "corn_stage4": {
+   "frame": {
+    "x": 0,
+    "y": 81,
+    "w": 15,
+    "h": 15
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 15
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 15
+   }
+  },
+  "bush_round": {
+   "frame": {
+    "x": 16,
+    "y": 81,
+    "w": 18,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 18,
+    "h": 14
+   }
+  },
+  "bush_wide": {
+   "frame": {
+    "x": 35,
+    "y": 81,
+    "w": 30,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 30,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 30,
+    "h": 14
+   }
+  },
+  "rock_large": {
+   "frame": {
+    "x": 66,
+    "y": 81,
+    "w": 16,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 14
+   }
+  },
+  "carrot_stage4": {
+   "frame": {
+    "x": 83,
+    "y": 81,
+    "w": 16,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 14
+   }
+  },
+  "carrot_item": {
+   "frame": {
+    "x": 100,
+    "y": 81,
+    "w": 12,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 12,
+    "h": 14
+   }
+  },
+  "corn_stage3": {
+   "frame": {
+    "x": 113,
+    "y": 81,
+    "w": 13,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 14
+   }
+  },
+  "corn_item": {
+   "frame": {
+    "x": 127,
+    "y": 81,
+    "w": 12,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 12,
+    "h": 14
+   }
+  },
+  "turnip_stage4": {
+   "frame": {
+    "x": 140,
+    "y": 81,
+    "w": 15,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 14
+   }
+  },
+  "turnip_item": {
+   "frame": {
+    "x": 156,
+    "y": 81,
+    "w": 9,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 14
+   }
+  },
+  "tomato_item": {
+   "frame": {
+    "x": 166,
+    "y": 81,
+    "w": 14,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 13
+   }
+  },
+  "corn_stage2": {
+   "frame": {
+    "x": 181,
+    "y": 81,
+    "w": 13,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 13
+   }
+  },
+  "pumpkin_item": {
+   "frame": {
+    "x": 195,
+    "y": 81,
+    "w": 14,
+    "h": 13
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 13
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 13
+   }
+  },
+  "stump": {
+   "frame": {
+    "x": 210,
+    "y": 81,
+    "w": 19,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 19,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 19,
+    "h": 12
+   }
+  },
+  "wildflowers": {
+   "frame": {
+    "x": 230,
+    "y": 81,
+    "w": 16,
+    "h": 12
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 12
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 12
+   }
+  },
+  "tall_grass": {
+   "frame": {
+    "x": 0,
+    "y": 97,
+    "w": 16,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 11
+   }
+  },
+  "rock_pair": {
+   "frame": {
+    "x": 17,
+    "y": 97,
+    "w": 16,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 11
+   }
+  },
+  "carrot_stage3": {
+   "frame": {
+    "x": 34,
+    "y": 97,
+    "w": 16,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 11
+   }
+  },
+  "potato_stage3": {
+   "frame": {
+    "x": 51,
+    "y": 97,
+    "w": 15,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 11
+   }
+  },
+  "potato_item": {
+   "frame": {
+    "x": 67,
+    "y": 97,
+    "w": 14,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 11
+   }
+  },
+  "tomato_stage3": {
+   "frame": {
+    "x": 82,
+    "y": 97,
+    "w": 15,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 15,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 15,
+    "h": 11
+   }
+  },
+  "tomato_stage4": {
+   "frame": {
+    "x": 98,
+    "y": 97,
+    "w": 16,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 11
+   }
+  },
+  "turnip_stage3": {
+   "frame": {
+    "x": 115,
+    "y": 97,
+    "w": 12,
+    "h": 11
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 11
+   },
+   "sourceSize": {
+    "w": 12,
+    "h": 11
+   }
+  },
+  "rock_flat": {
+   "frame": {
+    "x": 128,
+    "y": 97,
+    "w": 17,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 17,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 17,
+    "h": 10
+   }
+  },
+  "potato_stage2": {
+   "frame": {
+    "x": 146,
+    "y": 97,
+    "w": 14,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 10
+   }
+  },
+  "potato_stage4": {
+   "frame": {
+    "x": 161,
+    "y": 97,
+    "w": 16,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 10
+   }
+  },
+  "tomato_stage2": {
+   "frame": {
+    "x": 178,
+    "y": 97,
+    "w": 13,
+    "h": 10
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 10
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 10
+   }
+  },
+  "carrot_stage2": {
+   "frame": {
+    "x": 192,
+    "y": 97,
+    "w": 13,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 13,
+    "h": 9
+   }
+  },
+  "pumpkin_stage4": {
+   "frame": {
+    "x": 206,
+    "y": 97,
+    "w": 16,
+    "h": 9
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 9
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 9
+   }
+  },
+  "corn_stage1": {
+   "frame": {
+    "x": 223,
+    "y": 97,
+    "w": 9,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 8
+   }
+  },
+  "pumpkin_stage2": {
+   "frame": {
+    "x": 233,
+    "y": 97,
+    "w": 16,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 8
+   }
+  },
+  "pumpkin_stage3": {
+   "frame": {
+    "x": 0,
+    "y": 109,
+    "w": 16,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 16,
+    "h": 8
+   }
+  },
+  "turnip_stage2": {
+   "frame": {
+    "x": 17,
+    "y": 109,
+    "w": 9,
+    "h": 8
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 8
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 8
+   }
+  },
+  "carrot_stage1": {
+   "frame": {
+    "x": 27,
+    "y": 109,
+    "w": 9,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 9,
+    "h": 7
+   }
+  },
+  "potato_stage1": {
+   "frame": {
+    "x": 37,
+    "y": 109,
+    "w": 8,
+    "h": 7
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 7
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 7
+   }
+  },
+  "tomato_stage1": {
+   "frame": {
+    "x": 46,
+    "y": 109,
+    "w": 8,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 8,
+    "h": 6
+   }
+  },
+  "pumpkin_stage1": {
+   "frame": {
+    "x": 55,
+    "y": 109,
+    "w": 10,
+    "h": 6
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 6
+   },
+   "sourceSize": {
+    "w": 10,
+    "h": 6
+   }
+  },
+  "turnip_stage1": {
+   "frame": {
+    "x": 66,
+    "y": 109,
+    "w": 6,
+    "h": 5
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 6,
+    "h": 5
+   },
+   "sourceSize": {
+    "w": 6,
+    "h": 5
+   }
+  }
+ },
+ "meta": {
+  "image": "objects.png",
+  "size": {
+   "w": 256,
+   "h": 117
+  },
+  "scale": "1"
+ }
+}
