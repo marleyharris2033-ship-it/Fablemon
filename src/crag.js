@@ -1,0 +1,383 @@
+/* ============================================================ Cragside Pass
+   The mountain road north of Brookholt, in three parts and a mine:
+     crag1  Cragside Pass     an ordinary route (grass, trainers, items)
+     crag2  Cragside Heights  boulder puzzles: push boulders into crevasses to fill them
+     crag3  Old Rail Cutting  mine-cart rides: pull levers to set the points, ride to the old mine
+     cragmine  the Old Mine   the chamber of Veinwyrm, the first legendary Fablemon
+   Maps are text (crag_maps.json, made by work/crag/gen.py, which also checks every puzzle can be solved):
+     #  rock          .  ground        ,  gravel path     0-9  long grass (zone)
+     T  pine tree     o  small rocks   O  big boulder     B    boulder you can push
+     C  crevasse      =  plank bridge  rails: ─ │ ┌ ┐ └ ┘ ┬ ┴ ├ ┤ ┼ and ■ (a buffer stop where carts wait) */
+const crag = () => (S.crag = S.crag || { filled: {}, used: {}, sw: { W1: 0, W2: 0, W3: 0 }, legendDay: -1 });
+const RAILS = '─│┌┐└┘┬┴├┤┼■';
+const RAIL_CONN = { '─': 'EW', '│': 'NS', '┌': 'ES', '┐': 'WS', '└': 'NE', '┘': 'NW', '┬': 'WES', '┴': 'WEN', '├': 'NSE', '┤': 'NSW', '┼': 'NSEW' };
+const CDV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }, OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
+
+/* ---------- the legend: Veinwyrm (placeholder art: a recoloured Flintburrow until its own art arrives) */
+SPECIES.veinwyrm = { name: 'Veinwyrm', type: 'Stone', type2: 'Spark', legend: true, base: { hp: 105, atk: 112, def: 118, spd: 76 }, exp: 270, rate: 45,
+  desc: 'The miners of Cragside dug for the crystals that grow along its back, and never once saw it. It sleeps curled through the deepest seams of the mountain, and the whole pass hums when it dreams.' };
+MOVES.veinburst = { name: 'Vein Burst', type: 'Spark', pow: 95, acc: 90, st: ['par', 20] };
+LEARN.veinwyrm = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slateslam'], [34, 'boltwing'], [36, 'veinburst'], [42, 'rampartcrush']];
+MON_ORDER.push('veinwyrm'); MON_STAGE.veinwyrm = 3;
+const LEGEND = { sp: 'veinwyrm', lv: 36, x: 12, y: 3 };
+
+/* ---------- trainers of the pass (they borrow other trainers' art until their own arrives) */
+TRAINER_TYPES.climber = { label: 'Climber', art: 'rambler', challenge: ["You don't get views like this down in the bog! Let's battle up here!", "Every peak's better with a battle at the top!"], lose: ["I'll stick to climbing, I think.", "Fell at the last handhold. Well played!"], after: ["The boulders up the Heights move if you put your back into them.", "Watch your footing near the crevasses."] };
+TRAINER_TYPES.miner = { label: 'Miner', art: 'forager', challenge: ["Oi! This is a working cutting. Well, it was. Fancy a scrap?", "Forty years down the seams. Let's see what you've got!"], lose: ["Struck rock bottom there.", "You dig deep, I'll give you that."], after: ["Change the points before you ride, or you'll end up somewhere daft.", "There's something in the old mine. Hums all night, it does."] };
+
+const CRAG_ENC = { day: [['flintburrow', 24], ['mortoad', 20], ['whirlwyn', 18], ['staticwing', 15], ['brashlet', 12], ['yawnox', 8]], night: [['duskcloak', 30], ['staticwing', 22], ['flintburrow', 20], ['mortoad', 15], ['kilnook', 8]] };
+Object.assign(ROUTES, {
+  crag1: { name: 'Cragside Pass', w: 36, h: 50, ascii: 'crag1', crag: true,
+    zones: [[0, 0, 0, 0, 22, 24], [0, 0, 0, 0, 23, 25], [0, 0, 0, 0, 23, 25], [0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 24, 26]],
+    pickups: [{ id: 'c1', x: 31, y: 46, item: 'sturdy_charm', n: 3 }, { id: 'c2', x: 4, y: 25, item: 'tonic', n: 2 }, { id: 'c3', x: 30, y: 2, gold: 1200 }, { id: 'c4', x: 13, y: 8, item: 'mon_treat', n: 2 }],
+    signs: { '14,47': 'Cragside Pass. The old mountain road climbs north to the Heights and on to Quarrydown.', '20,7': '__heal', '14,2': 'North: Cragside Heights. Watch out for loose boulders.' },
+    trainers: [
+      { id: 'cp1', kind: 'climber', name: 'Holly', x: 19, y: 44, dir: 'left', sight: 3, team: [['whirlwyn', 24], ['flintburrow', 25]] },
+      { id: 'cp2', kind: 'miner', name: 'Bert', x: 9, y: 30, dir: 'left', sight: 3, team: [['mortoad', 25], ['brashlet', 25], ['flintburrow', 26]] },
+      { id: 'cp3', kind: 'climber', name: 'Rhys', x: 22, y: 23, dir: 'down', sight: 3, team: [['staticwing', 26], ['whirlwyn', 26]] },
+      { id: 'cp4', kind: 'climber', name: 'Peg', x: 25, y: 14, dir: 'right', sight: 3, team: [['yawnox', 26], ['fleecebolt', 26], ['staticwing', 27]] },
+    ],
+    exits: [{ r: [16, 49, 18, 49], to: x => ['brookholt', { x: x + 5, y: 1, dir: 'down' }] }, { r: [16, 0, 18, 0], to: x => ['crag2', { x: x + 2, y: 42, dir: 'up' }] }],
+    spawn: { x: 17, y: 47, dir: 'up' }, enc: CRAG_ENC },
+  crag2: { name: 'Cragside Heights', w: 40, h: 44, quiet: true, ascii: 'crag2', crag: true,
+    zones: [[0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 25, 27], [0, 0, 0, 0, 26, 28]],
+    pickups: [{ id: 'h1', x: 33, y: 25, item: 'root_charm', n: 5 }, { id: 'h2', x: 6, y: 15, item: 'tonic', n: 3 }, { id: 'h3', x: 33, y: 3, gold: 2000 }, { id: 'h4', x: 7, y: 36, item: 'honey', n: 3 }],
+    signs: { '15,35': 'A crevasse cuts across the road. That boulder looks loose: walk into it to push it. Fill the gap and you can cross!', '23,31': '__cgcairn', '5,26': 'West: the Old Rail Cutting. The miners rode carts down to the old mine.', '28,21': '__cgcairn', '21,13': '__cgcairn', '17,3': '__heal' },
+    trainers: [
+      { id: 'ch1', kind: 'climber', name: 'Gwen', x: 26, y: 38, dir: 'left', sight: 4, team: [['staticwing', 26], ['flintburrow', 26], ['whirlwyn', 27]] },
+      { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['mortoad', 27], ['kilnook', 28]] },
+      { id: 'ch3', kind: 'climber', name: 'Effie', x: 9, y: 12, dir: 'right', sight: 4, team: [['fleecebolt', 28], ['yawnox', 28], ['staticwing', 29]] },
+      { id: 'ch4', kind: 'miner', name: 'Morgan', x: 29, y: 6, dir: 'left', sight: 3, team: [['flintburrow', 29], ['duskcloak', 29], ['brashlet', 30]] },
+    ],
+    gate: { area: [18, 0, 20, 1], sign: [21, 2], ok: () => false, text: "The road to Quarrydown is still buried under the landslide. The road crews are digging it out. (Coming soon!)" },
+    exits: [{ r: [17, 43, 21, 43], to: x => ['crag1', { x: Math.max(16, Math.min(18, x - 2)), y: 1, dir: 'down' }] }, { r: [0, 25, 0, 27], to: y => ['crag3', { x: 44, y: y + 2, dir: 'left' }], axis: 'y' }],
+    spawn: { x: 19, y: 41, dir: 'up' }, enc: CRAG_ENC },
+  crag3: { name: 'Old Rail Cutting', w: 46, h: 38, quiet: true, ascii: 'crag3', crag: true, zones: [],
+    pickups: [{ id: 'k1', x: 10, y: 17, item: 'sturdy_charm', n: 5 }, { id: 'k2', x: 20, y: 9, gold: 2500 }, { id: 'k3', x: 43, y: 1, item: 'mon_treat', n: 3 }, { id: 'k4', x: 3, y: 4, item: 'tonic', n: 3 }],
+    signs: { '38,25': "The Old Rail Cutting. Stand by a cart and press the action button to ride it. Carts run until they reach a buffer stop.", '43,25': '__heal', '23,24': 'Levers set the points at the junction ahead. Pull one, watch which way the rails turn, then ride!',
+      '27,24': '__cgpoint:W1', '36,8': '__cgpoint:W2', '43,2': '__cgpoint:W3',
+      '22,30': '__cgbell', '10,21': '__cgbell', '39,12': '__cgbell', '44,6': '__cgbell', '20,12': '__cgbell', '3,9': '__cgbell',
+      '36,28': '__cgcart:A', '30,28': '__cgcart:B', '25,23': '__cgcart:C', '16,19': '__cgcart:D', '32,14': '__cgcart:E', '34,7': '__cgcart:F', '40,4': '__cgcart:G', '26,10': '__cgcart:H', '9,3': '__cgcart:I' },
+    trainers: [
+      { id: 'rc1', kind: 'miner', name: 'Ifor', x: 11, y: 19, dir: 'right', sight: 4, team: [['flintburrow', 28], ['mortoad', 28]] },
+      { id: 'rc2', kind: 'climber', name: 'Sian', x: 42, y: 5, dir: 'left', sight: 2, team: [['whirlwyn', 28], ['staticwing', 29]] },
+      { id: 'rc3', kind: 'miner', name: 'Huw', x: 22, y: 10, dir: 'right', sight: 3, team: [['kilnook', 29], ['flintburrow', 29], ['mortoad', 30]] },
+    ],
+    switches: { W1: { x: 25, y: 19, trunk: 'S', a: 'W', b: 'E' }, W2: { x: 34, y: 4, trunk: 'S', a: 'W', b: 'E' }, W3: { x: 26, y: 4, trunk: 'E', a: 'S', b: 'N' } },
+    depot: { x: 40, y: 27, dir: 'left' }, tunnel: { x: 5, y: 2 },
+    props: [], cgprops: [['cg_lamp_post', 41, 24], ['cg_crate', 44, 30], ['cg_cart_ore', 42, 30], ['cg_lamp_post', 28, 24], ['cg_cart_broken', 13, 16], ['cg_crate', 2, 10], ['cg_lamp_post', 8, 4], ['cg_cart_gems', 25, 8], ['cg_crate', 44, 1]],
+    exits: [{ r: [45, 27, 45, 29], to: y => ['crag2', { x: 1, y: y - 2, dir: 'right' }], axis: 'y' }, { r: [5, 2, 5, 2], to: () => ['cragmine', { x: 11, y: 28, dir: 'up' }] }],
+    spawn: { x: 44, y: 28, dir: 'left' }, enc: CRAG_ENC },
+  cragmine: { name: 'The Old Mine', w: 24, h: 30, quiet: true, ascii: 'cragmine', crag: true, mine: true, zones: [],
+    pickups: [{ id: 'om1', x: 17, y: 12, item: 'sturdy_charm', n: 5 }],
+    signs: { '12,4': '__cglegend', '7,22': "A miner's notice, nailed to a prop: 'NO DIGGING PAST THIS POINT. The rock sings at night.'" },
+    trainers: [],
+    cgprops: [['cg_lamp_post', 10, 24], ['cg_lamp_post', 14, 21], ['cg_cart_ore', 6, 20], ['cg_crate', 17, 19], ['cg_crate', 5, 12], ['cg_lamp_post', 16, 9], ['cg_cart_broken', 18, 11], ['cg_cart_gems', 7, 6], ['cg_ore_rock', 16, 3], ['cg_ore_rock', 8, 3], ['cg_pick_rock', 6, 14], ['cg_lamp_post', 10, 7], ['cg_lamp_post', 14, 7]],
+    exits: [{ r: [11, 29, 12, 29], to: () => ['crag3', { x: 5, y: 4, dir: 'down' }] }],
+    spawn: { x: 11, y: 28, dir: 'up' }, enc: CRAG_ENC },
+});
+for (const k of ['crag1', 'crag2', 'crag3', 'cragmine']) Object.assign(ROUTES[k], { paths: [], ponds: [], bridge: null, open: [], clear: [], ascii: ASSET.cragMaps[ROUTES[k].ascii] });
+
+/* ---------- the map is read straight from text */
+function buildAscii() {
+  const rows = RC.ascii, N = RW * RH, tiles = new Int32Array(N), blocked = new Uint8Array(N), dirtish = new Uint8Array(N), waterish = new Uint8Array(N), grass = new Int8Array(N).fill(-1), deco = [], kind = [];
+  for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
+    const i = y * RW + x, c = rows[y][x], h = hash(x * 5 + 1, y * 7 + 2); kind[i] = c;
+    if (c === '#' || c === 'C' || RAILS.includes(c)) blocked[i] = 1;
+    else if (c === ',') dirtish[i] = 1;
+    else if (c >= '0' && c <= '9') grass[i] = +c;
+    else if (c === 'T') { blocked[i] = 1; deco.push({ x, y, f: 'tree_pine', tall: true }); }
+    else if (c === 'o') { blocked[i] = 1; deco.push({ x, y, tex: 'cg_rock_pile' }); }
+    else if (c === 'O') { blocked[i] = 1; deco.push({ x, y, tex: h < .45 ? 'cg_ore_rock' : 'cg_rock_pile' }); }
+  }
+  for (const t of ROUTE_TRAINERS) { const i = t.y * RW + t.x; blocked[i] = 1; grass[i] = -1; }
+  for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; grass[y * RW + x] = -1; }
+  for (const [, x, y] of RC.cgprops || []) blocked[y * RW + x] = 1;
+  if (RC.gate && !RC.gate.ok()) { const [a, b, c, d] = RC.gate.area; for (let y = b; y <= d; y++) for (let x = a; x <= c; x++) { blocked[y * RW + x] = 1; deco.push({ x, y, tex: (x + y) % 2 ? 'cg_boulder2' : 'cg_rock_pile', gate: 1 }); } }
+  return { tiles, blocked, dirtish, waterish, grass, water: [], border: [], deco, kind };
+}
+
+/* ---------- art */
+const CRAG_TEX = {}; let CRAG_ACROSS = () => false;
+function cragArt(sc) {
+  if (!CRAG_TEX.ready) { for (const [k, v] of Object.entries(ASSET.crag.ground)) CRAG_TEX[k] = rgbaCanvas(v); CRAG_TEX.ready = 1; }
+  for (const [k, v] of Object.entries(ASSET.crag.objs)) if (!sc.textures.exists('cg_' + k)) sc.textures.addCanvas('cg_' + k, rgbaCanvas(v));
+  if (!sc.textures.exists('cgg_crack_boulder')) for (const k of ['crack_boulder', 'crack_bridge']) sc.textures.addCanvas('cgg_' + k, CRAG_TEX[k]);
+}
+// the ground is painted once into one picture: rocky earth, gravel paths, cliffs with faces, crevasses
+function cragGround(sc, R) {
+  cragArt(sc);
+  const key = 'cragGround_' + sc.scene.key; if (sc.textures.exists(key)) sc.textures.remove(key);
+  const c = document.createElement('canvas'); c.width = RW * T; c.height = RH * T;
+  const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  const K = (x, y) => (x < 0 || y < 0 || x >= RW || y >= RH) ? '#' : R.kind[y * RW + x], wall = (x, y) => K(x, y) === '#';
+  // crevasse pieces are drawn running north-south; turn them when the crevasse runs east-west
+  const across = (x, y) => 'C='.includes(K(x - 1, y)) || 'C='.includes(K(x + 1, y));
+  const rot = (n, x, y) => { g.save(); g.translate(x * T + 8, y * T + 8); if (across(x, y)) g.rotate(Math.PI / 2); g.drawImage(CRAG_TEX[n], -8, -8); g.restore(); };
+  CRAG_ACROSS = across;
+  // a crevasse: a dark gap with ragged rocky lips, deepest in the middle
+  const chasm = (x, y) => {
+    const ac = across(x, y), cx = x * T, cy = y * T;
+    for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+      const along = ac ? u : v, side = ac ? v : u, e = 1 + Math.floor(hash(x * 16 + along, y * 16 + along * 3 + (ac ? 1 : 7)) * 2.6), e2 = T - 2 - Math.floor(hash(x * 16 + along * 5, y * 16 + 2) * 2.6);
+      if (side < e || side > e2) continue;
+      const dpt = Math.min(side - e, e2 - side) / ((e2 - e) / 2);
+      const px = ac ? cx + u : cx + u, py = ac ? cy + v : cy + v;
+      g.fillStyle = side === e ? '#c9a27a' : side === e2 ? '#4a3020' : `rgb(${Math.round(70 - dpt * 58)},${Math.round(46 - dpt * 40)},${Math.round(30 - dpt * 26)})`;
+      g.fillRect(px, py, 1, 1);
+    }
+  };
+  const tex = (n, x, y) => g.drawImage(CRAG_TEX[n], (x & 1) * T, (y & 1) * T, T, T, x * T, y * T, T, T);
+  for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
+    const k = K(x, y), h = hash(x >> 1, y >> 1);
+    if (k === '#') { tex(h < .5 ? 'cobble' : 'cobble_moss2', x, y); g.fillStyle = RC.mine ? 'rgba(14,8,18,.6)' : 'rgba(46,34,30,.42)'; g.fillRect(x * T, y * T, T, T); continue; }
+    if (k === ',') tex('slab', x, y);
+    else if (RAILS.includes(k)) tex('dirt_pebble', x, y);
+    else if (k >= '0' && k <= '9') tex('cobble_dry', x, y);
+    else tex(h < .55 ? 'dirt_pebble' : 'dirt_patch', x, y);
+    if (k === 'C') chasm(x, y);
+    if (k === '=') { chasm(x, y); rot('crack_bridge', x, y); }
+  }
+  // raised rock: a cliff face wherever rock meets open ground below it, shadows down the sides
+  for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
+    if (!wall(x, y)) continue;
+    if (!wall(x, y + 1)) { g.drawImage(CRAG_TEX.ledge, (x & 1) * T, 14, T, 18, x * T, y * T - 2, T, 18); g.fillStyle = 'rgba(20,12,6,.35)'; g.fillRect(x * T, y * T + T, T, 2); }
+    g.fillStyle = 'rgba(20,12,6,.55)';
+    if (!wall(x - 1, y)) g.fillRect(x * T, y * T, 1, T);
+    if (!wall(x + 1, y)) g.fillRect(x * T + T - 1, y * T, 1, T);
+    if (!wall(x, y - 1)) { g.fillStyle = 'rgba(255,240,210,.25)'; g.fillRect(x * T, y * T, T, 1); }
+  }
+  for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {     // soft shadow cast on the ground beside rock
+    if (wall(x, y)) continue; g.fillStyle = 'rgba(30,18,8,.18)';
+    if (wall(x - 1, y)) g.fillRect(x * T, y * T, 3, T);
+    if (wall(x + 1, y)) g.fillRect(x * T + T - 3, y * T, 3, T);
+  }
+  if (RC.mine) { g.fillStyle = 'rgba(12,8,20,.35)'; g.fillRect(0, 0, c.width, c.height); }
+  sc.textures.addCanvas(key, c); sc.add.image(0, 0, key).setOrigin(0).setDepth(0);
+}
+
+/* ---------- rails, drawn pixel by pixel so the curves stay crisp */
+function railTile(conns, opts = {}) {
+  const c = document.createElement('canvas'); c.width = c.height = T; const g = c.getContext('2d'), img = g.createImageData(T, T), d = img.data;
+  const segs = [];
+  const cs = conns.split('');
+  if (opts.pair) segs.push(opts.pair); else if (cs.length === 2) segs.push(cs); else if (cs.length === 1) segs.push([cs[0], 'C']); else { segs.push(['N', 'S'], ['E', 'W']); }
+  const put = (x, y, col, a = 255) => { const i = (y * T + x) * 4; d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = a; };
+  const TIE = [150, 92, 50], TIE_D = [92, 54, 26], RAIL = [176, 178, 184], RAIL_H = [226, 228, 232], RAIL_D = [70, 72, 80];
+  const dim = opts.dim;
+  const pts = [];
+  for (const [a, b] of segs) for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+    const px = x + .5, py = y + .5; let s, t;
+    const straight = (b === 'C') || OPP[a] === b;
+    if (straight) {
+      const vert = a === 'N' || a === 'S';
+      s = vert ? px - 8 : py - 8; t = vert ? py : px;
+      if (b === 'C') { const far = { N: py, S: T - py, W: px, E: T - px }[a]; if (far > 11) continue; }
+    } else {
+      const cx = (a === 'E' || b === 'E') ? T : 0, cy = (a === 'S' || b === 'S') ? T : 0, dd = Math.hypot(px - cx, py - cy);
+      s = dd - 8; t = Math.atan2(Math.abs(py - cy), Math.abs(px - cx)) * 8;
+    }
+    const as = Math.abs(s);
+    if (as >= 2 && as < 3.4) pts.push([x, y, as < 2.7 ? (s < 0 ? RAIL_H : RAIL) : RAIL_D, 1]);
+    else if (as <= 5.6 && ((t % 4) + 4) % 4 < 2) pts.push([x, y, as > 4.6 ? TIE_D : TIE, 0]);
+  }
+  pts.sort((p, q) => p[3] - q[3]);
+  for (const [x, y, col] of pts) put(x, y, dim && col !== TIE && col !== TIE_D ? col.map(v => v * .55) : col, dim ? 110 : 255);
+  g.putImageData(img, 0, 0);
+  if (cs.length === 1 && !opts.pair) {            // the buffer stop: a timber beam with iron caps at the dead end
+    const R = (x, y, w, h, f) => { g.fillStyle = f; g.fillRect(x, y, w, h); };
+    const e = OPP[cs[0]];
+    if (e === 'N' || e === 'S') { const y = e === 'N' ? 3 : 10; R(2, y, 12, 4, '#3a2416'); R(3, y + 1, 10, 2, '#a8673a'); R(2, y, 2, 4, '#56575e'); R(12, y, 2, 4, '#56575e'); }
+    else { const x = e === 'W' ? 3 : 10; R(x, 2, 4, 12, '#3a2416'); R(x + 1, 3, 2, 10, '#a8673a'); R(x, 2, 4, 2, '#56575e'); R(x, 12, 4, 2, '#56575e'); }
+  }
+  return c;
+}
+function switchTex(sc, id, state) {
+  const sw = RC.switches[id], key = `cgsw_${sc.scene.key}_${id}_${state}`;
+  if (!sc.textures.exists(key)) {
+    const on = state ? sw.b : sw.a, off = state ? sw.a : sw.b, c = document.createElement('canvas'); c.width = c.height = T; const g = c.getContext('2d');
+    g.drawImage(railTile('', { pair: [sw.trunk, off], dim: 1 }), 0, 0); g.drawImage(railTile('', { pair: [sw.trunk, on] }), 0, 0);
+    sc.textures.addCanvas(key, c);
+  }
+  return key;
+}
+
+/* ---------- the scenes */
+class Crag extends Route {
+  create() { super.create(); this.cragSetup(); }
+  cragSetup() {
+    const st = crag(), key = this.scene.key, R = this.R;
+    // crevasses filled on earlier visits stay filled
+    for (const k of Object.keys(st.filled)) { const [sk, x, y] = k.split(/[:,]/); if (sk !== key) continue; R.blocked[+y * RW + +x] = 0; this.add.image(+x * T + 8, +y * T + 8, 'cgg_crack_boulder').setDepth(1); }
+    // boulders go back where they started each visit (unless they're down a crevasse): leaving is the reset
+    this.boulders = [];
+    for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) if (R.kind[y * RW + x] === 'B' && !st.used[`${key}:${x},${y}`]) {
+      const spr = this.add.image(x * T + 8, y * T + 16, 'cg_boulder').setOrigin(.5, 1).setDepth(y * T + 15);
+      this.boulders.push({ id: `${key}:${x},${y}`, x, y, spr });
+    }
+    for (const s of Object.values(this.grassSpr || {})) s.setTint(0xe8dc98);   // dry mountain grass
+    // rails
+    if (R.kind.some(k => RAILS.includes(k))) {
+      const c = document.createElement('canvas'); c.width = RW * T; c.height = RH * T; const g = c.getContext('2d');
+      const swAt = {}; for (const [id, s] of Object.entries(RC.switches || {})) swAt[s.x + ',' + s.y] = id;
+      for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
+        const k = R.kind[y * RW + x]; if (!RAILS.includes(k) || swAt[x + ',' + y]) continue;
+        g.drawImage(railTile(k === '■' ? this.stopDir(x, y) : RAIL_CONN[k]), x * T, y * T);
+      }
+      const rk = 'cgRails_' + key; if (this.textures.exists(rk)) this.textures.remove(rk); this.textures.addCanvas(rk, c); this.add.image(0, 0, rk).setOrigin(0).setDepth(1);
+      this.swImg = {};
+      for (const [id, s] of Object.entries(RC.switches || {})) this.swImg[id] = this.add.image(s.x * T, s.y * T, switchTex(this, id, st.sw[id] || 0)).setOrigin(0).setDepth(1.2);
+    }
+    // carts wait at every buffer stop, levers by the points, bells to call the rail crew
+    this.carts = {}; this.levers = {};
+    for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
+      const [x, y] = k.split(',').map(Number);
+      if (v.startsWith('__cgcart:')) this.carts[v.slice(9)] = { x, y, spr: this.cartAt(x, y) };
+      else if (v.startsWith('__cgpoint:')) { const id = v.slice(10); this.levers[id] = this.add.image(x * T + 8, y * T + 16, (st.sw[id] ? 'cg_lever_r' : 'cg_lever_l')).setOrigin(.5, 1).setDepth(y * T + 15); }
+      else if (v === '__cgbell') this.add.image(x * T + 8, y * T + 16, 'cg_signal').setOrigin(.5, 1).setDepth(y * T + 15);
+      else if (v === '__cgcairn') this.add.image(x * T + 8, y * T + 16, 'cg_pick_rock').setOrigin(.5, 1).setDepth(y * T + 15);
+      else if (v === '__cglegend') this.makeLegend(x, y);
+    }
+    for (const [tx, x, y] of RC.cgprops || []) { const im = this.add.image(x * T + 8, y * T + 16, tx).setOrigin(.5, 1).setDepth(y * T + 15); if (tx === 'cg_lamp_post') { this.tall.push(im); this.glow(x * T + 12, y * T - 4); } }
+    if (RC.tunnel) { const { x, y } = RC.tunnel; this.add.image(x * T + 8, y * T + 18, 'cg_tunnel').setOrigin(.5, 1).setDepth(2); }
+    if (RC.mine) {
+      this.cameras.main.setBackgroundColor(0x0a0806);
+      this.add.rectangle(0, 0, RW * T, RH * T, 0x0a0614, .38).setOrigin(0).setDepth(9e6 - 31);
+      const halo = this.add.circle(0, 0, 46, 0xffe0a0, .1).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 30); this.halo = halo;
+      FX.set(S.weather, true); FX.ambient(null);   // no weather, petals or butterflies underground
+      if (!S.flags.mineSeen) { S.flags.mineSeen = 1; setTimeout(() => toast('The Old Mine. Somewhere deep inside, the rock is humming.', 3000), 600); }
+    }
+    if (key === 'crag3' && !S.flags.railSeen) { S.flags.railSeen = 1; setTimeout(() => toast('The Old Rail Cutting. Ride the carts to cross it!', 3000), 900); }
+    if (key === 'crag2' && !S.flags.heightsSeen) { S.flags.heightsSeen = 1; setTimeout(() => toast('Cragside Heights. Push boulders into the crevasses to cross them.', 3200), 900); }
+  }
+  glow(x, y) { const g = this.add.circle(x, y, 16, 0xffc870, .16).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 29); this.tweens.add({ targets: g, alpha: .07, yoyo: true, repeat: -1, duration: 1100 + Math.random() * 700 }); }
+  stopDir(x, y) { for (const [d, [dx, dy]] of Object.entries(CDV)) if (RAILS.includes(this.R.kind[(y + dy) * RW + x + dx] || '')) return d; return 'E'; }
+  cartTex(d) { return d === 'E' || d === 'W' ? (d === 'E' ? 'cg_cart_right' : 'cg_cart_left') : (d === 'N' ? 'cg_cart_back' : 'cg_cart_front'); }
+  cartAt(x, y) { return this.add.image(x * T + 8, y * T + 15, this.cartTex(this.stopDir(x, y))).setOrigin(.5, 1).setDepth(y * T + 14); }
+  boulderAt(x, y) { return (this.boulders || []).find(b => b.x === x && b.y === y); }
+  passable(x, y) { return super.passable(x, y) && !this.boulderAt(x, y); }
+  // Walk into a boulder to push it. It rolls one tile, or drops into a crevasse and fills it.
+  bump(x, y) {
+    const b = this.boulderAt(x, y), p = this.p; if (!b || this.paused || p.busy > 0) return;
+    const dx = x - p.x, dy = y - p.y; if (Math.abs(dx) + Math.abs(dy) !== 1) return;
+    const nx = x + dx, ny = y + dy, i = ny * RW + nx, k = this.R.kind[i];
+    const crack = k === 'C' && !crag().filled[`${this.scene.key}:${nx},${ny}`];
+    if (!crack && (!super.passable(nx, ny) || this.boulderAt(nx, ny) || PICKUPS.some(q => q.x === nx && q.y === ny && !S.picked[q.id]))) { p.busy = .25; Sound.play('error'); return; }
+    p.busy = .32; b.x = nx; b.y = ny; Sound.play('thud');
+    this.tweens.add({ targets: b.spr, x: nx * T + 8, y: ny * T + 16, duration: 260, ease: 'Sine.inOut', onUpdate: () => b.spr.setDepth(b.spr.y - 1), onComplete: () => {
+      if (!crack) return;
+      const st = crag(); st.filled[`${this.scene.key}:${nx},${ny}`] = 1; st.used[b.id] = 1; this.R.blocked[i] = 0;
+      this.boulders = this.boulders.filter(q => q !== b);
+      this.tweens.add({ targets: b.spr, scale: .7, alpha: 0, y: b.spr.y + 6, duration: 240, onComplete: () => b.spr.destroy() });
+      const im = this.add.image(nx * T + 8, ny * T + 8, 'cgg_crack_boulder').setDepth(1).setAlpha(0); this.tweens.add({ targets: im, alpha: 1, duration: 300, delay: 120 });
+      this.cameras.main.shake(160, .004); Sound.play('fill'); toast('The boulder dropped into the crevasse and filled it!', 1800);
+    } });
+  }
+  cragSign(t, x, y) {
+    const st = crag();
+    if (t.startsWith('__cgcart:')) return this.ride(t.slice(9));
+    if (t.startsWith('__cgpoint:')) {
+      const id = t.slice(10); st.sw[id] = st.sw[id] ? 0 : 1; Sound.play('door');
+      this.levers[id].setTexture(st.sw[id] ? 'cg_lever_r' : 'cg_lever_l'); this.swImg[id].setTexture(switchTex(this, id, st.sw[id]));
+      const s = RC.switches[id], to = st.sw[id] ? s.b : s.a, name = { N: 'north', S: 'south', E: 'east', W: 'west' }[to];
+      this.cameras.main.pan(s.x * T + 8, s.y * T + 8, 350, Phaser.Math.Easing.Sine.InOut, false, (c, pr) => { if (pr === 1) this.time.delayedCall(500, () => this.cameras.main.pan(this.player.x, this.player.y, 300, Phaser.Math.Easing.Sine.InOut, false, (c2, p2) => { if (p2 === 1) this.cameras.main.startFollow(this.player, true, 1, 1); })); });
+      this.cameras.main.stopFollow();
+      return toast(`Clunk! The points now send carts ${name}.`, 2000);
+    }
+    if (t === '__cgbell') return openModal('Rail bell', '<p>Ring the bell? The old rail crew will haul you back to the depot and set all the points back to how they started.</p><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-a="yes">Ring it</button><button class="btn" data-a="no">Not now</button></div>', a => {
+      closeModal(); if (a !== 'yes') return; st.sw = { W1: 0, W2: 0, W3: 0 }; Sound.play('coin'); travel(this, this.scene.key, RC.depot);
+    });
+    if (t === '__cgcairn') return openModal('Boulder marker', "<p>A miner's marker for this stretch of road. Stuck? The road crew can roll every boulder you haven't dropped into a crevasse back to where it started.</p><div class=\"row\" style=\"display:flex;gap:6px\"><button class=\"btn gold\" data-a=\"yes\">Reset the boulders</button><button class=\"btn\" data-a=\"no\">Not now</button></div>", a => {
+      closeModal(); if (a !== 'yes') return; const p = this.p; travel(this, this.scene.key, { x: p.x, y: p.y, dir: p.dir });
+    });
+    if (t === '__cglegend') return this.meetLegend();
+  }
+  // a ride: the cart follows the rails from this stop, through the points, to the next buffer stop
+  ride(id) {
+    const c = this.carts[id], st = crag(), p = this.p; if (!c || this.paused) return;
+    const swAt = {}; for (const [sid, s] of Object.entries(RC.switches || {})) swAt[s.x + ',' + s.y] = sid;
+    let x = c.x, y = c.y, d = this.stopDir(x, y); const path = [{ x, y, d }];
+    for (let n = 0; n < 400; n++) {
+      x += CDV[d][0]; y += CDV[d][1]; const k = this.R.kind[y * RW + x], came = OPP[d];
+      if (k === '■') { path.push({ x, y, d }); break; }
+      const sid = swAt[x + ',' + y];
+      if (sid) { const s = RC.switches[sid]; d = came === s.trunk ? (st.sw[sid] ? s.b : s.a) : s.trunk; }
+      else d = RAIL_CONN[k].split('').find(q => q !== came);
+      path.push({ x, y, d });
+    }
+    const end = path[path.length - 1], to = Object.entries(this.carts).find(([, v]) => v.x === end.x && v.y === end.y);
+    this.paused = true; p.path = []; p.pending = null; Sound.play('door');
+    c.spr.setVisible(false); if (to) to[1].spr.setVisible(false);
+    if (this.fol) this.fol.spr.setVisible(false);
+    const cart = this.add.image(c.x * T + 8, c.y * T + 15, this.cartTex(path[0].d)).setOrigin(.5, 1);
+    let i = 0, px = c.x * T + 8, py = c.y * T + 8;
+    const setPos = () => { cart.setPosition(Math.round(px), Math.round(py) + 7).setDepth(py + 9); this.player.setPosition(Math.round(px), Math.round(py) + 2).setDepth(py + 8); };
+    this.player.setFrame(this.standF(p.dir));
+    const step = () => {
+      if (++i >= path.length) return arrive();
+      const q = path[i], prev = path[i - 1]; cart.setTexture(this.cartTex(prev.d));
+      p.dir = { N: 'up', S: 'down', E: 'right', W: 'left' }[prev.d]; this.player.setFrame(this.standF(p.dir));
+      if (i % 2) Sound.play('step', i);
+      this.tweens.add({ targets: { v: 0 }, v: 1, duration: 95, onUpdate: tw => { const v = tw.getValue(); px = (prev.x + (q.x - prev.x) * v) * T + 8; py = (prev.y + (q.y - prev.y) * v) * T + 8; setPos(); }, onComplete: step });
+    };
+    const arrive = () => {
+      cart.destroy(); c.spr.setVisible(true); if (to) to[1].spr.setVisible(true);
+      Sound.play('door'); this.cameras.main.shake(120, .003);
+      // step off onto the platform beside the stop
+      const off = Object.values(CDV).map(([dx, dy]) => ({ x: end.x + dx, y: end.y + dy })).find(q => this.passable(q.x, q.y) && !RAILS.includes(this.R.kind[q.y * RW + q.x])) || { x: c.x, y: c.y + 1 };
+      p.x = off.x; p.y = off.y; p.px = off.x * T + 8; p.py = off.y * T + 8; p.dir = off.x > end.x ? 'right' : off.x < end.x ? 'left' : off.y > end.y ? 'down' : 'up';
+      this.placePlayer(); this.player.setFrame(this.standF(p.dir));
+      if (this.refreshFollower) this.refreshFollower();
+      this.paused = false; p.busy = .3; this.arriveHook(p.x, p.y);
+    };
+    setPos(); this.time.delayedCall(250, step);
+  }
+  makeLegend(x, y) {
+    if (!this.textures.exists('mon_veinwyrm')) return;
+    const st = crag(), gone = S.mons.some(m => m.sp === 'veinwyrm') || st.legendCaught || st.legendDay === S.day;
+    this.add.image(x * T + 8, y * T + 14, 'cg_cart_gems').setOrigin(.5, 1).setDepth(1).setAlpha(.0);
+    for (const [dx, dy] of [[-2, 0], [2, 0], [-3, 1], [3, 1], [-1, -1], [1, -1]]) { const g = this.add.circle((x + dx) * T + 8, (y + dy) * T + 6, 10, 0x8a6aff, .14).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 28); this.tweens.add({ targets: g, alpha: .04, yoyo: true, repeat: -1, duration: 900 + Math.random() * 900 }); }
+    if (gone) { this.R.blocked[y * RW + x] = 1; return; }
+    for (let r = 0; r < 4; r++) { const k = `veinwyrm_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('mon_veinwyrm', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 3, repeat: -1 }); }
+    this.legend = this.add.sprite(x * T + 8, y * T + 16, 'mon_veinwyrm', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    this.legend.play('veinwyrm_down');
+    this.tweens.add({ targets: this.legend, y: this.legend.y - 2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' });
+    const aura = this.add.circle(x * T + 8, y * T + 2, 28, 0x9a7aff, .18).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 27);
+    this.tweens.add({ targets: aura, scale: 1.25, alpha: .06, yoyo: true, repeat: -1, duration: 1600 });
+  }
+  meetLegend() {
+    const st = crag();
+    if (!this.legend) return toast(st.legendDay === S.day ? 'The crystals are dim. Whatever lives here has gone deep into the rock to rest. Come back tomorrow.' : 'Only crystal dust and a faint warmth remain.', 2600);
+    if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to face what is down here. Rest them first.', 2600);
+    const img = monPic('veinwyrm'), L = t => ({ name: '???', img, t });
+    S.seen.veinwyrm = 1;
+    Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('VRRRRMMMM...!')], () => {
+      const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 8, atk: 8, def: 8, spd: 8 }; m.hp = monStat(m, 'hp');
+      this.legendFight = m; this.cameras.main.shake(400, .008); Battle.start(m);
+    });
+  }
+  frameHook(dt) {
+    super.frameHook(dt);
+    if (this.halo) this.halo.setPosition(this.player.x, this.player.y - 6);
+    // after the legend battle: caught, knocked out (back tomorrow) or fled from (still there)
+    if (this.legendFight && Battle.active) this.legendSeen = true;
+    if (this.legendFight && this.legendSeen && !Battle.active && !this.paused) {
+      this.legendSeen = false;
+      const m = this.legendFight, st = crag(); this.legendFight = null;
+      if (S.mons.some(q => q.sp === 'veinwyrm')) { st.legendCaught = 1; this.legend.destroy(); this.legend = null; toast('The mine falls quiet. The crystals glow softly, as if saying goodbye.', 3200); }
+      else if (m.hp <= 0) { st.legendDay = S.day; this.tweens.add({ targets: this.legend, alpha: 0, duration: 900, onComplete: () => { this.legend.destroy(); this.legend = null; } }); toast('Veinwyrm sank back into the rock! The crystals dim... It may return tomorrow.', 3500); }
+    }
+  }
+  // exits are exact strips of tiles at the map's edge
+  arriveHook(x, y) {
+    for (const e of RC.exits || []) { const [a, b, c, d] = e.r; if (x >= a && x <= c && y >= b && y <= d) { const [to, sp] = e.to(e.axis === 'y' ? y : x); if (to === 'cragmine' || to === 'crag3' && RC.mine) Sound.play('door'); return travel(this, to, sp); } }
+    super.arriveHook(x, y);
+  }
+  onTap(wx, wy) {
+    if (this.paused || this.sleeping || controlMode() !== 'tap') return;
+    const x = Math.floor(wx / T), y = Math.floor(wy / T), p = this.p, b = this.boulderAt(x, y);
+    if (b && Math.abs(p.x - x) + Math.abs(p.y - y) === 1) { this.face(x, y); return this.bump(x, y); }
+    super.onTap(wx, wy);
+  }
+}
+const CRAG_SCENES = ['crag1', 'crag2', 'crag3', 'cragmine'].map(k => class extends Crag { constructor() { super(k); } });

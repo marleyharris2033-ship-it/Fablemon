@@ -4049,6 +4049,7 @@ const R1_SIGNS = {
   '24,68': 'South to Brookside Lane and the Warden\'s Garden.',
 };
 function buildRoute() {
+  if (RC.ascii) return buildAscii();
   const V = Array.from({ length: RH + 1 }, () => new Uint8Array(RW + 1));
   const setRect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (y >= 0 && y <= RH && x >= 0 && x <= RW) V[y][x] = v; };
   if (RC.lake) { setRect(0, 0, RW, RH, 2); setRect(0, 0, RW, 1, 0); setRect(0, RH - 1, RW, RH, 0); setRect(0, 0, 1, RH, 0); setRect(RW - 1, 0, RW, RH, 0); for (const r of RC.land) setRect(...r, 0); }
@@ -4181,7 +4182,8 @@ function loadTrainerPics() {
     }
   });
 }
-const trainerPic = (kind, beaten = 0) => TRAINER_PIC[kind + beaten] || '';
+const trArt = kind => (TRAINER_TYPES[kind] && TRAINER_TYPES[kind].art) || kind;
+const trainerPic = (kind, beaten = 0) => TRAINER_PIC[trArt(kind) + beaten] || '';
 // id, type, name, tile, facing, sight, team [species, level]...
 const R1_TRAINERS = [
   { id: 'mt1', kind: 'rambler', name: 'Sue', x: 26, y: 9, dir: 'down', sight: 4, team: [['tusskip', 4], ['whirplet', 5]] },
@@ -4267,7 +4269,7 @@ const ROUTES = {
     left: (y) => ['route3', { x: 62, y: Math.max(14, Math.min(16, y - 5)), dir: 'left' }],
     enc: { day: [['lotling', 20], ['muddlebub', 18], ['tipplecup', 16], ['puffpiper', 16], ['sundrowse', 12], ['brooknook', 10]], night: [['glimmerjel', 30], ['logloom', 25], ['muddlebub', 15], ['duskwick', 15], ['puffpiper', 8]] } },
   brookholt: { name: 'Brookholt', w: 44, h: 30, town: true, bog: true,
-    paths: [[0, 11, 44, 14], [0, 24, 25, 26], [12, 14, 15, 25], [29, 24, 44, 26], [30, 14, 32, 25]],
+    paths: [[0, 11, 44, 14], [0, 24, 25, 26], [12, 14, 15, 25], [29, 24, 44, 26], [30, 14, 32, 25], [21, 0, 23, 11]],
     ponds: [[27, 15, 2.2, 18]], bridge: { x0: 0, x1: 0, y0: 11, y1: 14 },
     zones: [], pickups: [],
     buildings: [
@@ -4282,7 +4284,9 @@ const ROUTES = {
     signs: { '4,10': 'Brookholt. Mind the canal, and say hello to the lock-keeper.', '20,9': '__board' },
     npcs: [{ kind: 'delphine', x: 38, y: 11, dir: 'down', door: 'bh_lock', hideIf: () => lockHouseOpen() }],   // once the lock house opens she waits inside
     trainers: [],
-    open: [[0, 10, 3, 15]], clear: [[0, 9, 44, 27]], spawn: { x: 1, y: 12, dir: 'right' },
+    open: [[0, 10, 3, 15], [20, 0, 24, 3]], clear: [[0, 9, 44, 27], [19, 0, 25, 9]], spawn: { x: 1, y: 12, dir: 'right' },
+    gate: { area: [21, 0, 23, 1], sign: [20, 3], ok: () => !!(S.crests && S.crests.brook), text: "Boulders block the old mountain road north. A note from the lock-keeper: 'Cragside Pass is closed until a keeper has earned the Brook Crest.'", openMsg: 'The boulders have been hauled aside. The road north to Cragside Pass is open!' },
+    up: (x) => ['crag1', { x: Math.max(16, Math.min(18, x - 5)), y: 47, dir: 'up' }],
     left: (y) => ['route4', { x: 54, y: Math.max(19, Math.min(21, y + 8)), dir: 'left' }],
     enc: { day: [['lotling', 1]], night: [['lotling', 1]] } },
 };
@@ -4312,7 +4316,7 @@ class Route extends World {
     this.initWorld(RW, RH);
     const R = this.R = buildRoute();
     const data = []; for (let y = 0; y < RH; y++) data.push(Array.from(R.tiles.slice(y * RW, y * RW + RW)));
-    {
+    if (RC.ascii) cragGround(this, R); else {
       if (RC.bog) bogTerrain(this);
       this.map = this.make.tilemap({ data, tileWidth: T, tileHeight: T });
       this.ground = this.map.createLayer(0, this.map.addTilesetImage('terrain', RC.bog ? 'terrain_bog' : 'terrain_x', T, T, 1, 2), 0, 0);
@@ -4330,7 +4334,7 @@ class Route extends World {
     const art = (f, x, y) => RC.bog && BOGSWAP[f] && !(f === 'tree_pine' && hash(x, y * 3) < .45) ? BOGSWAP[f] : ['objects', f];
     for (const b of R.border) { const [a, f] = art(b.kind, b.x, b.y); const im = this.add.image(b.x * T + 8, b.y * T + 15, a, f).setOrigin(.5, 1).setDepth(b.y * T + 15).setTint(RC.bog ? 0xa8b8a0 : 0xb8c8b0); this.tall.push(im); }
     this.gateSpr = [];
-    for (const d of R.deco) { const [a, f] = d.gate ? ['objects', d.f] : art(d.f, d.x, d.y); const im = this.add.image(d.x * T + 8, d.y * T + 15, a, f).setOrigin(.5, 1).setDepth(d.flat ? 2 : d.y * T + 15); if (d.tall) this.tall.push(im); if (d.gate) this.gateSpr.push(im); }
+    for (const d of R.deco) { const [a, f] = d.tex ? [d.tex, undefined] : d.gate ? ['objects', d.f] : art(d.f, d.x, d.y); const im = this.add.image(d.x * T + 8, d.y * T + 15, a, f).setOrigin(.5, 1).setDepth(d.flat ? 2 : d.y * T + 15); if (d.tall) this.tall.push(im); if (d.gate) this.gateSpr.push(im); }
     if (RC.bog) bogDressing(this, R);
     // a murky green haze over the bog until its own art arrives
     if (RC.murk && !RC.bog) { this.add.rectangle(0, 0, RW * T, RH * T, 0x2e4a2a, .22).setOrigin(0).setDepth(9e6 - 30); for (let i = 0; i < 14; i++) { const m = this.add.ellipse(hash(i, 3) * RW * T, hash(i, 9) * RH * T, 120, 40, 0xe8f0e0, .10).setDepth(9e6 - 29); this.tweens.add({ targets: m, x: m.x + 60, alpha: .04, duration: 6000 + i * 400, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); } }
@@ -4340,7 +4344,7 @@ class Route extends World {
     for (const b of RC.buildings || []) { const fr = b.repair && !bhDone(b.id) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
-      if (v.startsWith('__door:') || v === '__board') continue;
+      if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg')) continue;
       if (v.startsWith('__lever:')) {
         const on = !!sluice()[v.slice(8)];
         if (this.textures.exists('bog')) { this.add.image(x * T + 8, y * T + 16, 'bog', on ? 'lever_down' : 'lever_up').setOrigin(.5, 1).setDepth(y * T + 15); continue; }
@@ -4360,8 +4364,8 @@ class Route extends World {
     }
     this.trainers = [];
     for (const t of ROUTE_TRAINERS) {
-      const key = 'tr_' + t.kind;
-      for (let r = 0; r < 4; r++) { const k = `${key}_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers(key, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 7, repeat: -1 }); }
+      const key = 'tr_' + trArt(t.kind);
+      for (let r = 0; r < 4; r++) { const k = `tr_${t.kind}_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers(key, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 7, repeat: -1 }); }
       const spr = this.add.sprite(t.x * T + 8, t.y * T + 15, key, DIRS.indexOf(t.dir) * 4).setOrigin(.5, 1).setDepth(t.y * T + 15);
       this.shadow(spr, 12, 5);
       this.trainers.push({ ...t, spr, cx: t.x, cy: t.y, px: t.x * T + 8, py: t.y * T + 8 });
@@ -4376,7 +4380,7 @@ class Route extends World {
     updateHUD(); renderHotbar(); FX.set(S.weather, false); this.fadeIn();
     Sound.theme('route');
     S.visited = S.visited || {}; if (this.scene.key === 'route1') S.visited.route1 = S.visited.route1 || S.routeVisited;
-    if (!S.visited[this.scene.key]) { S.visited[this.scene.key] = 1; setTimeout(() => toast(RC.town ? `Welcome to ${RC.name}!` : `${RC.name}. Wild Fablemon hide in the long grass!`, 3000), 600); }
+    if (!S.visited[this.scene.key]) { S.visited[this.scene.key] = 1; if (!RC.quiet) setTimeout(() => toast(RC.town ? `Welcome to ${RC.name}!` : `${RC.name}. Wild Fablemon hide in the long grass!`, 3000), 600); }
     if (RC.town) Sound.theme('field');
   }
   onResize() { this.applyZoom(); renderHotbar(); }
@@ -4485,7 +4489,7 @@ class Route extends World {
       const [a, b, c, d] = RC.gate.area; for (let y = b; y <= d; y++) for (let x = a; x <= c; x++) this.R.blocked[y * RW + x] = 0;
       this.gateSpr.forEach(im => this.tweens.add({ targets: im, alpha: 0, y: im.y + 4, duration: 500, onComplete: () => im.destroy() })); this.gateSpr = [];
       ROUTE_SIGNS = { ...RC.signs }; if (RC.buildings) for (const bd of RC.buildings) ROUTE_SIGNS[(bd.cx + bd.door) + ',' + bd.by] = '__door:' + bd.id;
-      Sound.play('pick'); toast('The rockfall has been cleared. The way east to Mossmere Bog is open!', 3200);
+      Sound.play('pick'); toast(RC.gate.openMsg || 'The rockfall has been cleared. The way east to Mossmere Bog is open!', 3200);
     }
     const px = this.player.x, py = this.player.y;
     for (const s of this.tall) { if (Math.abs(s.x - px) > 40) { if (s.alpha !== 1) s.setAlpha(1); continue; } const behind = s.y > py + 2 && Math.abs(s.x - px) < s.displayWidth / 2 && py > s.y - s.displayHeight + 4; s.setAlpha(behind ? .35 : 1); }
@@ -4518,6 +4522,7 @@ class Route extends World {
     this.face(x, y);
     if (t.startsWith('__door:')) { bhDoor(this, t.slice(7)); return true; }
     if (t === '__board') { bhBoard(); return true; }
+    if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
     if (t.startsWith('__lever:')) {
       const id = t.slice(8), L = sluice(); L[id] = L[id] ? 0 : 1;
       const ch = RC.channels.map(c => c.dry(L)), was = RC.channels.map(c => { const o = { ...L, [id]: L[id] ? 0 : 1 }; return c.dry(o); });
@@ -4716,8 +4721,8 @@ async function bootGame() {
       this.load.atlas('town', snow.town || ASSET.town, ASSET.townJson);
       this.load.atlas('seasonal', ASSET.seasonal, ASSET.seasonalJson);
       this.load.atlas('houses', snow.houses || ASSET.houses, { frames: Object.fromEntries(Object.entries(ASSET.housesJson).map(([k, f]) => [k, { frame: { x: f.x, y: f.y, w: f.w, h: f.h } }])) });
-      for (const n of Object.keys(TRAINER_TYPES)) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
-      const BIG = { briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
+      for (const n of Object.keys(TRAINER_TYPES)) if (ASSET['tr_' + n]) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
+      const BIG = { briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, veinwyrm: 40, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
       for (const n of MON_ORDER) if (ASSET['mon_' + n]) this.load.spritesheet('mon_' + n, ASSET['mon_' + n], { frameWidth: BIG[n] || 28, frameHeight: BIG[n] || 28 });
       for (const n of ['bramble', 'marigold', ...VILL_IDS]) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);
@@ -4737,12 +4742,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES],
   });
   Sound.music(true);
 }
