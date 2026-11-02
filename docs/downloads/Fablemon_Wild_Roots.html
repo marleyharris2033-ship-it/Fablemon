@@ -2339,7 +2339,7 @@ const QUESTS = [
   { id: 'bog', name: 'Cross Mossmere Bog', hint: 'Head east from the middle of Brookside Lane, past the old rockfall. Beat all five keepers in the bog.', done: () => ['mb1', 'mb2', 'mb3', 'mb4', 'mb5'].every(beatTrainer), reward: { gold: 1500, items: { sturdy_charm: 3 } } },
   { id: 'fen', name: 'Solve Sluice Fen', hint: 'Past Mossmere Bog, the fen is cut up by flooded channels. Pull the old levers to drain a way through to the far side.', done: () => !!(S.visited && S.visited.fenDone), reward: { gold: 1500, items: { mon_treat: 2 } } },
   { id: 'brook', name: 'Earn the Brook Crest from Warden Delphine', hint: "Cross Sluice Fen to Brookholt. Fund two repairs on the town's notice board, then challenge Delphine at the Lock House. Her Tide team is level 20–24.", done: () => S.crests && S.crests.brook, reward: { gold: 1500, items: { tonic: 3 } } },
-  { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Fund and finish any ${elderNeed()} repairs on Smallroot's notice board, whichever you like (${elderDone()}/${elderNeed()} so far). Then tell Bramble.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
+  { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Have ${elderNeed()} buildings restored in Smallroot, any you like. Ones you've already done count (${elderDone()}/${elderNeed()} so far). Then tell Bramble. The road north of Brookholt stays closed until you do.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
   { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
@@ -3523,20 +3523,25 @@ const Talk = (() => {
 })();
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-const elderNeed = () => Math.min(3, Object.keys(PROJECTS).length - (S.flags.elderBase || []).length);
-const elderDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k] && !(S.flags.elderBase || []).includes(k)).length;
+const elderNeed = () => 3;
+const elderDone = () => Math.min(3, smallrootDone());   // buildings restored earlier count too
 function elderLines(B) {
   const f = S.flags;
   if (!(S.crests && S.crests.brook) || f.elderThanked) return null;
   if (!f.elderQ) {
-    f.elderQ = 1; f.elderBase = Object.keys(S.town.done).filter(k => PROJECTS[k]);
-    if (elderNeed() <= 0) { f.elderThanked = 1; return [B("Two Wardens' Crests! And you've already put the whole town back together. I've nothing left to ask of you, {name}.", 0)]; }
+    f.elderQ = 1;
+    if (elderDone() >= elderNeed()) { f.elderThanked = 1; return [
+      B("{name}! Two Wardens' Crests already? Your grandfather would be bursting with pride.", 0),
+      B("I was going to ask you to help bring Smallroot back to life before you head off into the mountains. But look around!", 2),
+      B(`You've already restored ${smallrootDone()} buildings. Folk are starting to write asking if they can come home.`, 3),
+      B("Take these, with the town's thanks. And go carefully up Cragside Pass. I've sent word to Brookholt to clear the road for you.", 0),
+    ]; }
     return [
       B("{name}! Word travels fast. Two Wardens' Crests already? Your grandfather would be bursting with pride.", 0),
       B("Brookholt, the fen, the bog... You've seen how other towns get by. It's got me thinking about Smallroot."),
       B("Folk are starting to ask about coming back. But they'll only come if there's something to come back to.", 2),
-      B(`So here's my ask. Restore ${elderNeed()} more buildings in town. Any ones you like, you know best what we need.`),
-      B("Pick from the notice board by the Hearthroot. Come and tell me when they're done, and I'll make it worth your while.", 0),
+      B(`So here's my ask, before you head off into the mountains. Help me get ${elderNeed()} buildings in town standing again. Any ones you like, and the ones you've already done count. That's ${elderDone()} so far.`),
+      B("Pick from the notice board by the Hearthroot. Come and tell me when it's done, and I'll send word to Brookholt to clear the old mountain road for you.", 0),
     ];
   }
   if (elderDone() < elderNeed()) return [B(pick([`How are the repairs coming along? That's ${elderDone()} of ${elderNeed()} so far. Any you like, mind!`, `${elderDone()} of ${elderNeed()} done. The notice board by the Hearthroot has the rest.`, `Every building we bring back, the Hearthroot stands a bit taller. ${elderDone()} of ${elderNeed()} so far!`]), 1)];
@@ -3545,6 +3550,7 @@ function elderLines(B) {
     B(`${elderNeed()} buildings, all standing proud again! Look at the place, {name}.`, 0),
     B("I had a letter this morning from a family in the city asking if there's room for them. Can you believe it?", 3),
     B("Here, take these. Gold from the town fund, and a few things from my old travelling days. You've earned every bit.", 0),
+    B("And I've sent word to Brookholt. They'll have the boulders off the road to Cragside Pass by the time you get there.", 2),
   ];
 }
 function brambleLines() {
@@ -4883,7 +4889,7 @@ const ROUTES = {
     npcs: [{ kind: 'delphine', x: 38, y: 11, dir: 'down', door: 'bh_lock', hideIf: () => lockHouseOpen() }],   // once the lock house opens she waits inside
     trainers: [],
     open: [[0, 10, 3, 15], [20, 0, 24, 3]], clear: [[0, 9, 44, 27], [19, 0, 25, 9]], spawn: { x: 1, y: 12, dir: 'right' },
-    gate: { area: [21, 0, 23, 1], sign: [20, 3], ok: () => !!(S.crests && S.crests.brook), text: "Boulders block the old mountain road north. A note from the lock-keeper: 'Cragside Pass is closed until a keeper has earned the Brook Crest.'", openMsg: 'The boulders have been hauled aside. The road north to Cragside Pass is open!' },
+    gate: { area: [21, 0, 23, 1], sign: [20, 3], ok: () => !!(S.crests && S.crests.brook && S.flags.elderThanked), get text() { return S.crests && S.crests.brook ? "Boulders block the old mountain road north. A note from the lock-keeper: 'Road crew standing by. We'll clear it as soon as Elder Bramble of Smallroot sends word.'" : "Boulders block the old mountain road north. A note from the lock-keeper: 'Cragside Pass is closed until a keeper has earned the Brook Crest.'"; }, openMsg: 'The boulders have been hauled aside. The road north to Cragside Pass is open!' },
     up: (x) => ['crag1', { x: Math.max(16, Math.min(18, x - 5)), y: 47, dir: 'up' }],
     left: (y) => ['route4', { x: 54, y: Math.max(19, Math.min(21, y + 8)), dir: 'left' }],
     enc: { day: [['lotling', 1]], night: [['lotling', 1]] } },
