@@ -23,6 +23,7 @@ const isBirthday = (id, day = S.day) => { const b = BDAY[id], sd = seasonDay(day
 const bdayText = id => BDAY[id] ? `${BDAY[id][1]} ${SEASONS[BDAY[id][0]]}` : '?';
 const GIFT_PTS = { love: 80, like: 45, neutral: 20, hate: -40 };
 function tasteOf(id, item) {
+  item = (ITEMS[item] && ITEMS[item].qbase) || item;   // a gold turnip is still a turnip
   const t = TASTE[id] || { love: [], like: [], hate: [] };
   return t.love.includes(item) ? 'love' : t.hate.includes(item) ? 'hate' : (t.like.includes(item) || (VILL[id].likes || []).includes(item)) ? 'like' : 'neutral';
 }
@@ -168,6 +169,7 @@ function socialNight(bits) {
   const tw = S.town, sd = seasonDay();
   for (const id of VILL_IDS) if (tw.met[id] && isBirthday(id)) bits.push(`🎂 It's ${VILL[id].name}'s birthday today`);
   if (sd.wd === 'Mon') {
+    respawnPickups(); bits.push('🌿 New items have turned up along the routes');
     const got = [];
     for (const [id, w] of Object.entries(WEEKLY)) {
       if (!hasPerk(id)) continue;
@@ -436,7 +438,7 @@ function seasonDress(sc) {
   const si = seasonIdx(S.day), P = SEASON_PROPS[si]; let mw, mh, ok, spots = [];
   if (key === 'farm') {
     mw = W; mh = H;
-    ok = (x, y) => { const i = y * W + x, k = x + ',' + y; return sc.passable(x, y) && !farm.dirtish[i] && !farm.waterish[i] && !S.tilled[k] && !S.paths[k] && Math.hypot(x - DOOR.x, y - DOOR.y) > 2.5; };
+    ok = (x, y) => { const i = y * W + x, k = x + ',' + y; return sc.passable(x, y) && !farm.dirtish[i] && !farm.waterish[i] && !S.tilled[k] && !S.paths[k] && !inGreenhouse(x, y) && Math.hypot(x - DOOR.x, y - DOOR.y) > 2.5; };
     spots = [[DOOR.x - 4, DOOR.y + 2], [DOOR.x + 4, DOOR.y + 3]];
   } else if (key === 'town') {
     mw = TW; mh = TH; ok = (x, y) => sc.passable(x, y) && !sc.town.pave[y * TW + x];
@@ -523,4 +525,5 @@ function applyItemArt() {
   const A = ASSET.itemart; if (!A) return;
   for (const [k, v] of Object.entries(A.objs)) SAP_CANVAS[k] = rgbaCanvas(v);
   for (const [k, v] of Object.entries(A.icons)) { const c = rgbaCanvas(v); ICONS[k] = c.toDataURL(); ICON_CANVAS[k] = c; }
+  if (typeof applyWinterArt === 'function') applyWinterArt();
 }

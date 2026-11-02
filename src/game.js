@@ -748,6 +748,18 @@ function updateHUD() {
   $('night').style.opacity = d;
 }
 
+// merge every stack, then tidy the main backpack (the hotbar stays where you put things)
+function sortBackpack() {
+  const sl = inv.slots;
+  for (let i = 0; i < sl.length; i++) {
+    const s = sl[i]; if (!s) continue; const max = ITEMS[s.id].stack || 99;
+    for (let j = i + 1; j < sl.length && s.n < max; j++) { const t = sl[j]; if (t && t.id === s.id) { const k = Math.min(max - s.n, t.n); s.n += k; t.n -= k; if (!t.n) sl[j] = null; } }
+  }
+  const cat = id => { const it = ITEMS[id]; return it.tool ? 0 : it.seed ? 1 : it.qbase || Object.values(CROPS).some(c => c.item === id) ? 2 : it.eat || it.heal ? 3 : it.place ? 5 : 4; };
+  const rest = sl.slice(12).filter(Boolean).sort((a, b) => cat(a.id) - cat(b.id) || ITEMS[a.id].name.localeCompare(ITEMS[b.id].name));
+  for (let i = 12; i < sl.length; i++) sl[i] = rest[i - 12] || null;
+  inv.emit();
+}
 function openBag() {
   let pick = -1, drag = null;
   const gs = Math.max(24, Math.min(42, Math.floor((Math.min(window.innerWidth * .94, 600) - 52) / 12) - 2));
@@ -755,9 +767,9 @@ function openBag() {
     const sl = inv.slots;
     const hot = sl.slice(0, 12).map((s, i) => slotHTML(i, s, (i === pick ? 'pick ' : '') + (i === S.sel ? 'sel' : ''))).join('');
     const rest = sl.slice(12).map((s, i) => slotHTML(i + 12, s, i + 12 === pick ? 'pick' : '')).join('');
-    const info = pick >= 0 && sl[pick] ? `<p><b>${ITEMS[sl[pick].id].name}</b>: ${ITEMS[sl[pick].id].desc}</p>${ITEMS[sl[pick].id].eat ? `<div class="row"><button class="btn gold" data-a="eat">Eat it (+${ITEMS[sl[pick].id].eat} energy)</button></div>` : ''}` : '<p>Drag items between slots, or tap one then tap where it should go. The top row is your hotbar. Drag onto the bin to throw an item away.</p>';
+    const info = pick >= 0 && sl[pick] ? `<p><b>${ITEMS[sl[pick].id].name}</b>: ${ITEMS[sl[pick].id].desc}${ITEMS[sl[pick].id].sell && !/Sells for/.test(ITEMS[sl[pick].id].desc) ? ` <small>(sells for ${ITEMS[sl[pick].id].sell}g)</small>` : ''}</p>${ITEMS[sl[pick].id].eat ? `<div class="row"><button class="btn gold" data-a="eat">Eat it (+${ITEMS[sl[pick].id].eat} energy)</button></div>` : ''}` : '<p>Drag items between slots, or tap one then tap where it should go. The top row is your hotbar. Drag onto the bin to throw an item away.</p>';
     return `<div style="--s:${gs}px"><div class="grid hot">${hot}</div><div class="grid">${rest}</div></div>
-      <div class="trashrow"><div class="slot trash" data-trash="1" title="Trash"><img src="${ICONS.trash}"></div></div>${info}`;
+      <div class="trashrow"><button class="btn" data-a="sort" style="margin-right:auto">↕ Sort and stack</button><div class="slot trash" data-trash="1" title="Trash"><img src="${ICONS.trash}"></div></div>${info}`;
   };
   const rerender = () => { $('mBody').innerHTML = render(); };
   const trash = i => {
@@ -765,7 +777,10 @@ function openBag() {
     if (ITEMS[s.id].tool) { Sound.play('error'); toast("You'll need that. Tools can't be thrown away."); return; }
     inv.slots[i] = null; inv.emit(); Sound.play('crunch'); toast(`Threw away ${s.n} ${ITEMS[s.id].name}`);
   };
-  openModal('Backpack', render(), a => { if (a === 'eat' && pick >= 0) { eatHeld(pick); if (!inv.slots[pick]) pick = -1; rerender(); } });
+  openModal('Backpack', render(), a => {
+    if (a === 'eat' && pick >= 0) { eatHeld(pick); if (!inv.slots[pick]) pick = -1; rerender(); }
+    if (a === 'sort') { sortBackpack(); pick = -1; Sound.play('pop'); rerender(); renderHotbar(); }
+  });
   const body = $('mBody');
   const down = e => {
     const el = e.target.closest('.slot'); if (!el) return;
@@ -863,19 +878,21 @@ function openTrough(o) {
   });
 }
 function openChest(o) {
-  const render = () => `<p><b>Chest</b> <small>Tap an item to move it across.</small></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="out" data-i=')).join('')}</div>
+  const render = () => `<p style="display:flex;align-items:center;gap:8px"><b>Chest</b> <small style="flex:1">Tap an item to move it across.</small><button class="btn" data-a="qs" style="padding:3px 10px;font-size:13px">⇩ Quick stack</button></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="out" data-i=')).join('')}</div>
     <p style="margin-top:10px"><b>Backpack</b></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${inv.slots.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="in" data-i=')).join('')}</div>`;
   openModal('Chest', render(), (a, d) => {
     const i = +d.i;
     if (a === 'out') { const s = o.items[i]; if (!s) return; const left = inv.add(s.id, s.n); o.items[i] = left ? { id: s.id, n: left } : null; if (left) toast('Your backpack is full.'); }
-    if (a === 'in') {
+    const put = (i, quiet) => {
       const s = inv.slots[i]; if (!s) return;
       let n = s.n;
       for (const t of o.items) if (t && t.id === s.id && n) { const add = Math.min(n, ITEMS[s.id].stack - t.n); t.n += add; n -= add; }
       for (let j = 0; j < o.items.length && n; j++) if (!o.items[j]) { const add = Math.min(n, ITEMS[s.id].stack); o.items[j] = { id: s.id, n: add }; n -= add; }
-      if (n) { s.n = n; toast('The chest is full.'); } else inv.slots[i] = null;
-      inv.emit();
-    }
+      if (n) { s.n = n; if (!quiet) toast('The chest is full.'); } else inv.slots[i] = null;
+    };
+    if (a === 'in') { put(i); inv.emit(); }
+    // quick stack: everything in the backpack that this chest already holds goes in
+    if (a === 'qs') { const have = new Set(o.items.filter(Boolean).map(t => t.id)); let k = 0; inv.slots.forEach((s, j) => { if (s && have.has(s.id) && !ITEMS[s.id].tool) { put(j, true); k++; } }); inv.emit(); toast(k ? 'Stacked matching items into the chest.' : 'Nothing in your backpack matches this chest.', 1600); }
     renderHotbar(); $('mBody').innerHTML = render();
   });
 }
@@ -917,6 +934,10 @@ function controlsHTML() {
     <label class="opt"><input type="radio" name="ctl" data-a="ctl" data-v="joystick" ${m === 'joystick' ? 'checked' : ''}> Joystick and action button</label>
     <label class="opt"><input type="radio" name="ctl" data-a="ctl" data-v="tap" ${m === 'tap' ? 'checked' : ''}> Tap to go: tap the ground to walk, tap things to use your tool, hold to keep swinging</label>
     <label class="opt"><input type="checkbox" data-a="auto" ${opts.autoTool ? 'checked' : ''}> Auto-switch to the right tool</label>
+    <p><b>Battle speed</b></p>
+    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="1" ${(opts.bspeed || 1) === 1 ? 'checked' : ''}> Normal</label>
+    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="1.7" ${opts.bspeed === 1.7 ? 'checked' : ''}> Fast</label>
+    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="3" ${opts.bspeed === 3 ? 'checked' : ''}> Very fast</label>
     <p><b>Sound</b></p>
     <label class="opt">Music <input type="range" min="0" max="1" step=".05" value="${opts.music}" data-a="music"></label>
     <label class="opt">Sound effects <input type="range" min="0" max="1" step=".05" value="${opts.sfx}" data-a="sfx"></label>`;
@@ -924,6 +945,7 @@ function controlsHTML() {
 function handleSetting(a, d, el) {
   if (a === 'ctl') setControls(d.v);
   if (a === 'auto') { opts.autoTool = el.checked; saveOpts(); }
+  if (a === 'bspeed') { opts.bspeed = +d.v; saveOpts(); toast(['', 'Normal', '', 'Very fast'][Math.round(opts.bspeed)] || 'Fast', 900); }
   if (a === 'music') { opts.music = +el.value; Sound.volumes(); saveOpts(); }
   if (a === 'sfx') { opts.sfx = +el.value; Sound.volumes(); saveOpts(); }
 }
@@ -954,7 +976,7 @@ function openMenu() {
   openModal('Menu', `${controlsHTML()}
     <p style="font-size:13px;opacity:.8">Keyboard: WASD or arrows to walk, Space to use, 1 to 0 or the mouse wheel for the hotbar, I for the backpack, C for crafting.</p>
     <p>The game also saves each night when you go to bed. ${Cloud.ok() ? 'Saves are backed up to your claude.ai account, so they survive updates and work on your other devices.' : 'Saves are kept in this browser.'}</p>
-    <div class="row" style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-a="house">🏡 Upgrade your house</button><button class="btn" data-a="move">✋ Move things</button><button class="btn" data-a="ctledit">🕹️ Move and resize HUD</button><button class="btn" data-a="friends">💛 Friends</button><button class="btn" data-a="cal">📅 Calendar</button></div>
+    <div class="row" style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-a="house">🏡 Upgrade your house</button><button class="btn" data-a="move">✋ Move things</button><button class="btn" data-a="ctledit">🕹️ Move and resize HUD</button><button class="btn" data-a="friends">💛 Friends</button><button class="btn" data-a="cal">📅 Calendar</button><button class="btn" data-a="map">🗺️ Map</button></div>
     <div class="row"><button class="btn gold" data-a="save">Save game</button><button class="btn" data-a="export">Back up to a file</button><button class="btn" data-a="title">Quit to title</button></div>`, (a, d, el) => {
     handleSetting(a, d, el);
     if (a === 'save') { closeModal(); manualSave(); }
@@ -964,6 +986,7 @@ function openMenu() {
     if (a === 'ctledit') { closeModal(); ctlEdit(true); }
     if (a === 'friends') openFriends();
     if (a === 'cal') openCalendar();
+    if (a === 'map') openMap();
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
@@ -1872,6 +1895,7 @@ class Farm extends World {
     this.cottage = S.house ? this.add.image(Math.round(hf[4]), DOOR.y * T + 2, 'houses', 'house' + S.house).setOrigin(.5, 1).setDepth(DOOR.y * T) : this.add.image(DOOR.x * T + 8, DOOR.y * T + 2, 'objects', 'cottage').setOrigin(.5, 1).setDepth(DOOR.y * T);
     this.tall.push(this.cottage);
     this.add.image((BIN.x + 1) * T, BIN.y * T + 15, 'objects', 'shipping_bin').setOrigin(.5, 1).setDepth(BIN.y * T + 15);
+    drawGreenhouses(this);
     this.mailbox = this.add.image(MAILBOX.x * T + 8, MAILBOX.y * T + 15, 'mailbox').setOrigin(.5, 1).setDepth(MAILBOX.y * T + 15);
     this.mailFlag = this.add.text(MAILBOX.x * T + 8, MAILBOX.y * T - 12, '!', { fontFamily: 'ui-rounded, Nunito, system-ui, sans-serif', fontStyle: 'bold', fontSize: '14px', color: '#ffe35a', stroke: '#2a1e1a', strokeThickness: 3, resolution: 12 }).setOrigin(.5, 1).setDepth(9e6);
     this.tweens.add({ targets: this.mailFlag, y: '-=3', yoyo: true, repeat: -1, duration: 500 });
@@ -1895,6 +1919,7 @@ class Farm extends World {
     this.makePlayer(sp);
     this.spawnRoamers();
     this.ghostRect = this.add.rectangle(0, 0, 16, 16).setOrigin(0).setDepth(9e6 - 3).setVisible(false);
+    this.sprinkRect = this.add.rectangle(0, 0, 16, 16, 0x6ab0ff, .16).setOrigin(0).setStrokeStyle(1, 0xbfe2ff, .8).setDepth(9e6 - 4).setVisible(false);
     this.ghostImg = this.add.image(0, 0, 'objects', 'fence_end').setOrigin(.5, 1).setAlpha(.6).setDepth(9e6 - 4).setVisible(false);
 
     const cam = this.cameras.main;
@@ -1963,6 +1988,8 @@ class Farm extends World {
   updateGhost() {
     const h = held(), it = h && ITEMS[h.id];
     const t = it && !this.p.moving ? this.ghostTarget() : null;
+    const spr = t && it.place === 'obj' && /^sprinkler/.test(it.obj) ? 1 + (it.lv || 0) : 0;
+    if (spr) this.sprinkRect.setSize((2 * spr + 1) * T, (2 * spr + 1) * T).setPosition((t.x - spr) * T, (t.y - spr) * T).setVisible(true); else if (this.sprinkRect) this.sprinkRect.setVisible(false);
     if (!t || !(it.place || it.seed || it.tool || it.fert)) { this.ghostRect.setVisible(false); this.ghostImg.setVisible(false); return; }
     let ok, show = true;
     if (it.place) ok = this.canPlace(t.x, t.y, it.place, objW(it));
@@ -1974,7 +2001,7 @@ class Farm extends World {
     this.ghostRect.setSize(16 * (it.place ? objW(it) : 1), 16).setPosition(t.x * T, t.y * T).setVisible(true).setStrokeStyle(1, show ? col : 0xfffbe8, show ? .95 : .5).setFillStyle(col, show ? .18 : 0);
     if (it.place === 'obj') { const [key, frame] = this.objTex(it.obj); this.ghostImg.setTexture(key, frame).setPosition(t.x * T + objW(it) * 8, t.y * T + 16).setVisible(true); }
     else if (it.place && it.place !== 'path') this.ghostImg.setTexture('objects', it.place === 'gate' ? 'gate_mid' : 'fence_end').setPosition(t.x * T + 8, t.y * T + 15).setVisible(true);
-    else if (it.seed) this.ghostImg.setTexture('objects', CROPS[it.seed].frames[0]).setPosition(t.x * T + 8, t.y * T + 15).setVisible(true);
+    else if (it.seed) { const f0 = CROPS[it.seed].frames[0]; if (f0.startsWith('cv:')) { const ck = 'cv_' + f0.slice(3); if (!this.textures.exists(ck)) this.textures.addCanvas(ck, SAP_CANVAS[f0.slice(3)]); this.ghostImg.setTexture(ck); } else this.ghostImg.setTexture('objects', f0); this.ghostImg.setPosition(t.x * T + 8, t.y * T + 15).setVisible(true); }
     else this.ghostImg.setVisible(false);
   }
   /* ---------- targets */
@@ -2180,7 +2207,12 @@ class Farm extends World {
     this.face(x, y);
     const k = x + ',' + y, tl = S.tilled[k];
     if (tl && tl.crop && tl.crop.dead) { delete tl.crop; Sound.play('rustle'); this.drawTilled(x, y); toast('You cleared the withered crop.', 1200); return; }
-    if (tl && cropRipe(tl.crop)) return this.harvest(x, y);
+    if (tl && cropRipe(tl.crop)) {
+      const hh = held(), r = hh && hh.id === 'scythe' ? [0, 1, 1, 2][toolTier('scythe')] : 0;
+      if (!r) return this.harvest(x, y);
+      for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const t2 = S.tilled[(x + dx) + ',' + (y + dy)]; if (t2 && cropRipe(t2.crop)) this.harvest(x + dx, y + dy); }
+      return;
+    }
     const h = held(); if (!h) return;
     const it = ITEMS[h.id];
     if (it.eat) return eatHeld();
@@ -2205,12 +2237,12 @@ class Farm extends World {
     if (it.fert) {
       if (!tl) { Sound.play('error'); return toast('Use fertiliser on tilled soil.'); }
       if (tl.fert) return toast('This soil is already fertilised.', 1200);
-      tl.fert = 1; inv.removeAt(S.sel, 1); renderHotbar(); this.drawTilled(x, y); Sound.play('plant'); this.chips(x * T + 8, y * T + 12, 0x5e3b20); return;
+      tl.fert = 1; tl.fq = 1; inv.removeAt(S.sel, 1); renderHotbar(); this.drawTilled(x, y); Sound.play('plant'); this.chips(x * T + 8, y * T + 12, 0x5e3b20); return;
     }
     if (it.seed) {
       if (!tl) { Sound.play('error'); return toast('Seeds go in tilled soil. Use your hoe first.'); }
       if (tl.crop) return toast('Something is already growing there.');
-      if (!CROPS[it.seed].seasons.includes(seasonIdx(S.day))) { Sound.play('error'); return toast(`${ITEMS[h.id].name} won't grow in ${seasonDay().season.toLowerCase()}.`); }
+      if (!inGreenhouse(x, y) && !CROPS[it.seed].seasons.includes(seasonIdx(S.day))) { Sound.play('error'); return toast(`${ITEMS[h.id].name} won't grow in ${seasonDay().season.toLowerCase()}.`); }
       const C = CROPS[it.seed], edge = waterEdge(x, y), soggy = edge || tl.bog;
       if (tl.bog && !C.bog) { Sound.play('error'); return toast(`This soil is waterlogged with Bog Peat. Only bog crops grow here: wild rice, cranberries and lotus.`, 3200); }
       if (C.edge && !edge) { Sound.play('error'); return toast(`${ITEMS[h.id].name} only grow right next to the pond.`, 2600); }
@@ -2330,10 +2362,11 @@ class Farm extends World {
     openModal('A letter', `<div class="letter">${letterText()}</div>${extra}`);
   }
   harvest(x, y) {
-    const k = x + ',' + y, c = S.tilled[k].crop, C = CROPS[c.type];
-    const n = Math.random() < .1 ? 2 : 1;
-    delete S.tilled[k].crop; this.drawTilled(x, y);
-    this.giveDrops({ [C.item]: n }, x * T + 8, y * T + 4);
+    const k = x + ',' + y, tl = S.tilled[k], c = tl.crop, C = CROPS[c.type];
+    const n = Math.random() < .1 ? 2 : 1, q = rollQuality(tl), id = q && QUAL[C.item] ? QUAL[C.item][q - 1] : C.item;
+    delete tl.crop; delete tl.fq; this.drawTilled(x, y);
+    if (q) toast(`${q === 2 ? '🌟 Gold' : '⭐ Silver'} quality ${ITEMS[C.item].name}!`, 1400);
+    this.giveDrops({ [id]: n }, x * T + 8, y * T + 4);
   }
   openBin() {
     const render = () => {
@@ -3429,16 +3462,18 @@ const Battle = (() => {
   }
   addEventListener('resize', layout);
   el.addEventListener('pointerdown', e => { if (tapNext && !e.target.closest('button')) { const f = tapNext; tapNext = null; f(); } });
+  const SPD = () => opts.bspeed || 1;   // battle speed setting: 1 normal, 1.7 fast, 3 very fast
   function say(t, ms = 1400) {
     q('bmsg').textContent = t; q('bmenu').innerHTML = '';
-    return new Promise(r => { let done = false; const fin = () => { if (done) return; done = true; tapNext = null; r(); }; tapNext = fin; setTimeout(fin, ms); });
+    return new Promise(r => { let done = false; const fin = () => { if (done) return; done = true; tapNext = null; r(); }; tapNext = fin; setTimeout(fin, ms / SPD()); });
   }
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const sleep = ms => new Promise(r => setTimeout(r, ms / SPD()));
   function box(side) {
     const m = side === 'me' ? B.me : B.foe, mx = monStat(m, 'hp'), v = Math.max(0, m.hp), pc = v / mx;
     const xp = side === 'me' ? `<div class="bxp"><i style="width:${100 * Math.max(0, Math.min(1, (m.xp - m.lv ** 3) / (xpNext(m) - m.lv ** 3)))}%"></i></div>` : '';
     const caught = side === 'foe' && S.caught[m.sp] ? '<span title="Befriended before" style="color:#c0392b">♥</span> ' : '';
-    const stc = m.status ? `<span class="tchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '';
+    const stc = (m.status ? `<span class="tchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '')
+      + Object.entries((B.st || {})[side] || {}).filter(([, n]) => n).map(([k, n]) => `<span class="tchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', spd: 'Spd' }[k] || k}${n > 0 ? '▲' : '▼'}${Math.abs(n) > 1 ? Math.abs(n) : ''}</span>`).join('');
     q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
   }
   function sprites() {
@@ -3459,7 +3494,9 @@ const Battle = (() => {
       if (a === 'fight') {
         q('bmsg').textContent = 'Choose a move.';
         if (B.me.moves.every(id => ppLeft(B.me, id) <= 0)) { await say(`${monName(B.me)} has no moves left to use!`, 1100); return { kind: 'move', id: 'struggle' }; }
-        const mv = await menu(B.me.moves.map(id => { const M = MOVES[id], pp = ppLeft(B.me, id); return { html: `${M.name}<small>${M.type} · ${moveTag(id)} · ${pp}/${ppMax(id)}</small>`, v: id, off: pp <= 0, style: `border-color:${TYPES[M.type]}` }; }).concat([{ html: 'Back', v: null }]));
+        const mv = await menu(B.me.moves.map(id => { const M = MOVES[id], pp = ppLeft(B.me, id), ef = M.pow ? effOn(M.type, B.foe.sp) : 1;
+          const hint = !M.pow ? '' : ef === 0 ? '<b class="eff no">✕ No effect</b>' : ef > 1 ? `<b class="eff up">▲ Super effective</b>` : ef < 1 ? '<b class="eff dn">▼ Not very effective</b>' : '';
+          return { html: `${M.name}<small>${M.type} · ${moveTag(id)} · ${pp}/${ppMax(id)}</small>${hint}`, v: id, off: pp <= 0, style: `border-color:${TYPES[M.type]}` }; }).concat([{ html: 'Back', v: null }]));
         if (mv) return { kind: 'move', id: mv };
       }
       if (a === 'bag') {
@@ -3573,14 +3610,19 @@ const Battle = (() => {
       let dmg;
       if (M.fixed) dmg = att.lv;
       else {
-        const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] ? 1.5 : 1; if (crit > 1) crits++;
+        const bondCrit = side === 'me' ? Math.min(20, att.bond || 0) / 400 : 0;   // up to +5% for a close bond
+        const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] + bondCrit ? 1.5 : 1; if (crit > 1) crits++;
         const pw = M.pow * (M.hex && def.status ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
         const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : 'atk') * (att.status === 'brn' && !M.useDef ? .5 : 1) / stat(defSide, 'def')) / 50) + 2;
         dmg = Math.max(1, Math.floor(base * stab * e * crit * wxMul(M.type) * (.85 + Math.random() * .15)));
       }
       Sound.play('hit'); await anim(spr(defSide), 'hurt', n > 1 ? 260 : 450);
-      def.hp = Math.max(0, def.hp - dmg); total += dmg; box(defSide); await sleep(n > 1 ? 120 : 450);
+      def.hp = Math.max(0, def.hp - dmg); total += dmg;
+      // a Fablemon with a strong bond (10+) may hang on at 1 HP, once per battle
+      if (defSide === 'me' && def.hp === 0 && (def.bond || 0) >= 10 && !(B.hung = B.hung || {})[def.uid] && Math.random() < def.bond / 100) { def.hp = 1; B.hung[def.uid] = 1; B.hungNow = 1; }
+      box(defSide); await sleep(n > 1 ? 120 : 450);
     }
+    if (B.hungNow) { B.hungNow = 0; await say(`${monName(def)} hung on to stay with you!`, 1200); }
     if (n > 1) await say(`Hit ${k} time${k > 1 ? 's' : ''}!`, 900);
     if (crits) await say(crits > 1 ? `${crits} critical hits!` : 'A critical hit!', 900);
     if (e > 1) await say("It's super effective!", 1000); else if (e < 1) await say("It's not very effective...", 1000);
@@ -4393,9 +4435,9 @@ function nightly(passedOut) {
   S.weather = S.tomorrow; S.tomorrow = rollWeather(S.day + 1);
   const si = seasonIdx(S.day), newSeason = si !== before;
   let withered = 0;
-  for (const t of Object.values(S.tilled)) {
+  for (const [tk, t] of Object.entries(S.tilled)) {
     if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } }
-    if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].seasons.includes(si)) { t.crop.dead = true; withered++; }
+    if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
     t.w = isWet(S.weather) || t.bog ? 1 : 0;
   }
   let grown = 0;

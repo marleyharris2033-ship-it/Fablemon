@@ -63,7 +63,7 @@ function villChat(id, after, door) {
   if (!tw.talked[id]) { tw.talked[id] = 1; addFP(id, 20); }
   tw.met[id] = 1;
   if (!first && !door) { const ev = nextHeartEvent(id); if (ev) return playHeartEvent(id, ev, after); }
-  const lines = first ? [L(v.hello, 0)] : isBirthday(id) ? [L("It's my birthday today! Everyone's been so kind.", 0)] : [L(pick(v.lines), Math.random() < .5 ? 0 : 1)];
+  const lines = first ? [L(v.hello, 0)] : isBirthday(id) ? [L("It's my birthday today! Everyone's been so kind.", 0)] : [L(seasonalLine(id) || pick(v.lines), Math.random() < .5 ? 0 : 1)];
   const h = held();
   if (!door && !first && giftable(h)) {
     const a1 = after;
@@ -114,10 +114,11 @@ const TOOL_FX = {
   axe: ['Chops harder: {h} damage per swing.', t => ({ h: t + 1 })],
   hoe: ['Tills {h} tile{s} in a line.', t => ({ h: t + 1, s: t ? 's' : '' })],
   can: ['Holds {c} water and waters {h} tile{s} in a line.', t => ({ c: [40, 60, 90, 130][t], h: t + 1, s: t ? 's' : '' })],
+  scythe: ['Harvests ripe crops in a {h} square.', t => ({ h: ['single', '3×3', '3×3', '5×5'][t] })],
 };
 const toolTier = id => (S.tools && S.tools[id]) || 0;
 const fx = (id, t) => { const [txt, f] = TOOL_FX[id], v = f(t); return txt.replace(/\{(\w)\}/g, (_, k) => v[k]); };
-function applyToolNames() { for (const id of Object.keys(TOOL_FX)) { const base = { pickaxe: 'Pickaxe', axe: 'Axe', hoe: 'Hoe', can: 'Watering Can' }[id]; ITEMS[id].name = (toolTier(id) ? TOOL_TIERS[toolTier(id)] + ' ' : '') + base; } }
+function applyToolNames() { for (const id of Object.keys(TOOL_FX)) { const base = { pickaxe: 'Pickaxe', axe: 'Axe', hoe: 'Hoe', can: 'Watering Can', scythe: 'Scythe' }[id]; ITEMS[id].name = (toolTier(id) ? TOOL_TIERS[toolTier(id)] + ' ' : '') + base; } }
 const canMax = () => [40, 60, 90, 130][toolTier('can')];
 function svcSmith() {
   const render = () => {
@@ -146,9 +147,11 @@ const carpenterDiscount = () => S.town && S.town.done.carpenter ? .75 : 1;
 function svcCarpenter() {
   const render = () => `<p>With Robin in town, every recipe that uses wood needs a quarter less, and your ranch and house upgrades cost 15% less gold.</p>
     <div class="mlist"><div class="shoprow"><img src="${iconFor('wood')}"><div class="g"><b>Bundle of wood ×50</b><small>Seasoned timber, ready to use.</small></div><button class="btn gold" data-a="wood" ${S.gold < friendPrice(300) ? 'disabled' : ''}>${friendPrice(300)}g</button></div>
+    <div class="shoprow"><img src="${ICONS.greenhouse || iconFor('wood')}"><div class="g"><b>Build a greenhouse</b><small>A 3×3 glass greenhouse for your farm. Anything planted inside grows in any season. ${GH_COST.gold.toLocaleString()}g, ${GH_COST.cost.wood} wood and ${GH_COST.cost.stone} stone.</small></div><button class="btn gold" data-a="gh">Choose a spot</button></div>
     <div class="shoprow"><img src="${iconFor('wood')}"><div class="g"><b>Sell wood</b><small>Robin buys timber at 4g each. You have ${inv.count('wood')}.</small></div><button class="btn" data-a="sell" ${inv.count('wood') < 10 ? 'disabled' : ''}>Sell 10</button></div></div>`;
   openModal("Robin's Workshop", render(), a => {
     if (a === 'wood') buy('wood', friendPrice(300), 50);
+    if (a === 'gh') return buildGreenhouse();
     if (a === 'sell') { if (inv.remove('wood', 10)) { S.gold += 40; Sound.play('coin'); updateHUD(); renderHotbar(); } }
     $('mBody').innerHTML = render();
   });
