@@ -878,8 +878,13 @@ function openTrough(o) {
   });
 }
 function openChest(o) {
-  const render = () => `<p style="display:flex;align-items:center;gap:8px"><b>Chest</b> <small style="flex:1">Tap an item to move it across.</small><button class="btn" data-a="qs" style="padding:3px 10px;font-size:13px">⇩ Quick stack</button></p>
-    <button class="tog ${o.noCook ? '' : 'on'}" data-a="cookok"><span></span>Fablemon cooks may use ingredients from this chest</button><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="out" data-i=')).join('')}</div>
+  let pickMode = false; o.lock = o.lock || {};
+  const usable = s => s && (ITEMS[s.id].seed || COOKING.some(r => r.need[s.id] || r.need[plainId(s.id)]) || s.id === 'wood');
+  const render = () => `<p style="display:flex;align-items:center;gap:8px"><b>Chest</b> <small style="flex:1">${pickMode ? 'Tap seeds and ingredients to allow or block them.' : 'Tap an item to move it across.'}</small><button class="btn" data-a="qs" style="padding:3px 10px;font-size:13px">⇩ Quick stack</button></p>
+    <button class="tog ${o.noCook ? '' : 'on'}" data-a="cookok"><span></span>Fablemon cooks may use ingredients from this chest</button>
+    <button class="btn ${pickMode ? 'gold' : ''}" data-a="pickmode" style="width:100%;margin:4px 0 6px">${pickMode ? '✔ Done choosing' : '🔒 Choose what Fablemon may use'}</button>
+    <div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => { const lk = s && o.lock[s.id], dim = pickMode && s && !usable(s); return slotHTML(i, s, `${lk ? 'locked' : ''} ${dim ? 'dim' : ''}`).replace('data-i=', `data-a="${pickMode ? 'lock' : 'out'}" data-i=`); }).join('')}</div>
+    ${Object.keys(o.lock).some(k => o.lock[k]) ? '<small class="hint">🔒 Locked items stay in the chest: Fablemon won\'t plant or cook them.</small>' : ''}
     <p style="margin-top:10px"><b>Backpack</b></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${inv.slots.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="in" data-i=')).join('')}</div>`;
   openModal('Chest', render(), (a, d) => {
     const i = +d.i;
@@ -892,6 +897,8 @@ function openChest(o) {
       if (n) { s.n = n; if (!quiet) toast('The chest is full.'); } else inv.slots[i] = null;
     };
     if (a === 'in') { put(i); inv.emit(); }
+    if (a === 'pickmode') { pickMode = !pickMode; }
+    if (a === 'lock') { const s = o.items[i]; if (s) { if (!usable(s)) toast('Fablemon only use seeds and cooking ingredients.', 1600); else { o.lock[s.id] = !o.lock[s.id]; Sound.play('click'); } } }
     if (a === 'cookok') { o.noCook = !o.noCook; toast(o.noCook ? 'Fablemon cooks will leave this chest alone.' : 'Fablemon cooks can use this chest\'s ingredients.', 1800); }
     // quick stack: everything in the backpack that this chest already holds goes in
     if (a === 'qs') { const have = new Set(o.items.filter(Boolean).map(t => t.id)); let k = 0; inv.slots.forEach((s, j) => { if (s && have.has(s.id) && !ITEMS[s.id].tool) { put(j, true); k++; } }); inv.emit(); toast(k ? 'Stacked matching items into the chest.' : 'Nothing in your backpack matches this chest.', 1600); }
@@ -1807,7 +1814,7 @@ function jobTargets(m, area) {
   const chests = chestsIn([x0, y0, x1, y1]);
   // Leaf: seeds from a chest go into empty tilled soil (planting comes before weeding)
   if (type === 'Leaf' && chests.length) {
-    const seeds = [...new Set(chests.flatMap(c => c.o.items.filter(s => s && ITEMS[s.id].seed).map(s => s.id)))];
+    const seeds = [...new Set(chests.flatMap(c => c.o.items.filter(s => s && ITEMS[s.id].seed && !(c.o.lock || {})[s.id]).map(s => s.id)))];
     if (seeds.length) for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) {
       const tl = S.tilled[x + ',' + y]; if (!tl || tl.crop) continue;
       const sd = seeds.find(id => canPlantAt(x, y, ITEMS[id].seed)); if (sd) out.push({ x, y, plant: sd, pri: 0 });
@@ -1844,8 +1851,9 @@ const toStore = (id, n) => { const left = jobChests.length ? chestPut(jobChests,
 /* ---------- chests near a work area */
 function chestsIn([x0, y0, x1, y1]) { const out = []; for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'chest' || o.part || !o.items) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) out.push({ k, o }); } return out; }
 function potIn([x0, y0, x1, y1]) { for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'pot' || o.part) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return { x, y }; } return null; }
-const chestCount = (cs, id) => { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; return cs.reduce((a, c) => a + c.o.items.reduce((b, s) => b + (s && ids.includes(s.id) ? s.n : 0), 0), 0); };
-function chestTake(cs, id, n) { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; for (const want of ids) for (const c of cs) c.o.items.forEach((s, i) => { if (!n || !s || s.id !== want) return; const k = Math.min(n, s.n); s.n -= k; n -= k; if (!s.n) c.o.items[i] = null; }); return !n; }
+// free = skip items the player has locked in that chest
+const chestCount = (cs, id, free) => { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; return cs.reduce((a, c) => a + c.o.items.reduce((b, s) => b + (s && ids.includes(s.id) && !(free && (c.o.lock || {})[s.id]) ? s.n : 0), 0), 0); };
+function chestTake(cs, id, n, free) { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; for (const want of ids) for (const c of cs) c.o.items.forEach((s, i) => { if (!n || !s || s.id !== want || (free && (c.o.lock || {})[s.id])) return; const k = Math.min(n, s.n); s.n -= k; n -= k; if (!s.n) c.o.items[i] = null; }); return !n; }
 function chestPut(cs, id, n) {
   const max = ITEMS[id].stack || 99;
   for (const c of cs) for (const s of c.o.items) if (n && s && s.id === id && s.n < max) { const k = Math.min(n, max - s.n); s.n += k; n -= k; }
@@ -1862,7 +1870,7 @@ function canPlantAt(x, y, cropId) {
 // the most valuable meal a cook can make from these chests (plus 1 wood)
 function bestRecipe(cs) {
   return COOKING.filter(r => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest))
-    .filter(r => Object.entries({ ...r.need, wood: (r.need.wood || 0) + 1 }).every(([id, n]) => chestCount(cs, id) >= n))
+    .filter(r => Object.entries({ ...r.need, wood: (r.need.wood || 0) + 1 }).every(([id, n]) => chestCount(cs, id, true) >= n))
     .sort((a, b) => ITEMS[b.out].sell - ITEMS[a.out].sell)[0] || null;
 }
 // carry out one job on tile t; works whether or not the farm is on screen
@@ -1871,14 +1879,14 @@ function doJob(m, t) {
   let msg = '';
   jobChests = m.job ? chestsIn(jobArea(m.job)) : [];
   if (t.plant) {
-    if (!canPlantAt(t.x, t.y, ITEMS[t.plant].seed) || !chestTake(jobChests, t.plant, 1)) return;
+    if (!canPlantAt(t.x, t.y, ITEMS[t.plant].seed) || chestCount(jobChests, t.plant, true) < 1 || !chestTake(jobChests, t.plant, 1, true)) return;
     tl.crop = { type: ITEMS[t.plant].seed, g: 0 }; msg = '🌱 Planted';
     if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 12, 0x6bb24a); }
   }
   else if (t.cook) {
     const r = t.cook, need = { ...r.need, wood: (r.need.wood || 0) + 1 }, pantry = jobChests.filter(c => !c.o.noCook);
-    if (!Object.entries(need).every(([id, n]) => chestCount(pantry, id) >= n)) return;
-    for (const [id, n] of Object.entries(need)) chestTake(pantry, id, n);
+    if (!Object.entries(need).every(([id, n]) => chestCount(pantry, id, true) >= n)) return;
+    for (const [id, n] of Object.entries(need)) chestTake(pantry, id, n, true);
     toStore(r.out, 1); msg = `🍲 ${ITEMS[r.out].name}`;
     if (fs) { fs.chips(t.x * T + 8, t.y * T + 2, 0xe0703a, 5); fs.drawObj(t.x, t.y); }
   }

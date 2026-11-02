@@ -246,6 +246,9 @@ body.ctlEdit #ctlbar{display:block}
 .modal .panel{padding:0 8px 8px}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
+/* chest locks */
+.slot.locked::after{content:'🔒';position:absolute;left:1px;top:0;font-size:11px;line-height:1;z-index:2}
+.slot.locked img{opacity:.55}.slot.dim{opacity:.35}
 /* menu tiles and settings */
 .mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
 .mtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:1.15;background:#fffaea;border:3px solid var(--green);box-shadow:inset 0 -4px 0 rgba(31,77,43,.15),3px 3px 0 #173a20;font:700 14px var(--pix);color:var(--green);cursor:pointer;padding:4px}
