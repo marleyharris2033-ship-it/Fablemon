@@ -3,7 +3,7 @@
      crag1  Cragside Pass     an ordinary route (grass, trainers, items)
      crag2  Cragside Heights  boulder puzzles: push boulders into crevasses to fill them
      crag3  Old Rail Cutting  mine-cart rides: pull levers to set the points, ride to the old mine
-     cragmine  the Old Mine   the chamber of Veinwyrm, the first legendary Fablemon
+     cragmine  the Old Mine   the chamber of Fulgarok, the first legendary Fablemon
    Maps are text (crag_maps.json, made by work/crag/gen.py, which also checks every puzzle can be solved):
      #  rock          .  ground        ,  gravel path     0-9  long grass (zone)
      T  pine tree     o  small rocks   O  big boulder     B    boulder you can push
@@ -13,17 +13,18 @@ const RAILS = '─│┌┐└┘┬┴├┤┼■';
 const RAIL_CONN = { '─': 'EW', '│': 'NS', '┌': 'ES', '┐': 'WS', '└': 'NE', '┘': 'NW', '┬': 'WES', '┴': 'WEN', '├': 'NSE', '┤': 'NSW', '┼': 'NSEW' };
 const CDV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }, OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
 
-/* ---------- the legend: Veinwyrm (placeholder art: a recoloured Flintburrow until its own art arrives) */
-SPECIES.veinwyrm = { name: 'Veinwyrm', type: 'Stone', type2: 'Spark', legend: true, base: { hp: 105, atk: 112, def: 118, spd: 76 }, exp: 270, rate: 45,
-  desc: 'The miners of Cragside dug for the crystals that grow along its back, and never once saw it. It sleeps curled through the deepest seams of the mountain, and the whole pass hums when it dreams.' };
-MOVES.veinburst = { name: 'Vein Burst', type: 'Spark', pow: 95, acc: 90, st: ['par', 20] };
-LEARN.veinwyrm = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slateslam'], [34, 'boltwing'], [36, 'veinburst'], [42, 'rampartcrush']];
-MON_ORDER.push('veinwyrm'); MON_STAGE.veinwyrm = 3;
-const LEGEND = { sp: 'veinwyrm', lv: 36, x: 12, y: 3 };
+/* ---------- the legend: Fulgarok, the Geode Storm Fablemon (Stone/Spark, level 40, very hard to catch) */
+SPECIES.fulgarok = { name: 'Fulgarok', title: 'Geode Storm Fablemon', type: 'Stone', type2: 'Spark', legend: true, base: { hp: 108, atk: 115, def: 120, spd: 78 }, exp: 290, rate: 10,
+  desc: 'The Geode Storm Fablemon. It sleeps coiled beneath the mountains, storing lightning within its crystals. When it stirs, thunder echoes through the mines.' };
+MOVES.geodestorm = { name: 'Geode Storm', type: 'Spark', pow: 95, acc: 90, st: ['par', 20] };
+LEARN.fulgarok = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slateslam'], [34, 'boltwing'], [38, 'geodestorm'], [44, 'rampartcrush']];
+MON_ORDER.push('fulgarok'); MON_STAGE.fulgarok = 3;
+const LEGEND = { sp: 'fulgarok', lv: 40 };
 
-/* ---------- trainers of the pass (they borrow other trainers' art until their own arrives) */
-TRAINER_TYPES.climber = { label: 'Climber', art: 'rambler', challenge: ["You don't get views like this down in the bog! Let's battle up here!", "Every peak's better with a battle at the top!"], lose: ["I'll stick to climbing, I think.", "Fell at the last handhold. Well played!"], after: ["The boulders up the Heights move if you put your back into them.", "Watch your footing near the crevasses."] };
-TRAINER_TYPES.miner = { label: 'Miner', art: 'forager', challenge: ["Oi! This is a working cutting. Well, it was. Fancy a scrap?", "Forty years down the seams. Let's see what you've got!"], lose: ["Struck rock bottom there.", "You dig deep, I'll give you that."], after: ["Change the points before you ride, or you'll end up somewhere daft.", "There's something in the old mine. Hums all night, it does."] };
+/* ---------- trainers of the pass */
+TRAINER_ROW.miner = 9; TRAINER_ROW.climber = 10;
+TRAINER_TYPES.climber = { label: 'Climber', challenge: ["You don't get views like this down in the bog! Let's battle up here!", "Every peak's better with a battle at the top!"], lose: ["I'll stick to climbing, I think.", "Fell at the last handhold. Well played!"], after: ["The boulders up the Heights move if you put your back into them.", "Watch your footing near the crevasses."] };
+TRAINER_TYPES.miner = { label: 'Miner', challenge: ["Oi! This is a working cutting. Well, it was. Fancy a scrap?", "Forty years down the seams. Let's see what you've got!"], lose: ["Struck rock bottom there.", "You dig deep, I'll give you that."], after: ["Change the points before you ride, or you'll end up somewhere daft.", "There's something in the old mine. Hums all night, it does."] };
 
 const CRAG_ENC = { day: [['flintburrow', 24], ['mortoad', 20], ['whirlwyn', 18], ['staticwing', 15], ['brashlet', 12], ['yawnox', 8]], night: [['duskcloak', 30], ['staticwing', 22], ['flintburrow', 20], ['mortoad', 15], ['kilnook', 8]] };
 Object.assign(ROUTES, {
@@ -333,14 +334,14 @@ class Crag extends Route {
     setPos(); this.time.delayedCall(250, step);
   }
   makeLegend(x, y) {
-    if (!this.textures.exists('mon_veinwyrm')) return;
-    const st = crag(), gone = S.mons.some(m => m.sp === 'veinwyrm') || st.legendCaught || st.legendDay === S.day;
+    if (!this.textures.exists('mon_fulgarok')) return;
+    const st = crag(), gone = S.mons.some(m => m.sp === 'fulgarok') || st.legendCaught || st.legendDay === S.day;
     this.add.image(x * T + 8, y * T + 14, 'cg_cart_gems').setOrigin(.5, 1).setDepth(1).setAlpha(.0);
     for (const [dx, dy] of [[-2, 0], [2, 0], [-3, 1], [3, 1], [-1, -1], [1, -1]]) { const g = this.add.circle((x + dx) * T + 8, (y + dy) * T + 6, 10, 0x8a6aff, .14).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 28); this.tweens.add({ targets: g, alpha: .04, yoyo: true, repeat: -1, duration: 900 + Math.random() * 900 }); }
     if (gone) { this.R.blocked[y * RW + x] = 1; return; }
-    for (let r = 0; r < 4; r++) { const k = `veinwyrm_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('mon_veinwyrm', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 3, repeat: -1 }); }
-    this.legend = this.add.sprite(x * T + 8, y * T + 16, 'mon_veinwyrm', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
-    this.legend.play('veinwyrm_down');
+    for (let r = 0; r < 4; r++) { const k = `fulgarok_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('mon_fulgarok', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 3, repeat: -1 }); }
+    this.legend = this.add.sprite(x * T + 8, y * T + 16, 'mon_fulgarok', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    this.legend.play('fulgarok_down');
     this.tweens.add({ targets: this.legend, y: this.legend.y - 2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' });
     const aura = this.add.circle(x * T + 8, y * T + 2, 28, 0x9a7aff, .18).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 27);
     this.tweens.add({ targets: aura, scale: 1.25, alpha: .06, yoyo: true, repeat: -1, duration: 1600 });
@@ -349,10 +350,10 @@ class Crag extends Route {
     const st = crag();
     if (!this.legend) return toast(st.legendDay === S.day ? 'The crystals are dim. Whatever lives here has gone deep into the rock to rest. Come back tomorrow.' : 'Only crystal dust and a faint warmth remain.', 2600);
     if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to face what is down here. Rest them first.', 2600);
-    const img = monPic('veinwyrm'), L = t => ({ name: '???', img, t });
-    S.seen.veinwyrm = 1;
-    Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('VRRRRMMMM...!')], () => {
-      const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 8, atk: 8, def: 8, spd: 8 }; m.hp = monStat(m, 'hp');
+    const img = monPic('fulgarok'), L = t => ({ name: '???', img, t });
+    S.seen.fulgarok = 1;
+    Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('Thunder rolls through the mine. Fulgarok, the Geode Storm Fablemon, rises from its sleep!')], () => {
+      const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 9, atk: 9, def: 9, spd: 9 }; m.hp = monStat(m, 'hp');
       this.legendFight = m; this.cameras.main.shake(400, .008); Battle.start(m);
     });
   }
@@ -364,8 +365,8 @@ class Crag extends Route {
     if (this.legendFight && this.legendSeen && !Battle.active && !this.paused) {
       this.legendSeen = false;
       const m = this.legendFight, st = crag(); this.legendFight = null;
-      if (S.mons.some(q => q.sp === 'veinwyrm')) { st.legendCaught = 1; this.legend.destroy(); this.legend = null; toast('The mine falls quiet. The crystals glow softly, as if saying goodbye.', 3200); }
-      else if (m.hp <= 0) { st.legendDay = S.day; this.tweens.add({ targets: this.legend, alpha: 0, duration: 900, onComplete: () => { this.legend.destroy(); this.legend = null; } }); toast('Veinwyrm sank back into the rock! The crystals dim... It may return tomorrow.', 3500); }
+      if (S.mons.some(q => q.sp === 'fulgarok')) { st.legendCaught = 1; this.legend.destroy(); this.legend = null; toast('The mine falls quiet. The crystals glow softly, as if saying goodbye.', 3200); }
+      else if (m.hp <= 0) { st.legendDay = S.day; this.tweens.add({ targets: this.legend, alpha: 0, duration: 900, onComplete: () => { this.legend.destroy(); this.legend = null; } }); toast('Fulgarok sank back into the rock! The crystals dim... It may return tomorrow.', 3500); }
     }
   }
   // exits are exact strips of tiles at the map's edge
