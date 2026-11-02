@@ -246,6 +246,13 @@ body.ctlEdit #ctlbar{display:block}
 .modal .panel{padding:0 8px 8px}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
+/* arrow buttons (shares the joystick's place and size) */
+#joy .dpad{display:none;position:absolute;inset:0}
+body.dpad #joy{border-radius:0;background:none;border:0;box-shadow:none}
+body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
+#joy .dp{position:absolute;width:34%;height:34%;display:flex;align-items:center;justify-content:center;background:rgba(251,243,217,.88);border:3px solid var(--green);color:var(--green);font-size:calc(var(--jz,120px) * .14);box-shadow:0 3px 0 rgba(0,0,0,.3);pointer-events:none}
+#joy .dp[data-d=u]{left:33%;top:0}#joy .dp[data-d=d]{left:33%;bottom:0}#joy .dp[data-d=l]{left:0;top:33%}#joy .dp[data-d=r]{right:0;top:33%}
+#joy .dp.on{background:var(--gold);transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
 /* potential */
 .ivp{background:#fffaea;border:2px solid #d8c49a;padding:6px 8px;margin:6px 0;display:flex;flex-direction:column;gap:3px}
 .ivr{display:flex;align-items:center;gap:6px;font-size:12px}.ivr span{width:58px}.ivr em{width:16px;text-align:right;font-style:normal;font-weight:700}
@@ -319,7 +326,7 @@ body.ctlEdit #ctlbar{display:block}
   </div>
   <div id="energy" class="panel"><div class="lbl">E</div><div class="fill"></div></div>
   <div id="hotbar" class="panel"></div>
-  <div id="joy"><div class="knob"></div></div>
+  <div id="joy"><div class="knob"></div><div class="dpad"><b class="dp" data-d="u">▲</b><b class="dp" data-d="l">◀</b><b class="dp" data-d="r">▶</b><b class="dp" data-d="d">▼</b></div></div>
   <button id="actBtn" title="Use (Space)"></button>
 </div>
 <div id="talk" class="panel"><div id="tface"></div><div id="tbody"><div id="tname"></div><div id="ttext"></div></div><div id="tmore">▼</div></div>

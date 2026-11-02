@@ -941,8 +941,8 @@ function openCraft() {
 function controlsHTML() {
   const m = controlMode(), sp = opts.bspeed || 1;
   const seg = (a, cur, list) => `<div class="seg">${list.map(([v, l]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
-  return `<div class="setc"><b>Controls</b>${seg('ctl', m, [['joystick', '🕹️ Joystick'], ['tap', '👆 Tap to go']])}
-      <small>${m === 'tap' ? 'Tap the ground to walk and tap things to use your tool. Hold to keep swinging.' : 'Walk with the joystick and press the action button to use your tool.'}</small>
+  return `<div class="setc"><b>Controls</b>${seg('ctl', m, [['joystick', '🕹️ Joystick'], ['dpad', '✚ Arrows'], ['tap', '👆 Tap']])}
+      <small>${m === 'tap' ? 'Tap the ground to walk and tap things to use your tool. Hold to keep swinging.' : m === 'dpad' ? 'Walk with the arrow buttons (press between two for diagonals) and press the action button to use your tool.' : 'Walk with the joystick and press the action button to use your tool.'}</small>
       <button class="tog ${opts.autoTool ? 'on' : ''}" data-a="auto"><span></span>Auto-switch to the right tool</button></div>
     <div class="setc"><b>Battle speed</b>${seg('bspeed', sp, [[1, 'Normal'], [1.7, 'Fast'], [3, 'Very fast']])}</div>
     <div class="setc"><b>Sound</b>
@@ -1036,19 +1036,26 @@ const joy = { dx: 0, dy: 0, active: false, id: null };
 let actHeld = false;
 function touchDevice() { return matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window; }
 function controlMode() { return opts.controls || (touchDevice() ? 'joystick' : 'tap'); }
-function applyTouchMode() { document.body.classList.toggle('touch', controlMode() === 'joystick'); }
-function setControls(v) { opts.controls = v; applyTouchMode(); saveOpts(); toast(v === 'tap' ? 'Tap to go' : 'Joystick and action button', 1200); }
+function applyTouchMode() { const m = controlMode(); document.body.classList.toggle('touch', m === 'joystick' || m === 'dpad'); document.body.classList.toggle('dpad', m === 'dpad'); }
+function setControls(v) { opts.controls = v; applyTouchMode(); saveOpts(); toast(v === 'tap' ? 'Tap to go' : v === 'dpad' ? 'Arrow buttons and action button' : 'Joystick and action button', 1200); }
+function litArrow(dir) { document.querySelectorAll('#joy .dp').forEach(b => b.classList.toggle('on', !!dir && b.dataset.d.split('').every(c => dir.includes(c)) && (b.dataset.d.length === 2 ? dir.length === 2 : true))); }
 function setupTouch() {
   const el = $('joy'), knob = el.querySelector('.knob');
   const move = e => {
     const R = 42 * ctlLayout().js;
+    if (document.body.classList.contains('dpad')) {
+      const r = el.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
+      if (Math.hypot(x, y) < r.width * .12) { joy.dx = joy.dy = 0; litArrow(''); return; }
+      const a = Math.round(Math.atan2(y, x) / (Math.PI / 4)), sx = Math.round(Math.cos(a * Math.PI / 4)), sy = Math.round(Math.sin(a * Math.PI / 4));
+      joy.dx = sx; joy.dy = sy; litArrow((sy < 0 ? 'u' : sy > 0 ? 'd' : '') + (sx < 0 ? 'l' : sx > 0 ? 'r' : '')); return;
+    }
     const r = el.getBoundingClientRect(); let x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2);
     const d = Math.hypot(x, y); if (d > R) { x *= R / d; y *= R / d; }
     knob.style.transform = `translate(${x}px,${y}px)`; joy.dx = x / R; joy.dy = y / R;
   };
   el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('ctlEdit')) return ctlDrag(e, el, 'j'); try { el.setPointerCapture(e.pointerId); } catch (_) { } joy.active = true; joy.id = e.pointerId; move(e); });
   el.addEventListener('pointermove', e => { if (joy.active && e.pointerId === joy.id) move(e); });
-  const end = e => { if (e.pointerId !== joy.id) return; joy.active = false; joy.dx = joy.dy = 0; knob.style.transform = ''; };
+  const end = e => { if (e.pointerId !== joy.id) return; joy.active = false; joy.dx = joy.dy = 0; knob.style.transform = ''; litArrow(''); };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('lostpointercapture', end);
   const a = $('actBtn');
   a.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('ctlEdit')) return ctlDrag(e, a, 'a'); actHeld = true; a.classList.add('down'); if (scene && !scene.paused && !scene.sleeping) scene.actFacing(); });
@@ -1066,7 +1073,7 @@ function ctlLayout() { return opts[ctlKey()] || (opts[ctlKey()] = { js: 1, as: 1
 function applyCtlLayout() {
   const L = opts[ctlKey()] || { js: 1, as: 1 }, j = $('joy'), a = $('actBtn'), k = j.querySelector('.knob');
   const js = L.js || 1, as = L.as || 1;
-  j.style.width = j.style.height = 120 * js + 'px';
+  j.style.width = j.style.height = 120 * js + 'px'; j.style.setProperty('--jz', 120 * js + 'px');
   k.style.width = k.style.height = 54 * js + 'px'; k.style.margin = -27 * js + 'px 0 0 ' + -27 * js + 'px';
   a.style.width = a.style.height = 70 * as + 'px';
   const im = a.querySelector('img'); if (im) im.style.width = im.style.height = 34 * as + 'px';
@@ -3931,7 +3938,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt'].includes(scene.scene.key) ? ASSET.bgBog : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4261,7 +4268,7 @@ const ROUTES = {
     ],
     props: [['bh_board', 19, 9, 3, 'bh']],
     signs: { '4,10': 'Brookholt. Mind the canal, and say hello to the lock-keeper.', '20,9': '__board' },
-    npcs: [{ kind: 'delphine', x: 38, y: 11, dir: 'down', door: 'bh_lock' }],
+    npcs: [{ kind: 'delphine', x: 38, y: 11, dir: 'down', door: 'bh_lock', hideIf: () => lockHouseOpen() }],   // once the lock house opens she waits inside
     trainers: [],
     open: [[0, 10, 3, 15]], clear: [[0, 9, 44, 27]], spawn: { x: 1, y: 12, dir: 'right' },
     left: (y) => ['route4', { x: 54, y: Math.max(19, Math.min(21, y + 8)), dir: 'left' }],
@@ -4272,7 +4279,7 @@ function useRoute(key) {
   RC = ROUTES[key]; RW = RC.w; RH = RC.h; GRASS_ZONES = RC.zones; PICKUPS = RC.pickups; ROUTE_SIGNS = RC.signs; ROUTE_TRAINERS = RC.trainers;
   if (RC.gate && !RC.gate.ok()) ROUTE_SIGNS = { ...RC.signs, [RC.gate.sign.join(',')]: RC.gate.text };
   if (RC.buildings) { ROUTE_SIGNS = { ...ROUTE_SIGNS }; for (const b of RC.buildings) ROUTE_SIGNS[(b.cx + b.door) + ',' + b.by] = '__door:' + b.id; }
-  for (const n of RC.npcs || []) ROUTE_SIGNS[n.x + ',' + n.y] = '__door:' + n.door;
+  for (const n of RC.npcs || []) if (!(n.hideIf && n.hideIf())) { if (ROUTE_SIGNS === RC.signs) ROUTE_SIGNS = { ...ROUTE_SIGNS }; ROUTE_SIGNS[n.x + ',' + n.y] = '__door:' + n.door; }
   BRIDGE = RC.bridge ? { ...RC.bridge } : null;
 }
 const beatTrainer = id => !!(S.trainers && S.trainers[id]);
@@ -4317,7 +4324,7 @@ class Route extends World {
     if (RC.murk && !RC.bog) { this.add.rectangle(0, 0, RW * T, RH * T, 0x2e4a2a, .22).setOrigin(0).setDepth(9e6 - 30); for (let i = 0; i < 14; i++) { const m = this.add.ellipse(hash(i, 3) * RW * T, hash(i, 9) * RH * T, 120, 40, 0xe8f0e0, .10).setDepth(9e6 - 29); this.tweens.add({ targets: m, x: m.x + 60, alpha: .04, duration: 6000 + i * 400, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); } }
     this.grassSpr = {};
     for (let i = 0; i < RW * RH; i++) if (R.grass[i] >= 0) { const x = i % RW, y = (i / RW) | 0; this.grassSpr[i] = RC.bog ? this.add.image(x * T + 8, y * T + 16, 'bog', 'bog_grass').setOrigin(.5, 1).setDepth(y * T + 15.6) : this.add.image(x * T + 8, y * T + 16, 'objects', 'tall_grass').setOrigin(.5, 1).setDepth(y * T + 15.6); if (hash(x * 3, y) < .35) this.tweens.add({ targets: this.grassSpr[i], angle: { from: -2.5, to: 2.5 }, duration: 1800 + hash(x, y) * 900, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(y, x) * 1500 }); }
-    for (const n of RC.npcs || []) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
+    for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
     for (const b of RC.buildings || []) { const fr = b.repair && !bhDone(b.id) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
@@ -4689,6 +4696,7 @@ async function bootGame() {
     constructor() { super('boot'); }
     preload() {
       this.load.image('terrain', art.terrain);
+      this.load.image('gym_bh', ASSET.gymBh);
       this.load.atlas('objects', art.objects, ASSET.objectsJson);
       this.load.spritesheet('walk', ASSET.walk, { frameWidth: 24, frameHeight: 32 });
       this.load.spritesheet('tools', ASSET.tools, { frameWidth: 40, frameHeight: 48 });
@@ -4716,12 +4724,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym],
   });
   Sound.music(true);
 }

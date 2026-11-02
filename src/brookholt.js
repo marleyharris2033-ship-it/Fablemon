@@ -59,7 +59,10 @@ function bhDoor(sc, id) {
   }
   if (id === 'bh_cottage') return toast('The Lock Cottage is cosy and freshly painted. Someone will move in soon.', 2600);
   if (id === 'bh_mill') return toast('The great wheel creaks round, and the whole canal seems happier for it.', 2600);
-  if (id === 'bh_lock') return delphine(sc);
+  if (id === 'bh_lock') {
+    if (!lockHouseOpen()) return delphine(sc);
+    Sound.play('door'); return travel(sc, 'bhgym', { x: 10, y: 26, dir: 'up' });
+  }
 }
 
 function delphine(sc) {
