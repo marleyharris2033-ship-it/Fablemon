@@ -41,7 +41,7 @@ function ivPanel(m) {
   if (!m.iv) return '';
   const total = IV_KEYS.reduce((a, k) => a + m.iv[k], 0), grade = total >= 34 ? 'Outstanding' : total >= 28 ? 'Great' : total >= 20 ? 'Good' : 'Modest';
   const bar = k => `<div class="ivr"><span>${IV_NAME[k]}</span><i>${Array.from({ length: 10 }, (_, j) => `<b class="${j < m.iv[k] ? 'on' : ''}"></b>`).join('')}</i><em>${m.iv[k]}</em></div>`;
-  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/40)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. It nudges each stat a little (up to 5% either way).</small></div>`;
+  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/40)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. Each point adds 1% to that stat, so a 10 gives +10%.</small></div>`;
 }
 function heldRow(m) {
   const it = m.held && ITEMS[m.held];

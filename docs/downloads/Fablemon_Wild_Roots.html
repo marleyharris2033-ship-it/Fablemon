@@ -2077,7 +2077,7 @@ const SPECIES = {
 const TEAM_MAX = 6, ROAM_MAX = 8;
 const IV_KEYS = ['hp', 'atk', 'def', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', spd: 'Speed' };
 const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.floor(Math.random() * (11 - lo))]));
-const ivMul = (m, k) => 1 + (((m.iv && m.iv[k]) || 5) - 5) * .01;   // potential 1 = −4%, 5 = normal, 10 = +5%
+const ivMul = (m, k) => 1 + ((m.iv && m.iv[k]) || 5) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
 const healAmt = (id, m) => Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100));   // healing items restore a share of max HP
@@ -6681,7 +6681,7 @@ function ivPanel(m) {
   if (!m.iv) return '';
   const total = IV_KEYS.reduce((a, k) => a + m.iv[k], 0), grade = total >= 34 ? 'Outstanding' : total >= 28 ? 'Great' : total >= 20 ? 'Good' : 'Modest';
   const bar = k => `<div class="ivr"><span>${IV_NAME[k]}</span><i>${Array.from({ length: 10 }, (_, j) => `<b class="${j < m.iv[k] ? 'on' : ''}"></b>`).join('')}</i><em>${m.iv[k]}</em></div>`;
-  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/40)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. It nudges each stat a little (up to 5% either way).</small></div>`;
+  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/40)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. Each point adds 1% to that stat, so a 10 gives +10%.</small></div>`;
 }
 function heldRow(m) {
   const it = m.held && ITEMS[m.held];

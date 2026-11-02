@@ -1513,7 +1513,7 @@ const SPECIES = {
 const TEAM_MAX = 6, ROAM_MAX = 8;
 const IV_KEYS = ['hp', 'atk', 'def', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', spd: 'Speed' };
 const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.floor(Math.random() * (11 - lo))]));
-const ivMul = (m, k) => 1 + (((m.iv && m.iv[k]) || 5) - 5) * .01;   // potential 1 = −4%, 5 = normal, 10 = +5%
+const ivMul = (m, k) => 1 + ((m.iv && m.iv[k]) || 5) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
 const healAmt = (id, m) => Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100));   // healing items restore a share of max HP
