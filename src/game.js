@@ -878,7 +878,8 @@ function openTrough(o) {
   });
 }
 function openChest(o) {
-  const render = () => `<p style="display:flex;align-items:center;gap:8px"><b>Chest</b> <small style="flex:1">Tap an item to move it across.</small><button class="btn" data-a="qs" style="padding:3px 10px;font-size:13px">⇩ Quick stack</button></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="out" data-i=')).join('')}</div>
+  const render = () => `<p style="display:flex;align-items:center;gap:8px"><b>Chest</b> <small style="flex:1">Tap an item to move it across.</small><button class="btn" data-a="qs" style="padding:3px 10px;font-size:13px">⇩ Quick stack</button></p>
+    <button class="tog ${o.noCook ? '' : 'on'}" data-a="cookok"><span></span>Fablemon cooks may use ingredients from this chest</button><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${o.items.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="out" data-i=')).join('')}</div>
     <p style="margin-top:10px"><b>Backpack</b></p><div class="grid" style="display:grid;grid-template-columns:repeat(9,var(--s));gap:3px;justify-content:center">${inv.slots.map((s, i) => slotHTML(i, s).replace('data-i=', 'data-a="in" data-i=')).join('')}</div>`;
   openModal('Chest', render(), (a, d) => {
     const i = +d.i;
@@ -891,6 +892,7 @@ function openChest(o) {
       if (n) { s.n = n; if (!quiet) toast('The chest is full.'); } else inv.slots[i] = null;
     };
     if (a === 'in') { put(i); inv.emit(); }
+    if (a === 'cookok') { o.noCook = !o.noCook; toast(o.noCook ? 'Fablemon cooks will leave this chest alone.' : 'Fablemon cooks can use this chest\'s ingredients.', 1800); }
     // quick stack: everything in the backpack that this chest already holds goes in
     if (a === 'qs') { const have = new Set(o.items.filter(Boolean).map(t => t.id)); let k = 0; inv.slots.forEach((s, j) => { if (s && have.has(s.id) && !ITEMS[s.id].tool) { put(j, true); k++; } }); inv.emit(); toast(k ? 'Stacked matching items into the chest.' : 'Nothing in your backpack matches this chest.', 1600); }
     renderHotbar(); $('mBody').innerHTML = render();
@@ -1786,7 +1788,7 @@ const JOBS = {
   Leaf: { name: 'Gardener', desc: 'Plants seeds from any chest in its area onto empty tilled soil there, and clears weeds and bushes (the fiber goes to a chest in the area, or your ranch).' },
   Wild: { name: 'Lumberjack', desc: 'Chops trees and stumps in its area. The wood goes to your ranch.' },
   Stone: { name: 'Rock Collector', desc: 'Breaks up rocks in its area, and chips away at any Mine there for a steady supply of stone. The stone goes to your ranch.' },
-  Ember: { name: 'Cook', desc: 'With a Cooking Pot and a chest in its area, it cooks the best meal it can from the chest\'s ingredients (using 1 wood each) and puts the dish back in the chest. Otherwise it warms tilled soil so the next crop grows a day faster.' },
+  Ember: { name: 'Cook', desc: 'With a Cooking Pot and a chest in its area, it cooks the best meal it can from the chest\'s ingredients (using 1 wood each) and puts the dish back in the chest. Turn this off for any chest from inside it. Otherwise it warms tilled soil so the next crop grows a day faster.' },
   Gale: { name: 'Harvester', desc: 'Picks ripe crops, and collects honey, fertiliser and fish from beehives, compost bins and fishing huts in its area. Everything goes into a chest in the area, or to your ranch.' },
   Spark: { name: 'Charger', desc: 'Charges compost bins and beehives in its area so they finish a day sooner. (It will power machines later.)' },
   Shade: { name: 'Night Forager', desc: 'Works after 7pm, finding Hearthberries and the odd Root Charm in its area.' },
@@ -1813,7 +1815,7 @@ function jobTargets(m, area) {
   }
   // Ember: cook at a pot when a chest nearby has the ingredients
   if (type === 'Ember' && chests.length && S.time >= 360 && S.time < 1320) {
-    const pot = potIn([x0, y0, x1, y1]), r = pot && bestRecipe(chests);
+    const pot = potIn([x0, y0, x1, y1]), r = pot && bestRecipe(chests.filter(c => !c.o.noCook));
     if (r) return [{ x: pot.x, y: pot.y, cook: r }];
   }
   // Gale: collect from beehives, compost bins and fishing huts
@@ -1874,9 +1876,9 @@ function doJob(m, t) {
     if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 12, 0x6bb24a); }
   }
   else if (t.cook) {
-    const r = t.cook, need = { ...r.need, wood: (r.need.wood || 0) + 1 };
-    if (!Object.entries(need).every(([id, n]) => chestCount(jobChests, id) >= n)) return;
-    for (const [id, n] of Object.entries(need)) chestTake(jobChests, id, n);
+    const r = t.cook, need = { ...r.need, wood: (r.need.wood || 0) + 1 }, pantry = jobChests.filter(c => !c.o.noCook);
+    if (!Object.entries(need).every(([id, n]) => chestCount(pantry, id) >= n)) return;
+    for (const [id, n] of Object.entries(need)) chestTake(pantry, id, n);
     toStore(r.out, 1); msg = `🍲 ${ITEMS[r.out].name}`;
     if (fs) { fs.chips(t.x * T + 8, t.y * T + 2, 0xe0703a, 5); fs.drawObj(t.x, t.y); }
   }
