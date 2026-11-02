@@ -32,7 +32,7 @@ Object.assign(MOVES, {
 Object.assign(SPECIES, {
   craglet: { name: 'Craglet', type: 'Stone', evo: ['craglet_2', 30], base: { hp: 45, atk: 62, def: 58, spd: 52 }, exp: 62, rate: 120, desc: 'A griffin chick with feathers of split slate. It nests on narrow cliff ledges and sharpens its beak by pecking at the rock face.' },
   cindhop: { name: 'Cindhop', type: 'Ember', type2: 'Stone', evo: ['cindhop_2', 28], base: { hp: 46, atk: 64, def: 50, spd: 64 }, exp: 64, rate: 120, desc: 'A hare of cooled lava. Glowing cracks open along its body when it gets excited, and its tail is a smouldering ember that never quite goes out.' },
-  bristlecone: { name: 'Bristlecone', type: 'Leaf', evo: ['bristlecone_2', 26], base: { hp: 52, atk: 56, def: 62, spd: 40 }, exp: 60, rate: 140, desc: 'It curls up and rolls down mountain slopes like a pinecone. Wherever it finally stops, it shakes loose a few seeds, and in time a young pine grows there.' },
+  bristlecone: { name: 'Bristlecone', type: 'Leaf', type2: 'Gale', evo: ['bristlecone_2', 26], base: { hp: 52, atk: 56, def: 62, spd: 40 }, exp: 60, rate: 140, desc: 'It curls up and rolls down mountain slopes like a pinecone. Wherever it finally stops, it shakes loose a few seeds, and in time a young pine grows there.' },
   clinkit: { name: 'Clinkit', type: 'Stone', type2: 'Glow', evo: ['clinkit_2', 32], base: { hp: 50, atk: 44, def: 74, spd: 30 }, exp: 68, rate: 90, desc: 'It hides under a bell of stone threaded with golden light. On still nights in the mountains you can hear it chime softly as it shuffles about.' },
   ramruff: { name: 'Ramruff', type: 'Wild', evo: ['ramruff_2', 40], base: { hp: 66, atk: 74, def: 58, spd: 52 }, exp: 92, rate: 100, desc: 'A shaggy mountain goat that settles every argument by headbutting it. It leaps between ledges that look far too far apart.' },
 });
@@ -47,11 +47,12 @@ Object.assign(LEARN, {
 Object.assign(SPECIES, {
   craglet_2: { name: 'Cragryph', type: 'Stone', type2: 'Gale', evo: ['craglet_3', 46], base: { hp: 68, atk: 86, def: 74, spd: 78 }, exp: 150, rate: 60, desc: 'Its slate wings have grown strong enough to ride the mountain winds. It circles the high peaks for hours, then drops like a falling rock onto its prey.' },
   cindhop_2: { name: 'Cinderhare', type: 'Ember', type2: 'Stone', evo: ['cindhop_3', 44], base: { hp: 64, atk: 88, def: 64, spd: 90 }, exp: 150, rate: 60, desc: 'Molten light runs through the cracks in its stony coat, and its tail has become a roaring flame. It bounds across hot scree faster than the eye can follow.' },
-  bristlecone_2: { name: 'Bristlestag', type: 'Leaf', evo: ['bristlecone_3', 42], base: { hp: 76, atk: 78, def: 86, spd: 52 }, exp: 148, rate: 60, desc: 'Its antlers are living branches, and flowers bloom in its pine-scale coat each spring. Saplings are said to spring up along the paths it walks.' },
+  bristlecone_2: { name: 'Bristlestag', type: 'Leaf', type2: 'Gale', evo: ['bristlecone_3', 42], base: { hp: 76, atk: 78, def: 86, spd: 52 }, exp: 148, rate: 60, desc: 'Its antlers are living branches, and flowers bloom in its pine-scale coat each spring. Saplings are said to spring up along the paths it walks.' },
   clinkit_2: { name: 'Chimestone', type: 'Stone', type2: 'Glow', evo: ['clinkit_3', 48], base: { hp: 72, atk: 62, def: 104, spd: 36 }, exp: 155, rate: 50, desc: 'Golden crystals crown its heavy shell. When it rings, the sound carries through the whole mountain, and miners once used its chime to find their way out.' },
   ramruff_2: { name: 'Rambastion', type: 'Wild', base: { hp: 98, atk: 110, def: 90, spd: 68 }, exp: 230, rate: 45, desc: 'Its great curled horns are hard as granite and glow faintly when it charges. A single headbutt can split a boulder clean in two.' },
 });
 for (const sp of ['craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff']) LEARN[sp + '_2'] = LEARN[sp];
+LEARN.bristlecone = [...LEARN.bristlecone, [11, 'gust'], [31, 'windslice']].sort((a, b) => a[0] - b[0]); LEARN.bristlecone_2 = LEARN.bristlecone;
 LEARN.craglet_2 = [...LEARN.craglet, [30, 'windslice'], [50, 'skydive']].sort((a, b) => a[0] - b[0]);
 MON_ORDER.push('craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff', 'craglet_2', 'cindhop_2', 'bristlecone_2', 'clinkit_2', 'ramruff_2');
 Object.assign(MON_STAGE, { craglet_2: 2, cindhop_2: 2, bristlecone_2: 2, clinkit_2: 2, ramruff_2: 2 });
