@@ -246,6 +246,22 @@ body.ctlEdit #ctlbar{display:block}
 .modal .panel{padding:0 8px 8px}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
+/* menu tiles and settings */
+.mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
+.mtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:1.15;background:#fffaea;border:3px solid var(--green);box-shadow:inset 0 -4px 0 rgba(31,77,43,.15),3px 3px 0 #173a20;font:700 14px var(--pix);color:var(--green);cursor:pointer;padding:4px}
+.mtile span{font-size:28px;line-height:1}
+.mtile:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #173a20}
+.mfoot{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mfoot .btn{width:100%;padding:10px 4px}
+.mback{margin-bottom:8px}
+.setc{background:#fffaea;border:2px solid #d8c49a;padding:8px 10px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.setc>b{font-family:var(--pix);color:var(--green)}.setc small{font-size:12px;opacity:.75}
+.seg{display:flex;border:2px solid var(--green)}.seg button{flex:1;padding:8px 4px;border:0;background:#fffaea;font:700 13px var(--ui);color:var(--green);cursor:pointer}
+.seg button+button{border-left:2px solid var(--green)}.seg button.on{background:var(--green);color:#fbf3d9}
+.tog{display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px 0;font:600 14px var(--ui);color:var(--ink);cursor:pointer;text-align:left}
+.tog span{width:38px;height:22px;background:#c9b88e;border:2px solid #5e3b20;position:relative;flex:none}
+.tog span::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fbf3d9;border:1px solid #5e3b20}
+.tog.on span{background:#4caf50}.tog.on span::after{left:18px}
+.slid{display:flex;align-items:center;gap:8px;font-size:14px}.slid input{flex:1}
 /* world map */
 .wmap{position:relative;width:100%;line-height:0;border:3px solid #5e3b20;background:#3ab0d0}
 .wmap img{width:100%;display:block;image-rendering:auto}

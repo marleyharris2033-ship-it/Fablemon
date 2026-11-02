@@ -928,23 +928,34 @@ function openCraft() {
     $('mBody').innerHTML = render();
   });
 }
+// settings as tappable choice chips (seg = one choice from a group; tog = on/off)
 function controlsHTML() {
-  const m = controlMode();
-  return `<p><b>Controls</b></p>
-    <label class="opt"><input type="radio" name="ctl" data-a="ctl" data-v="joystick" ${m === 'joystick' ? 'checked' : ''}> Joystick and action button</label>
-    <label class="opt"><input type="radio" name="ctl" data-a="ctl" data-v="tap" ${m === 'tap' ? 'checked' : ''}> Tap to go: tap the ground to walk, tap things to use your tool, hold to keep swinging</label>
-    <label class="opt"><input type="checkbox" data-a="auto" ${opts.autoTool ? 'checked' : ''}> Auto-switch to the right tool</label>
-    <p><b>Battle speed</b></p>
-    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="1" ${(opts.bspeed || 1) === 1 ? 'checked' : ''}> Normal</label>
-    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="1.7" ${opts.bspeed === 1.7 ? 'checked' : ''}> Fast</label>
-    <label class="opt"><input type="radio" name="bsp" data-a="bspeed" data-v="3" ${opts.bspeed === 3 ? 'checked' : ''}> Very fast</label>
-    <p><b>Sound</b></p>
-    <label class="opt">Music <input type="range" min="0" max="1" step=".05" value="${opts.music}" data-a="music"></label>
-    <label class="opt">Sound effects <input type="range" min="0" max="1" step=".05" value="${opts.sfx}" data-a="sfx"></label>`;
+  const m = controlMode(), sp = opts.bspeed || 1;
+  const seg = (a, cur, list) => `<div class="seg">${list.map(([v, l]) => `<button class="${String(cur) === String(v) ? 'on' : ''}" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  return `<div class="setc"><b>Controls</b>${seg('ctl', m, [['joystick', '🕹️ Joystick'], ['tap', '👆 Tap to go']])}
+      <small>${m === 'tap' ? 'Tap the ground to walk and tap things to use your tool. Hold to keep swinging.' : 'Walk with the joystick and press the action button to use your tool.'}</small>
+      <button class="tog ${opts.autoTool ? 'on' : ''}" data-a="auto"><span></span>Auto-switch to the right tool</button></div>
+    <div class="setc"><b>Battle speed</b>${seg('bspeed', sp, [[1, 'Normal'], [1.7, 'Fast'], [3, 'Very fast']])}</div>
+    <div class="setc"><b>Sound</b>
+      <label class="slid">🎵 Music <input type="range" min="0" max="1" step=".05" value="${opts.music}" data-a="music"></label>
+      <label class="slid">🔔 Effects <input type="range" min="0" max="1" step=".05" value="${opts.sfx}" data-a="sfx"></label></div>`;
+}
+function openSettings(back) {
+  const render = () => `${back ? '<button class="btn mback" data-a="back">‹ Back to menu</button>' : ''}${controlsHTML()}
+    <div class="setc"><b>Screen</b><button class="btn" data-a="ctledit" style="width:100%">🕹️ Move and resize the HUD</button></div>
+    ${back ? '' : '<div class="setc"><button class="btn" data-a="intro" style="width:100%">🎬 Watch the opening</button></div>'}
+    <p class="hint">Keyboard: WASD or arrows to walk, Space to use, 1–0 or the mouse wheel for the hotbar, I for the backpack, C for crafting.</p>`;
+  openModal('Settings', render(), (a, d, el) => {
+    if (a === 'back') return openMenu();
+    if (a === 'ctledit') { closeModal(); return ctlEdit(true); }
+    if (a === 'intro') { closeModal(); return playIntro('Farmer', () => { $('title').style.display = 'flex'; }); }
+    handleSetting(a, d, el);
+    if (['ctl', 'auto', 'bspeed'].includes(a)) $('mBody').innerHTML = render();
+  });
 }
 function handleSetting(a, d, el) {
   if (a === 'ctl') setControls(d.v);
-  if (a === 'auto') { opts.autoTool = el.checked; saveOpts(); }
+  if (a === 'auto') { opts.autoTool = el.type === 'checkbox' ? el.checked : !opts.autoTool; saveOpts(); }
   if (a === 'bspeed') { opts.bspeed = +d.v; saveOpts(); toast(['', 'Normal', '', 'Very fast'][Math.round(opts.bspeed)] || 'Fast', 900); }
   if (a === 'music') { opts.music = +el.value; Sound.volumes(); saveOpts(); }
   if (a === 'sfx') { opts.sfx = +el.value; Sound.volumes(); saveOpts(); }
@@ -973,17 +984,22 @@ function openHouseUpgrade() {
   });
 }
 function openMenu() {
-  openModal('Menu', `${controlsHTML()}
-    <p style="font-size:13px;opacity:.8">Keyboard: WASD or arrows to walk, Space to use, 1 to 0 or the mouse wheel for the hotbar, I for the backpack, C for crafting.</p>
-    <p>The game also saves each night when you go to bed. ${Cloud.ok() ? 'Saves are backed up to your claude.ai account, so they survive updates and work on your other devices.' : 'Saves are kept in this browser.'}</p>
-    <div class="row" style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" data-a="house">🏡 Upgrade your house</button><button class="btn" data-a="move">✋ Move things</button><button class="btn" data-a="ctledit">🕹️ Move and resize HUD</button><button class="btn" data-a="friends">💛 Friends</button><button class="btn" data-a="cal">📅 Calendar</button><button class="btn" data-a="map">🗺️ Map</button></div>
-    <div class="row"><button class="btn gold" data-a="save">Save game</button><button class="btn" data-a="export">Back up to a file</button><button class="btn" data-a="title">Quit to title</button></div>`, (a, d, el) => {
-    handleSetting(a, d, el);
+  const tiles = [
+    ['map', '🗺️', 'Map'], ['tasks', '📜', 'Tasks'], ['journal', '📖', 'Journal'],
+    ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
+    ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
+  ];
+  const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
+  openModal('Menu', `<div class="mtiles">${tiles.map(([a, i, l]) => `<button class="mtile" data-a="${a}"><span>${i}</span>${l}</button>`).join('')}</div>
+    <div class="mfoot"><button class="btn gold" data-a="save">💾 Save game</button><button class="btn" data-a="title">Quit to title</button></div>
+    <p class="hint" style="text-align:center">The game also saves each night when you go to bed. ${saveNote}</p>`, (a, d, el) => {
     if (a === 'save') { closeModal(); manualSave(); }
     if (a === 'house') openHouseUpgrade();
     if (a === 'move') { if (!scene || scene.scene.key !== 'farm') return toast('Go outside on your farm to move things.', 2000); closeModal(); scene.moveMode(); }
     if (a === 'export') exportSave();
-    if (a === 'ctledit') { closeModal(); ctlEdit(true); }
+    if (a === 'settings') openSettings(true);
+    if (a === 'tasks') openQuests();
+    if (a === 'journal') openJournal();
     if (a === 'friends') openFriends();
     if (a === 'cal') openCalendar();
     if (a === 'map') openMap();
@@ -4717,7 +4733,7 @@ async function initTitle() {
       if (t === 'continue') startFrom(lastSlot(), false);
       if (t === 'load') loadDialog();
       if (t === 'new') newGameDialog();
-      if (t === 'settings') openModal('Settings', controlsHTML() + '<div class="row"><button class="btn" data-a="intro">Watch the opening</button></div>', (a, d, el2) => { handleSetting(a, d, el2); if (a === 'intro') { closeModal(); playIntro('Farmer', () => { $('title').style.display = 'flex'; }); } });
+      if (t === 'settings') openSettings(false);
     };
   });
   layoutTitle(); window.addEventListener('resize', layoutTitle);
