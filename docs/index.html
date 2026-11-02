@@ -298,15 +298,15 @@ body.ctlEdit #ctlbar{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261102-042035">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261102-042035">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261102-042035">
+<link rel="manifest" href="manifest.webmanifest?v=20261102-042913">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261102-042913">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261102-042913">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-042035').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-042913').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -4017,16 +4017,17 @@ const LEARN = {
 };
 function movesAt(sp, lv) { return (LEARN[sp] || LEARN.tusskip).filter(([l]) => l <= lv).map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i).slice(-4); }
 const EFF = {
+  // every type has two strengths and two weaknesses
   Leaf: { Tide: 2, Stone: 2, Ember: .5, Leaf: .5, Gale: .5 },
-  Ember: { Leaf: 2, Frost: 2, Tide: .5, Stone: .5, Ember: .5 },
+  Ember: { Leaf: 2, Shade: 2, Frost: 2, Tide: .5, Stone: .5, Ember: .5 },
   Tide: { Ember: 2, Stone: 2, Leaf: .5, Tide: .5 },
   Stone: { Ember: 2, Gale: 2, Frost: 2, Leaf: .5 },
-  Gale: { Leaf: 2, Stone: .5, Spark: .5 },
+  Gale: { Leaf: 2, Wild: 2, Stone: .5, Spark: .5 },
   Spark: { Tide: 2, Gale: 2, Stone: .5, Leaf: .5, Spark: .5 },
-  Shade: { Glow: 2, Spark: 2, Shade: .5 },
+  Shade: { Spark: 2, Wild: 2, Glow: 2, Shade: .5 },
   Glow: { Shade: 2, Glow: .5 },
   Frost: { Leaf: 2, Gale: 2, Ember: .5, Tide: .5 },
-  Wild: { Stone: .5, Shade: .5 },
+  Wild: { Shade: 2, Spark: 2, Stone: .5 },
 };
 const eff = (atk, def) => (EFF[atk] || {})[def] ?? 1;
 // dual types: a Fablemon may have a second type. Matchups multiply; either type earns the same-type bonus.

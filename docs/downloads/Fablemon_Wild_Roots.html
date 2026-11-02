@@ -4008,16 +4008,17 @@ const LEARN = {
 };
 function movesAt(sp, lv) { return (LEARN[sp] || LEARN.tusskip).filter(([l]) => l <= lv).map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i).slice(-4); }
 const EFF = {
+  // every type has two strengths and two weaknesses
   Leaf: { Tide: 2, Stone: 2, Ember: .5, Leaf: .5, Gale: .5 },
-  Ember: { Leaf: 2, Frost: 2, Tide: .5, Stone: .5, Ember: .5 },
+  Ember: { Leaf: 2, Shade: 2, Frost: 2, Tide: .5, Stone: .5, Ember: .5 },
   Tide: { Ember: 2, Stone: 2, Leaf: .5, Tide: .5 },
   Stone: { Ember: 2, Gale: 2, Frost: 2, Leaf: .5 },
-  Gale: { Leaf: 2, Stone: .5, Spark: .5 },
+  Gale: { Leaf: 2, Wild: 2, Stone: .5, Spark: .5 },
   Spark: { Tide: 2, Gale: 2, Stone: .5, Leaf: .5, Spark: .5 },
-  Shade: { Glow: 2, Spark: 2, Shade: .5 },
+  Shade: { Spark: 2, Wild: 2, Glow: 2, Shade: .5 },
   Glow: { Shade: 2, Glow: .5 },
   Frost: { Leaf: 2, Gale: 2, Ember: .5, Tide: .5 },
-  Wild: { Stone: .5, Shade: .5 },
+  Wild: { Shade: 2, Spark: 2, Stone: .5 },
 };
 const eff = (atk, def) => (EFF[atk] || {})[def] ?? 1;
 // dual types: a Fablemon may have a second type. Matchups multiply; either type earns the same-type bonus.
