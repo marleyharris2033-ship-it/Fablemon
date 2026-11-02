@@ -310,15 +310,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261102-204150">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261102-204150">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261102-204150">
+<link rel="manifest" href="manifest.webmanifest?v=20261102-204508">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261102-204508">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261102-204508">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-204150').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-204508').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -6858,7 +6858,7 @@ const CDV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }, OPP = { N: 'S', S:
 /* ---------- the legend: Fulgarok, the Geode Storm Fablemon (Stone/Spark, level 40, very hard to catch) */
 SPECIES.fulgarok = { name: 'Fulgarok', title: 'Geode Storm Fablemon', type: 'Stone', type2: 'Spark', legend: true, base: { hp: 108, atk: 115, def: 120, spd: 78 }, exp: 290, rate: 10,
   desc: 'The Geode Storm Fablemon. It sleeps coiled beneath the mountains, storing lightning within its crystals. When it stirs, thunder echoes through the mines.' };
-MOVES.geodestorm = { name: 'Geode Storm', type: 'Spark', pow: 95, acc: 90, st: ['par', 20] };
+MOVES.geodestorm = { name: 'Geode Storm', type: 'Spark', pow: 95, acc: 90, boost: ['foe', 'def', -1, 100] };   // crystal shards crack the target's guard
 LEARN.fulgarok = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slateslam'], [34, 'boltwing'], [38, 'geodestorm'], [44, 'rampartcrush']];
 MON_ORDER.push('fulgarok'); MON_STAGE.fulgarok = 3;
 const LEGEND = { sp: 'fulgarok', lv: 40 };
