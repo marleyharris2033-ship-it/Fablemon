@@ -93,10 +93,17 @@ function svcClinic() {
     $('mBody').innerHTML = render();
   });
 }
+// buy p-gold lots of n items; asks how many lots when you can afford more than one
 function buy(id, p, n = 1) {
-  if (S.gold < p) return Sound.play('error');
-  const left = inv.add(id, n); if (left === n) { Sound.play('error'); return toast('Your backpack is full!'); }
-  S.gold -= p; updateHUD(); renderHotbar(); Sound.play('coin');
+  const afford = Math.floor(S.gold / p); if (afford < 1) return Sound.play('error');
+  const get = k => {
+    let got = 0;
+    for (let i = 0; i < k; i++) { if (S.gold < p) break; const left = inv.add(id, n); if (left === n) { toast('Your backpack is full!'); break; } S.gold -= p; got++; }
+    updateHUD(); renderHotbar(); if (got) Sound.play('coin'); else Sound.play('error');
+    refreshModal();
+  };
+  if (afford === 1) return get(1);
+  askQty({ title: `Buy ${ITEMS[id].name}${n > 1 ? ' ×' + n : ''}`, icon: iconFor(id), max: Math.min(afford, 99), start: 1, unit: p, cost: true, verb: 'Buy' }, get);
 }
 const TOOL_TIERS = ['Basic', 'Copper', 'Iron', 'Gold'];
 const TOOL_COST = [null, { gold: 1500, stone: 25 }, { gold: 5000, stone: 60 }, { gold: 15000, stone: 120 }];

@@ -689,6 +689,32 @@ function openModal(title, html, onClick, onClose) {
   $('mBody').oninput = e => { const el = e.target.closest('[data-a]'); if (el && onClick) onClick(el.dataset.a, el.dataset, el); };
   modalClose = onClose || null; if (scene) scene.paused = true; Sound.play('click');
 }
+/* ---------- "how many?" picker: −/+ buttons, a slider, quick amounts and a running total */
+function askQty(o, cb) {
+  const max = Math.max(1, Math.floor(o.max)), el = $('qty'), p = el.querySelector('.panel');
+  let n = Math.max(1, Math.min(max, o.start || max));
+  const tot = () => o.unit ? `${o.cost ? 'Cost' : 'Worth'}: <span class="num">${(o.unit * n).toLocaleString()}g</span>` : (o.note ? o.note(n) : '');
+  p.innerHTML = `<div class="qh">${o.icon ? `<img src="${o.icon}">` : ''}<span>${o.title}</span></div>
+    <div class="qrow"><button class="btn" data-q="-">−</button><input type="number" min="1" max="${max}" value="${n}"><button class="btn" data-q="+">+</button></div>
+    <input type="range" min="1" max="${max}" value="${n}" ${max < 2 ? 'disabled' : ''}>
+    <div class="quick">${[1, 5, 10, 25].filter(v => v < max).map(v => `<button class="btn" data-q="=${v}">${v}</button>`).join('')}${max > 2 ? `<button class="btn" data-q="=${Math.ceil(max / 2)}">Half</button>` : ''}<button class="btn" data-q="=${max}">All (${max})</button></div>
+    <div class="tot"></div>
+    <div class="row"><button class="btn" data-q="x">Cancel</button><button class="btn gold" data-q="ok">${o.verb || 'OK'}</button></div>`;
+  const num = p.querySelector('input[type=number]'), rng = p.querySelector('input[type=range]'), tt = p.querySelector('.tot');
+  const set = v => { n = Math.max(1, Math.min(max, Math.round(v) || 1)); num.value = n; rng.value = n; tt.innerHTML = tot(); };
+  set(n);
+  const close = () => { el.classList.remove('show'); el.onclick = null; };
+  el.onclick = e => {
+    e.stopPropagation(); const q = e.target.closest('[data-q]'); if (e.target === el) return close(); if (!q) return;
+    const v = q.dataset.q; Sound.play('click');
+    if (v === '-') set(n - 1); else if (v === '+') set(n + 1); else if (v[0] === '=') set(+v.slice(1));
+    else if (v === 'x') close(); else if (v === 'ok') { close(); cb(n); }
+  };
+  num.oninput = () => set(+num.value); rng.oninput = () => set(+rng.value);
+  el.classList.add('show');
+}
+// re-run the open modal's own render after a picker finishes
+function refreshModal() { if (!$('modal').classList.contains('show')) return; const s = document.createElement('span'); s.dataset.a = 'refresh'; $('mBody').appendChild(s); s.click(); s.remove(); }
 function closeModal() { curVendor = null; $('modal').classList.remove('show'); const f = modalClose; modalClose = null; if (f) f(); if (scene) scene.paused = false; }
 $('mClose').onclick = closeModal;
 $('modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') closeModal(); });
@@ -793,13 +819,23 @@ function openCooking() {
     return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : `♥ Heals ${it.heal}% of a Fablemon`}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
   }).join('');
   openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire. Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
+    if (a === 'refresh') { $('mBody').querySelector('.mlist').innerHTML = render(); return; }
     if (a !== 'cook') return;
     const r = COOKING[+d.k], need = { ...r.need, wood: 1 };
-    if (!Object.entries(need).every(([id, n]) => inv.count(id) >= n)) return Sound.play('error');
-    for (const [id, n] of Object.entries(need)) inv.remove(id, n);
-    const left = inv.add(r.out, 1); if (left) { for (const [id, n] of Object.entries(need)) inv.add(id, n); return toast('Your backpack is full!'); }
-    S.flags.cooked = 1; Sound.play('fill'); setTimeout(() => Sound.play('coin'), 350); renderHotbar(); toast(`You cooked ${ITEMS[r.out].name}!`, 1500);
-    $('mBody').querySelector('.mlist').innerHTML = render();
+    const most = Math.min(99, ...Object.entries(need).map(([id, n]) => Math.floor(inv.count(id) / n)));
+    if (most < 1) return Sound.play('error');
+    const cook = times => {
+      let made = 0;
+      for (let i = 0; i < times; i++) {
+        if (!Object.entries(need).every(([id, n]) => inv.count(id) >= n)) break;
+        for (const [id, n] of Object.entries(need)) inv.remove(id, n);
+        const left = inv.add(r.out, 1); if (left) { for (const [id, n] of Object.entries(need)) inv.add(id, n); toast('Your backpack is full!'); break; }
+        made++;
+      }
+      if (made) { S.flags.cooked = 1; Sound.play('fill'); setTimeout(() => Sound.play('coin'), 350); renderHotbar(); toast(`You cooked ${made > 1 ? made + ' ' : ''}${ITEMS[r.out].name}!`, 1500); }
+      $('mBody').querySelector('.mlist').innerHTML = render();
+    };
+    if (most === 1) cook(1); else askQty({ title: `Cook ${ITEMS[r.out].name}`, icon: iconFor(r.out), max: most, start: 1, verb: 'Cook', note: k => 'Uses ' + Object.entries(need).map(([id, n]) => `${n * k} ${ITEMS[id].name}`).join(', ') }, cook);
   });
 }
 function eatHeld(slotIdx = S.sel) {
@@ -858,18 +894,20 @@ function openCraft() {
       if (recipeLocked(r)) return `<div class="recipe" style="opacity:.55"><img src="${iconFor(r.out)}" style="filter:grayscale(1)"><div class="g"><b>${ITEMS[r.out].name}</b><small>${r.crest ? `🔒 After your ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][r.crest]} Crest` : `🌳 Unlocks at Hearthroot stage ${r.stage + 1}`}</small></div></div>`;
       const can = inv.canCraft(r);
       const need = Object.entries(needOf(r)).map(([id, v]) => `${v} ${ITEMS[id].name} (${inv.count(id)})`).join(', ');
-      const can5 = inv.canCraft({ need: Object.fromEntries(Object.entries(needOf(r)).map(([a, b]) => [a, b * 5])) });
+
       return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${ITEMS[r.out].name}${r.n > 1 ? ' ×' + r.n : ''}</b><small>${need}</small></div>
-        <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button><button class="btn" data-a="craft5" data-k="${k}" ${can5 ? '' : 'disabled'}>×5</button></div>`;
+        <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button></div>`;
     }).join('');
     return `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${tabs}</div><div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
   };
   openModal('Crafting', render(), (a, d) => {
     if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); return; }
-    const r = RECIPES[+d.k]; if (!r || recipeLocked(r)) return;
-    const times = a === 'craft5' ? 5 : 1;
-    for (let i = 0; i < times; i++) { const ok = inv.craft(r); if (ok === 'full') { toast('Your backpack is full.'); break; } if (!ok) break; }
-    Sound.play('place');
+    if (a === 'craft') {
+      const r = RECIPES[+d.k]; if (!r || recipeLocked(r)) return;
+      const most = Math.min(99, ...Object.entries(needOf(r)).map(([id, v]) => Math.floor(inv.count(id) / v)));
+      const make = times => { let made = 0; for (let i = 0; i < times; i++) { const ok = inv.craft(r); if (ok === 'full') { toast('Your backpack is full.'); break; } if (!ok) break; made++; } if (made) Sound.play('place'); refreshModal(); };
+      if (most <= 1) make(1); else askQty({ title: `Craft ${ITEMS[r.out].name}`, icon: iconFor(r.out), max: most, start: 1, verb: 'Craft', note: k => 'Uses ' + Object.entries(needOf(r)).map(([id, v]) => `${v * k} ${ITEMS[id].name}`).join(', ') }, make);
+    }
     $('mBody').innerHTML = render();
   });
 }
@@ -2304,7 +2342,15 @@ class Farm extends World {
       return `<p>Anything in the bin is collected tonight. You're paid when you wake up.</p><p><b>In the bin:</b> ${inBin}${total ? ` (${total}g)` : ''}</p>${rows.join('') || '<p>You have nothing to sell yet. Crops, wood, stone and fiber can all be shipped.</p>'}${S.shipped.length ? '<div class="row"><button class="btn" data-a="undo">Take back the last item</button></div>' : ''}`;
     };
     openModal('Shipping bin', render(), (a, d) => {
-      if (a === 'ship') { const i = +d.i, s = inv.slots[i]; if (!s) return; S.shipped.push({ id: s.id, n: s.n }); S.flags.shipped = 1; inv.slots[i] = null; inv.emit(); Sound.play('coin'); }
+      if (a === 'ship') {
+        const i = +d.i, s = inv.slots[i]; if (!s) return;
+        const ship = k => {
+          const cur = inv.slots[i]; if (!cur || cur.id !== s.id) return; k = Math.min(k, cur.n);
+          const last = S.shipped[S.shipped.length - 1]; if (last && last.id === cur.id) last.n += k; else S.shipped.push({ id: cur.id, n: k });
+          S.flags.shipped = 1; cur.n -= k; if (cur.n <= 0) inv.slots[i] = null; inv.emit(); Sound.play('coin'); refreshModal();
+        };
+        if (s.n === 1) ship(1); else askQty({ title: `Ship ${ITEMS[s.id].name}`, icon: iconFor(s.id), max: s.n, unit: ITEMS[s.id].sell, verb: 'Ship' }, ship);
+      }
       if (a === 'undo') { const e = S.shipped.pop(); const left = inv.add(e.id, e.n); if (left) { e.n = left; S.shipped.push(e); toast('Not enough room in your backpack.'); } }
       $('mBody').innerHTML = render();
     });
@@ -2812,18 +2858,20 @@ function openShop() {
   const render = () => SHOP.map(e => {
     const it = ITEMS[e.id], ok = !it.seed || CROPS[it.seed].seasons.includes(si);
     return `<div class="shoprow"><img src="${iconFor(e.id)}"><div class="g"><b>${it.name}</b><small>${it.desc}${ok ? '' : ' Out of season.'}</small></div>
-      <button class="btn gold" data-a="buy" data-id="${e.id}" data-n="1" ${S.gold < e.price ? 'disabled' : ''}>${e.price}g</button>
-      <button class="btn" data-a="buy" data-id="${e.id}" data-n="5" ${S.gold < e.price * 5 ? 'disabled' : ''}>×5</button></div>`;
+      <button class="btn gold" data-a="buy" data-id="${e.id}" ${S.gold < e.price ? 'disabled' : ''}>${e.price}g</button></div>`;
   }).join('');
   const wrap = () => `<p>Seeds for every season, plus supplies for adventurers.</p><div class="mlist">${render()}</div>`;
   openModal("Marigold's General Store", wrap(), (a, d) => {
+    if (a === 'refresh') { $('mBody').innerHTML = wrap(); return; }
     if (a !== 'buy') return;
-    const e = SHOP.find(x => x.id === d.id), n = +d.n, cost = e.price * n;
-    if (S.gold < cost) { Sound.play('error'); return; }
-    const left = inv.add(e.id, n); if (left === n) { Sound.play('error'); return toast('Your backpack is full!'); }
-    S.gold -= e.price * (n - left); Sound.play('coin'); updateHUD(); renderHotbar();
-    toast(`Bought ${n - left} ${ITEMS[e.id].name}`, 1200);
-    $('mBody').innerHTML = wrap();
+    const e = SHOP.find(x => x.id === d.id), afford = Math.floor(S.gold / e.price);
+    if (afford < 1) { Sound.play('error'); return; }
+    const get = n => {
+      const left = inv.add(e.id, n); if (left === n) { Sound.play('error'); return toast('Your backpack is full!'); }
+      S.gold -= e.price * (n - left); Sound.play('coin'); updateHUD(); renderHotbar();
+      toast(`Bought ${n - left} ${ITEMS[e.id].name}`, 1200); $('mBody').innerHTML = wrap();
+    };
+    askQty({ title: `Buy ${ITEMS[e.id].name}`, icon: iconFor(e.id), max: Math.min(afford, 999), start: 1, unit: e.price, cost: true, verb: 'Buy' }, get);
   });
 }
 

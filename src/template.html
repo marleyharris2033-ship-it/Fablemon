@@ -230,7 +230,7 @@ body{-webkit-font-smoothing:antialiased}
 .num{font-family:var(--ui);font-weight:800;letter-spacing:0}
 /* ---------- root frames: pixel-art roots as the border of every menu (9-slice border-image) */
 .modal .panel,#talk,#bui,#icap,#buildbar{border-style:solid !important;border-width:16px !important;border-color:transparent !important;border-image:url(__FRAME_BIG__) 12 round !important;background-clip:padding-box !important;image-rendering:pixelated;box-shadow:none !important;filter:drop-shadow(4px 5px 0 rgba(0,0,0,.35))}
-#clock,#quest,#hotbar,#toast,.bbox,#topbtns .sq,#ctlbar{border-style:solid !important;border-width:9.333px !important;border-color:transparent !important;border-image:url(__FRAME_SM__) 7 round !important;background-clip:padding-box !important;image-rendering:pixelated;box-shadow:none !important;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.35))}
+#clock,#quest,#hotbar,#toast,.bbox,#topbtns .sq,#ctlbar,#qty .panel{border-style:solid !important;border-width:9.333px !important;border-color:transparent !important;border-image:url(__FRAME_SM__) 7 round !important;background-clip:padding-box !important;image-rendering:pixelated;box-shadow:none !important;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.35))}
 #topbtns .sq{width:50px;height:50px}
 @media (orientation: portrait){#topbtns{flex-direction:column;gap:4px}}
 #clock{padding:3px 8px}#quest{padding:3px 8px}#hotbar{padding:2px}
@@ -246,6 +246,18 @@ body.ctlEdit #ctlbar{display:block}
 .modal .panel{padding:0 8px 8px}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
+#qty{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(10,15,10,.35)}
+#qty.show{display:flex}
+#qty .panel{width:min(86vw,340px);padding:10px 14px 12px}
+#qty .qh{display:flex;align-items:center;gap:10px;font-family:var(--pix);font-weight:700;font-size:17px;margin-bottom:8px}
+#qty .qh img{width:36px;height:36px;image-rendering:pixelated}
+#qty .qrow{display:flex;align-items:center;gap:8px;justify-content:center}
+#qty .qrow .btn{min-width:44px;font-size:20px;padding:4px 0}
+#qty input[type=number]{width:84px;font:700 22px var(--ui);text-align:center;padding:4px;border:3px solid var(--green);background:#fffaea}
+#qty input[type=range]{width:100%;margin:10px 0 6px}
+#qty .quick{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+#qty .quick .btn{padding:3px 10px;font-size:13px}
+#qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
 </head>
 <body>
@@ -271,6 +283,7 @@ body.ctlEdit #ctlbar{display:block}
 <div id="buildbar" class="panel"></div>
 <div id="battle"><div id="bstage"><img id="bfoe" class="bmon" alt=""><img id="bme" class="bmon" alt=""><img id="bcharm" class="hidden" alt=""><div id="bfoebox" class="bbox panel"></div><div id="bmebox" class="bbox panel"></div></div><div id="bui" class="panel"><div id="bmsg"></div><div id="bmenu"></div></div></div>
 <div id="toast" class="panel"></div>
+<div id="qty"><div class="panel"></div></div>
 <div id="ctlbar" class="panel"><b style="font-family:var(--pix)">Move and resize the HUD</b><div style="font-size:12px;opacity:.8">Drag the joystick and the action button to where you want them. Use the sliders to size each part of the screen.</div><label><span>Joystick</span> <input type="range" id="ctlJs" min=".6" max="1.8" step=".05"></label><label><span>Action button</span> <input type="range" id="ctlAs" min=".6" max="1.8" step=".05"></label><div id="hudSizes"></div><div class="row"><button class="btn" id="ctlReset">Reset</button><button class="btn gold" id="ctlDone">Done</button></div></div>
 <div id="fade"></div>
 <div id="loading">Loading…</div>
