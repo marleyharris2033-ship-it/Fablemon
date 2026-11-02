@@ -4604,7 +4604,7 @@ function layoutTitle() {
   }
 }
 async function initTitle() {
-  await loadIcons(); await loadMonPics(); await loadExtraIcons(); await loadTrainerPics(); await loadVillPics();
+  await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics();
   ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
   $('titleImg').src = ASSET.title;
   document.querySelector('#title .bg').style.backgroundImage = `url(${ASSET.title})`;

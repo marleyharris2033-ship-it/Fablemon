@@ -515,3 +515,12 @@ async function winterAtlases() {
   for (const k of ['town', 'houses', 'bh', 'bog']) out[k] = snowCap(await loadImg(ASSET[k]));
   return out;
 }
+
+/* ============================================================ Item art
+   Painted icons for dishes, goods, seeds and decorations, and the placed farm objects (itemart.json).
+   Runs after the code-drawn stand-ins are made, and replaces them. */
+function applyItemArt() {
+  const A = ASSET.itemart; if (!A) return;
+  for (const [k, v] of Object.entries(A.objs)) SAP_CANVAS[k] = rgbaCanvas(v);
+  for (const [k, v] of Object.entries(A.icons)) { const c = rgbaCanvas(v); ICONS[k] = c.toDataURL(); ICON_CANVAS[k] = c; }
+}
