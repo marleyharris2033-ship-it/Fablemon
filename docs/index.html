@@ -310,15 +310,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261102-202102">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261102-202102">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261102-202102">
+<link rel="manifest" href="manifest.webmanifest?v=20261102-202702">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261102-202702">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261102-202702">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-202102').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-202702').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -2348,6 +2348,7 @@ const QUESTS = [
   { id: 'bog', name: 'Cross Mossmere Bog', hint: 'Head east from the middle of Brookside Lane, past the old rockfall. Beat all five keepers in the bog.', done: () => ['mb1', 'mb2', 'mb3', 'mb4', 'mb5'].every(beatTrainer), reward: { gold: 1500, items: { sturdy_charm: 3 } } },
   { id: 'fen', name: 'Solve Sluice Fen', hint: 'Past Mossmere Bog, the fen is cut up by flooded channels. Pull the old levers to drain a way through to the far side.', done: () => !!(S.visited && S.visited.fenDone), reward: { gold: 1500, items: { mon_treat: 2 } } },
   { id: 'brook', name: 'Earn the Brook Crest from Warden Delphine', hint: "Cross Sluice Fen to Brookholt. Fund two repairs on the town's notice board, then challenge Delphine at the Lock House. Her Tide team is level 20–24.", done: () => S.crests && S.crests.brook, reward: { gold: 1500, items: { tonic: 3 } } },
+  { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Fund and finish any ${elderNeed()} repairs on Smallroot's notice board, whichever you like (${elderDone()}/${elderNeed()} so far). Then tell Bramble.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
   { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
@@ -3531,6 +3532,30 @@ const Talk = (() => {
 })();
 
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const elderNeed = () => Math.min(3, Object.keys(PROJECTS).length - (S.flags.elderBase || []).length);
+const elderDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k] && !(S.flags.elderBase || []).includes(k)).length;
+function elderLines(B) {
+  const f = S.flags;
+  if (!(S.crests && S.crests.brook) || f.elderThanked) return null;
+  if (!f.elderQ) {
+    f.elderQ = 1; f.elderBase = Object.keys(S.town.done).filter(k => PROJECTS[k]);
+    if (elderNeed() <= 0) { f.elderThanked = 1; return [B("Two Wardens' Crests! And you've already put the whole town back together. I've nothing left to ask of you, {name}.", 0)]; }
+    return [
+      B("{name}! Word travels fast. Two Wardens' Crests already? Your grandfather would be bursting with pride.", 0),
+      B("Brookholt, the fen, the bog... You've seen how other towns get by. It's got me thinking about Smallroot."),
+      B("Folk are starting to ask about coming back. But they'll only come if there's something to come back to.", 2),
+      B(`So here's my ask. Restore ${elderNeed()} more buildings in town. Any ones you like, you know best what we need.`),
+      B("Pick from the notice board by the Hearthroot. Come and tell me when they're done, and I'll make it worth your while.", 0),
+    ];
+  }
+  if (elderDone() < elderNeed()) return [B(pick([`How are the repairs coming along? That's ${elderDone()} of ${elderNeed()} so far. Any you like, mind!`, `${elderDone()} of ${elderNeed()} done. The notice board by the Hearthroot has the rest.`, `Every building we bring back, the Hearthroot stands a bit taller. ${elderDone()} of ${elderNeed()} so far!`]), 1)];
+  f.elderThanked = 1;
+  return [
+    B(`${elderNeed()} buildings, all standing proud again! Look at the place, {name}.`, 0),
+    B("I had a letter this morning from a family in the city asking if there's room for them. Can you believe it?", 3),
+    B("Here, take these. Gold from the town fund, and a few things from my old travelling days. You've earned every bit.", 0),
+  ];
+}
 function brambleLines() {
   const tw = S.town, st = hearthStage(), B = (t, f = 1) => ({ who: 'bramble', t, f });
   if (!tw.met.bramble) return [
@@ -3542,6 +3567,7 @@ function brambleLines() {
     B("I've pinned the repair jobs on the notice board by the tree. Bring materials and a bit of gold, and we'll get to work."),
     B("And do pop into Marigold's store. She has seeds, and she's been dying for a new face to chat to.", 0),
   ];
+  const q = elderLines(B); if (q) return q;
   const pool = [
     ["Morning, {name}. How's the farm treating you?", 0],
     ["The notice board's got a few jobs on it, if you've any wood or stone going spare.", 1],
