@@ -4145,7 +4145,7 @@ function moveCard(id, m, tag = '') {
     <div class="ms"><span>Power <b>${M.pow || '–'}</b></span><span>Accuracy <b>${M.acc ? M.acc + '%' : (M.pow || M.st || M.seed || M.fixed) ? 'Sure' : '–'}</b></span>${M.prio ? `<span>Priority <b>${M.prio > 0 ? '+' : ''}${M.prio}</b></span>` : ''}<span>Uses <b>${m ? ppLeft(m, id) + '/' : ''}${ppMax(id)}</b></span>${M.pow && m && hasType(m.sp, M.type) ? '<span class="same">Same type ×1.5</span>' : ''}</div>
     <small>${moveEffect(id)}${M.pow && strong.length ? ` Super effective against ${strong.join(', ')}.` : ''}</small></div>`;
 }
-const ppMax = id => { const M = MOVES[id]; if (M.protect || M.heal || M.rest || M.weather) return 10; if (!M.pow && !M.fixed) return M.st || M.seed ? 15 : 20; return M.pow >= 110 ? 8 : M.pow >= 80 ? 12 : M.pow >= 60 ? 15 : 25; };
+const ppMax = id => { const M = MOVES[id]; if (M.pp) return M.pp; if (M.protect || M.heal || M.rest || M.weather) return 10; if (!M.pow && !M.fixed) return M.st || M.seed ? 15 : 20; return M.pow >= 110 ? 8 : M.pow >= 80 ? 12 : M.pow >= 60 ? 15 : 25; };
 const moveTag = id => { const M = MOVES[id]; if (M.pow) return 'Pow ' + M.pow + (M.hits ? '×' + M.hits[0] + '–' + M.hits[1] : '') + (M.prio > 0 ? ' · First' : ''); if (M.fixed) return 'Lv dmg'; if (M.st) return STATUS[M.st[0]][0]; if (M.protect) return 'Protect'; if (M.heal || M.rest) return 'Heal'; if (M.weather) return { rain: 'Rain', sun: 'Sun', gloom: 'Gloom' }[M.weather]; if (M.hazard) return 'Hazard'; if (M.seed) return 'Seed'; if (M.haze) return 'Clear stats'; if (M.cure) return 'Cure team'; if (M.critUp) return '▲Crit'; const x = (M.stats || [M.stat])[0]; return x ? (x[2] > 0 ? '▲' : '▼') + { atk: 'Atk', def: 'Def', spd: 'Spd' }[x[1]] : ''; };
 const ppLeft = (m, id) => (m.pp && m.pp[id] != null) ? m.pp[id] : ppMax(id);
 function restMon(m) { m.hp = monStat(m, 'hp'); m.pp = {}; m.status = null; }
@@ -6849,7 +6849,7 @@ const CDV = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] }, OPP = { N: 'S', S:
 /* ---------- the legend: Fulgarok, the Geode Storm Fablemon (Stone/Spark, level 40, very hard to catch) */
 SPECIES.fulgarok = { name: 'Fulgarok', title: 'Geode Storm Fablemon', type: 'Stone', type2: 'Spark', legend: true, base: { hp: 108, atk: 115, def: 120, spd: 78 }, exp: 290, rate: 10,
   desc: 'The Geode Storm Fablemon. It sleeps coiled beneath the mountains, storing lightning within its crystals. When it stirs, thunder echoes through the mines.' };
-MOVES.geodestorm = { name: 'Geode Storm', type: 'Spark', pow: 95, acc: 90, boost: ['foe', 'def', -1, 100] };   // crystal shards crack the target's guard
+MOVES.geodestorm = { name: 'Geode Storm', type: 'Spark', pow: 95, acc: 90, boost: ['foe', 'def', -1, 100], pp: 5 };   // crystal shards crack the target's guard; only 5 uses
 LEARN.fulgarok = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slateslam'], [34, 'boltwing'], [38, 'geodestorm'], [44, 'rampartcrush']];
 MON_ORDER.push('fulgarok'); MON_STAGE.fulgarok = 3;
 const LEGEND = { sp: 'fulgarok', lv: 40 };
