@@ -1085,8 +1085,9 @@ const FX = (() => {
       for (const p of aparts) {
         p.y += p.v * .7; p.x += Math.sin((p.y + p.s * 300) / 50) * .9 - .25; p.r += .05;
         if (p.y > cv.height + 6 || p.x < -10) { p.y = -6; p.x = Math.random() * (cv.width + 40); }
-        g.fillStyle = p.c; const k = Math.max(2, Math.round(scene && scene.cameras && scene.cameras.main ? scene.cameras.main.zoom : 3)), w = (amb === 'leaves' ? 3 : 2) * k, hh = Math.max(1, Math.round(Math.abs(Math.cos(p.r)) * (amb === 'leaves' ? 2 : 2))) * k;
-        g.fillRect(p.x | 0, p.y | 0, w, hh); if (amb === 'leaves') { g.fillStyle = 'rgba(60,30,10,.5)'; g.fillRect((p.x | 0) + w - k, (p.y | 0) + hh - k, k, k); }
+        g.fillStyle = p.c; const z = scene && scene.cameras && scene.cameras.main ? scene.cameras.main.zoom : 3, k = Math.max(1, Math.round(z * .5)), x = p.x | 0, y = p.y | 0, fl = Math.cos(p.r) > 0;
+        if (amb === 'leaves') { g.fillRect(x, y, 3 * k, k); g.fillRect(x + k, y + (fl ? -k : k), k, k); g.fillStyle = 'rgba(60,30,10,.45)'; g.fillRect(x + 2 * k, y, k, k); }
+        else { g.fillRect(x, y, 2 * k, k); if (fl) g.fillRect(x + k, y - k, k, k); }
       }
       return;
     }
@@ -3885,7 +3886,13 @@ function buildRoute() {
   const setRect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (y >= 0 && y <= RH && x >= 0 && x <= RW) V[y][x] = v; };
   if (RC.lake) { setRect(0, 0, RW, RH, 2); setRect(0, 0, RW, 1, 0); setRect(0, RH - 1, RW, RH, 0); setRect(0, 0, 1, RH, 0); setRect(RW - 1, 0, RW, RH, 0); for (const r of RC.land) setRect(...r, 0); }
   for (const r of RC.paths) setRect(...r, 1);
-  for (const c of RC.channels || []) setRect(...c.r, c.dry(sluice()) ? 1 : 2);
+  // a drained channel becomes mossy banks with a muddy path down the middle, so it blends into the bog
+  for (const c of RC.channels || []) {
+    const [x0, y0, x1, y1] = c.r;
+    if (!c.dry(sluice())) { setRect(x0, y0, x1, y1, 2); continue; }
+    setRect(x0, y0, x1, y1, 0);
+    if (x1 - x0 > y1 - y0) setRect(x0, y0 + 1, x1, y1 - 1, 1); else setRect(x0 + 1, y0, x1 - 1, y1, 1);
+  }
   for (const [cx, cy, rx, ry] of RC.ponds) for (let y = 0; y <= RH; y++) for (let x = 0; x <= RW; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) V[y][x] = 2;
   const tiles = new Int32Array(RW * RH), blocked = new Uint8Array(RW * RH), dirtish = new Uint8Array(RW * RH), waterish = new Uint8Array(RW * RH), grass = new Int8Array(RW * RH).fill(-1), water = [];
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
