@@ -1,36 +1,51 @@
 /* ============================================================ Map, weekly respawns and seasonal villager lines */
 
-/* ---------- map: every area you've found, with what's left to do there */
-const MAP_AREAS = [
-  { k: 'farm', name: 'Wild Roots Farm', icon: '🏡', at: [1, 1], seen: () => true, notes: () => ['Your home and fields'] },
-  { k: 'town', name: 'Smallroot', icon: '🏘️', at: [2, 1], seen: () => S.town.visited, notes: () => [`Shops, villagers, notice board`, `Hearthroot stage ${hearthStage() + 1} of 5`] },
-  { k: 'route1', name: 'Meadow Trail', icon: '🌾', at: [1, 2], route: 1 },
-  { k: 'route2', name: 'Brookside Lane', icon: '🌳', at: [1, 3], route: 1, warden: ['Mabel', 'root'] },
-  { k: 'route3', name: 'Mossmere Bog', icon: '🪷', at: [2, 3], route: 1 },
-  { k: 'route4', name: 'Sluice Fen', icon: '🌊', at: [3, 3], route: 1, extra: () => S.flags && S.flags.fenDone ? '✔ Levers solved' : '🔧 Lever puzzle' },
-  { k: 'brookholt', name: 'Brookholt', icon: '⚓', at: [4, 3], route: 1, warden: ['Delphine', 'brook'] },
+/* ---------- map: the illustrated world map, with names, Warden badges and fog over places not yet found.
+   x, y are fractions of the picture. Places that aren't in the game yet stay fogged as "???". */
+const MAP_PLACES = [
+  { k: 'farm', name: 'Farm', al: 'l', x: .41, y: .472, seen: () => true, notes: () => ['Your home and fields'] },
+  { k: 'town', name: 'Smallroot', x: .575, y: .468, seen: () => S.town.visited, warden: ['Rowan', 'hearth', 8], notes: () => ['Shops, villagers, notice board', `Hearthroot stage ${hearthStage() + 1} of 5`] },
+  { k: 'route1', name: 'Meadow Trail', x: .43, y: .605, route: 1 },
+  { k: 'route2', name: 'Brookside Lane', al: 'l', x: .42, y: .73, route: 1, warden: ['Mabel', 'root', 1] },
+  { k: 'route3', name: 'Mossmere Bog', al: 'b', x: .565, y: .742, route: 1 },
+  { k: 'route4', name: 'Sluice Fen', al: 't', x: .715, y: .75, route: 1, extra: () => S.flags && S.flags.fenDone ? '✔ Levers solved' : '🔧 Lever puzzle' },
+  { k: 'brookholt', name: 'Brookholt', x: .87, y: .75, route: 1, warden: ['Delphine', 'brook', 2] },
+  { k: 'quarrydown', name: 'Quarrydown', x: .84, y: .525, soon: 1, warden: ['?', 'stone', 3] },
+  { k: 'driftwood', name: 'Driftwood Cove', x: .22, y: .54, soon: 1 },
+  { k: 'beaconreach', name: 'Beaconreach', x: .1, y: .365, soon: 1, warden: ['?', 'spark', 4] },
+  { k: 'highmoor', name: 'Highmoor', x: .29, y: .16, soon: 1, warden: ['?', 'gale', 5] },
+  { k: 'elderwood', name: 'Elderwood', x: .87, y: .22, soon: 1, warden: ['?', 'wild', 6] },
+  { k: 'gloamhollow', name: 'Gloamhollow', x: .615, y: .33, soon: 1, warden: ['?', 'shade', 7] },
+  { k: 'rootcrown', name: 'Rootcrown', x: .605, y: .05, soon: 1 },
+  { k: 'isles', name: 'Secret isles', x: .15, y: .835, soon: 1 },
 ];
+function placeSeen(P) { return P.soon ? false : P.route ? !!(S.visited && S.visited[P.k]) || (P.k === 'route1' && S.routeVisited) : P.seen(); }
+function placeNotes(P) {
+  const R = ROUTES[P.k], lines = P.notes ? P.notes() : [];
+  if (R) {
+    const tr = (R.trainers || []).filter(t => !t.boss), left = tr.filter(t => !(S.trainers || {})[t.id]).length;
+    if (tr.length) lines.push(left ? `⚔️ ${left} trainer${left > 1 ? 's' : ''} to beat` : '✔ All trainers beaten');
+    if (Object.values(R.signs || {}).includes('__heal')) lines.push('💧 Healing well');
+    const items = (R.pickups || []).filter(p => !S.picked[p.id]).length; if (items) lines.push(`🎁 ${items} item${items > 1 ? 's' : ''} to find`);
+    if (R.town) lines.push('🛒 Shops');
+  }
+  if (P.warden) lines.push((S.crests || {})[P.warden[1]] ? `🏅 Warden ${P.warden[0]} beaten` : `🏅 Warden ${P.warden[0]} waits here`);
+  if (P.extra) lines.push(P.extra());
+  return lines;
+}
 function openMap() {
   const here = scene ? (scene.scene.key === 'house' ? 'farm' : scene.scene.key) : '';
-  const card = A => {
-    const R = ROUTES[A.k], seen = A.route ? !!(S.visited && S.visited[A.k]) || (A.k === 'route1' && S.routeVisited) : A.seen();
-    if (!seen) return `<div class="mapc unseen" style="grid-column:${A.at[0] * 2 - 1};grid-row:${A.at[1] * 2 - 1}"><b>???</b><small>Not found yet</small></div>`;
-    const lines = A.notes ? A.notes() : [];
-    if (R) {
-      const tr = (R.trainers || []).filter(t => !t.boss), left = tr.filter(t => !(S.trainers || {})[t.id]).length;
-      if (tr.length) lines.push(left ? `⚔️ ${left} trainer${left > 1 ? 's' : ''} to beat` : '✔ All trainers beaten');
-      if (Object.values(R.signs || {}).includes('__heal')) lines.push('💧 Healing well');
-      const items = (R.pickups || []).filter(p => !S.picked[p.id]).length; if (items) lines.push(`🎁 ${items} item${items > 1 ? 's' : ''} to find`);
-      if (R.town) lines.push('🛒 Shops');
-    }
-    if (A.warden) lines.push((S.crests || {})[A.warden[1]] ? `🏅 Warden ${A.warden[0]} beaten` : `🏅 Warden ${A.warden[0]}`);
-    if (A.extra) lines.push(A.extra());
-    return `<div class="mapc ${here === A.k ? 'here' : ''}" style="grid-column:${A.at[0] * 2 - 1};grid-row:${A.at[1] * 2 - 1}"><b>${A.icon} ${A.name}</b>${here === A.k ? '<i>You are here</i>' : ''}${lines.map(l => `<small>${l}</small>`).join('')}</div>`;
-  };
-  const link = (c, r, ch) => `<div class="mapl" style="grid-column:${c};grid-row:${r}">${ch}</div>`;
-  const train = S.town.done.station ? link(5, 2, '🚂 <small>train to Brookholt</small>') : '';
-  openModal('Map', `<div class="mapg">${MAP_AREAS.map(card).join('')}${link(2, 1, '→')}${link(1, 2, '↓')}${link(1, 4, '↓')}${link(2, 5, '→')}${link(4, 5, '→')}${link(6, 5, '→')}${train}</div>
-    <p class="hint">Areas you haven't reached yet show as ???.</p>`);
+  const pins = MAP_PLACES.map((P, i) => {
+    const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];
+    const fog = seen ? '' : `<div class="wfog" style="left:${P.x * 100}%;top:${P.y * 100}%"></div>`;
+    const badge = w && seen ? `<span class="wbadge ${won ? 'won' : ''}">${won ? '✔' : w[2]}</span>` : '';
+    return `${fog}<button class="wpin ${seen ? '' : 'unseen'} ${here === P.k ? 'here' : ''} ${P.al ? 'al-' + P.al : ''}" data-a="pin" data-i="${i}" style="left:${P.x * 100}%;top:${P.y * 100}%">${here === P.k ? '<i class="wyou">▼</i>' : ''}<b>${seen ? P.name : '???'}</b>${badge}</button>`;
+  }).join('');
+  openModal('Map', `<div class="wmap"><img src="${ASSET.worldmap}" alt="World map">${pins}</div><div id="wmapInfo" class="hint">Tap a place to see what's there.</div>`, (a, d) => {
+    if (a !== 'pin') return;
+    const P = MAP_PLACES[+d.i], seen = placeSeen(P);
+    $('wmapInfo').innerHTML = seen ? `<b>${P.k === 'farm' ? 'Wild Roots Farm' : P.name}</b>${here === P.k ? ' <i>(you are here)</i>' : ''}<br>${placeNotes(P).join('<br>')}` : P.soon ? '<b>???</b><br>Somewhere you haven\'t been yet.' : '<b>???</b><br>You haven\'t found this place yet.';
+  });
 }
 
 /* ---------- weekly respawn: items hidden on the routes (not gold) come back every Monday */

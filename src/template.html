@@ -246,6 +246,20 @@ body.ctlEdit #ctlbar{display:block}
 .modal .panel{padding:0 8px 8px}
 .modal h2{margin:0 -8px 10px}
 #talk{padding:2px 4px 4px;bottom:calc(var(--s,36px) + 44px) !important}
+/* world map */
+.wmap{position:relative;width:100%;line-height:0;border:3px solid #5e3b20;background:#3ab0d0}
+.wmap img{width:100%;display:block;image-rendering:auto}
+.wfog{position:absolute;width:24%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(rgba(30,40,50,.62) 35%,rgba(30,40,50,0) 70%);pointer-events:none}
+.wpin{position:absolute;transform:translate(-50%,-50%);background:none;border:0;padding:0;cursor:pointer;display:flex;align-items:center;gap:2px;line-height:1.1;white-space:nowrap}
+.wpin b{font:700 11px var(--pix);color:#2a1e1a;background:rgba(251,243,217,.92);border:2px solid #5e3b20;padding:1px 4px}
+.wpin.unseen b{color:#e8e0cc;background:rgba(40,40,46,.7);border-color:#1e1e22}
+.wpin.here b{background:#ffe9a0;border-color:#d99a1e}
+.wyou{position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:#d04030;font-style:normal;font-size:14px;text-shadow:0 1px 0 #fff}
+.wbadge{font:700 10px var(--ui);background:#f2c14e;color:#412402;border:2px solid #854f0b;border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center}
+.wbadge.won{background:#7cc24a;color:#173404;border-color:#3b6d11}
+/* label sides: l = to the left of the spot, b = below, t = above */
+.wpin.al-l{transform:translate(calc(-100% + 8px),-50%)}.wpin.al-b{transform:translate(-50%,40%)}.wpin.al-t{transform:translate(-50%,-140%)}
+#wmapInfo{margin-top:6px;min-height:40px;line-height:1.4}
 /* map */
 .mapg{display:grid;grid-template-columns:repeat(7,auto);gap:2px;align-items:center;justify-items:center;overflow-x:auto;padding-bottom:4px}
 .mapc{background:#fffaea;border:2px solid #b89a6a;padding:5px 6px;min-width:96px;max-width:130px;font-size:12px;display:flex;flex-direction:column;gap:1px}
