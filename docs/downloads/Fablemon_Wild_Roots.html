@@ -5582,8 +5582,9 @@ const bhDone = id => !!bhState().done[id];
 const bhRepairs = () => Object.keys(bhState().done).length;
 // Wardens choose their own moves, like a gym leader would: a Tide team with a little Gale cover for Leaf challengers
 // Fenfang is her ace, backed by both Puffpiper forms
-const DELPHINE_TEAM = [['lotling', 20, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 21, ['hum', 'featherdance', 'downdraft', 'sapsip']],
-  ['muddlebub', 21, ['mirejet', 'raincall', 'scree', 'mudslick']], ['puffpiper', 22, ['mirejet', 'downdraft', 'flitaway', 'bogbubble']], ['fenfang', 24, ['aquaflick', 'haunt', 'mirejet', 'sharpen']]];
+const DELPHINE_TEAM = [['lotling', 21, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 22, ['hum', 'featherdance', 'downdraft', 'sapsip']],
+  ['muddlebub', 22, ['mirejet', 'raincall', 'scree', 'mudslick']], ['puffpiper', 23, ['mirejet', 'downdraft', 'flitaway', 'bogbubble']],
+  ['brookstride', 23, ['weirwave', 'aquaflick', 'tidedance', 'quickhop']], ['fenfang', 25, ['aquaflick', 'haunt', 'mirejet', 'sharpen']]];
 const wardenMon = ([sp, lv, moves]) => { const m = wildMon(sp, lv); if (moves) m.moves = moves.filter(id => MOVES[id]); return m; };
 
 function bhBoard() {

@@ -259,15 +259,15 @@ body.ctlEdit #ctlbar{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261102-010347">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261102-010347">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261102-010347">
+<link rel="manifest" href="manifest.webmanifest?v=20261102-021014">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261102-021014">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261102-021014">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-010347').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261102-021014').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -5591,8 +5591,9 @@ const bhDone = id => !!bhState().done[id];
 const bhRepairs = () => Object.keys(bhState().done).length;
 // Wardens choose their own moves, like a gym leader would: a Tide team with a little Gale cover for Leaf challengers
 // Fenfang is her ace, backed by both Puffpiper forms
-const DELPHINE_TEAM = [['lotling', 20, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 21, ['hum', 'featherdance', 'downdraft', 'sapsip']],
-  ['muddlebub', 21, ['mirejet', 'raincall', 'scree', 'mudslick']], ['puffpiper', 22, ['mirejet', 'downdraft', 'flitaway', 'bogbubble']], ['fenfang', 24, ['aquaflick', 'haunt', 'mirejet', 'sharpen']]];
+const DELPHINE_TEAM = [['lotling', 21, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 22, ['hum', 'featherdance', 'downdraft', 'sapsip']],
+  ['muddlebub', 22, ['mirejet', 'raincall', 'scree', 'mudslick']], ['puffpiper', 23, ['mirejet', 'downdraft', 'flitaway', 'bogbubble']],
+  ['brookstride', 23, ['weirwave', 'aquaflick', 'tidedance', 'quickhop']], ['fenfang', 25, ['aquaflick', 'haunt', 'mirejet', 'sharpen']]];
 const wardenMon = ([sp, lv, moves]) => { const m = wildMon(sp, lv); if (moves) m.moves = moves.filter(id => MOVES[id]); return m; };
 
 function bhBoard() {
