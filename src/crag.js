@@ -21,22 +21,51 @@ LEARN.fulgarok = [[1, 'rockroll'], [1, 'sparkdash'], [1, 'harden'], [30, 'slates
 MON_ORDER.push('fulgarok'); MON_STAGE.fulgarok = 3;
 const LEGEND = { sp: 'fulgarok', lv: 40 };
 
+/* ---------- the Fablemon of the pass (first stages; their evolutions arrive with their art) */
+Object.assign(MOVES, {
+  glint: { name: 'Glint', type: 'Glow', pow: 40, acc: 100 },
+  dazzle: { name: 'Dazzle', type: 'Glow', stat: ['foe', 'atk', -1] },
+  lumenpulse: { name: 'Lumen Pulse', type: 'Glow', pow: 60, acc: 100 },
+  prismbeam: { name: 'Prism Beam', type: 'Glow', pow: 80, acc: 95, boost: ['foe', 'spd', -1, 30] },
+  radiance: { name: 'Radiance', type: 'Glow', pow: 110, acc: 85 },
+});
+Object.assign(SPECIES, {
+  craglet: { name: 'Craglet', type: 'Stone', evo: ['craglet_2', 30], base: { hp: 45, atk: 62, def: 58, spd: 52 }, exp: 62, rate: 120, desc: 'A griffin chick with feathers of split slate. It nests on narrow cliff ledges and sharpens its beak by pecking at the rock face.' },
+  cindhop: { name: 'Cindhop', type: 'Ember', type2: 'Stone', evo: ['cindhop_2', 28], base: { hp: 46, atk: 64, def: 50, spd: 64 }, exp: 64, rate: 120, desc: 'A hare of cooled lava. Glowing cracks open along its body when it gets excited, and its tail is a smouldering ember that never quite goes out.' },
+  bristlecone: { name: 'Bristlecone', type: 'Leaf', evo: ['bristlecone_2', 26], base: { hp: 52, atk: 56, def: 62, spd: 40 }, exp: 60, rate: 140, desc: 'It curls up and rolls down mountain slopes like a pinecone. Wherever it finally stops, it shakes loose a few seeds, and in time a young pine grows there.' },
+  clinkit: { name: 'Clinkit', type: 'Stone', type2: 'Glow', evo: ['clinkit_2', 32], base: { hp: 50, atk: 44, def: 74, spd: 30 }, exp: 68, rate: 90, desc: 'It hides under a bell of stone threaded with golden light. On still nights in the mountains you can hear it chime softly as it shuffles about.' },
+  ramruff: { name: 'Ramruff', type: 'Wild', evo: ['ramruff_2', 34], base: { hp: 66, atk: 74, def: 58, spd: 52 }, exp: 92, rate: 100, desc: 'A shaggy mountain goat that settles every argument by headbutting it. It leaps between ledges that look far too far apart.' },
+});
+Object.assign(LEARN, {
+  craglet: [[1, 'tackle'], [1, 'harden'], [5, 'peck'], [9, 'pebbletoss'], [13, 'gust'], [17, 'rockroll'], [21, 'scree'], [25, 'swiftwing'], [29, 'slateslam'], [34, 'rockslide'], [40, 'galeforce'], [46, 'flintedge'], [52, 'landslide']],
+  cindhop: [[1, 'tackle'], [1, 'tailwhip'], [5, 'emberpuff'], [9, 'quickhop'], [13, 'pebbletoss'], [17, 'emberdash'], [21, 'rockroll'], [25, 'cinderslam'], [29, 'bonfirekick'], [34, 'slateslam'], [40, 'furnacefist'], [46, 'rampartbash'], [52, 'flarerush']],
+  bristlecone: [[1, 'tackle'], [1, 'harden'], [5, 'leafflick'], [9, 'bramblecurl'], [13, 'thornvolley'], [17, 'rockroll'], [21, 'bramblespikes'], [25, 'sapsip'], [29, 'hedgecrash'], [34, 'rootdrain'], [40, 'overgrow'], [46, 'landslide'], [52, 'bloomburst']],
+  clinkit: [[1, 'tackle'], [1, 'harden'], [5, 'glint'], [9, 'pebbletoss'], [13, 'dazzle'], [17, 'lumenpulse'], [21, 'bulwark'], [25, 'rockroll'], [29, 'prismbeam'], [34, 'slateslam'], [40, 'fortify'], [46, 'radiance'], [52, 'rampartcrush']],
+  ramruff: [[1, 'tackle'], [1, 'growl'], [5, 'headbutt'], [9, 'quickhop'], [13, 'pebbletoss'], [17, 'brace'], [21, 'stampede'], [25, 'rockroll'], [29, 'battlecry'], [34, 'pounce'], [40, 'rampartbash'], [46, 'laststand'], [52, 'wildrush']],
+});
+MON_ORDER.push('craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff');
+Object.assign(EXTRA_HABITAT, {
+  craglet: 'Cragside Pass and Cragside Heights long grass', cindhop: 'Cragside Pass and Cragside Heights long grass',
+  bristlecone: 'Cragside Pass long grass, in the daytime', ramruff: 'Cragside Pass and Cragside Heights long grass',
+  clinkit: 'Cragside Pass and Cragside Heights long grass, mostly after dark', fulgarok: 'Asleep deep inside the Old Mine, beyond the Old Rail Cutting',
+});
+
 /* ---------- trainers of the pass */
 TRAINER_ROW.miner = 9; TRAINER_ROW.climber = 10;
 TRAINER_TYPES.climber = { label: 'Climber', challenge: ["You don't get views like this down in the bog! Let's battle up here!", "Every peak's better with a battle at the top!"], lose: ["I'll stick to climbing, I think.", "Fell at the last handhold. Well played!"], after: ["The boulders up the Heights move if you put your back into them.", "Watch your footing near the crevasses."] };
 TRAINER_TYPES.miner = { label: 'Miner', challenge: ["Oi! This is a working cutting. Well, it was. Fancy a scrap?", "Forty years down the seams. Let's see what you've got!"], lose: ["Struck rock bottom there.", "You dig deep, I'll give you that."], after: ["Change the points before you ride, or you'll end up somewhere daft.", "There's something in the old mine. Hums all night, it does."] };
 
-const CRAG_ENC = { day: [['flintburrow', 24], ['mortoad', 20], ['whirlwyn', 18], ['staticwing', 15], ['brashlet', 12], ['yawnox', 8]], night: [['duskcloak', 30], ['staticwing', 22], ['flintburrow', 20], ['mortoad', 15], ['kilnook', 8]] };
+const CRAG_ENC = { day: [['craglet', 20], ['bristlecone', 18], ['cindhop', 15], ['ramruff', 12], ['flintburrow', 9], ['whirlwyn', 8], ['staticwing', 7], ['mortoad', 5], ['yawnox', 3], ['clinkit', 3]], night: [['clinkit', 22], ['duskcloak', 18], ['craglet', 12], ['ramruff', 12], ['staticwing', 12], ['cindhop', 10], ['flintburrow', 8], ['kilnook', 6]] };
 Object.assign(ROUTES, {
   crag1: { name: 'Cragside Pass', w: 36, h: 50, ascii: 'crag1', crag: true,
     zones: [[0, 0, 0, 0, 22, 24], [0, 0, 0, 0, 23, 25], [0, 0, 0, 0, 23, 25], [0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 24, 26]],
     pickups: [{ id: 'c1', x: 31, y: 46, item: 'sturdy_charm', n: 3 }, { id: 'c2', x: 4, y: 25, item: 'tonic', n: 2 }, { id: 'c3', x: 30, y: 2, gold: 1200 }, { id: 'c4', x: 13, y: 8, item: 'mon_treat', n: 2 }],
     signs: { '14,47': 'Cragside Pass. The old mountain road climbs north to the Heights and on to Quarrydown.', '20,7': '__heal', '14,2': 'North: Cragside Heights. Watch out for loose boulders.' },
     trainers: [
-      { id: 'cp1', kind: 'climber', name: 'Holly', x: 19, y: 44, dir: 'left', sight: 3, team: [['whirlwyn', 24], ['flintburrow', 25]] },
-      { id: 'cp2', kind: 'miner', name: 'Bert', x: 9, y: 30, dir: 'left', sight: 3, team: [['mortoad', 25], ['brashlet', 25], ['flintburrow', 26]] },
+      { id: 'cp1', kind: 'climber', name: 'Holly', x: 19, y: 44, dir: 'left', sight: 3, team: [['craglet', 24], ['flintburrow', 25]] },
+      { id: 'cp2', kind: 'miner', name: 'Bert', x: 9, y: 30, dir: 'left', sight: 3, team: [['mortoad', 25], ['cindhop', 25], ['flintburrow', 26]] },
       { id: 'cp3', kind: 'climber', name: 'Rhys', x: 22, y: 23, dir: 'down', sight: 3, team: [['staticwing', 26], ['whirlwyn', 26]] },
-      { id: 'cp4', kind: 'climber', name: 'Peg', x: 25, y: 14, dir: 'right', sight: 3, team: [['yawnox', 26], ['fleecebolt', 26], ['staticwing', 27]] },
+      { id: 'cp4', kind: 'climber', name: 'Peg', x: 25, y: 14, dir: 'right', sight: 3, team: [['bristlecone', 26], ['ramruff', 26], ['staticwing', 27]] },
     ],
     exits: [{ r: [16, 49, 18, 49], to: x => ['brookholt', { x: x + 5, y: 1, dir: 'down' }] }, { r: [16, 0, 18, 0], to: x => ['crag2', { x: x + 2, y: 42, dir: 'up' }] }],
     spawn: { x: 17, y: 47, dir: 'up' }, enc: CRAG_ENC },
@@ -46,8 +75,8 @@ Object.assign(ROUTES, {
     signs: { '15,35': 'A crevasse cuts across the road. That boulder looks loose: walk into it to push it. Fill the gap and you can cross!', '23,31': '__cgcairn', '5,26': 'West: the Old Rail Cutting. The miners rode carts down to the old mine.', '28,21': '__cgcairn', '21,13': '__cgcairn', '17,3': '__heal' },
     trainers: [
       { id: 'ch1', kind: 'climber', name: 'Gwen', x: 26, y: 38, dir: 'left', sight: 4, team: [['staticwing', 26], ['flintburrow', 26], ['whirlwyn', 27]] },
-      { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['mortoad', 27], ['kilnook', 28]] },
-      { id: 'ch3', kind: 'climber', name: 'Effie', x: 9, y: 12, dir: 'right', sight: 4, team: [['fleecebolt', 28], ['yawnox', 28], ['staticwing', 29]] },
+      { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['clinkit', 27], ['kilnook', 28]] },
+      { id: 'ch3', kind: 'climber', name: 'Effie', x: 9, y: 12, dir: 'right', sight: 4, team: [['ramruff', 28], ['craglet', 28], ['staticwing', 29]] },
       { id: 'ch4', kind: 'miner', name: 'Morgan', x: 29, y: 6, dir: 'left', sight: 3, team: [['flintburrow', 29], ['duskcloak', 29], ['brashlet', 30]] },
     ],
     gate: { area: [18, 0, 20, 1], sign: [21, 2], ok: () => false, text: "The road to Quarrydown is still buried under the landslide. The road crews are digging it out. (Coming soon!)" },
@@ -62,7 +91,7 @@ Object.assign(ROUTES, {
     trainers: [
       { id: 'rc1', kind: 'miner', name: 'Ifor', x: 11, y: 19, dir: 'right', sight: 4, team: [['flintburrow', 28], ['mortoad', 28]] },
       { id: 'rc2', kind: 'climber', name: 'Sian', x: 42, y: 5, dir: 'left', sight: 2, team: [['whirlwyn', 28], ['staticwing', 29]] },
-      { id: 'rc3', kind: 'miner', name: 'Huw', x: 22, y: 10, dir: 'right', sight: 3, team: [['kilnook', 29], ['flintburrow', 29], ['mortoad', 30]] },
+      { id: 'rc3', kind: 'miner', name: 'Huw', x: 22, y: 10, dir: 'right', sight: 3, team: [['cindhop', 29], ['clinkit', 29], ['mortoad', 30]] },
     ],
     switches: { W1: { x: 25, y: 19, trunk: 'S', a: 'W', b: 'E' }, W2: { x: 34, y: 4, trunk: 'S', a: 'W', b: 'E' }, W3: { x: 26, y: 4, trunk: 'E', a: 'S', b: 'N' } },
     depot: { x: 40, y: 27, dir: 'left' }, tunnel: { x: 5, y: 2 },

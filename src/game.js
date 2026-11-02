@@ -1579,7 +1579,9 @@ function openTeam() {
     if (a === 'info') openMonInfo(m, openTeam);
   });
 }
+const EXTRA_HABITAT = {};   // filled by later areas
 const HABITAT = sp => {
+  if (EXTRA_HABITAT[sp]) return EXTRA_HABITAT[sp];
   if (STARTERS.includes(sp)) return 'The roots of the Hearthroot, Smallroot';
   { const prev = Object.keys(SPECIES).find(k => SPECIES[k].evo && SPECIES[k].evo[0] === sp); if (prev) return `Evolves from ${SPECIES[prev].name} at level ${SPECIES[prev].evo[1]}`; }
   { const H = { muddlebub: 'Mossmere Bog and Sluice Fen', lotling: 'Mossmere Bog and Sluice Fen', puffpiper: 'Sluice Fen: the Reed Form dives in the flooded channels', puffpiper_cotton: 'Mossmere Bog: the Cotton Form drifts over the grass', sundrowse: 'Mossmere Bog and Sluice Fen', tipplecup: 'Mossmere Bog and Sluice Fen', glimmerjel: 'Mossmere Bog and Sluice Fen, mostly after dark', logloom: 'The far end of Mossmere Bog, and anywhere at night', fenfang: 'Rare: the south island of Sluice Fen, and Mossmere Bog after dark', mirebellows: 'Not found wild yet: evolve Muddlebub', lotveil: 'Not found wild yet: evolve Lotling', reefarer: 'Not found wild yet: evolve a Reed Form Puffpiper', reefarer_cotton: 'Not found wild yet: evolve a Cotton Form Puffpiper', yawnox: 'Not found wild yet: evolve Sundrowse', brimbramble: 'Not found wild yet: evolve Tipplecup', stormveil: 'Not found wild yet: evolve Glimmerjel', hollowbark: 'Not found wild yet: evolve Logloom', marshviper: 'Not found wild yet: evolve Fenfang' }; if (H[sp]) return H[sp]; }
