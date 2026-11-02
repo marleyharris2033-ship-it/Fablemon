@@ -1058,9 +1058,12 @@ function setupTouch() {
   const end = e => { if (e.pointerId !== joy.id) return; joy.active = false; joy.dx = joy.dy = 0; knob.style.transform = ''; litArrow(''); };
   el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end); el.addEventListener('lostpointercapture', end);
   const a = $('actBtn');
-  a.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('ctlEdit')) return ctlDrag(e, a, 'a'); actHeld = true; a.classList.add('down'); if (scene && !scene.paused && !scene.sleeping) scene.actFacing(); });
+  a.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if (document.body.classList.contains('ctlEdit')) return ctlDrag(e, a, 'a'); try { a.setPointerCapture(e.pointerId); } catch (_) { } actHeld = true; a.classList.add('down'); if (scene && !scene.paused && !scene.sleeping) scene.actFacing(); });
   const up = () => { actHeld = false; a.classList.remove('down'); };
-  a.addEventListener('pointerup', up); a.addEventListener('pointercancel', up); a.addEventListener('pointerleave', up);
+  // holding the button keeps working (chopping, mining, cutting): the button keeps the finger, and long-press menus are blocked
+  a.addEventListener('pointerup', up); a.addEventListener('pointercancel', up); a.addEventListener('lostpointercapture', up);
+  for (const ev of ['contextmenu', 'selectstart', 'touchstart', 'touchmove']) a.addEventListener(ev, e => e.preventDefault(), { passive: false });
+  addEventListener('blur', up);
   applyTouchMode(); applyCtlLayout(); addEventListener('resize', applyCtlLayout);
   $('ctlJs').oninput = e => { ctlLayout().js = +e.target.value; applyCtlLayout(); };
   $('ctlAs').oninput = e => { ctlLayout().as = +e.target.value; applyCtlLayout(); };
@@ -1444,8 +1447,8 @@ class World extends Phaser.Scene {
       if (this.player.anims.currentAnim?.key !== 'walk_' + p.dir || !this.player.anims.isPlaying) this.player.play('walk_' + p.dir);
     } else if (!p.moving) {
       if (this.player.anims.isPlaying) { this.player.stop(); this.player.setFrame(this.standF(p.dir)); }
-      if ((this.keys.SPACE.isDown || this.keys.E.isDown || actHeld) && !p.busy) this.actFacing();
-      if (this.holding && this.holding.isDown && p.lastTarget && !p.busy && p.lastTarget.d && !p.lastTarget.d.gone && !p.path.length) this.tapGoal(p.lastTarget);
+      if ((this.keys.SPACE.isDown || this.keys.E.isDown || actHeld) && !(p.busy > 0)) this.actFacing();
+      if (this.holding && this.holding.isDown && p.lastTarget && !(p.busy > 0) && p.lastTarget.d && !p.lastTarget.d.gone && !p.path.length) this.tapGoal(p.lastTarget);
     }
   }
   arrived() {
@@ -1808,7 +1811,7 @@ const JOBS = {
   Leaf: { name: 'Gardener', desc: 'Plants seeds from any chest in its area onto empty tilled soil there, and clears weeds and bushes (the fiber goes to a chest in the area, or your ranch).' },
   Wild: { name: 'Lumberjack', desc: 'Chops trees and stumps in its area. The wood goes to your ranch.' },
   Stone: { name: 'Rock Collector', desc: 'Breaks up rocks in its area, and chips away at any Mine there for a steady supply of stone. The stone goes to your ranch.' },
-  Ember: { name: 'Cook', desc: 'With a Cooking Pot and a chest in its area, it cooks the best meal it can from the chest\'s ingredients (using 1 wood each) and puts the dish back in the chest. Turn this off for any chest from inside it. Otherwise it warms tilled soil so the next crop grows a day faster.' },
+  Ember: { name: 'Cook', desc: 'With a Cooking Pot and a chest in its area, it cooks the best meal it can from the chest\'s ingredients (using 1 wood each) and puts the dish back in the chest. Turn this off for any chest from inside it. Each day it also warms the growing crops in its area first, so they grow about half again as fast.' },
   Gale: { name: 'Harvester', desc: 'Picks ripe crops, and collects honey, fertiliser and fish from beehives, compost bins and fishing huts in its area. Everything goes into a chest in the area, or to your ranch.' },
   Spark: { name: 'Charger', desc: 'Charges compost bins and beehives in its area so they finish a day sooner. (It will power machines later.)' },
   Shade: { name: 'Night Forager', desc: 'Works after 7pm, finding Hearthberries and the odd Root Charm in its area.' },
@@ -1834,6 +1837,11 @@ function jobTargets(m, area) {
     }
   }
   // Ember: cook at a pot when a chest nearby has the ingredients
+  // Ember: warm today's growing crops first, then cook
+  if (type === 'Ember') {
+    for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) { const tl = S.tilled[x + ',' + y]; if (tl && tl.crop && !tl.crop.dead && !cropRipe(tl.crop) && !tl.heat) out.push({ x, y, warm: 1 }); }
+    if (out.length) return out;
+  }
   if (type === 'Ember' && chests.length && S.time >= 360 && S.time < 1320) {
     const pot = potIn([x0, y0, x1, y1]), r = pot && bestRecipe(chests.filter(c => !c.o.noCook));
     if (r) return [{ x: pot.x, y: pot.y, cook: r }];
@@ -1843,13 +1851,13 @@ function jobTargets(m, area) {
     if (o.part) continue; const [x, y] = k.split(',').map(Number); if (x < x0 || x > x1 || y < y0 || y > y1) continue;
     if (objReady(o)) out.push({ x, y, collect: k });
   }
+  if (type === 'Ember') return out;
   const kinds = { Leaf: ['weeds', 'bush', 'bigbush'], Wild: ['stump', 'oak', 'pine', 'apple'], Stone: ['pebble', 'rocks', 'boulder'] }[type];
   for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) {
     const k = x + ',' + y, tl = S.tilled[k];
     if (type === 'Stone' && S.objs[k]) { const anchor = S.objs[k].part || k, mo = S.objs[anchor]; if (mo && mo.t === 'mine') { out.push({ x, y, mine: anchor }); continue; } }
     if (kinds) { if (!farm) continue; const id = farm.occ[y * W + x], d = id >= 0 && farm.debris[id]; if (d && !d.gone && d.x === x && d.y === y && kinds.includes(d.kind)) out.push({ x, y, d }); continue; }
     if (type === 'Tide' && tl && !tl.w) out.push({ x, y, pri: tl.crop ? 0 : 1 });
-    if (type === 'Ember' && tl && !tl.fert) out.push({ x, y });
     if (type === 'Gale' && tl && cropRipe(tl.crop)) out.push({ x, y });
     const ob = S.objs[k];
     if (type === 'Spark' && ob && !ob.boost && ((ob.t === 'compost' && ob.n && S.day < ob.doneDay) || (ob.t === 'beehive' && !ob.honey))) out.push({ x, y });
@@ -1911,7 +1919,7 @@ function doJob(m, t) {
     if (fs) fs.drawObj(t.x, t.y);
   }
   else if (type === 'Tide') { if (!tl || tl.w) return; tl.w = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.splash(t.x, t.y); } }
-  else if (type === 'Ember') { if (!tl || tl.fert) return; tl.fert = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 10, 0xe0703a); } }
+  else if (type === 'Ember') { if (!tl || !tl.crop || tl.crop.dead || tl.heat) return; tl.heat = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 10, 0xe0703a); } }
   else if (type === 'Gale') { if (!tl || !cropRipe(tl.crop)) return; const it = CROPS[tl.crop.type].item; delete tl.crop; toStore(it, 1); msg = `+1 ${ITEMS[it].name}`; if (fs) fs.drawTilled(t.x, t.y); }
   else if (type === 'Spark') {
     const o = S.objs[k]; if (!o || o.boost) return;
@@ -2257,7 +2265,7 @@ class Farm extends World {
     const p = this.p; if (p.moving || this.paused) return;
     const [dx, dy] = DV[p.dir], x = p.x + dx, y = p.y + dy;
     if (x < 0 || y < 0 || x >= W || y >= H) return;
-    if (!p.busy && this.cutProp(x, y)) return;
+    if (!(p.busy > 0) && this.cutProp(x, y)) return;
     const id = farm.occ[y * W + x];
     if (id >= 0) return this.act({ type: 'debris', d: farm.debris[id] });
     const r = this.roamerAt(x, y); if (r) return this.act({ type: 'mon', r });
@@ -2393,6 +2401,10 @@ class Farm extends World {
     if (this.cropSprites[k]) { this.cropSprites[k].forEach(o => o.destroy()); delete this.cropSprites[k]; }
     const parts0 = [];
     if (tl && tl.fert) parts0.push(this.add.rectangle(x * T, y * T, T, T, 0x2a1a0a, .22).setOrigin(0).setDepth(1));
+    if (tl && tl.heat) { // warmed by a fire Fablemon today: a soft glow and two little embers
+      parts0.push(this.add.rectangle(x * T, y * T, T, T, 0xff6a1a, .3).setOrigin(0).setDepth(1));
+      for (const [ex, ey] of [[2, 12], [12, 3]]) { parts0.push(this.add.rectangle(x * T + ex, y * T + ey, 2, 2, 0xffb24a, .9).setOrigin(0).setDepth(1)); parts0.push(this.add.rectangle(x * T + ex, y * T + ey + 2, 2, 1, 0xd0542a, .9).setOrigin(0).setDepth(1)); }
+    }
     if (tl && tl.bog) parts0.push(this.add.rectangle(x * T + 1, y * T + 1, T - 2, T - 2, 0x2a4a5a, .35).setOrigin(0).setDepth(1));
     const c = tl && tl.crop; if (!c) { if (parts0.length) this.cropSprites[k] = parts0; return; }
     const fr = CROPS[c.type].frames[cropStage(c)], ck = fr.startsWith('cv:') ? 'cv_' + fr.slice(3) : null;
@@ -4549,7 +4561,8 @@ function nightly(passedOut) {
   const si = seasonIdx(S.day), newSeason = si !== before;
   let withered = 0;
   for (const [tk, t] of Object.entries(S.tilled)) {
-    if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } }
+    if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } if (t.heat && !cropRipe(t.crop)) { t.crop.warm = (t.crop.warm || 0) + .5; if (t.crop.warm >= 1) { t.crop.warm -= 1; t.crop.g++; } } }
+    t.heat = 0;
     if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
     t.w = isWet(S.weather) || t.bog ? 1 : 0;
   }
