@@ -2338,11 +2338,11 @@ setInterval(() => { try { checkQuests(); } catch (e) { } }, 1000);
 const MON_STAGE = { brookstride: 2, rampartoad: 2.5, pyrebrash: 2.5, briamble: 2, kilnook: 2, weirlet: 2, fleecebolt: 2, whirlwyn: 2, cloverguard: 2, flintburrow: 2, staticwing: 2, duskcloak: 2, hedgerholt: 3, hearthrusk: 3, merewheel: 3 };
 const JOBS = {
   Tide: { name: 'Waterer', desc: 'Waters dry soil in its area.' },
-  Leaf: { name: 'Weeder', desc: 'Clears weeds and bushes in its area. The fiber goes to your ranch.' },
+  Leaf: { name: 'Gardener', desc: 'Plants seeds from any chest in its area onto empty tilled soil there, and clears weeds and bushes (the fiber goes to a chest in the area, or your ranch).' },
   Wild: { name: 'Lumberjack', desc: 'Chops trees and stumps in its area. The wood goes to your ranch.' },
   Stone: { name: 'Rock Collector', desc: 'Breaks up rocks in its area, and chips away at any Mine there for a steady supply of stone. The stone goes to your ranch.' },
-  Ember: { name: 'Soil Warmer', desc: 'Warms tilled soil so the next crop grows a day faster, like fertiliser.' },
-  Gale: { name: 'Harvester', desc: 'Picks ripe crops in its area. They go to your ranch.' },
+  Ember: { name: 'Cook', desc: 'With a Cooking Pot and a chest in its area, it cooks the best meal it can from the chest\'s ingredients (using 1 wood each) and puts the dish back in the chest. Otherwise it warms tilled soil so the next crop grows a day faster.' },
+  Gale: { name: 'Harvester', desc: 'Picks ripe crops, and collects honey, fertiliser and fish from beehives, compost bins and fishing huts in its area. Everything goes into a chest in the area, or to your ranch.' },
   Spark: { name: 'Charger', desc: 'Charges compost bins and beehives in its area so they finish a day sooner. (It will power machines later.)' },
   Shade: { name: 'Night Forager', desc: 'Works after 7pm, finding Hearthberries and the odd Root Charm in its area.' },
 };
@@ -2357,6 +2357,25 @@ const isNight = () => S.time >= 1140 || S.time < 360;
 const grassFree = (x, y) => { const k = x + ',' + y, i = y * W + x; return farm && !farm.blocked[i] && farm.occ[i] < 0 && !farm.dirtish[i] && !farm.waterish[i] && !S.tilled[k] && !S.paths[k] && !S.fences[k] && !S.objs[k] && !(scene && scene.isHouseZone && scene.isHouseZone(x, y)); };
 function jobTargets(m, area) {
   const [x0, y0, x1, y1] = area || jobArea(m.job), type = SPECIES[m.sp].type, out = [];
+  const chests = chestsIn([x0, y0, x1, y1]);
+  // Leaf: seeds from a chest go into empty tilled soil (planting comes before weeding)
+  if (type === 'Leaf' && chests.length) {
+    const seeds = [...new Set(chests.flatMap(c => c.o.items.filter(s => s && ITEMS[s.id].seed).map(s => s.id)))];
+    if (seeds.length) for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) {
+      const tl = S.tilled[x + ',' + y]; if (!tl || tl.crop) continue;
+      const sd = seeds.find(id => canPlantAt(x, y, ITEMS[id].seed)); if (sd) out.push({ x, y, plant: sd, pri: 0 });
+    }
+  }
+  // Ember: cook at a pot when a chest nearby has the ingredients
+  if (type === 'Ember' && chests.length && S.time >= 360 && S.time < 1320) {
+    const pot = potIn([x0, y0, x1, y1]), r = pot && bestRecipe(chests);
+    if (r) return [{ x: pot.x, y: pot.y, cook: r }];
+  }
+  // Gale: collect from beehives, compost bins and fishing huts
+  if (type === 'Gale') for (const [k, o] of Object.entries(S.objs)) {
+    if (o.part) continue; const [x, y] = k.split(',').map(Number); if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+    if (objReady(o)) out.push({ x, y, collect: k });
+  }
   const kinds = { Leaf: ['weeds', 'bush', 'bigbush'], Wild: ['stump', 'oak', 'pine', 'apple'], Stone: ['pebble', 'rocks', 'boulder'] }[type];
   for (let y = Math.max(0, y0); y <= Math.min(H - 1, y1); y++) for (let x = Math.max(0, x0); x <= Math.min(W - 1, x1); x++) {
     const k = x + ',' + y, tl = S.tilled[k];
@@ -2369,15 +2388,61 @@ function jobTargets(m, area) {
     if (type === 'Spark' && ob && !ob.boost && ((ob.t === 'compost' && ob.n && S.day < ob.doneDay) || (ob.t === 'beehive' && !ob.honey))) out.push({ x, y });
     if (type === 'Shade' && isNight() && (x + y) % 3 === 0) out.push({ x, y });
   }
-  if (type === 'Tide') out.sort((a, b) => a.pri - b.pri);
+  if (type === 'Tide' || type === 'Leaf') out.sort((a, b) => (a.pri ?? 1) - (b.pri ?? 1));
   return out;
 }
-const toStore = (id, n) => { S.workStore = S.workStore || {}; S.workStore[id] = (S.workStore[id] || 0) + n; };
+const toStore0 = (id, n) => { S.workStore = S.workStore || {}; S.workStore[id] = (S.workStore[id] || 0) + n; };
+let jobChests = [];   // chests in the area of the Fablemon currently working; their finds go there first
+const toStore = (id, n) => { const left = jobChests.length ? chestPut(jobChests, id, n) : n; if (left) toStore0(id, left); };
+/* ---------- chests near a work area */
+function chestsIn([x0, y0, x1, y1]) { const out = []; for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'chest' || o.part || !o.items) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) out.push({ k, o }); } return out; }
+function potIn([x0, y0, x1, y1]) { for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'pot' || o.part) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return { x, y }; } return null; }
+const chestCount = (cs, id) => { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; return cs.reduce((a, c) => a + c.o.items.reduce((b, s) => b + (s && ids.includes(s.id) ? s.n : 0), 0), 0); };
+function chestTake(cs, id, n) { const ids = QUAL[id] ? [id, ...QUAL[id]] : [id]; for (const want of ids) for (const c of cs) c.o.items.forEach((s, i) => { if (!n || !s || s.id !== want) return; const k = Math.min(n, s.n); s.n -= k; n -= k; if (!s.n) c.o.items[i] = null; }); return !n; }
+function chestPut(cs, id, n) {
+  const max = ITEMS[id].stack || 99;
+  for (const c of cs) for (const s of c.o.items) if (n && s && s.id === id && s.n < max) { const k = Math.min(n, max - s.n); s.n += k; n -= k; }
+  for (const c of cs) for (let i = 0; i < c.o.items.length && n; i++) if (!c.o.items[i]) { const k = Math.min(n, max); c.o.items[i] = { id, n: k }; n -= k; }
+  return n;
+}
+function canPlantAt(x, y, cropId) {
+  const C = CROPS[cropId], tl = S.tilled[x + ',' + y]; if (!C || !tl || tl.crop) return false;
+  if (!inGreenhouse(x, y) && !C.seasons.includes(seasonIdx(S.day))) return false;
+  const edge = waterEdge(x, y), soggy = edge || tl.bog;
+  if (tl.bog && !C.bog) return false; if (C.edge && !edge) return false; if (C.bog && !soggy) return false;
+  return true;
+}
+// the most valuable meal a cook can make from these chests (plus 1 wood)
+function bestRecipe(cs) {
+  return COOKING.filter(r => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest))
+    .filter(r => Object.entries({ ...r.need, wood: (r.need.wood || 0) + 1 }).every(([id, n]) => chestCount(cs, id) >= n))
+    .sort((a, b) => ITEMS[b.out].sell - ITEMS[a.out].sell)[0] || null;
+}
 // carry out one job on tile t; works whether or not the farm is on screen
 function doJob(m, t) {
   const type = SPECIES[m.sp].type, k = t.x + ',' + t.y, tl = S.tilled[k], fs = scene && scene.scene && scene.scene.key === 'farm' ? scene : null;
   let msg = '';
-  if (type === 'Tide') { if (!tl || tl.w) return; tl.w = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.splash(t.x, t.y); } }
+  jobChests = m.job ? chestsIn(jobArea(m.job)) : [];
+  if (t.plant) {
+    if (!canPlantAt(t.x, t.y, ITEMS[t.plant].seed) || !chestTake(jobChests, t.plant, 1)) return;
+    tl.crop = { type: ITEMS[t.plant].seed, g: 0 }; msg = '🌱 Planted';
+    if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 12, 0x6bb24a); }
+  }
+  else if (t.cook) {
+    const r = t.cook, need = { ...r.need, wood: (r.need.wood || 0) + 1 };
+    if (!Object.entries(need).every(([id, n]) => chestCount(jobChests, id) >= n)) return;
+    for (const [id, n] of Object.entries(need)) chestTake(jobChests, id, n);
+    toStore(r.out, 1); msg = `🍲 ${ITEMS[r.out].name}`;
+    if (fs) { fs.chips(t.x * T + 8, t.y * T + 2, 0xe0703a, 5); fs.drawObj(t.x, t.y); }
+  }
+  else if (t.collect) {
+    const o = S.objs[t.collect]; if (!o || !objReady(o)) return;
+    if (o.t === 'beehive') { toStore('honey', o.honey); msg = `+${o.honey} Honey`; o.honey = 0; o.last = S.day; }
+    else if (o.t === 'compost') { const n = compostOut(o); toStore('fertiliser', n); msg = `+${n} Fertiliser`; o.n = 0; o.boost = 0; }
+    else if (o.t === 'fishhut') { let n = 0; for (const [id, c] of Object.entries(o.fish || {})) if (c) { toStore(id, c); n += c; o.fish[id] = 0; } msg = `+${n} fish`; }
+    if (fs) fs.drawObj(t.x, t.y);
+  }
+  else if (type === 'Tide') { if (!tl || tl.w) return; tl.w = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.splash(t.x, t.y); } }
   else if (type === 'Ember') { if (!tl || tl.fert) return; tl.fert = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 10, 0xe0703a); } }
   else if (type === 'Gale') { if (!tl || !cropRipe(tl.crop)) return; const it = CROPS[tl.crop.type].item; delete tl.crop; toStore(it, 1); msg = `+1 ${ITEMS[it].name}`; if (fs) fs.drawTilled(t.x, t.y); }
   else if (type === 'Spark') {
