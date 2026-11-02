@@ -1511,13 +1511,16 @@ const SPECIES = {
   merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 85, atk: 80, def: 80, spd: 100 } },
 };
 const TEAM_MAX = 6, ROAM_MAX = 8;
-const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5; };
+const IV_KEYS = ['hp', 'atk', 'def', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', spd: 'Speed' };
+const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.floor(Math.random() * (11 - lo))]));
+const ivMul = (m, k) => 1 + (((m.iv && m.iv[k]) || 5) - 5) * .01;   // potential 1 = −4%, 5 = normal, 10 = +5%
+const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
 const healAmt = (id, m) => Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100));   // healing items restore a share of max HP
 const team = () => S.mons.filter(m => m.loc === 'team');
 const lead = () => team()[0] || null;
-function newMon(sp, lv = 5) { const m = { uid: S.nextId++, sp, nick: '', lv, xp: lv ** 3, loc: 'team', out: false, bond: 0, moves: movesAt(sp, lv) }; m.hp = monStat(m, 'hp'); return m; }
-function fixMon(m) { if (!m.moves || !m.moves.length) m.moves = movesAt(m.sp, m.lv); if (!(m.xp >= m.lv ** 3)) m.xp = m.lv ** 3; m.hp = Math.min(m.hp ?? 999, monStat(m, 'hp')); return m; }
+function newMon(sp, lv = 5) { const m = { uid: S.nextId++, sp, nick: '', lv, xp: lv ** 3, loc: 'team', out: false, bond: 0, moves: movesAt(sp, lv), iv: rollIV() }; m.hp = monStat(m, 'hp'); return m; }
+function fixMon(m) { if (!m.iv) m.iv = rollIV(4); if (!m.moves || !m.moves.length) m.moves = movesAt(m.sp, m.lv); if (!(m.xp >= m.lv ** 3)) m.xp = m.lv ** 3; m.hp = Math.min(m.hp ?? 999, monStat(m, 'hp')); return m; }
 function giveMon(m) {
   if (team().length >= TEAM_MAX) { m.loc = 'ranch'; }
   S.mons.push(m); refreshTeamBtn();
@@ -1615,6 +1618,8 @@ function openMonInfo(m, back) {
     <div><b style="font-size:18px">${monName(m)}</b>${m.nick ? `<br><small>${sp.name}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
     <p>${sp.desc || ''}</p>
     <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
+    ${ivPanel(m)}
+    ${m.uid >= 0 ? heldRow(m) : ''}
     <p style="margin:10px 0 4px;display:flex;justify-content:space-between;align-items:center"><b>Moves</b>${m.uid >= 0 ? '<button class="btn sm" data-a="moves">Change moves</button>' : ''}</p>${(m.moves || []).map(id => moveCard(id, m)).join('')}
     ${(() => { const nx = (LEARN[m.sp] || []).find(([l, id]) => l > m.lv && !m.moves.includes(id)); return nx ? `<p class="hint">Next new move: <b>${MOVES[nx[1]].name}</b> at level ${nx[0]}.</p>` : ''; })()}
     ${m.hp < monStat(m, 'hp') ? `<div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(ITEMS).filter(id => ITEMS[id].heal && inv.count(id)).map(id => `<button class="btn gold sm" data-a="feed" data-id="${id}"><img src="${iconFor(id)}" style="width:18px;vertical-align:middle;image-rendering:pixelated"> ${ITEMS[id].name} (${inv.count(id)})</button>`).join('')}</div>` : ''}
@@ -1623,6 +1628,7 @@ function openMonInfo(m, back) {
   openModal(monName(m), render(), (a, dd) => {
     if (a === 'feed') { const d = dd; if (!inv.remove(d.id, 1)) return; m.hp = Math.min(monStat(m, 'hp'), m.hp + healAmt(d.id, m)); if (ITEMS[d.id].cure) m.status = null; renderHotbar(); Sound.play('pop'); $('mBody').innerHTML = render(); return; }
     if (a === 'moves') return openMoveSwap(m, () => openMonInfo(m, back));
+    if (a === 'held') return openHeldPicker(m, () => openMonInfo(m, back));
     if (a === 'rename') { m.nick = $('nick').value.trim().slice(0, 12); toast(`Now called ${monName(m)}`, 1200); $('mTitle').textContent = monName(m); }
     if (a === 'back') back ? back() : closeModal();
   });
@@ -3530,7 +3536,9 @@ const CHARM_GIFT = [
 ];
 function giveCharms() { if (S.gotCharms) return; S.gotCharms = true; inv.add('root_charm', 5); inv.add('berry', 3); renderHotbar(); toast('Received 5 Root Charms and 3 Hearthberries!', 2600); }
 
-function wildMon(sp, lv) { const m = { uid: -1, sp, nick: '', lv, xp: lv ** 3, moves: movesAt(sp, lv) }; m.hp = monStat(m, 'hp'); return m; }
+// trainers' Fablemon have steady, slightly-above-average potential so fights stay predictable
+const trainerMon = (sp, lv) => { const m = wildMon(sp, lv); m.iv = { hp: 6, atk: 6, def: 6, spd: 6 }; m.hp = monStat(m, 'hp'); return m; };
+function wildMon(sp, lv) { const m = { uid: -1, sp, nick: '', lv, xp: lv ** 3, moves: movesAt(sp, lv), iv: rollIV() }; m.hp = monStat(m, 'hp'); return m; }
 const canFight = m => m.loc === 'team' && m.hp > 0;
 
 /* ---------------------------------------------------- the battle screen */
@@ -3610,7 +3618,7 @@ const Battle = (() => {
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
-  function stat(side, k) { const m = side === 'me' ? B.me : B.foe; return monStat(m, k) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k) : 1); }
+  function stat(side, k) { const m = side === 'me' ? B.me : B.foe; return monStat(m, k) * heldStat(m, k) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k) : 1); }
   const nameOf = side => (side === 'foe' ? foeLabel() : '') + monName(side === 'me' ? B.me : B.foe);
   async function inflict(side, st) {
     const m = side === 'me' ? B.me : B.foe;
@@ -3704,16 +3712,19 @@ const Battle = (() => {
       else {
         const bondCrit = side === 'me' ? Math.min(20, att.bond || 0) / 400 : 0;   // up to +5% for a close bond
         const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] + bondCrit ? 1.5 : 1; if (crit > 1) crits++;
-        const pw = M.pow * (M.hex && def.status ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
+        const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
         const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : 'atk') * (att.status === 'brn' && !M.useDef ? .5 : 1) / stat(defSide, 'def')) / 50) + 2;
         dmg = Math.max(1, Math.floor(base * stab * e * crit * wxMul(M.type) * (.85 + Math.random() * .15)));
       }
       Sound.play('hit'); await anim(spr(defSide), 'hurt', n > 1 ? 260 : 450);
+      const fullBefore = def.hp >= monStat(def, 'hp');
       def.hp = Math.max(0, def.hp - dmg); total += dmg;
+      if (def.hp === 0 && fullBefore && def.held === 'clinging_burr' && !(B.burr = B.burr || {})[def.uid + defSide]) { def.hp = 1; B.burr[def.uid + defSide] = 1; B.burrNow = 1; }
       // a Fablemon with a strong bond (10+) may hang on at 1 HP, once per battle
       if (defSide === 'me' && def.hp === 0 && (def.bond || 0) >= 10 && !(B.hung = B.hung || {})[def.uid] && Math.random() < def.bond / 100) { def.hp = 1; B.hung[def.uid] = 1; B.hungNow = 1; }
       box(defSide); await sleep(n > 1 ? 120 : 450);
     }
+    if (B.burrNow) { B.burrNow = 0; await say(`${monName(def)} clung on with its Clinging Burr!`, 1200); }
     if (B.hungNow) { B.hungNow = 0; await say(`${monName(def)} hung on to stay with you!`, 1200); }
     if (n > 1) await say(`Hit ${k} time${k > 1 ? 's' : ''}!`, 900);
     if (crits) await say(crits > 1 ? `${crits} critical hits!` : 'A critical hit!', 900);
@@ -3737,6 +3748,7 @@ const Battle = (() => {
         m.hp = Math.max(0, m.hp - d); await anim(spr(side), 'hurt', 300); box(side);
         await say(`${nameOf(side)} is hurt by its ${m.status === 'psn' ? 'poison' : 'burn'}!`, 1000);
       }
+      if (m.hp > 0 && m.held === 'heartwood_charm' && m.hp < monStat(m, 'hp')) await healSide(side, monStat(m, 'hp') / 16, `${nameOf(side)}'s Heartwood Charm restored a little health.`);
       if (m.hp > 0 && B.v[side].seed && monOf(other(side)).hp > 0) {
         const d = Math.min(m.hp, Math.max(1, Math.floor(monStat(m, 'hp') / 8)));
         m.hp -= d; box(side); await anim(spr(side), 'hurt', 300);
@@ -3832,10 +3844,10 @@ const Battle = (() => {
     const S0 = SPECIES[B.foe.sp], gain = Math.max(1, Math.floor((S0.exp || 50) * B.foe.lv / 5 * .9 * (B.wild ? 1 : 1.5) * (S.xpDay === S.day ? 1.5 : 1) * (hasPerk('rowan') ? 1.1 : 1)));   // ×0.9: a little grinding is part of the game
     const fought = [...B.used].map(uid => S.mons.find(x => x.uid === uid)).filter(m => m && m.hp > 0);
     const rest = team().filter(m => m.hp > 0 && !fought.includes(m)), share = Math.max(1, Math.floor(gain / 2));
-    for (const m of rest) m.xp += share;
+    for (const m of rest) m.xp += Math.floor(share * (m.held === 'study_leaf' ? 1.2 : 1));
     if (rest.length) await say(`The rest of your team gained ${share} experience each.`, 1100);
     for (const m of [...fought, ...rest]) {
-      if (fought.includes(m)) { m.xp += gain; if (m === B.me) box('me'); await say(`${monName(m)} gained ${gain} experience!`, 1100); }
+      if (fought.includes(m)) { const gg = Math.floor(gain * (m.held === 'study_leaf' ? 1.2 : 1)); m.xp += gg; if (m === B.me) box('me'); await say(`${monName(m)} gained ${gg} experience!`, 1100); }
       while (m.lv < 100 && m.xp >= xpNext(m)) {
         const oldMax = monStat(m, 'hp'); m.lv++; m.hp += monStat(m, 'hp') - oldMax; m.bond = (m.bond || 0);
         Sound.play('levelup'); if (m === B.me) { box('me'); await anim('bme', 'buff', 400); }
@@ -3869,8 +3881,9 @@ const Battle = (() => {
     if (shakes >= 4) {
       Sound.play('gotcha'); c.className = 'throw sit glow';
       await say(`Gotcha! ${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
-      const m = newMon(B.foe.sp, B.foe.lv); m.hp = B.foe.hp; m.moves = B.foe.moves.slice(); m.xp = B.foe.xp;
+      const m = newMon(B.foe.sp, B.foe.lv); m.iv = { ...B.foe.iv }; m.hp = Math.min(B.foe.hp, monStat(m, 'hp')); m.moves = B.foe.moves.slice(); m.xp = B.foe.xp;
       S.caught[m.sp] = 1; S.flags.catches = (S.flags.catches || 0) + 1;
+      { const best = ivBest(m); if (best[1] >= 8) await say(`It looks like it has great ${IV_NAME[best[0]]}! (${best[1]}/10)`, 1600); }
       const nm = SPECIES[m.sp].name, home = S.ranch === 2 ? 'your ranch' : 'wait at your farm until you build a ranch';
       if (team().length < TEAM_MAX) { giveMon(m); await say(`${nm} joined your team!`, 1800); return true; }
       // team is full: send the new one home, or swap it with someone in the team
@@ -3976,8 +3989,9 @@ const Battle = (() => {
     if (T) {
       await say(`You beat ${T.label} ${T.name}!`, 1400);
       if (T.lose) await say(`"${T.lose}"`, 2200);
-      S.gold += T.prize; updateHUD(); Sound.play('coin');
-      await say(`You got ${T.prize}g for winning.`, 1500);
+      const lucky = [...B.used].some(uid => (S.mons.find(x => x.uid === uid) || {}).held === 'lucky_acorn'), prize = Math.round(T.prize * (lucky ? 1.25 : 1));
+      S.gold += prize; updateHUD(); Sound.play('coin');
+      await say(`You got ${prize}g for winning${lucky ? ' (Lucky Acorn bonus!)' : ''}.`, 1500);
       if (T.onWin) T.onWin();
     }
     await evolveAll();
@@ -4405,9 +4419,9 @@ class Route extends World {
       W0("A Warden's job is to see whether a keeper and their Fablemon truly trust each other. Weeds don't grow in a garden that's loved."),
       W0("So let's see what's growing between you and yours. Don't hold back, dear. I certainly won't!"),
     ], () => {
-      const teamMons = t.team.map(([sp, lv]) => wildMon(sp, lv));
+      const teamMons = t.team.map(([sp, lv]) => trainerMon(sp, lv));
       Battle.start(teamMons[0], { label: 'Warden', name: t.name, team: teamMons, prize: 1500, boss: true, lose: 'Ha! Well grown, dear. Very well grown indeed.', onWin: () => {
-        S.trainers[t.id] = 1; S.crests = S.crests || {}; S.crests.root = 1;
+        S.trainers[t.id] = 1; S.crests = S.crests || {}; S.crests.root = 1; giveSigil('leaf');
         setTimeout(() => {
           Sound.play('gotcha');
           Talk.say([
@@ -4424,7 +4438,7 @@ class Route extends World {
     const TT = TRAINER_TYPES[t.kind], pic = trainerPic(t.kind), who = `${TT.label} ${t.name}`;
     this.paused = true;
     Talk.say([{ who: 'trainer', name: who, img: pic, t: pick(TT.challenge) }], () => {
-      const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => wildMon(sp, lv)), again = beatTrainer(t.id);
+      const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => trainerMon(sp, lv)), again = beatTrainer(t.id);
       // prize money: 25g per level of their strongest Fablemon the first time, 12g per level in rematches
       Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); } });
     });
@@ -4718,7 +4732,7 @@ function startFrom(n, fresh, name) {
   for (const m of S.mons || []) if (m.sp === 'hollowar' + 'den') m.sp = 'hollowbark';   // renamed species
   if (old) delete S.inv;
   S.town = Object.assign(newTown(), S.town || {});
-  (S.mons || []).forEach(fixMon); S.seen ??= {}; S.caught ??= {}; S.picked ??= {};
+  (S.mons || []).forEach(fixMon); setTimeout(() => { try { catchUpSigils(); } catch (e) { } }, 2500); S.seen ??= {}; S.caught ??= {}; S.picked ??= {};
   S.house ??= 0; S.tools ??= {}; S.shippedKinds ??= {}; applyToolNames(); applyLayout(); S.water ??= CAN_MAX; S.objs ??= {}; S.trainers ??= {}; S.workStore ??= {}; S.flags ??= {}; S.quests ??= {}; S.weather ??= 'sun'; S.tomorrow ??= rollWeather(S.day + 1);
   if (!S.spawn || !old) S.spawn = old ? { scene: 'farm', x: DOOR.x, y: DOOR.y + 1, dir: 'down' } : { scene: 'house', x: 2, y: 3, dir: 'down' };
   inv = new Inventory(36);

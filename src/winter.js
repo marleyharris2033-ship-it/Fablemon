@@ -21,7 +21,7 @@ COOKING.push(
 );
 SHOP.push({ id: 'frostkale_seeds', price: 50 }, { id: 'emberbeet_seeds', price: 80 }, { id: 'snowpea_seeds', price: 70 });
 if (ASSET.winterart) for (const [k, v] of Object.entries(ASSET.winterart.crops)) SAP_CANVAS[k] = rgbaCanvas(v);
-function applyWinterArt() { const A = ASSET.winterart; if (A) for (const [k, v] of Object.entries(A.icons)) { const c = rgbaCanvas(v); ICONS[k] = c.toDataURL(); ICON_CANVAS[k] = c; } qualityIcons(); }
+function applyWinterArt() { const A = ASSET.winterart; if (A) for (const [k, v] of Object.entries(A.icons)) { const c = rgbaCanvas(v); ICONS[k] = c.toDataURL(); ICON_CANVAS[k] = c; } qualityIcons(); if (typeof heldIcons === 'function') heldIcons(); }
 
 /* ---------- greenhouses: each one is the top-left tile of a 3×3 planting patch */
 const GH_COST = { gold: 2500, cost: { wood: 120, stone: 60 } };

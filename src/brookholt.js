@@ -14,7 +14,7 @@ const bhRepairs = () => Object.keys(bhState().done).length;
 const DELPHINE_TEAM = [['lotling', 21, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 22, ['hum', 'featherdance', 'downdraft', 'sapsip']],
   ['muddlebub', 22, ['mirejet', 'raincall', 'scree', 'mudslick']], ['puffpiper', 23, ['mirejet', 'downdraft', 'flitaway', 'bogbubble']],
   ['brookstride', 23, ['weirwave', 'aquaflick', 'tidedance', 'quickhop']], ['fenfang', 25, ['aquaflick', 'haunt', 'mirejet', 'sharpen']]];
-const wardenMon = ([sp, lv, moves]) => { const m = wildMon(sp, lv); if (moves) m.moves = moves.filter(id => MOVES[id]); return m; };
+const wardenMon = ([sp, lv, moves]) => { const m = trainerMon(sp, lv); if (moves) m.moves = moves.filter(id => MOVES[id]); return m; };
 
 function bhBoard() {
   const render = () => {
@@ -73,7 +73,7 @@ function delphine(sc) {
   Talk.say([D("The mill's turning and the cottage is lived in. You kept your word."), D("Water is patient. It wears down stone, given time. Let's see if your team can hold back the tide!")], () => {
     const tm = DELPHINE_TEAM.map(wardenMon);
     Battle.start(tm[0], { label: 'Warden', name: 'Delphine', team: tm, prize: 3000, boss: true, heals: 2, lose: 'Well, the tide turns for everyone eventually.', onWin: () => {
-      S.crests = S.crests || {}; S.crests.brook = 1; S.trainers = S.trainers || {}; S.trainers.delphine = 1;
+      S.crests = S.crests || {}; S.crests.brook = 1; giveSigil('tide'); S.trainers = S.trainers || {}; S.trainers.delphine = 1;
       setTimeout(() => { Sound.play('gotcha'); Talk.say([D('Here: the Brook Crest. Every lock-keeper from here to the sea will wave you through.', 1), D("If Smallroot's station is running, the train will have you home in no time.", 1)], () => toast('You received the Brook Crest! 💧', 3600)); }, 400);
     } });
   });

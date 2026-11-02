@@ -130,7 +130,8 @@ function svcSmith() {
       return `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name} → ${TOOL_TIERS[nx]}</b><small>${fx(id, nx)}</small><div><span class="need ${S.gold < c.gold ? 'no' : ''}"><img src="${ICONS.coin}">${c.gold.toLocaleString()}g</span><span class="need ${inv.count('stone') < c.stone ? 'no' : ''}"><img src="${iconFor('stone')}">${c.stone}</span></div></div><button class="btn gold" data-a="up" data-id="${id}" ${ok ? '' : 'disabled'}>Upgrade</button></div>`;
     }).join('');
     return `<p>Better tools work faster and take less effort.</p><div class="mlist">${rows}
-      <p style="margin-top:8px"><b>Charms</b></p><div class="shoprow"><img src="${iconFor('sturdy_charm')}"><div class="g"><b>${ITEMS.sturdy_charm.name}</b><small>${ITEMS.sturdy_charm.desc}</small></div><button class="btn gold" data-a="charm" ${S.gold < 120 ? 'disabled' : ''}>120g</button></div></div>`;
+      <p style="margin-top:8px"><b>Charms</b></p><div class="shoprow"><img src="${iconFor('sturdy_charm')}"><div class="g"><b>${ITEMS.sturdy_charm.name}</b><small>${ITEMS.sturdy_charm.desc}</small></div><button class="btn gold" data-a="charm" ${S.gold < 120 ? 'disabled' : ''}>120g</button></div>
+      <p style="margin-top:8px"><b>Charms for Fablemon to hold</b> <small>(give one from a Fablemon's info page)</small></p>${HELD_SHOP.map(([id, p, c]) => shopRow(id, p, c)).join('')}</div>`;
   };
   openModal("Gideon's Forge", render(), (a, d) => {
     if (a === 'up') {
@@ -140,6 +141,7 @@ function svcSmith() {
       Sound.play('levelup'); updateHUD(); renderHotbar(); toast(`Gideon hands you your new ${ITEMS[d.id].name}!`, 2400);
     }
     if (a === 'charm') buy('sturdy_charm', 120);
+    if (a === 'buy') buy(d.id, +d.p, +d.n || 1);
     $('mBody').innerHTML = render();
   });
 }
