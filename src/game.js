@@ -4756,7 +4756,7 @@ async function bootGame() {
       this.load.atlas('seasonal', ASSET.seasonal, ASSET.seasonalJson);
       this.load.atlas('houses', snow.houses || ASSET.houses, { frames: Object.fromEntries(Object.entries(ASSET.housesJson).map(([k, f]) => [k, { frame: { x: f.x, y: f.y, w: f.w, h: f.h } }])) });
       for (const n of Object.keys(TRAINER_TYPES)) if (ASSET['tr_' + n]) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
-      const BIG = { briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
+      const BIG = { briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, craglet_2: 40, cindhop_2: 40, bristlecone_2: 40, clinkit_2: 40, ramruff_2: 40, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
       for (const n of MON_ORDER) if (ASSET['mon_' + n]) this.load.spritesheet('mon_' + n, ASSET['mon_' + n], { frameWidth: BIG[n] || 28, frameHeight: BIG[n] || 28 });
       for (const n of ['bramble', 'marigold', ...VILL_IDS]) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);

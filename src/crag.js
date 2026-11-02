@@ -43,7 +43,18 @@ Object.assign(LEARN, {
   clinkit: [[1, 'tackle'], [1, 'harden'], [5, 'glint'], [9, 'pebbletoss'], [13, 'dazzle'], [17, 'lumenpulse'], [21, 'bulwark'], [25, 'rockroll'], [29, 'prismbeam'], [34, 'slateslam'], [40, 'fortify'], [46, 'radiance'], [52, 'rampartcrush']],
   ramruff: [[1, 'tackle'], [1, 'growl'], [5, 'headbutt'], [9, 'quickhop'], [13, 'pebbletoss'], [17, 'brace'], [21, 'stampede'], [25, 'rockroll'], [29, 'battlecry'], [34, 'pounce'], [40, 'rampartbash'], [46, 'laststand'], [52, 'wildrush']],
 });
-MON_ORDER.push('craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff');
+// their evolutions: the middle stage of the three-stage lines, and Ramruff's final form
+Object.assign(SPECIES, {
+  craglet_2: { name: 'Cragryph', type: 'Stone', type2: 'Gale', evo: ['craglet_3', 46], base: { hp: 68, atk: 86, def: 74, spd: 78 }, exp: 150, rate: 60, desc: 'Its slate wings have grown strong enough to ride the mountain winds. It circles the high peaks for hours, then drops like a falling rock onto its prey.' },
+  cindhop_2: { name: 'Cinderhare', type: 'Ember', type2: 'Stone', evo: ['cindhop_3', 44], base: { hp: 64, atk: 88, def: 64, spd: 90 }, exp: 150, rate: 60, desc: 'Molten light runs through the cracks in its stony coat, and its tail has become a roaring flame. It bounds across hot scree faster than the eye can follow.' },
+  bristlecone_2: { name: 'Bristlestag', type: 'Leaf', evo: ['bristlecone_3', 42], base: { hp: 76, atk: 78, def: 86, spd: 52 }, exp: 148, rate: 60, desc: 'Its antlers are living branches, and flowers bloom in its pine-scale coat each spring. Saplings are said to spring up along the paths it walks.' },
+  clinkit_2: { name: 'Chimestone', type: 'Stone', type2: 'Glow', evo: ['clinkit_3', 48], base: { hp: 72, atk: 62, def: 104, spd: 36 }, exp: 155, rate: 50, desc: 'Golden crystals crown its heavy shell. When it rings, the sound carries through the whole mountain, and miners once used its chime to find their way out.' },
+  ramruff_2: { name: 'Rambastion', type: 'Wild', base: { hp: 98, atk: 110, def: 90, spd: 68 }, exp: 230, rate: 45, desc: 'Its great curled horns are hard as granite and glow faintly when it charges. A single headbutt can split a boulder clean in two.' },
+});
+for (const sp of ['craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff']) LEARN[sp + '_2'] = LEARN[sp];
+LEARN.craglet_2 = [...LEARN.craglet, [30, 'windslice'], [50, 'skydive']].sort((a, b) => a[0] - b[0]);
+MON_ORDER.push('craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff', 'craglet_2', 'cindhop_2', 'bristlecone_2', 'clinkit_2', 'ramruff_2');
+Object.assign(MON_STAGE, { craglet_2: 2, cindhop_2: 2, bristlecone_2: 2, clinkit_2: 2, ramruff_2: 2 });
 Object.assign(EXTRA_HABITAT, {
   craglet: 'Cragside Pass and Cragside Heights long grass', cindhop: 'Cragside Pass and Cragside Heights long grass',
   bristlecone: 'Cragside Pass long grass, in the daytime', ramruff: 'Cragside Pass and Cragside Heights long grass',
