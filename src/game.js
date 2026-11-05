@@ -3558,6 +3558,7 @@ function moveEffect(id) {
     if (M.drain) t.push('Heals the user by half the damage dealt.');
     if (M.recoil) t.push(`The user takes 1/${M.recoil} of the damage dealt.`);
     if (M.hex) t.push('Double power if the opponent has a status condition.');
+    if (M.hexSlp) t.push('Double power if the opponent is asleep.');
     if (M.desperate) t.push('Double power when the user is below a third of its HP.');
     if (M.onlySleep) t.push('Only works on a sleeping opponent.');
     if (M.flinch) t.push(`${M.flinch}% chance to make the opponent flinch, if the user moves first.`);
@@ -3765,7 +3766,7 @@ const Battle = (() => {
       else {
         const bondCrit = side === 'me' ? Math.min(20, att.bond || 0) / 400 : 0;   // up to +5% for a close bond
         const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] + bondCrit ? 1.5 : 1; if (crit > 1) crits++;
-        const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
+        const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.hexSlp && def.status === 'slp' ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
         const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : 'atk') * (att.status === 'brn' && !M.useDef ? .5 : 1) / stat(defSide, 'def')) / 50) + 2;
         dmg = Math.max(1, Math.floor(base * stab * e * crit * wxMul(M.type) * (.85 + Math.random() * .15)));
       }
@@ -3859,7 +3860,7 @@ const Battle = (() => {
       if (M.seed) return vm.seed || hasType(me.sp, 'Leaf') ? 0 : 50;
       if (M.onlySleep && me.status !== 'slp') return 0;
       if (M.pow || M.fixed) {
-        let v = M.fixed ? f.lv * 1.2 : (M.useDef ? monStat(f, 'def') / Math.max(1, monStat(f, 'atk')) : 1) * M.pow * effOn(M.type, me.sp) * stabOf(M.type, f.sp) * wxMul(M.type) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) * (M.hex && me.status ? 2 : 1) * (M.desperate && f.hp < monStat(f, 'hp') / 3 ? 2 : 1);
+        let v = M.fixed ? f.lv * 1.2 : (M.useDef ? monStat(f, 'def') / Math.max(1, monStat(f, 'atk')) : 1) * M.pow * effOn(M.type, me.sp) * stabOf(M.type, f.sp) * wxMul(M.type) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) * (M.hex && me.status ? 2 : 1) * (M.hexSlp && me.status === 'slp' ? 2 : 1) * (M.desperate && f.hp < monStat(f, 'hp') / 3 ? 2 : 1);
         v *= (M.acc || 100) / 100;
         if (M.st && !me.status) v *= 1.1;
         if (M.drain && low) v *= 1.3;

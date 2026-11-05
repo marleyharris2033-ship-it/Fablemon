@@ -4130,6 +4130,7 @@ function moveEffect(id) {
     if (M.drain) t.push('Heals the user by half the damage dealt.');
     if (M.recoil) t.push(`The user takes 1/${M.recoil} of the damage dealt.`);
     if (M.hex) t.push('Double power if the opponent has a status condition.');
+    if (M.hexSlp) t.push('Double power if the opponent is asleep.');
     if (M.desperate) t.push('Double power when the user is below a third of its HP.');
     if (M.onlySleep) t.push('Only works on a sleeping opponent.');
     if (M.flinch) t.push(`${M.flinch}% chance to make the opponent flinch, if the user moves first.`);
@@ -4337,7 +4338,7 @@ const Battle = (() => {
       else {
         const bondCrit = side === 'me' ? Math.min(20, att.bond || 0) / 400 : 0;   // up to +5% for a close bond
         const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] + bondCrit ? 1.5 : 1; if (crit > 1) crits++;
-        const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
+        const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.hexSlp && def.status === 'slp' ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
         const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : 'atk') * (att.status === 'brn' && !M.useDef ? .5 : 1) / stat(defSide, 'def')) / 50) + 2;
         dmg = Math.max(1, Math.floor(base * stab * e * crit * wxMul(M.type) * (.85 + Math.random() * .15)));
       }
@@ -4431,7 +4432,7 @@ const Battle = (() => {
       if (M.seed) return vm.seed || hasType(me.sp, 'Leaf') ? 0 : 50;
       if (M.onlySleep && me.status !== 'slp') return 0;
       if (M.pow || M.fixed) {
-        let v = M.fixed ? f.lv * 1.2 : (M.useDef ? monStat(f, 'def') / Math.max(1, monStat(f, 'atk')) : 1) * M.pow * effOn(M.type, me.sp) * stabOf(M.type, f.sp) * wxMul(M.type) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) * (M.hex && me.status ? 2 : 1) * (M.desperate && f.hp < monStat(f, 'hp') / 3 ? 2 : 1);
+        let v = M.fixed ? f.lv * 1.2 : (M.useDef ? monStat(f, 'def') / Math.max(1, monStat(f, 'atk')) : 1) * M.pow * effOn(M.type, me.sp) * stabOf(M.type, f.sp) * wxMul(M.type) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) * (M.hex && me.status ? 2 : 1) * (M.hexSlp && me.status === 'slp' ? 2 : 1) * (M.desperate && f.hp < monStat(f, 'hp') / 3 ? 2 : 1);
         v *= (M.acc || 100) / 100;
         if (M.st && !me.status) v *= 1.1;
         if (M.drain && low) v *= 1.3;
@@ -5675,7 +5676,7 @@ function makeHearthArt() {
    recoil: n (takes 1/n of damage dealt), drain: share of damage healed, heal: share of max HP healed,
    rest, hits: [min, max], crit (high critical rate), flinch: chance, protect, weather: rain|sun|gloom,
    hazard (thorns on the foe's side), seed (drains 1/8 each turn), haze (clears all stat changes),
-   cure (cures your whole team), hex (double power if the target has a status), desperate (double power
+   cure (cures your whole team), hex (double power if the target has a status), hexSlp (double power if the target is asleep), desperate (double power
    below 1/3 HP), critUp (raises critical-hit rate), useDef (hits using the user's Defence), fixed: 'lv' (damage equal to the user's level), onlySleep, pivot (switch out after hitting).
    Later Fablemon pick from these, plus a signature move or two of their own. */
 Object.assign(MOVES, {
@@ -7344,11 +7345,11 @@ Object.assign(MOVES, {
   fleecebastion: { name: 'Fleece Bastion', type: 'Gale', pow: 95, acc: 100, useDef: 1 },
   lurelight: { name: 'Lure Light', type: 'Tide', pow: 90, acc: 100, st: ['par', 30] },
   petalhex: { name: 'Petal Hex', type: 'Leaf', pow: 80, acc: 100, hex: 1 },
-  deepdew: { name: 'Deep Dew', type: 'Leaf', pow: 80, acc: 100, drain: .5 },
+  deepdew: { name: 'Deep Dew', type: 'Leaf', pow: 80, acc: 100, hexSlp: 1 },
   pitfallgulp: { name: 'Pitfall Gulp', type: 'Leaf', pow: 100, acc: 95, st: ['psn', 30] },
   crownstorm: { name: 'Crown Storm', type: 'Spark', pow: 110, acc: 85, st: ['par', 30] },
   grimroots: { name: 'Grim Roots', type: 'Shade', pow: 95, acc: 100, drain: .3 },
-  blazekick: { name: 'Blaze Kick', type: 'Ember', pow: 95, acc: 95, crit: 1 },
+  blazekick: { name: 'Blaze Kick', type: 'Ember', pow: 95, acc: 95, crit: 1, st: ['brn', 20] },
   pineconestorm: { name: 'Pinecone Storm', type: 'Leaf', pow: 25, acc: 95, hits: [2, 5] },
   belfrypeal: { name: 'Belfry Peal', type: 'Glow', pow: 95, acc: 100, flinch: 30 },
   shardtalon: { name: 'Shard Talon', type: 'Stone', pow: 95, acc: 95, crit: 1 },

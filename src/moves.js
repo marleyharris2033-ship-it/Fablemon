@@ -5,7 +5,7 @@
    recoil: n (takes 1/n of damage dealt), drain: share of damage healed, heal: share of max HP healed,
    rest, hits: [min, max], crit (high critical rate), flinch: chance, protect, weather: rain|sun|gloom,
    hazard (thorns on the foe's side), seed (drains 1/8 each turn), haze (clears all stat changes),
-   cure (cures your whole team), hex (double power if the target has a status), desperate (double power
+   cure (cures your whole team), hex (double power if the target has a status), hexSlp (double power if the target is asleep), desperate (double power
    below 1/3 HP), critUp (raises critical-hit rate), useDef (hits using the user's Defence), fixed: 'lv' (damage equal to the user's level), onlySleep, pivot (switch out after hitting).
    Later Fablemon pick from these, plus a signature move or two of their own. */
 Object.assign(MOVES, {
