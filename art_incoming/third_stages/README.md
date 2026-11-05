@@ -30,6 +30,10 @@ Battle sheets show the front on the left and the back on the right. Some sheets 
 | Belfrock | Chimestone | clinkit_3 | belfrock_walk.png | belfrock_battle.png |
 | Shardgryph | Cragryph | craglet_3 | shardgryph_walk.png | shardgryph_battle.png |
 
+## Evolution levels
+- Starters: Hedgerholt, Hearthrusk and Merewheel at 36 (already set in the game code).
+- Meadow lines (new): Cloverguard → Cloverlegion at 34, Whirlwyn → Whorlcrest at 35, Fleecebolt → Plumevix at 36, Brookstride → Torrentail at 36, Flintburrow → Flintcairn at 36, Staticwing → Moonspark at 37, Duskcloak → Duskwyrm at 40.
+- Bog: all at 38 (already set). Crag: Bristlestag 42, Cinderhare 44, Cragryph 46, Chimestone 48 (already set).
+
 ## Still to decide
-- What level each of these evolves at: Fleecebolt, Whirlwyn, Cloverguard, Flintburrow, Staticwing, Duskcloak and Brookstride are final forms in the game right now.
 - Plumevix's walk sheet: loop the 3 frames, or add a 4th.
