@@ -1,6 +1,6 @@
 # Third-form art (waiting to go in)
 
-This is holding art for the third forms. **None of it is in the game yet.** Nothing in `src/` or `docs/` uses this folder.
+These are the original sheets for the third forms. **They're in the game now** (added 5 Nov 2026). `tools/art/cut_thirds.py` cuts them into the sprites in `src/`, and the species data is in `src/thirds.js`.
 
 Walk sheets are 4 rows: front, facing left, facing right, back. Each row has 4 frames, except Plumevix, which has 3.
 Battle sheets show the front on the left and the back on the right. Some sheets have a magenta background that needs removing. The walk sheets that came in transparent are ready to use.
@@ -35,5 +35,5 @@ Battle sheets show the front on the left and the back on the right. Some sheets 
 - Meadow lines (new): Cloverguard → Cloverlegion at 34, Whirlwyn → Whorlcrest at 35, Fleecebolt → Plumevix at 36, Brookstride → Torrentail at 36, Flintburrow → Flintcairn at 36, Staticwing → Moonspark at 37, Duskcloak → Duskwyrm at 40.
 - Bog: all at 38 (already set). Crag: Bristlestag 42, Cinderhare 44, Cragryph 46, Chimestone 48 (already set).
 
-## Still to decide
-- Plumevix's walk sheet: loop the 3 frames, or add a 4th.
+## Notes
+- Plumevix's walk sheet has 3 frames per row, so the game loops them (stand, step, stand, other step).
