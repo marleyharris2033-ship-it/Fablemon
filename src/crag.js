@@ -84,7 +84,7 @@ Object.assign(ROUTES, {
   crag2: { name: 'Cragside Heights', w: 40, h: 44, quiet: true, ascii: 'crag2', crag: true,
     zones: [[0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 25, 27], [0, 0, 0, 0, 26, 28]],
     pickups: [{ id: 'h1', x: 33, y: 25, item: 'root_charm', n: 5 }, { id: 'h2', x: 6, y: 15, item: 'tonic', n: 3 }, { id: 'h3', x: 33, y: 3, gold: 2000 }, { id: 'h4', x: 7, y: 36, item: 'honey', n: 3 }],
-    signs: { '15,35': 'A crevasse cuts across the road. That boulder looks loose: walk into it to push it. Fill the gap and you can cross!', '23,31': '__cgcairn', '5,26': 'West: the Old Rail Cutting. The miners rode carts down to the old mine.', '28,21': '__cgcairn', '21,13': '__cgcairn', '17,3': '__heal' },
+    signs: { '15,35': 'A crevasse cuts across the road. That boulder looks loose: walk into it to push it. Fill the gap and you can cross!', '23,31': '__cgcairn', '5,26': 'West: the Old Rail Cutting. The miners rode carts down to the old mine.', '31,19': '__cgcairn', '21,13': '__cgcairn', '17,3': '__heal' },
     trainers: [
       { id: 'ch1', kind: 'climber', name: 'Gwen', x: 26, y: 38, dir: 'left', sight: 4, team: [['staticwing', 26], ['flintburrow', 26], ['whirlwyn', 27]] },
       { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['clinkit', 27], ['kilnook', 28]] },
