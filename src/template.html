@@ -191,6 +191,20 @@ body{-webkit-font-smoothing:antialiased}
 .pips{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}.pips i{width:9px;height:9px;border-radius:50%;background:#d8c48f;border:2px solid #b08a4a}.pips i.on{background:#e0503a;border-color:#8a2a1e}
 .hint{font-size:13px;color:#6b5a3e;margin:6px 2px 0}
 .jgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.rteam{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:10px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.rcard{position:relative;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;padding:6px 2px 4px;background:#fffaf0;border:3px solid var(--tc);box-shadow:0 3px 0 #c9b278;cursor:pointer;color:var(--ink)}
+.rcard img{width:40px;height:40px;image-rendering:pixelated}
+.rcard .rl{font-size:10px;font-weight:800;color:#fff;background:#5e3b20;border-radius:8px;padding:0 5px}
+.rcard small{font-size:10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rcard .rb{position:absolute;top:1px;right:2px;font-size:10px;line-height:1}
+.rcard.lead{background:#fff3c4}.rcard.lead::before{content:'★';position:absolute;top:1px;left:3px;font-size:11px;color:#c08a00}
+.rcard.sel{background:#ffe9a0;outline:3px solid #e0a020;transform:translateY(-2px)}
+.rcard.empty{border:3px dashed #c9b278;background:#f3e8c8;color:#8a7a5e;justify-content:center;min-height:72px;font-size:18px;font-weight:800}
+.rdetail{display:flex;gap:10px;align-items:flex-start;padding:8px;margin-bottom:10px;background:#fff8e0;border:3px solid #d8c48f;border-left:7px solid var(--tc)}
+.rdetail .g{flex:1;min-width:0}.rdetail .lv{font-size:11px;font-weight:800;color:#fff;background:#5e3b20;border-radius:10px;padding:0 6px}
+.rbtns{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0 4px}
+.rsel{display:flex;gap:5px;flex-wrap:wrap}.rsel select{font-family:inherit;font-size:13px;padding:3px;border:2px solid #b08a4a;background:#fffaf0;color:var(--ink)}
 .jcard{position:relative;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:2px;padding:16px 4px 6px;background:#fffaf0;border:3px solid var(--tc);border-radius:10px;box-shadow:0 3px 0 #c9b278;cursor:pointer}
 .jcard img{width:52px;height:52px;image-rendering:pixelated}
 .jcard.unknown{cursor:default;background:#ece0be}.jcard.unknown img{filter:brightness(0) opacity(.35)}

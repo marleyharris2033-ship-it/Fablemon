@@ -1722,30 +1722,89 @@ const RANCH_BUILD = () => ({
   desc: "A barn and pens for Fablemon you aren't taking with you. Built overnight by the villagers.",
   onBuild: at => { S.ranchAt = at; S.ranch = 1; toast('The villagers will build your ranch tonight!', 2600); },
 });
+// The ranch screen: your team along the top, everyone at the ranch in a grid below.
+// Tap a Fablemon to select it, then tap another to swap them (team <-> ranch, or two team places),
+// or tap an empty team slot to bring the selected one along. Sort and filter choices are remembered.
+const RANCH_SORTS = { lv: 'Level', name: 'Name', type: 'Type', spd: 'Speed', new: 'Newest', old: 'Oldest', job: 'Jobs first' };
 function openRanch() {
+  const V = S.ranchView = Object.assign({ sort: 'lv', f: 'all' }, S.ranchView || {});
+  let sel = null;
+  const at = () => S.mons.filter(m => m.loc === 'ranch');
+  const outN = () => at().filter(m => m.out).length;
+  const card = (m, extra = '') => `<button class="rcard${sel === m.uid ? ' sel' : ''}${extra}" data-a="pick" data-u="${m.uid}" style="--tc:${TYPES[SPECIES[m.sp].type]}">
+      <span class="rb">${m.job ? '⚒' : ''}${m.out && !m.job ? '🌾' : ''}${m.held ? '🎒' : ''}</span><img src="${monPic(m.sp)}"><span class="rl">Lv ${m.lv}</span><small>${monName(m)}</small></button>`;
+  const sorted = list => {
+    const by = { lv: (a, b) => b.lv - a.lv, name: (a, b) => monName(a).localeCompare(monName(b)), type: (a, b) => SPECIES[a.sp].type.localeCompare(SPECIES[b.sp].type) || b.lv - a.lv,
+      spd: (a, b) => monStat(b, 'spd') - monStat(a, 'spd'), new: (a, b) => b.uid - a.uid, old: (a, b) => a.uid - b.uid, job: (a, b) => (!!b.job - !!a.job) || (!!b.out - !!a.out) || b.lv - a.lv }[V.sort] || ((a, b) => b.lv - a.lv);
+    return list.slice().sort(by);
+  };
+  const filters = () => {
+    const r = at(), types = [...new Set(r.flatMap(m => typesOf(m.sp)))].sort();
+    const stage = m => raceStage(m.sp);   // counted along the evolution line (derby.js)
+    const F = { all: ['Everyone', () => true], job: ['Working', m => !!m.job], out: ['Out on the farm', m => m.out], in: ['In the barn', m => !m.out],
+      s1: ['First stages', m => stage(m) === 1], s2: ['Second stages', m => stage(m) === 2], s3: ['Third forms', m => stage(m) === 3] };
+    for (const t of types) F['t_' + t] = [t + ' type', m => typesOf(m.sp).includes(t)];
+    return F;
+  };
   const render = () => {
-    const t = team(), r = S.mons.filter(m => m.loc === 'ranch'), out = r.filter(m => m.out).length;
-    const tr = t.map(m => monRow(m, `<button class="btn" data-a="toRanch" data-u="${m.uid}">Leave here</button>`)).join('');
-    const rr = r.map(m => { const J = jobOf(m); return monRow(m, `${J ? `<button class="btn sm ${m.job ? 'gold' : ''}" data-a="job" data-u="${m.uid}">${m.job ? '⚒ ' + J.name : 'Give job'}</button>` : ''}${m.job ? `<button class="btn sm" data-a="stopjob" data-u="${m.uid}">Stop work</button>` : `<button class="btn sm ${m.out ? 'gold' : ''}" data-a="roam" data-u="${m.uid}">${m.out ? 'On the farm' : 'In the barn'}</button>`}<button class="btn sm" data-a="toTeam" data-u="${m.uid}" ${t.length >= TEAM_MAX ? 'disabled' : ''}>Take</button>`); }).join('');
+    const t = team(), F = filters(); if (!F[V.f]) V.f = 'all';
+    const r = sorted(at().filter(F[V.f][1]));
+    const slots = Array.from({ length: TEAM_MAX }, (_, i) => t[i] ? card(t[i], i === 0 ? ' lead' : '') : `<button class="rcard empty" data-a="slot">${sel != null && S.mons.find(m => m.uid === sel)?.loc === 'ranch' ? '＋<small>Add here</small>' : '<small>Empty</small>'}</button>`).join('');
     const st = Object.entries(S.workStore || {}).filter(([, n]) => n);
     const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
-    return `${store}<div class="mlist"><p><b>With you (${t.length}/${TEAM_MAX})</b></p>${tr || '<p><small>Nobody. Take a Fablemon along so you are not adventuring alone.</small></p>'}
-      <p style="margin-top:10px"><b>At the ranch</b> <small>(${out}/${ROAM_MAX} out on the farm)</small></p>${rr || '<p><small>No one lives here yet. Leave a Fablemon here, and any you befriend when your team is full will come here too.</small></p>'}</div>`;
+    const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
+    const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
+        <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')} · Def ${monStat(m, 'def')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
+        <div class="rbtns">${m.loc === 'team'
+          ? `${team()[0] !== m ? '<button class="btn sm" data-a="lead">Make lead</button>' : ''}<button class="btn sm" data-a="toRanch">Leave at ranch</button>`
+          : `${team().length < TEAM_MAX ? '<button class="btn gold sm" data-a="toTeam">Take along</button>' : ''}${J ? `<button class="btn sm ${m.job ? 'gold' : ''}" data-a="job">${m.job ? 'Change job' : 'Give job'}</button>` : ''}${m.job ? '<button class="btn sm" data-a="stopjob">Stop job</button>' : ''}<button class="btn sm" data-a="roam">${m.out ? 'Bring in' : 'Let roam'}</button>`}
+          <button class="btn sm" data-a="info">Info</button></div>
+        <small style="display:block;opacity:.75">Tap another Fablemon to swap places${m.loc === 'ranch' ? ', or an empty team slot to take it along' : ''}.</small></div></div>` : '';
+    return `${store}<div class="subbar"><span>Team <b>${t.length}/${TEAM_MAX}</b></span><span><small>Tap one, then another to swap</small></span></div>
+      <div class="rteam">${slots}</div>${detail}
+      <div class="subbar" style="flex-wrap:wrap"><span>Ranch <b>${at().length}</b> <small>(${outN()}/${ROAM_MAX} out)</small></span>
+        <span class="rsel"><select data-sel="sort">${Object.entries(RANCH_SORTS).map(([k, v]) => `<option value="${k}"${V.sort === k ? ' selected' : ''}>Sort: ${v}</option>`).join('')}</select>
+        <select data-sel="f">${Object.entries(F).map(([k, [v]]) => `<option value="${k}"${V.f === k ? ' selected' : ''}>${v}</option>`).join('')}</select></span></div>
+      ${r.length ? `<div class="rgrid">${r.map(x => card(x)).join('')}</div>` : `<p><small>${at().length ? 'Nobody here matches that filter.' : 'No one lives here yet. Leave a Fablemon here, and any you befriend when your team is full will come here too.'}</small></p>`}`;
   };
+  const redraw = () => {
+    $('mBody').innerHTML = render(); refreshTeamBtn();
+    $('mBody').querySelectorAll('select[data-sel]').forEach(s => s.onchange = () => { V[s.dataset.sel] = s.value; sel = null; redraw(); });
+  };
+  const toRanch = m => { m.loc = 'ranch'; m.out = outN() < ROAM_MAX; };
+  const toTeam = m => { m.loc = 'team'; m.out = false; m.job = null; };
   openModal('Your ranch', render(), (a, d) => {
     if (a === 'collect') {
       for (const [id, n] of Object.entries(S.workStore || {})) { const left = inv.add(id, n); S.workStore[id] = left; }
       const full = Object.values(S.workStore).some(n => n); Sound.play('coin'); renderHotbar(); if (full) toast('Your backpack is full. Some items are still waiting at the ranch.');
-      $('mBody').innerHTML = render(); return;
+      return redraw();
     }
-    const m = S.mons.find(x => x.uid === +d.u); if (!m) return;
+    if (a === 'slot') {
+      const m = S.mons.find(x => x.uid === sel);
+      if (m && m.loc === 'ranch' && team().length < TEAM_MAX) { const i = S.mons.indexOf(m); S.mons.splice(i, 1); S.mons.splice(S.mons.indexOf(team().slice(-1)[0]) + 1, 0, m); toTeam(m); sel = null; Sound.play('pop'); }
+      return redraw();
+    }
+    if (a === 'pick') {
+      const b = S.mons.find(x => x.uid === +d.u); if (!b) return;
+      const m = S.mons.find(x => x.uid === sel);
+      if (!m || m === b) { sel = m === b ? null : b.uid; return redraw(); }
+      if (m.loc === 'ranch' && b.loc === 'ranch') { sel = b.uid; return redraw(); }
+      // swap places in the list, so a ranch Fablemon takes the exact team slot of the one it replaces
+      const i = S.mons.indexOf(m), j = S.mons.indexOf(b); S.mons[i] = b; S.mons[j] = m;
+      if (m.loc !== b.loc) { const [tm, rm] = m.loc === 'team' ? [m, b] : [b, m]; toRanch(tm); toTeam(rm); toast(`${monName(rm)} joins your team; ${monName(tm)} stays at the ranch.`, 2200); }
+      sel = null; Sound.play('pop'); return redraw();
+    }
+    const m = S.mons.find(x => x.uid === sel); if (!m) return;
+    if (a === 'info') return openMonInfo(m, openRanch);
     if (a === 'job') return openJobPicker(m);
-    if (a === 'stopjob') { m.job = null; }
-    if (a === 'toRanch') { m.loc = 'ranch'; m.out = S.mons.filter(x => x.loc === 'ranch' && x.out).length < ROAM_MAX; }
-    if (a === 'toTeam') { if (team().length >= TEAM_MAX) return; m.loc = 'team'; m.out = false; m.job = null; S.mons.splice(S.mons.indexOf(m), 1); S.mons.splice(team().length, 0, m); }
-    if (a === 'roam') { if (!m.out && S.mons.filter(x => x.loc === 'ranch' && x.out).length >= ROAM_MAX) return toast(`Only ${ROAM_MAX} can be out at once.`); m.out = !m.out; }
-    refreshTeamBtn(); $('mBody').innerHTML = render();
+    if (a === 'stopjob') m.job = null;
+    if (a === 'lead') { S.mons.splice(S.mons.indexOf(m), 1); S.mons.unshift(m); }
+    if (a === 'toRanch') { toRanch(m); sel = null; }
+    if (a === 'toTeam') { if (team().length >= TEAM_MAX) return; const i = S.mons.indexOf(m); S.mons.splice(i, 1); const last = team().slice(-1)[0]; S.mons.splice(last ? S.mons.indexOf(last) + 1 : 0, 0, m); toTeam(m); sel = null; }
+    if (a === 'roam') { if (!m.out && outN() >= ROAM_MAX) return toast(`Only ${ROAM_MAX} can be out at once.`); m.out = !m.out; if (!m.out) m.job = null; }
+    redraw();
   }, () => { if (scene && scene.spawnRoamers) { scene.refreshFollower(); scene.spawnRoamers(); } });
+  redraw();
 }
 
 /* -------------------------------------------------------------- quests
