@@ -135,6 +135,9 @@ function buildAscii() {
   for (const t of ROUTE_TRAINERS) { const i = t.y * RW + t.x; blocked[i] = 1; grass[i] = -1; }
   for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; grass[y * RW + x] = -1; }
   for (const [, x, y] of RC.cgprops || []) blocked[y * RW + x] = 1;
+  for (const [, x, y, ok] of RC.qdprops || []) if (!ok || ok()) blocked[y * RW + x] = 1;
+  for (const [, x, y, w] of RC.props || []) for (let k = 0; k < (w || 1); k++) blocked[y * RW + x + k] = 1;
+  for (const b of RC.buildings || []) for (const [x, y] of bldTiles(b)) blocked[y * RW + x] = 1;
   if (RC.gate && !RC.gate.ok()) { const [a, b, c, d] = RC.gate.area; for (let y = b; y <= d; y++) for (let x = a; x <= c; x++) { blocked[y * RW + x] = 1; deco.push({ x, y, tex: (x + y) % 2 ? 'cg_boulder2' : 'cg_rock_pile', gate: 1 }); } }
   return { tiles, blocked, dirtish, waterish, grass, water: [], border: [], deco, kind };
 }
@@ -281,6 +284,7 @@ class Crag extends Route {
       else if (v === '__cglegend') this.makeLegend(x, y);
     }
     for (const [tx, x, y] of RC.cgprops || []) { const im = this.add.image(x * T + 8, y * T + 16, tx).setOrigin(.5, 1).setDepth(y * T + 15); if (tx === 'cg_lamp_post') { this.tall.push(im); this.glow(x * T + 12, y * T - 4); } }
+    for (const [f, x, y, ok] of RC.qdprops || []) { if (ok && !ok()) continue; const im = this.add.image(x * T + 8, y * T + 16, 'qd', f).setOrigin(.5, 1).setDepth(y * T + 15); if (f === 'qd_stone_lantern') { this.tall.push(im); this.glow(x * T + 8, y * T - 10); } }
     if (RC.tunnel) { const { x, y } = RC.tunnel; this.add.image(x * T + 8, y * T + 18, 'cg_tunnel').setOrigin(.5, 1).setDepth(2); }
     if (RC.mine) {
       this.cameras.main.setBackgroundColor(0x0a0806);

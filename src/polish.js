@@ -13,7 +13,7 @@ const MAP_PLACES = [
   { k: 'crag1', name: 'Cragside Pass', al: 'l', x: .865, y: .655, route: 1 },
   { k: 'crag2', name: 'Cragside Heights', al: 'l', x: .85, y: .585, route: 1, extra: () => `🪨 ${Object.keys((S.crag || {}).filled || {}).length} of 3 crevasses filled` },
   { k: 'crag3', name: 'Old Rail Cutting', al: 'b', x: .775, y: .6, route: 1, extra: () => (S.visited || {}).cragmine ? '✔ Reached the Old Mine' : '🛤️ Mine-cart puzzle' },
-  { k: 'quarrydown', name: 'Quarrydown', x: .84, y: .525, soon: 1, warden: ['?', 'stone', 3] },
+  { k: 'quarrydown', name: 'Quarrydown', x: .84, y: .525, route: 1, warden: ['Granger', 'stone', 3] },
   { k: 'driftwood', name: 'Driftwood Cove', x: .22, y: .54, soon: 1 },
   { k: 'beaconreach', name: 'Beaconreach', x: .1, y: .365, soon: 1, warden: ['?', 'spark', 4] },
   { k: 'highmoor', name: 'Highmoor', x: .29, y: .16, soon: 1, warden: ['?', 'gale', 5] },
@@ -37,7 +37,7 @@ function placeNotes(P) {
   return lines;
 }
 function openMap() {
-  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3' }[scene.scene.key] || scene.scene.key) : '';
+  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown' }[scene.scene.key] || scene.scene.key) : '';
   const pins = MAP_PLACES.map((P, i) => {
     const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];
     const fog = seen ? '' : `<div class="wfog" style="left:${P.x * 100}%;top:${P.y * 100}%"></div>`;

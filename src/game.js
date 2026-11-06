@@ -1829,6 +1829,8 @@ const QUESTS = [
   { id: 'fen', name: 'Solve Sluice Fen', hint: 'Past Mossmere Bog, the fen is cut up by flooded channels. Pull the old levers to drain a way through to the far side.', done: () => !!(S.visited && S.visited.fenDone), reward: { gold: 1500, items: { mon_treat: 2 } } },
   { id: 'brook', name: 'Earn the Brook Crest from Warden Delphine', hint: "Cross Sluice Fen to Brookholt. Fund two repairs on the town's notice board, then challenge Delphine at the Lock House. Her Tide team is level 20–24.", done: () => S.crests && S.crests.brook, reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Have ${elderNeed()} buildings restored in Smallroot, any you like. Ones you've already done count (${elderDone()}/${elderNeed()} so far). Then tell Bramble. The road north of Brookholt stays closed until you do.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
+  { id: 'quarry', name: 'Reach Quarrydown', hint: 'The landslide on Cragside Heights has been cleared. Follow the road north from the top of the Heights.', done: () => !!(S.visited && S.visited.quarrydown), reward: { gold: 1500, items: { sturdy_charm: 5 } } },
+  { id: 'stone', name: 'Earn the Stone Crest from Warden Granger', get hint() { return `Fund the two repairs on Quarrydown's notice board (${qdRepairs()}/2 done), then challenge Granger at the Quarry Pit, top of the town. His team is level 32–36.`; }, done: () => !!(S.crests && S.crests.stone), reward: { gold: 2500, items: { mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
   { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
@@ -4046,7 +4048,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^crag/.test(scene.scene.key) ? ASSET.bgCrag : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4144,6 +4146,12 @@ const R1_SIGNS = {
   '17,3': 'Meadow Trail. Wild Fablemon live in the long grass. Keep to the path to stay out of trouble!',
   '24,68': 'South to Brookside Lane and the Warden\'s Garden.',
 };
+// the tiles a building stands on: its full width, and the bottom half of its height
+function bldTiles(b) {
+  const f = ASSET[(b.atlas || 'town') + 'Json'].frames[b.frame].frame, cxp = b.cx * T + 8, x0 = Math.floor((cxp - f.w / 2 + 4) / T), x1 = Math.floor((cxp + f.w / 2 - 5) / T), rows = Math.max(2, Math.ceil(f.h * .5 / T)), out = [];
+  for (let y = b.by - rows + 1; y <= b.by; y++) for (let x = x0; x <= x1; x++) out.push([x, y]);
+  return out;
+}
 function buildRoute() {
   if (RC.ascii) return buildAscii();
   const V = Array.from({ length: RH + 1 }, () => new Uint8Array(RW + 1));
@@ -4191,10 +4199,7 @@ function buildRoute() {
   for (const t of ROUTE_TRAINERS) { const i = t.y * RW + t.x; blocked[i] = 1; grass[i] = -1; if (tiles[i] === FILL_ROW * 16 + 11) tiles[i] = FILL_ROW * 16; }
   for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; }
   for (const [, x, y, w] of RC.props || []) for (let k = 0; k < (w || 1); k++) { const i = y * RW + x + k; blocked[i] = 1; grass[i] = -1; }
-  for (const b of RC.buildings || []) {
-    const f = (b.atlas === 'bh' ? ASSET.bhJson : ASSET.townJson).frames[b.frame].frame, cxp = b.cx * T + 8, x0 = Math.floor((cxp - f.w / 2 + 4) / T), x1 = Math.floor((cxp + f.w / 2 - 5) / T), rows = Math.max(2, Math.ceil(f.h * .5 / T));
-    for (let y = b.by - rows + 1; y <= b.by; y++) for (let x = x0; x <= x1; x++) blocked[y * RW + x] = 1;
-  }
+  for (const b of RC.buildings || []) for (const [x, y] of bldTiles(b)) blocked[y * RW + x] = 1;
   return { tiles, blocked, dirtish, waterish, grass, water, border, deco };
 }
 
@@ -4437,10 +4442,10 @@ class Route extends World {
     this.grassSpr = {};
     for (let i = 0; i < RW * RH; i++) if (R.grass[i] >= 0) { const x = i % RW, y = (i / RW) | 0; this.grassSpr[i] = RC.bog ? this.add.image(x * T + 8, y * T + 16, 'bog', 'bog_grass').setOrigin(.5, 1).setDepth(y * T + 15.6) : this.add.image(x * T + 8, y * T + 16, 'objects', 'tall_grass').setOrigin(.5, 1).setDepth(y * T + 15.6); if (hash(x * 3, y) < .35) this.tweens.add({ targets: this.grassSpr[i], angle: { from: -2.5, to: 2.5 }, duration: 1800 + hash(x, y) * 900, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(y, x) * 1500 }); }
     for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
-    for (const b of RC.buildings || []) { const fr = b.repair && !bhDone(b.id) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
+    for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
-      if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg')) continue;
+      if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg') || v.startsWith('__qd')) continue;
       if (v.startsWith('__lever:')) {
         const on = !!sluice()[v.slice(8)];
         if (this.textures.exists('bog')) { this.add.image(x * T + 8, y * T + 16, 'bog', on ? 'lever_down' : 'lever_up').setOrigin(.5, 1).setDepth(y * T + 15); continue; }
@@ -4616,8 +4621,9 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { bhDoor(this, t.slice(7)); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : bhDoor(this, id); return true; }
     if (t === '__board') { bhBoard(); return true; }
+    if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
     if (t.startsWith('__lever:')) {
       const id = t.slice(8), L = sluice(); L[id] = L[id] ? 0 : 1;
@@ -4697,6 +4703,7 @@ function nightly(passedOut) {
   const tw = S.town, built = Object.keys(tw.pending), stageBefore = hearthStage();
   for (const id of built) { tw.done[id] = 1; delete tw.pending[id]; }
   const bh = S.bh || { done: {}, pending: {} }; for (const id of Object.keys(bh.pending)) { bh.done[id] = 1; delete bh.pending[id]; }
+  const qd = S.qd || { done: {}, pending: {} }; for (const id of Object.keys(qd.pending)) { qd.done[id] = 1; delete qd.pending[id]; }
   const ranchBuilt = S.ranch === 1; if (ranchBuilt) S.ranch = 2;
   const houseBuilt = S.houseNext; if (houseBuilt) { S.house = houseBuilt; S.houseNext = 0; }
   for (const m of S.mons) restMon(m);
@@ -4811,6 +4818,7 @@ async function bootGame() {
     preload() {
       this.load.image('terrain', art.terrain);
       this.load.image('gym_bh', ASSET.gymBh);
+      this.load.image('gym_qd', ASSET.gymQd);
       this.load.atlas('objects', art.objects, ASSET.objectsJson);
       this.load.spritesheet('walk', ASSET.walk, { frameWidth: 24, frameHeight: 32 });
       this.load.spritesheet('tools', ASSET.tools, { frameWidth: 40, frameHeight: 48 });
@@ -4824,6 +4832,7 @@ async function bootGame() {
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);
       this.load.atlas('bog', snow.bog || ASSET.bog, ASSET.bogJson);
       this.load.atlas('bh', snow.bh || ASSET.bh, ASSET.bhJson);
+      this.load.atlas('qd', ASSET.qd, ASSET.qdJson);
     }
     create() {
       // copy each terrain tile's edge pixels outward by one so no seams show between tiles
@@ -4838,12 +4847,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES],
   });
   Sound.music(true);
 }

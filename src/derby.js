@@ -29,6 +29,12 @@ const DERBY_TRACKS = {
     obstacles: 7, kinds: ['stump', 'rock_large', 'rock_pair'], puddles: 7, boosts: 3, grip: [], mudSlow: .93,
     blurb: 'Thick mud and deep puddles. Tide Fablemon splash straight through.',
   },
+  quarry: {
+    name: 'Quarry Ring', w: 50, h: 37, scale: 1.45, width: 5, ground: 'gravel', surface: 'slab',
+    pts: [[6, 6], [20, 4], [34, 5], [44, 9], [45, 18], [38, 22], [30, 19], [22, 22], [26, 28], [40, 29], [34, 33], [16, 33], [6, 28], [9, 20], [4, 13]],
+    obstacles: 12, kinds: ['rock_large', 'rock_pair', 'crate', 'rock_large', 'stump'], puddles: 2, boosts: 4, grip: [], tough: 'Stone',
+    blurb: 'Loose rock and fallen blocks all round the quarry floor. Stone Fablemon barely notice when they hit something.',
+  },
 };
 
 // rival racers. sk = how well they drive (racing line and reactions), iv = their Speed potential (1-10)
@@ -60,7 +66,16 @@ const DERBY_CUPS = [
       [R_('Ollie', 'brookstride', 34, .93), R_('Kit', 'staticwing', 34, .93), R_('Tess', 'reefarer', 34, .93)],
       [R_('Monty', 'fleecebolt', 35, 1.2, 10, 'swift_feather'), R_('Ollie', 'whirlwyn', 35, .95), R_('Tess', 'staticwing', 35, .95)],
     ], champ: 'Monty', champLine: "And in the final, it's me and Comet. Don't look so surprised. Champions don't retire, they just get slower. Slightly. Oh, and she's wearing her lucky Swift Feather.",
+  },  { id: 'quarry', name: 'Quarry Cup', icon: '⛰️', track: 'quarry', stage: 2, cap: 45, fee: 350,
+    unlock: () => derbyWon('brook') && !!(S.crests || {}).stone, lockText: 'Win the Brook Cup and earn the Stone Crest.',
+    prize: [5000, [['swift_feather', 1], ['mon_treat', 3]]], replay: [1200, []],
+    races: [
+      [R_('Kit', 'cindhop_2', 42, .92), R_('Alf', 'flintburrow', 44, .92), R_('Nell', 'staticwing', 43, .92)],
+      [R_('Bea', 'whirlwyn', 44, .94), R_('Ollie', 'brookstride', 44, .94), R_('Kit', 'cindhop_2', 44, .94)],
+      [R_('Granger', 'craglet_2', 45, 1.15, 10, 'swift_feather'), R_('Bea', 'fleecebolt', 45, .97), R_('Kit', 'cindhop_2', 45, .97)],
+    ], champ: 'Granger', champLine: "Warden Granger's come down from Quarrydown with his Cragryph. Says it's never lost a race on gravel. I believe him.",
   },
+
 ];
 
 const derby = () => (S.derby = S.derby || { won: {}, best: {}, wins: 0, races: 0 });
@@ -98,7 +113,7 @@ function openDerby() {
     return `<p class="hint">Three races a cup. Points: ${DERBY_PTS.join(', ')}. The last race is against the cup's champion. Fablemon over the level cap race as if they were at it.</p>
       <div class="mlist">${cups}</div>
       <p style="margin:10px 0 4px"><b>Lap records</b></p>${recs || '<small>No records yet. Go and set one!</small>'}
-      <p style="margin:8px 0 0"><small>More cups will open as Wardens across the valley are found: Quarry, Beacon, Highmoor, Elderwood, Gloam and the Crown Cup.</small></p>
+      <p style="margin:8px 0 0"><small>More cups will open as Wardens across the valley are found: Beacon, Highmoor, Elderwood, Gloam and the Crown Cup.</small></p>
       <div class="row"><button class="btn" data-a="how">How to race</button></div>`;
   };
   openModal('🏁 Smallroot Derby', render(), (a, el) => {
@@ -171,6 +186,7 @@ async function finishCup(cup, m, place) {
 /* ---------- the race itself */
 const DERBY_IMG = {};
 async function derbyImages(sps) {
+  if (!DERBY_IMG.gravel && ASSET.crag) { DERBY_IMG.gravel = rgbaCanvas(ASSET.crag.ground.dirt_pebble); DERBY_IMG.slab = rgbaCanvas(ASSET.crag.ground.slab); }
   const need = { objects: ASSET.objects, terrain: ASSET.terrain, peat: ASSET.g_peat, moss: ASSET.g_moss, bogwater: ASSET.g_bogwater };
   for (const sp of sps) need['mon_' + walkSp(sp)] = ASSET['mon_' + walkSp(sp)];
   await Promise.all(Object.entries(need).filter(([k, v]) => v && !DERBY_IMG[k]).map(async ([k, v]) => { DERBY_IMG[k] = await loadImg(v); }));
@@ -221,9 +237,9 @@ function buildTrack(key, seed) {
   const W = Math.round(def.w * T16 * sc), H = Math.round(def.h * T16 * sc), scenery = [], trees = [];
   for (let k = 0; k < 900 && trees.length < 34; k++) {
     const x = 20 + rand() * (W - 40), y = 30 + rand() * (H - 40), n = nearest(x, y);
-    if (n.d > half + 34 && trees.every(t => Math.hypot(t.x - x, t.y - y) > 40)) trees.push({ x, y, kind: rand() < .5 ? 'tree_oak' : 'tree_pine', r: 9 });
+    if (n.d > half + 34 && trees.every(t => Math.hypot(t.x - x, t.y - y) > 40)) trees.push({ x, y, kind: def.ground === 'gravel' ? (rand() < .5 ? 'rock_large' : 'rock_pair') : rand() < .5 ? 'tree_oak' : 'tree_pine', r: def.ground === 'gravel' ? 8 : 9 });
   }
-  for (let k = 0; k < 160; k++) { const x = rand() * W, y = rand() * H; if (nearest(x, y).d > half + 8) scenery.push({ x, y, kind: rand() < .6 ? 'tall_grass' : 'wildflowers' }); }
+  for (let k = 0; k < (def.ground === 'gravel' ? 40 : 160); k++) { const x = rand() * W, y = rand() * H; if (nearest(x, y).d > half + 8) scenery.push({ x, y, kind: rand() < .6 ? 'tall_grass' : 'wildflowers' }); }
 
   return { def, key, line, cum, L, half, at, nearest, obstacles: obstacles.concat(trees), puddles, boosts, scenery, W, H };
 }
@@ -234,11 +250,12 @@ function drawTrackBG(tr) {
   const tex = im => g.createPattern(im, 'repeat');
   // ground
   if (tr.def.ground === 'moss') { g.fillStyle = tex(DERBY_IMG.moss); g.fillRect(0, 0, tr.W, tr.H); }
+  else if (tr.def.ground === 'gravel') { g.fillStyle = tex(DERBY_IMG.gravel); g.fillRect(0, 0, tr.W, tr.H); g.fillStyle = 'rgba(60,40,20,.18)'; g.fillRect(0, 0, tr.W, tr.H); }
   else for (let y = 0; y < tr.H; y += 16) for (let x = 0; x < tr.W; x += 16) { const h = hash(x, y); g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, x, y, 16, 16); }
   const path = () => { g.beginPath(); tr.line.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); };
   g.lineJoin = g.lineCap = 'round';
   path(); g.strokeStyle = 'rgba(52,36,20,.55)'; g.lineWidth = tr.half * 2 + 4; g.stroke();
-  path(); g.strokeStyle = tr.def.surface === 'mud' ? tex(DERBY_IMG.peat) : tile(3, FILL_ROW); g.lineWidth = tr.half * 2; g.stroke();
+  path(); g.strokeStyle = tr.def.surface === 'mud' ? tex(DERBY_IMG.peat) : tr.def.surface === 'slab' ? tex(DERBY_IMG.slab) : tile(3, FILL_ROW); g.lineWidth = tr.half * 2; g.stroke();
   // kerbs: little white posts along both edges
   for (let s = 0; s < tr.L; s += 22) { const p = tr.at(s); for (const sd of [-1, 1]) { g.fillStyle = (Math.floor(s / 22) % 2) ? '#f4ead2' : '#c0402a'; g.fillRect(Math.round(p.x + p.nx * sd * (tr.half + 2)) - 1, Math.round(p.y + p.ny * sd * (tr.half + 2)) - 1, 3, 3); } }
   // puddles
@@ -382,7 +399,7 @@ function derbyRace(cup, mine, rivals, raceNo) {
         r.x += r.vx * dt; r.y += r.vy * dt;
         r.x = Math.max(8, Math.min(tr.W - 8, r.x)); r.y = Math.max(12, Math.min(tr.H - 4, r.y));
         // bumps
-        for (const o of tr.obstacles) { const dx = r.x - o.x, dy = r.y - o.y, dd = Math.hypot(dx, dy), mn = o.r + 6; if (dd < mn && dd > .01) { r.x = o.x + dx / dd * mn; r.y = o.y + dy / dd * mn; const vn = (r.vx * dx + r.vy * dy) / dd; if (vn < 0) { r.vx -= 1.4 * vn * dx / dd; r.vy -= 1.4 * vn * dy / dd; const hit = Math.min(1, -vn / 80); if (hit > .25 && r.stun <= 0) { r.stun = hit * .7 * 70 / (r.st.def + 50); if (r.you) Sound.play('thud'); } } } }
+        for (const o of tr.obstacles) { const dx = r.x - o.x, dy = r.y - o.y, dd = Math.hypot(dx, dy), mn = o.r + 6; if (dd < mn && dd > .01) { r.x = o.x + dx / dd * mn; r.y = o.y + dy / dd * mn; const vn = (r.vx * dx + r.vy * dy) / dd; if (vn < 0) { r.vx -= 1.4 * vn * dx / dd; r.vy -= 1.4 * vn * dy / dd; const hit = Math.min(1, -vn / 80); if (hit > .25 && r.stun <= 0) { r.stun = hit * .7 * 70 / (r.st.def + 50) * (tr.def.tough && r.types.includes(tr.def.tough) ? .3 : 1); if (r.you) Sound.play('thud'); } } } }
         for (const b of tr.boosts) if (Math.hypot(b.x - r.x, b.y - r.y) < 12 && r.boost < .6) { r.boost = 1; if (r.you) Sound.play('pop'); }
         // progress along the lap
         const nn = tr.nearest(r.x, r.y, r.ni); r.ni = nn.i;
