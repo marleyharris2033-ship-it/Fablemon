@@ -3320,7 +3320,9 @@ class Farm extends World {
     if (o.t === 'chest') return openChest(o);
     if (o.t === 'sprinkler') return toast(ITEMS[o.item || 'sprinkler'].desc, 2400);
     if (SAPLING_TREE[o.t]) { const left = Math.max(1, 7 - (S.day - (o.day || S.day))); return toast(`${ITEMS[o.t.replace('sap_', '') + '_sapling'].name}: about ${left} more day${left > 1 ? 's' : ''} until it's a tree.`, 2200); }
-    toast(ITEMS[o.t].name, 1000);
+    if (o.t === 'ring') { const n = S.mons.filter(m => m.loc === 'ranch').length; return toast(S.ranch !== 2 ? 'The Training Ring needs the big ranch before Fablemon can train here.' : `${n} Fablemon living at your ranch will train here tonight.`, 2400); }
+    const it = ITEMS[o.item] || ITEMS[o.t] || Object.values(ITEMS).find(i => i.obj === o.t);   // objects whose item id differs from their name
+    toast(it ? it.name : 'Nothing happens.', 1000);
   }
   clearDebrisIn(x0, y0, x1, y1) {
     for (const d of Object.values(farm.debris)) {

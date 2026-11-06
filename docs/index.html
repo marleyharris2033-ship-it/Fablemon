@@ -324,15 +324,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261106-182721">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261106-182721">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261106-182721">
+<link rel="manifest" href="manifest.webmanifest?v=20261106-204236">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261106-204236">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261106-204236">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261106-182721').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261106-204236').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -3329,7 +3329,9 @@ class Farm extends World {
     if (o.t === 'chest') return openChest(o);
     if (o.t === 'sprinkler') return toast(ITEMS[o.item || 'sprinkler'].desc, 2400);
     if (SAPLING_TREE[o.t]) { const left = Math.max(1, 7 - (S.day - (o.day || S.day))); return toast(`${ITEMS[o.t.replace('sap_', '') + '_sapling'].name}: about ${left} more day${left > 1 ? 's' : ''} until it's a tree.`, 2200); }
-    toast(ITEMS[o.t].name, 1000);
+    if (o.t === 'ring') { const n = S.mons.filter(m => m.loc === 'ranch').length; return toast(S.ranch !== 2 ? 'The Training Ring needs the big ranch before Fablemon can train here.' : `${n} Fablemon living at your ranch will train here tonight.`, 2400); }
+    const it = ITEMS[o.item] || ITEMS[o.t] || Object.values(ITEMS).find(i => i.obj === o.t);   // objects whose item id differs from their name
+    toast(it ? it.name : 'Nothing happens.', 1000);
   }
   clearDebrisIn(x0, y0, x1, y1) {
     for (const d of Object.values(farm.debris)) {
