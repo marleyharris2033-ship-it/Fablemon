@@ -196,6 +196,8 @@ function coveSetup(sc) {
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass
   if (sc.scene.key === 'driftwood') {
     sc.add.image(16 * T, 1 * T - 4, 'cove', 'cv_pier').setOrigin(0).setDepth(2);
+    // a run of extra walkway (cut from the pier's own planks) carries it down onto the sand
+    for (let k = 0; k < 2; k++) sc.add.image(16 * T, 1 * T - 4 + 20 + k * 16, 'cove', 'cv_pier').setOrigin(0).setCrop(35, 66, 42, 39).setDepth(1.9);
     sc.boatImg = null; drawBoat(sc);
     if (!S.flags.coveSeen) { S.flags.coveSeen = 1; setTimeout(() => toast('Driftwood Cove. Someone is whistling over at the shipyard.', 3000), 700); }
   }
@@ -205,7 +207,7 @@ function drawBoat(sc) {
   const st = cove().stage;
   if (sc.boatImg) sc.boatImg.destroy();
   sc.boatImg = st ? sc.add.image(BOAT_AT.cx * T + 8, BOAT_AT.by * T + 16, 'cove', 'cv_boat' + st).setOrigin(.5, 1).setDepth(BOAT_AT.by * T + 15) : null;
-  if (sc.boatImg) sc.tall.push(sc.boatImg);
+  if (sc.boatImg) { sc.boatImg.noShadow = 1; sc.tall.push(sc.boatImg); }
 }
 
 /* ---------- Hal, the shipwright */

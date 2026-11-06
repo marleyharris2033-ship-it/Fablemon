@@ -1268,7 +1268,7 @@ class World extends Phaser.Scene {
   // trees sway a little in the breeze, and everything tall gets a shadow
   dressTall() {
     for (const im of this.tall || []) {
-      if (im.shadowed) continue; im.shadowed = 1;
+      if (im.shadowed || im.noShadow) continue; im.shadowed = 1;
       const fr = im.frame && im.frame.name || '', tree = /tree|dead_tree/.test(fr);
       this.shadow(im, Math.min(150, Math.round(im.displayWidth * (tree ? .7 : .8))), tree ? 11 : 10);
       if (tree && !im.swaying) { im.swaying = 1; this.tweens.add({ targets: im, angle: { from: -.7, to: .7 }, duration: 2600 + hash(im.x, im.y) * 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(im.y, im.x) * 2000 }); }
@@ -4448,7 +4448,7 @@ class Route extends World {
     this.grassSpr = {};
     for (let i = 0; i < RW * RH; i++) if (R.grass[i] >= 0) { const x = i % RW, y = (i / RW) | 0; this.grassSpr[i] = RC.bog ? this.add.image(x * T + 8, y * T + 16, 'bog', 'bog_grass').setOrigin(.5, 1).setDepth(y * T + 15.6) : this.add.image(x * T + 8, y * T + 16, 'objects', 'tall_grass').setOrigin(.5, 1).setDepth(y * T + 15.6); if (hash(x * 3, y) < .35) this.tweens.add({ targets: this.grassSpr[i], angle: { from: -2.5, to: 2.5 }, duration: 1800 + hash(x, y) * 900, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(y, x) * 1500 }); }
     for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, n.tex || 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
-    for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
+    for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); im.noShadow = 1; this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
       if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg') || v.startsWith('__qd')) continue;

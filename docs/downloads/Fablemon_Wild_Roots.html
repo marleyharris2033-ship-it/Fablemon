@@ -1857,7 +1857,7 @@ class World extends Phaser.Scene {
   // trees sway a little in the breeze, and everything tall gets a shadow
   dressTall() {
     for (const im of this.tall || []) {
-      if (im.shadowed) continue; im.shadowed = 1;
+      if (im.shadowed || im.noShadow) continue; im.shadowed = 1;
       const fr = im.frame && im.frame.name || '', tree = /tree|dead_tree/.test(fr);
       this.shadow(im, Math.min(150, Math.round(im.displayWidth * (tree ? .7 : .8))), tree ? 11 : 10);
       if (tree && !im.swaying) { im.swaying = 1; this.tweens.add({ targets: im, angle: { from: -.7, to: .7 }, duration: 2600 + hash(im.x, im.y) * 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(im.y, im.x) * 2000 }); }
@@ -5037,7 +5037,7 @@ class Route extends World {
     this.grassSpr = {};
     for (let i = 0; i < RW * RH; i++) if (R.grass[i] >= 0) { const x = i % RW, y = (i / RW) | 0; this.grassSpr[i] = RC.bog ? this.add.image(x * T + 8, y * T + 16, 'bog', 'bog_grass').setOrigin(.5, 1).setDepth(y * T + 15.6) : this.add.image(x * T + 8, y * T + 16, 'objects', 'tall_grass').setOrigin(.5, 1).setDepth(y * T + 15.6); if (hash(x * 3, y) < .35) this.tweens.add({ targets: this.grassSpr[i], angle: { from: -2.5, to: 2.5 }, duration: 1800 + hash(x, y) * 900, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(y, x) * 1500 }); }
     for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, n.tex || 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
-    for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
+    for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); im.noShadow = 1; this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
       if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg') || v.startsWith('__qd')) continue;
@@ -7812,6 +7812,8 @@ function coveSetup(sc) {
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass
   if (sc.scene.key === 'driftwood') {
     sc.add.image(16 * T, 1 * T - 4, 'cove', 'cv_pier').setOrigin(0).setDepth(2);
+    // a run of extra walkway (cut from the pier's own planks) carries it down onto the sand
+    for (let k = 0; k < 2; k++) sc.add.image(16 * T, 1 * T - 4 + 20 + k * 16, 'cove', 'cv_pier').setOrigin(0).setCrop(35, 66, 42, 39).setDepth(1.9);
     sc.boatImg = null; drawBoat(sc);
     if (!S.flags.coveSeen) { S.flags.coveSeen = 1; setTimeout(() => toast('Driftwood Cove. Someone is whistling over at the shipyard.', 3000), 700); }
   }
@@ -7821,7 +7823,7 @@ function drawBoat(sc) {
   const st = cove().stage;
   if (sc.boatImg) sc.boatImg.destroy();
   sc.boatImg = st ? sc.add.image(BOAT_AT.cx * T + 8, BOAT_AT.by * T + 16, 'cove', 'cv_boat' + st).setOrigin(.5, 1).setDepth(BOAT_AT.by * T + 15) : null;
-  if (sc.boatImg) sc.tall.push(sc.boatImg);
+  if (sc.boatImg) { sc.boatImg.noShadow = 1; sc.tall.push(sc.boatImg); }
 }
 
 /* ---------- Hal, the shipwright */
