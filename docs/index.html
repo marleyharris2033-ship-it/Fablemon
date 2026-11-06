@@ -324,15 +324,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261106-213903">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261106-213903">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261106-213903">
+<link rel="manifest" href="manifest.webmanifest?v=20261106-214818">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261106-214818">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261106-214818">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261106-213903').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261106-214818').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -2040,7 +2040,7 @@ class World extends Phaser.Scene {
       const dx = next.x - p.x, dy = next.y - p.y;
       p.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
       if (p.px === undefined) { p.px = p.x * T + 8; p.py = p.y * T + 8; }
-      this.followStep(p.x, p.y);
+      this.followStep(p.x, p.y, next.x, next.y);
       p.x = next.x; p.y = next.y; p.moving = true; p.idleT = 0;
       Sound.play('step', p.steps++);
       if (this.player.anims.currentAnim?.key !== 'walk_' + p.dir || !this.player.anims.isPlaying) this.player.play('walk_' + p.dir);
@@ -2289,8 +2289,14 @@ Object.assign(World.prototype, {
     this.drawFollower();
   },
   refreshFollower() { if (this.p) this.makeFollower(); },
-  followStep(ox, oy) {
+  followStep(ox, oy, nx, ny) {
     const f = this.fol; if (!f) return;
+    // big Fablemon hang back an extra tile so they don't crowd you
+    f.trail = f.trail || []; f.trail.push([ox, oy]);
+    const gap = f.spr.width > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    if (f.trail.length < gap) return;
+    [ox, oy] = f.trail[0];
+    if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
     if (f.x === ox && f.y === oy) return;
     const dx = ox * T + 8 - f.px, dy = oy * T + 8 - f.py;
     f.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');

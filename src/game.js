@@ -1442,7 +1442,7 @@ class World extends Phaser.Scene {
       const dx = next.x - p.x, dy = next.y - p.y;
       p.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
       if (p.px === undefined) { p.px = p.x * T + 8; p.py = p.y * T + 8; }
-      this.followStep(p.x, p.y);
+      this.followStep(p.x, p.y, next.x, next.y);
       p.x = next.x; p.y = next.y; p.moving = true; p.idleT = 0;
       Sound.play('step', p.steps++);
       if (this.player.anims.currentAnim?.key !== 'walk_' + p.dir || !this.player.anims.isPlaying) this.player.play('walk_' + p.dir);
@@ -1691,8 +1691,14 @@ Object.assign(World.prototype, {
     this.drawFollower();
   },
   refreshFollower() { if (this.p) this.makeFollower(); },
-  followStep(ox, oy) {
+  followStep(ox, oy, nx, ny) {
     const f = this.fol; if (!f) return;
+    // big Fablemon hang back an extra tile so they don't crowd you
+    f.trail = f.trail || []; f.trail.push([ox, oy]);
+    const gap = f.spr.width > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    if (f.trail.length < gap) return;
+    [ox, oy] = f.trail[0];
+    if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
     if (f.x === ox && f.y === oy) return;
     const dx = ox * T + 8 - f.px, dy = oy * T + 8 - f.py;
     f.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
