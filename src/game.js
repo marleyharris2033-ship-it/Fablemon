@@ -2547,7 +2547,7 @@ class Farm extends World {
   }
   harvest(x, y) {
     const k = x + ',' + y, tl = S.tilled[k], c = tl.crop, C = CROPS[c.type];
-    const n = Math.random() < .1 ? 2 : 1, q = rollQuality(tl), id = q && QUAL[C.item] ? QUAL[C.item][q - 1] : C.item;
+    const n = Math.random() < .1 ? 2 : 1, q = C.geode ? Math.max(rollQuality(tl), Math.random() < .3 ? 1 : 0) : rollQuality(tl), id = q && QUAL[C.item] ? QUAL[C.item][q - 1] : C.item;
     delete tl.crop; delete tl.fq; this.drawTilled(x, y);
     if (q) toast(`${q === 2 ? '🌟 Gold' : '⭐ Silver'} quality ${ITEMS[C.item].name}!`, 1400);
     this.giveDrops({ [id]: n }, x * T + 8, y * T + 4);
@@ -4676,7 +4676,7 @@ function nightly(passedOut) {
   for (const [tk, t] of Object.entries(S.tilled)) {
     if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } if (t.heat && !cropRipe(t.crop)) { t.crop.warm = (t.crop.warm || 0) + .5; if (t.crop.warm >= 1) { t.crop.warm -= 1; t.crop.g++; } } }
     t.heat = 0;
-    if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
+    if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].hardy && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
     t.w = isWet(S.weather) || t.bog ? 1 : 0;
   }
   let grown = 0;

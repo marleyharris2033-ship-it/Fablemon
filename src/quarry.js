@@ -208,3 +208,40 @@ class QdPit extends World {
   arriveHook(x, y) { if (y >= PIT_H - 1) { Sound.play('door'); travel(this, PIT_EXIT.scene, { x: PIT_EXIT.x, y: PIT_EXIT.y, dir: PIT_EXIT.dir }); } }
 }
 const QD_SCENES = [class extends Crag { constructor() { super('quarrydown'); } }, QdPit];
+
+/* ---------- Quarrydown crops: seeds sold only at Stone & Supply (art: quarrycrops.json, tools/cut_quarry_crops.py)
+   Flintcorn is hardy and never withers when the season turns; a Geode Melon often splits open with crystals
+   inside, which makes it a Silver or Gold one. */
+Object.assign(ITEMS, {
+  cragberry_seeds: { name: 'Cragberry Seeds', stack: 999, seed: 'cragberry', sell: 30, desc: 'Spring. A hardy mountain bush with tart purple berries. Ready in 6 days. Sold only in Quarrydown.' },
+  quarrypepper_seeds: { name: 'Quarry Pepper Seeds', stack: 999, seed: 'quarrypepper', sell: 40, desc: 'Summer. Fiery red chillies that love the heat. Ready in 7 days. Sold only in Quarrydown.' },
+  flintcorn_seeds: { name: 'Flintcorn Seeds', stack: 999, seed: 'flintcorn', sell: 55, desc: 'Autumn. Tough as flint: it never withers when the season changes. Ready in 10 days. Sold only in Quarrydown.' },
+  geodemelon_seeds: { name: 'Geode Melon Seeds', stack: 999, seed: 'geodemelon', sell: 80, desc: 'Summer and autumn. A stony melon that often splits open full of crystals. Ready in 12 days. Sold only in Quarrydown.' },
+  cragberry: { name: 'Cragberries', stack: 999, sell: 140, desc: 'Tart purple mountain berries. Sells for 140g.' },
+  quarry_pepper: { name: 'Quarry Pepper', stack: 999, sell: 190, desc: 'Hot enough to crack rock. Sells for 190g.' },
+  flintcorn: { name: 'Flintcorn', stack: 999, sell: 260, desc: 'Hard speckled kernels, like polished flint. Sells for 260g.' },
+  geode_melon: { name: 'Geode Melon', stack: 999, sell: 420, desc: 'A stone-skinned melon. The best ones are full of crystals. Sells for 420g.' },
+  cragberry_jam: { name: 'Cragberry Jam', stack: 99, eat: 70, sell: 380, desc: 'Sweet, tart and deep purple. Restores 70 energy.' },
+  quarry_chilli: { name: 'Quarry Chilli', stack: 99, eat: 100, sell: 480, desc: 'A thick, fiery stew. Restores 100 energy.' },
+  flintcorn_bread: { name: 'Flintcorn Bread', stack: 99, eat: 90, sell: 560, desc: 'A crusty loaf studded with flintcorn. Restores 90 energy.' },
+  geode_sorbet: { name: 'Geode Melon Sorbet', stack: 99, eat: 80, sell: 640, desc: 'Icy, sparkly and very fancy. Restores 80 energy.' },
+  quarryman_pie: { name: "Quarryman's Pie", stack: 99, eat: 200, sell: 1000, desc: "Granger's favourite: berries, peppers, corn and potato under a golden crust. Restores 200 energy." },
+});
+Object.assign(CROPS, {
+  cragberry: cvCrop('cragberry', 6, [0]), quarrypepper: cvCrop('quarrypepper', 7, [1], { item: 'quarry_pepper' }),
+  flintcorn: cvCrop('flintcorn', 10, [2], { hardy: 1 }), geodemelon: cvCrop('geodemelon', 12, [1, 2], { item: 'geode_melon', geode: 1 }),
+});
+COOKING.push(
+  { out: 'cragberry_jam', need: { cragberry: 2, honey: 1 } }, { out: 'quarry_chilli', need: { quarry_pepper: 2, tomato: 1 } }, { out: 'flintcorn_bread', need: { flintcorn: 2 } },
+  { out: 'geode_sorbet', need: { geode_melon: 1, honey: 1 } }, { out: 'quarryman_pie', need: { cragberry: 1, quarry_pepper: 1, flintcorn: 1, potato: 1 } },
+);
+QD_SHOP.unshift(['cragberry_seeds', 60], ['quarrypepper_seeds', 80], ['flintcorn_seeds', 110], ['geodemelon_seeds', 160]);
+if (ASSET.quarrycrops) for (const [k, v] of Object.entries(ASSET.quarrycrops.crops)) SAP_CANVAS[k] = rgbaCanvas(v);
+// Silver and Gold versions, like every other crop
+for (const b of ['cragberry', 'quarry_pepper', 'flintcorn', 'geode_melon']) {
+  if (QUAL[b]) continue; QUAL[b] = [b + '_s', b + '_g'];
+  [['_s', 'Silver', 1.25, 1], ['_g', 'Gold', 1.5, 2]].forEach(([suf, lab, mul, q]) => {
+    const sell = Math.round(ITEMS[b].sell * mul);
+    ITEMS[b + suf] = { ...ITEMS[b], name: `${lab} ${ITEMS[b].name}`, sell, qbase: b, q, desc: `${lab}-star quality. Sells for ${sell}g. Counts as ${ITEMS[b].name} in recipes.` };
+  });
+}
