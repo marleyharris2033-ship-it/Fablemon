@@ -137,7 +137,10 @@ function buildAscii() {
   for (const [, x, y] of RC.cgprops || []) blocked[y * RW + x] = 1;
   for (const [, x, y, ok] of RC.qdprops || []) if (!ok || ok()) blocked[y * RW + x] = 1;
   for (const [, x, y] of RC.cvprops || []) blocked[y * RW + x] = 1;
-  if (RC === ROUTES.driftwood && cove().stage) for (const [x, y] of BOAT_TILES) blocked[y * RW + x] = 1;
+  if (RC.sail) for (let i = 0; i < N; i++) blocked[i] = (kind[i] === '~' || grass[i] >= 0) ? 0 : 1;   // at sea the water is the road
+  if (RC.sail) { for (const t of ROUTE_TRAINERS) blocked[t.y * RW + t.x] = 1; for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; } }
+  for (const [f, x, y] of RC.seaprops || []) for (const [a, b] of seaFoot(f, x, y)) if (a >= 0 && b >= 0 && a < RW && b < RH) { blocked[b * RW + a] = 1; grass[b * RW + a] = -1; }
+  if (RC === ROUTES.driftwood && cove().stage && !boatReady()) for (const [x, y] of BOAT_TILES) blocked[y * RW + x] = 1;
   for (const [, x, y, w] of RC.props || []) for (let k = 0; k < (w || 1); k++) blocked[y * RW + x + k] = 1;
   for (const b of RC.buildings || []) for (const [x, y] of bldTiles(b)) blocked[y * RW + x] = 1;
   if (RC.gate && !RC.gate.ok()) { const [a, b, c, d] = RC.gate.area; for (let y = b; y <= d; y++) for (let x = a; x <= c; x++) { blocked[y * RW + x] = 1; deco.push({ x, y, tex: (x + y) % 2 ? 'cg_boulder2' : 'cg_rock_pile', gate: 1 }); } }
@@ -405,6 +408,7 @@ class Crag extends Route {
     });
   }
   frameHook(dt) {
+    if (this.boatSpr) seaFrame(this, dt);
     super.frameHook(dt);
     if (this.halo) this.halo.setPosition(this.player.x, this.player.y - 6);
     // after the legend battle: caught, knocked out (back tomorrow) or fled from (still there)

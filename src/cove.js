@@ -106,7 +106,7 @@ Object.assign(ROUTES, {
       { id: 'cv_cottage', atlas: 'cove', frame: 'cv_cottage', cx: 11, by: 13, door: 0, name: 'Cottage' },
       { id: 'cv_hut', atlas: 'cove', frame: 'cv_hut', cx: 35, by: 25, door: 1, name: 'Fish hut' },
     ],
-    signs: { '40,13': 'Driftwood Cove. Fresh fish, fair winds, and the finest boats on the coast (says Hal).', '30,19': '__heal' },
+    signs: { '40,13': 'Driftwood Cove. Fresh fish, fair winds, and the finest boats on the coast (says Hal).', '30,19': '__heal', '20,5': '__door:cv_sail', '20,6': '__door:cv_sail' },
     npcs: [{ kind: 'hal', tex: 'npc_shipwright', x: 22, y: 20, dir: 'down', door: 'cv_hal' }],
     trainers: [],
     cvprops: [['cv_bollard', 18, 8], ['cv_bollard', 21, 8], ['cv_lantern', 17, 9], ['cv_anchor', 24, 11], ['cv_rope_spool', 25, 9], ['cv_glass_floats', 15, 9],
@@ -126,12 +126,13 @@ function beachGround(sc, R) {
   const c = document.createElement('canvas'); c.width = RW * T; c.height = RH * T;
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   const K = (x, y) => (x < 0 || y < 0 || x >= RW || y >= RH) ? '~' : R.kind[y * RW + x];
-  const sea = (x, y) => K(x, y) === '~' || K(x, y) === 'P', bank = (x, y) => K(x, y) === '#';
+  const sea = (x, y) => { const k = K(x, y); return k === '~' || k === 'P' || (RC.sail && k >= '0' && k <= '9'); }, bank = (x, y) => K(x, y) === '#';
   const ter = sc.textures.get('terrain').getSourceImage();
   // how far each sea tile is from land (0 on land, up to 5 out at sea)
   const D = new Float32Array(RW * RH).fill(5), q = [];
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) if (!sea(x, y)) { D[y * RW + x] = 0; q.push([x, y]); }
   for (let h = 0; h < q.length; h++) { const [x, y] = q[h], d = D[y * RW + x] + 1; if (d > 5) continue; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= RW || ny >= RH || D[ny * RW + nx] <= d) continue; D[ny * RW + nx] = d; q.push([nx, ny]); } }
+  const rgh = (x, y) => { const k = K(x, y); return k >= '0' && k <= '9' ? 1 : 0; };
   const dist = (x, y) => (x < 0 || y < 0 || x >= RW || y >= RH) ? 5 : D[y * RW + x];
   const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
@@ -142,8 +143,16 @@ function beachGround(sc, R) {
         const fx = x + (u + .5) / T - .5, fy = y + (v + .5) / T - .5, x0 = Math.floor(fx), y0 = Math.floor(fy), ax = fx - x0, ay = fy - y0;
         const d = (dist(x0, y0) * (1 - ax) + dist(x0 + 1, y0) * ax) * (1 - ay) + (dist(x0, y0 + 1) * (1 - ax) + dist(x0 + 1, y0 + 1) * ax) * ay;
         const t = Math.min(1, Math.max(0, (d - .6) / 3.6)), n = hash(X + u, Y + v), w = Math.sin((X + u) * .35 + (Y + v) * .9) > .82 && n < .5;
-        const r = 104 - 66 * t, gg = 186 - 78 * t, b = 200 - 46 * t;
+        const rf = RC.sail ? (rgh(x0, y0) * (1 - ax) + rgh(x0 + 1, y0) * ax) * (1 - ay) + (rgh(x0, y0 + 1) * (1 - ax) + rgh(x0 + 1, y0 + 1) * ax) * ay : 0;   // rough water, blended softly
+        const r = 104 - 66 * t - 16 * rf, gg = 186 - 78 * t - 22 * rf, b = 200 - 46 * t - 14 * rf;
         px(X + u, Y + v, `rgb(${Math.round(r + (w ? 40 : n < .1 ? -8 : 0))},${Math.round(gg + (w ? 40 : n < .1 ? -8 : 0))},${Math.round(b + (w ? 30 : 0))})`);
+      }
+      if (k >= '0' && k <= '9') {   // rough water: darker, with little breaking crests
+        for (let n = 0; n < 2; n++) {
+          const cx = X + 1 + Math.floor(hash(x * 3 + n, y * 5 + 2) * 10), cy = Y + 2 + n * 7 + Math.floor(hash(y + n, x) * 5);
+          g.fillStyle = 'rgba(30,70,120,.35)'; g.fillRect(cx, cy + 1, 5, 1);
+          g.fillStyle = 'rgba(235,250,255,.75)'; g.fillRect(cx + 1, cy, 3, 1);
+        }
       }
       continue;
     }
@@ -192,19 +201,20 @@ function beachSparkle(sc, R) {
 }
 function coveSetup(sc) {
   beachSparkle(sc, sc.R);
+  if (RC.sail) seaSetup(sc);
   for (const [f, x, y] of RC.cvprops || []) sc.add.image(x * T + 8, y * T + 16, 'cove', f).setOrigin(.5, 1).setDepth(y * T + 15);
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass
   if (sc.scene.key === 'driftwood') {
     sc.add.image(16 * T, 1 * T - 4, 'cove', 'cv_pier').setOrigin(0).setDepth(2);
     // a run of extra walkway (cut from the pier's own planks) carries it down onto the sand
     for (let k = 0; k < 2; k++) sc.add.image(16 * T, 1 * T - 4 + 20 + k * 16, 'cove', 'cv_pier').setOrigin(0).setCrop(35, 66, 42, 39).setDepth(1.9);
-    sc.boatImg = null; drawBoat(sc);
+    sc.boatImg = null; drawBoat(sc); mooredBoat(sc);
     if (!S.flags.coveSeen) { S.flags.coveSeen = 1; setTimeout(() => toast('Driftwood Cove. Someone is whistling over at the shipyard.', 3000), 700); }
   }
   if (sc.scene.key === 'dunes' && !S.flags.dunesSeen) { S.flags.dunesSeen = 1; setTimeout(() => toast('Saltgrass Dunes. Wild Fablemon hide in the dune grass.', 3000), 700); }
 }
 function drawBoat(sc) {
-  const st = cove().stage;
+  const st = boatReady() ? 0 : cove().stage;   // once she's finished she's moored at the pier
   if (sc.boatImg) sc.boatImg.destroy();
   sc.boatImg = st ? sc.add.image(BOAT_AT.cx * T + 8, BOAT_AT.by * T + 16, 'cove', 'cv_boat' + st).setOrigin(.5, 1).setDepth(BOAT_AT.by * T + 15) : null;
   if (sc.boatImg) { sc.boatImg.noShadow = 1; sc.tall.push(sc.boatImg); }
@@ -223,7 +233,7 @@ function hal(sc) {
       HAL("No ferry's run since the old boats rotted. But I've a cradle, a slipway, and two good hands. Bring me the timber and the coin, and I'll build you a boat.", 1)], () => openBoat(sc));
   }
   if (C.pending) return say([HAL(pick(["Work's under way! Come back in the morning and you'll see the difference.", "I'll be at her all night with a lantern. Best time for it, the sea's quiet.", "Steady on, I'm working as fast as these old hands go! Tomorrow morning."]), 1)]);
-  if (C.stage >= BOAT_STAGES.length) return say([HAL(pick(["She's the finest boat I've ever built. Don't tell the others.", "Every morning I come out and check she's still there. Can't help it!", "The Glimmer Sea's out there waiting. I'm charting the reefs so you don't run aground on your first trip."]), 1)]);
+  if (C.stage >= BOAT_STAGES.length) return say([HAL(pick(["She's the finest boat I've ever built. Don't tell the others.", "She's moored by the pier, ready when you are. Just step aboard!", "The Glimmer Sea's out there waiting. I'm charting the reefs so you don't run aground on your first trip."]), 1)]);
   openBoat(sc);
 }
 function openBoat(sc) {
@@ -255,6 +265,7 @@ function coveOvernight() {
   S.flags.boatNews = C.stage;
 }
 function coveDoor(sc, id) {
+  if (id === 'cv_sail' || id === 'cv_beacon') return sailDoor(sc, id);
   if (id === 'cv_hal') { sc.face && sc.face(22, 20); return hal(sc); }
   if (id === 'cv_shipyard') return cove().stage >= BOAT_STAGES.length ? toast("Hal's shipyard. Sawdust, tar and a very happy shipwright.", 2400) : hal(sc);
   if (id === 'cv_hut') return toast('The fish hut is shut. A chalk board reads: "Gone fishing. Obviously."', 2600);

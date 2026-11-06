@@ -4054,7 +4054,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && /^(dunes|driftwood|glimmer)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4532,7 +4532,7 @@ class Route extends World {
     await new Promise(r => this.time.delayedCall(650, r)); mark.destroy();
     const [dx, dy] = DV[t.dir];
     t.spr.play(`tr_${t.kind}_${t.dir}`);
-    for (let k = 1; k < steps; k++) {
+    for (let k = 1; k < (RC && RC.sail ? 0 : steps); k++) {   // at sea they shout across the water instead of walking over
       const tx = (t.cx + dx) * T + 8, ty = (t.cy + dy) * T + 8;
       await new Promise(r => this.tweens.add({ targets: t, px: tx, py: ty, duration: 230, onUpdate: () => t.spr.setPosition(Math.round(t.px), Math.round(t.py) + 7).setDepth(t.py + 7), onComplete: r }));
       t.cx += dx; t.cy += dy;
@@ -4841,6 +4841,8 @@ async function bootGame() {
       this.load.atlas('bh', snow.bh || ASSET.bh, ASSET.bhJson);
       this.load.atlas('qd', ASSET.qd, ASSET.qdJson);
       this.load.atlas('cove', ASSET.cove, ASSET.coveJson);
+      this.load.atlas('sea', ASSET.sea, ASSET.seaJson);
+      this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
     }
     create() {
       // copy each terrain tile's edge pixels outward by one so no seams show between tiles
@@ -4855,12 +4857,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES],
   });
   Sound.music(true);
 }

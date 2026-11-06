@@ -15,6 +15,7 @@ const MAP_PLACES = [
   { k: 'crag3', name: 'Old Rail Cutting', al: 'b', x: .775, y: .6, route: 1, extra: () => (S.visited || {}).cragmine ? '✔ Reached the Old Mine' : '🛤️ Mine-cart puzzle' },
   { k: 'quarrydown', name: 'Quarrydown', x: .84, y: .525, route: 1, warden: ['Granger', 'stone', 3] },
   { k: 'dunes', name: 'Saltgrass Dunes', x: .31, y: .5, route: 1 },
+  { k: 'glimmer', name: 'Glimmer Sea', x: .13, y: .44, route: 1, notes: () => [S.visited && S.visited.beaconSighted ? '🏝 Beaconreach sighted' : '⛵ Sail from the Driftwood Cove pier'] },
   { k: 'driftwood', name: 'Driftwood Cove', x: .22, y: .54, route: 1, notes: () => [((S.cove || {}).stage || 0) >= 4 ? '⛵ Your boat is ready' : `⛵ Hal's building your boat (${(S.cove || {}).stage || 0}/4)`] },
   { k: 'beaconreach', name: 'Beaconreach', x: .1, y: .365, soon: 1, warden: ['?', 'spark', 4] },
   { k: 'highmoor', name: 'Highmoor', x: .29, y: .16, soon: 1, warden: ['?', 'gale', 5] },
