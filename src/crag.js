@@ -114,7 +114,7 @@ Object.assign(ROUTES, {
     pickups: [{ id: 'om1', x: 17, y: 12, item: 'sturdy_charm', n: 5 }],
     signs: { '12,4': '__cglegend', '7,22': "A miner's notice, nailed to a prop: 'NO DIGGING PAST THIS POINT. The rock sings at night.'" },
     trainers: [],
-    cgprops: [['cg_lamp_post', 10, 24], ['cg_lamp_post', 14, 21], ['cg_cart_ore', 6, 20], ['cg_crate', 17, 19], ['cg_crate', 5, 12], ['cg_lamp_post', 16, 9], ['cg_cart_broken', 18, 11], ['cg_cart_gems', 7, 6], ['cg_ore_rock', 16, 3], ['cg_ore_rock', 8, 3], ['cg_pick_rock', 6, 14], ['cg_lamp_post', 10, 7], ['cg_lamp_post', 14, 7]],
+    cgprops: [['cg_lamp_post', 10, 24], ['cg_lamp_post', 14, 21], ['cg_cart_ore', 6, 20], ['cg_crate', 17, 19], ['cg_crate', 5, 12], ['cg_lamp_post', 19, 10], ['cg_cart_broken', 18, 11], ['cg_cart_gems', 7, 6], ['cg_ore_rock', 16, 3], ['cg_ore_rock', 8, 3], ['cg_pick_rock', 6, 14], ['cg_lamp_post', 10, 7], ['cg_lamp_post', 14, 7]],
     exits: [{ r: [11, 29, 12, 29], to: () => ['crag3', { x: 5, y: 4, dir: 'down' }] }],
     spawn: { x: 11, y: 28, dir: 'up' }, enc: CRAG_ENC },
 });
