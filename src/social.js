@@ -6,6 +6,7 @@
 
 /* ---------- tastes and birthdays ([season index, day]) */
 const TASTE = {
+  monty: { love: ['corn_fritters', 'jacket_potato'], like: ['corn', 'honey', 'mon_treat'], hate: ['watercress', 'stone'] },
   willa: { love: ['watercress_salad', 'tomato_salad'], like: ['honey', 'berry', 'cranberry', 'fish_pie'], hate: ['bog_peat', 'stone'] },
   gideon: { love: ['corn_chowder', 'hearth_roast'], like: ['veg_soup', 'stone', 'hearty_stew', 'jacket_potato'], hate: ['berry_crumble', 'watercress'] },
   robin: { love: ['pumpkin_pie', 'tavern_pie'], like: ['wood', 'jacket_potato', 'corn_fritters'], hate: ['fiber', 'bog_peat'] },
@@ -18,7 +19,7 @@ const TASTE = {
   ivy: { love: ['lotus_root', 'tomato_salad'], like: ['pumpkin', 'cranberry', 'lotus_stirfry'], hate: ['stone', 'corn_chowder'] },
   fenwick: { love: ['fen_chowder', 'pumpkin_pie'], like: ['corn_chowder', 'veg_soup', 'silver_perch', 'fish_pie'], hate: ['berry_crumble', 'turnip'] },
 };
-const BDAY = { willa: [0, 6], hattie: [0, 21], finn: [0, 27], poppy: [1, 4], robin: [1, 18], ivy: [1, 26], barney: [2, 3], fenwick: [2, 10], rowan: [2, 24], gideon: [3, 9], stanley: [3, 17] };
+const BDAY = { monty: [1, 13], willa: [0, 6], hattie: [0, 21], finn: [0, 27], poppy: [1, 4], robin: [1, 18], ivy: [1, 26], barney: [2, 3], fenwick: [2, 10], rowan: [2, 24], gideon: [3, 9], stanley: [3, 17] };
 const isBirthday = (id, day = S.day) => { const b = BDAY[id], sd = seasonDay(day); return !!b && b[0] === sd.si && b[1] === sd.dom; };
 const bdayText = id => BDAY[id] ? `${BDAY[id][1]} ${SEASONS[BDAY[id][0]]}` : '?';
 const GIFT_PTS = { love: 80, like: 45, neutral: 20, hate: -40 };

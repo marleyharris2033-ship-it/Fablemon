@@ -2898,8 +2898,9 @@ const BUILDINGS = {
   smith: { frame: 'smith', cx: 26, by: 42, door: -1, name: 'Blacksmith' },
   carpenter: { frame: 'carpenter', cx: 41, by: 42, door: -1, name: "Carpenter's workshop" },
   ranch: { frame: 'ranch', cx: 58, by: 42, door: -1, name: 'Ranch' },
+  derby: { frame: 'derby', cx: 43, by: 9, door: 0, name: 'Smallroot Derby' },
 };
-const ALWAYS_OPEN = { store: 1, bramble: 1 };
+const ALWAYS_OPEN = { store: 1, bramble: 1, derby: 1 };
 const PROJECTS = {
   fountain: { name: 'The square fountain', need: { stone: 40 }, gold: 300, blurb: 'Get the water flowing again.' },
   homeA: { name: 'Old cottage', need: { wood: 50, stone: 20 }, gold: 500, blurb: 'Poppy and her son Finn are looking for a home.' },
@@ -3100,6 +3101,7 @@ function buildTown() {
   rect(8, 12, 16, 14, 2); rect(8, 15, 10, 15, 0);  // old cottage
   rect(8, 21, 10, 22, 2);                        // Bramble's doorstep
   rect(57, 13, 63, 15, 2);                       // timber house
+  rect(42, 10, 44, 12, 2);                       // up to the Derby arch
   rect(57, 25, 69, 27, 2);                       // station
   rect(57, 34, 67, 36, 2);                       // long cottage
   rect(4, 43, 66, 45, 2);                        // south street
@@ -3131,13 +3133,13 @@ function buildTown() {
   const trees = [
     ['tree_oak', 18, 20], ['tree_apple', 24, 18], ['bush_round', 18, 17], ['tree_pine', 54, 20], ['tree_apple', 48, 18], ['bush_round', 54, 17],
     ['tree_pine', 18, 30], ['tree_apple', 24, 32], ['bush_wide', 17, 34], ['tree_oak', 54, 30], ['tree_apple', 48, 32], ['bush_wide', 54, 34],
-    ['tree_oak', 4, 6], ['tree_pine', 14, 5], ['tree_oak', 27, 6], ['tree_apple', 45, 6], ['tree_pine', 58, 6], ['tree_oak', 66, 5], ['bush_round', 18, 9], ['bush_round', 55, 9],
+    ['tree_oak', 4, 6], ['tree_pine', 14, 5], ['tree_oak', 27, 6], ['tree_apple', 52, 5], ['tree_pine', 58, 6], ['tree_oak', 66, 5], ['bush_round', 18, 9], ['bush_round', 55, 9],
     ['tree_oak', 3, 28], ['tree_apple', 11, 30], ['tree_pine', 6, 34], ['bush_round', 8, 32],
     ['bush_round', 68, 16], ['tree_oak', 65, 40], ['tree_pine', 68, 38], ['bush_round', 64, 37], ['tree_pine', 19, 40],
     ['tree_apple', 10, 47], ['tree_oak', 36, 47], ['tree_pine', 64, 47], ['bush_wide', 47, 47],
   ];
   const lamps = [[25, 21], [47, 21], [25, 29], [47, 29], [32, 24], [40, 24], [5, 22], [5, 26], [13, 22], [13, 26], [58, 24], [61, 28], [68, 28],
-    [30, 12], [43, 12], [57, 16], [20, 46], [44, 46], [52, 46]];
+    [30, 12], [45, 12], [57, 16], [20, 46], [44, 46], [52, 46]];
   const approach = new Set(Object.values(BUILDINGS).map(b => (b.cx + b.door) + ',' + (b.by + 1)));
   const claim = (x, y, what) => {
     const i = y * TW + x;

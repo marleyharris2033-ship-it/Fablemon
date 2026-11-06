@@ -35,9 +35,12 @@ const VILL = {
   fenwick: { name: 'Captain Fenwick', row: 10, home: 'homeC', open: [480, 1080], likes: ['corn_chowder', 'pumpkin_pie', 'veg_soup'], gift: ['root_charm', 8],
     hello: "Captain Fenwick, retired explorer, at your service! I've seen jungles, deserts and the frozen north, and I've chosen to settle here. Says a lot about Smallroot, eh?",
     lines: ["Did I ever tell you about the time I met a Frost Fablemon? Remind me later.", "Keep your boots dry and your charms handy, that's my motto.", "There are Fablemon out there nobody has ever recorded. Imagine!", "This monocle has seen things. Terrible things. And wonderful ones."] },
+  monty: { name: 'Monty Quickstep', row: 11, home: 'derby', open: [420, 1140], likes: ['corn', 'jacket_potato', 'honey'], gift: ['swift_feather', 1],
+    hello: "Monty Quickstep! Three-time Smallroot Derby champion, retired, un-retired, and timing you right now. Ha! Heard the old town was waking up, so I've put the track back together. Fancy a race?",
+    lines: ["Three laps, no shortcuts, and if you cry I'm timing it.", "Speed's in the legs, but winning's in the head.", "Comet's been running this track since before you were born. Haven't you, old girl?", "Keep your Fablemon off the grass. Grass is for cows and quitters!", "A Swift Feather's worth its weight in gold on race day, you know.", "I clocked that walk of yours from across the square. Not bad. Not good either."] },
 };
 const VILL_IDS = Object.keys(VILL);
-const villHere = id => !!S.town.done[VILL[id].home];
+const villHere = id => !!(S.town.done[VILL[id].home] || ALWAYS_OPEN[VILL[id].home]);
 const villOpen = id => { const [a, b] = VILL[id].open; return S.time >= a && S.time < b; };
 const VPIC = {};
 function loadVillPics() {
@@ -200,8 +203,8 @@ function svcHall() {
     });
   });
 }
-const SERVICE = { clinic: svcClinic, smith: svcSmith, carpenter: svcCarpenter, tavern: svcTavern, ranch: svcRanch, station: svcStation, hall: svcHall };
-const BUILD_VILL = { clinic: 'willa', smith: 'gideon', carpenter: 'robin', tavern: 'barney', ranch: 'hattie', station: 'stanley', hall: 'rowan' };
+const SERVICE = { clinic: svcClinic, smith: svcSmith, carpenter: svcCarpenter, tavern: svcTavern, ranch: svcRanch, station: svcStation, hall: svcHall, derby: openDerby };
+const BUILD_VILL = { clinic: 'willa', smith: 'gideon', carpenter: 'robin', tavern: 'barney', ranch: 'hattie', station: 'stanley', hall: 'rowan', derby: 'monty' };
 
 /* where each villager stands while working, and where they stroll */
 const SQUARE = [[34, 27], [30, 28], [24, 25], [12, 24], [40, 28], [36, 29], [44, 26], [27, 33], [36, 35], [31, 31], [42, 31], [36, 28], [46, 36], [26, 37]];
