@@ -212,6 +212,7 @@ function buildFarm() {
   const setRect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (y >= 0 && y <= H && x >= 0 && x <= W) V[y][x] = v; };
   const ell = (cx, cy, rx, ry, v, wob = 0) => { for (let y = 0; y <= H; y++) for (let x = 0; x <= W; x++) { const a = Math.atan2(y - cy, x - cx); const r = 1 + wob * Math.sin(a * 3 + cx) + wob * .6 * Math.cos(a * 5 + cy); if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= r * r) V[y][x] = v; } };
   setRect(50, 13, 54, 15, 1); setRect(51, 15, 53, 21, 1); setRect(51, 19, 80, 21, 1); setRect(38, 54, 41, 60, 1);
+  if (S.flags && S.flags.westOpen) setRect(0, 29, 7, 32, 1);   // the way west to Saltgrass Dunes
   ell(17, 44, 9.5, 6.5, 2, .08); ell(68, 9, 4.2, 3, 2, .06); ell(30, 50, 2.6, 2, 2, .05);
 
   const tiles = new Int32Array(W * H), blocked = new Uint8Array(W * H), dirtish = new Uint8Array(W * H), waterish = new Uint8Array(W * H);
@@ -229,8 +230,8 @@ function buildFarm() {
   const border = [];
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const d = Math.min(x, y, W - 1 - x, H - 1 - y);
-    const eastGap = x >= W - 7 && y >= 18 && y <= 22, southGap = y >= H - 6 && x >= 37 && x <= 42;
-    if (eastGap || southGap) continue;
+    const eastGap = x >= W - 7 && y >= 18 && y <= 22, southGap = y >= H - 6 && x >= 37 && x <= 42, westGap = S.flags.westOpen && x <= 5 && y >= 29 && y <= 31;
+    if (eastGap || southGap || westGap) continue;
     if (d < 3 || (d < 5 && hash(x * 3, y * 7) < .35)) {
       blocked[y * W + x] = 1;
       if ((x + y) % 2 === 0 || d >= 3) border.push({ x, y, kind: hash(x, y * 3) < .45 ? 'pine' : 'oak' });
@@ -1831,6 +1832,9 @@ const QUESTS = [
   { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Have ${elderNeed()} buildings restored in Smallroot, any you like. Ones you've already done count (${elderDone()}/${elderNeed()} so far). Then tell Bramble. The road north of Brookholt stays closed until you do.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
   { id: 'quarry', name: 'Reach Quarrydown', hint: 'The landslide on Cragside Heights has been cleared. Follow the road north from the top of the Heights.', done: () => !!(S.visited && S.visited.quarrydown), reward: { gold: 1500, items: { sturdy_charm: 5 } } },
   { id: 'stone', name: 'Earn the Stone Crest from Warden Granger', get hint() { return `Fund the two repairs on Quarrydown's notice board (${qdRepairs()}/2 done), then challenge Granger at the Quarry Pit, top of the town. His team is level 32–36.`; }, done: () => !!(S.crests && S.crests.stone), reward: { gold: 2500, items: { mon_treat: 3 } } },
+  { id: 'west', name: 'Tell Elder Bramble about the Stone Crest', hint: 'Elder Bramble wanders the Smallroot square in the daytime. He has news for you.', done: () => !!S.flags.westOpen, reward: { gold: 500 } },
+  { id: 'cove', name: 'Explore west of your farm', hint: 'A way has opened through the trees at the west edge of your farm. Follow it through Saltgrass Dunes to Driftwood Cove.', done: () => !!(S.visited && S.visited.driftwood), reward: { gold: 1500, items: { tonic: 3 } } },
+  { id: 'boat', name: 'Build a boat with Hal the shipwright', get hint() { return `Hal at Driftwood Cove builds it in four stages, one a night (${(S.cove || {}).stage || 0}/4 done). Quarrydown's Stone & Supply sells wood, stone and fiber.`; }, done: () => ((S.cove || {}).stage || 0) >= 4, reward: { gold: 3000, items: { mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
   { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
@@ -2826,12 +2830,13 @@ class Farm extends World {
   bump(x, y) {
     if (S.ranch === 2 && x === ranchDoor().x && y === ranchDoor().y && this.p.dir === 'up' && !(this.p.busy > 0)) return this.act({ type: 'ranch' });
     if (x >= W - 1 && y >= 18 && y <= 22) return travel(this, 'town', { x: 1, y: 24, dir: 'right' });
+    if (x <= 0 && y >= 29 && y <= 31 && S.flags.westOpen) return travel(this, 'dunes', { x: 50, y: y <= 30 ? 14 : 15, dir: 'left' });
     if (y >= H - 1 && x >= 37 && x <= 42) {
       if (!S.mons.length) return toast("The long grass ahead is full of wild Fablemon. It's not safe without one of your own. Elder Bramble in Smallroot might help.", 3500);
       return travel(this, 'route1', { x: Math.max(19, Math.min(21, x - ROUTE_OFF)), y: 1, dir: 'down' });
     }
   }
-  arriveHook(x, y) { if (x >= W - 1 || y >= H - 1) this.bump(x, y); }
+  arriveHook(x, y) { if (x >= W - 1 || y >= H - 1 || x <= 0) this.bump(x, y); }
 }
 function travel(sc, to, sp) {
   if (sc.sleeping) return;
@@ -3057,6 +3062,7 @@ function brambleLines() {
     B("And do pop into Marigold's store. She has seeds, and she's been dying for a new face to chat to.", 0),
   ];
   const q = elderLines(B); if (q) return q;
+  const w = westLines(B); if (w) return w;
   const pool = [
     ["Morning, {name}. How's the farm treating you?", 0],
     ["The notice board's got a few jobs on it, if you've any wood or stone going spare.", 1],
@@ -3326,7 +3332,7 @@ class Town extends World {
         n.px = n.x * T + 8; n.py = n.y * T + 8;
       }
       n.px ??= n.x * T + 8; n.py ??= n.y * T + 8;
-      n.spr.setVisible(!n.home); n.mark.setVisible(!n.home && (!S.town.met[n.id] || (n.id === 'bramble' && !S.mons.length)));
+      n.spr.setVisible(!n.home); n.mark.setVisible(!n.home && (!S.town.met[n.id] || (n.id === 'bramble' && (!S.mons.length || westNews()))));
       this.drawNpc(n);
     }
   }
@@ -4417,7 +4423,7 @@ class Route extends World {
     this.initWorld(RW, RH);
     const R = this.R = buildRoute();
     const data = []; for (let y = 0; y < RH; y++) data.push(Array.from(R.tiles.slice(y * RW, y * RW + RW)));
-    if (RC.ascii) cragGround(this, R); else {
+    if (RC.ascii) (RC.beach ? beachGround : cragGround)(this, R); else {
       if (RC.bog) bogTerrain(this);
       this.map = this.make.tilemap({ data, tileWidth: T, tileHeight: T });
       this.ground = this.map.createLayer(0, this.map.addTilesetImage('terrain', RC.bog ? 'terrain_bog' : 'terrain_x', T, T, 1, 2), 0, 0);
@@ -4441,7 +4447,7 @@ class Route extends World {
     if (RC.murk && !RC.bog) { this.add.rectangle(0, 0, RW * T, RH * T, 0x2e4a2a, .22).setOrigin(0).setDepth(9e6 - 30); for (let i = 0; i < 14; i++) { const m = this.add.ellipse(hash(i, 3) * RW * T, hash(i, 9) * RH * T, 120, 40, 0xe8f0e0, .10).setDepth(9e6 - 29); this.tweens.add({ targets: m, x: m.x + 60, alpha: .04, duration: 6000 + i * 400, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); } }
     this.grassSpr = {};
     for (let i = 0; i < RW * RH; i++) if (R.grass[i] >= 0) { const x = i % RW, y = (i / RW) | 0; this.grassSpr[i] = RC.bog ? this.add.image(x * T + 8, y * T + 16, 'bog', 'bog_grass').setOrigin(.5, 1).setDepth(y * T + 15.6) : this.add.image(x * T + 8, y * T + 16, 'objects', 'tall_grass').setOrigin(.5, 1).setDepth(y * T + 15.6); if (hash(x * 3, y) < .35) this.tweens.add({ targets: this.grassSpr[i], angle: { from: -2.5, to: 2.5 }, duration: 1800 + hash(x, y) * 900, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: hash(y, x) * 1500 }); }
-    for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
+    for (const n of (RC.npcs || []).filter(n => !(n.hideIf && n.hideIf()))) { const sp2 = this.add.sprite(n.x * T + 8, n.y * T + 15, n.tex || 'tr_' + n.kind, DIRS.indexOf(n.dir) * 4).setOrigin(.5, 1).setDepth(n.y * T + 15); this.shadow(sp2, 12, 5); }
     for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
@@ -4621,7 +4627,7 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : bhDoor(this, id); return true; }
     if (t === '__board') { bhBoard(); return true; }
     if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
@@ -4704,6 +4710,7 @@ function nightly(passedOut) {
   for (const id of built) { tw.done[id] = 1; delete tw.pending[id]; }
   const bh = S.bh || { done: {}, pending: {} }; for (const id of Object.keys(bh.pending)) { bh.done[id] = 1; delete bh.pending[id]; }
   const qd = S.qd || { done: {}, pending: {} }; for (const id of Object.keys(qd.pending)) { qd.done[id] = 1; delete qd.pending[id]; }
+  coveOvernight();
   const ranchBuilt = S.ranch === 1; if (ranchBuilt) S.ranch = 2;
   const houseBuilt = S.houseNext; if (houseBuilt) { S.house = houseBuilt; S.houseNext = 0; }
   for (const m of S.mons) restMon(m);
@@ -4828,11 +4835,12 @@ async function bootGame() {
       for (const n of Object.keys(TRAINER_TYPES)) if (ASSET['tr_' + n]) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
       const BIG = { briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, craglet_2: 40, cindhop_2: 40, bristlecone_2: 40, clinkit_2: 40, ramruff_2: 40, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
       for (const n of MON_ORDER) if (ASSET['mon_' + n]) { const fw = BIG[n] || (MON_STAGE[n] === 3 ? 44 : 28); this.load.spritesheet('mon_' + n, ASSET['mon_' + n], { frameWidth: fw, frameHeight: fw }); }
-      for (const n of ['bramble', 'marigold', ...VILL_IDS]) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
+      for (const n of ['bramble', 'marigold', ...VILL_IDS, 'shipwright']) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);
       this.load.atlas('bog', snow.bog || ASSET.bog, ASSET.bogJson);
       this.load.atlas('bh', snow.bh || ASSET.bh, ASSET.bhJson);
       this.load.atlas('qd', ASSET.qd, ASSET.qdJson);
+      this.load.atlas('cove', ASSET.cove, ASSET.coveJson);
     }
     create() {
       // copy each terrain tile's edge pixels outward by one so no seams show between tiles
@@ -4847,12 +4855,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES],
   });
   Sound.music(true);
 }

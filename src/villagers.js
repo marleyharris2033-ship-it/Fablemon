@@ -45,7 +45,7 @@ const villOpen = id => { const [a, b] = VILL[id].open; return S.time >= a && S.t
 const VPIC = {};
 function loadVillPics() {
   return loadImg(ASSET.villPortraits).then(img => {
-    for (const [id, v] of Object.entries(VILL)) for (const f of [0, 1]) {
+    for (const [id, v] of [...Object.entries(VILL), ['hal', { row: 12 }]]) for (const f of [0, 1]) {
       const c = document.createElement('canvas'); c.width = c.height = 80; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
       g.fillStyle = '#cfe3b2'; g.fillRect(0, 0, 80, 80); g.drawImage(img, f * 64, v.row * 64, 64, 64, 0, 0, 80, 80);
       VPIC[id + f] = c.toDataURL();

@@ -125,7 +125,7 @@ function buildAscii() {
   const rows = RC.ascii, N = RW * RH, tiles = new Int32Array(N), blocked = new Uint8Array(N), dirtish = new Uint8Array(N), waterish = new Uint8Array(N), grass = new Int8Array(N).fill(-1), deco = [], kind = [];
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
     const i = y * RW + x, c = rows[y][x], h = hash(x * 5 + 1, y * 7 + 2); kind[i] = c;
-    if (c === '#' || c === 'C' || RAILS.includes(c)) blocked[i] = 1;
+    if (c === '#' || c === 'C' || c === '~' || RAILS.includes(c)) blocked[i] = 1;
     else if (c === ',') dirtish[i] = 1;
     else if (c >= '0' && c <= '9') grass[i] = +c;
     else if (c === 'T') { blocked[i] = 1; deco.push({ x, y, f: 'tree_pine', tall: true }); }
@@ -136,6 +136,8 @@ function buildAscii() {
   for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; grass[y * RW + x] = -1; }
   for (const [, x, y] of RC.cgprops || []) blocked[y * RW + x] = 1;
   for (const [, x, y, ok] of RC.qdprops || []) if (!ok || ok()) blocked[y * RW + x] = 1;
+  for (const [, x, y] of RC.cvprops || []) blocked[y * RW + x] = 1;
+  if (RC === ROUTES.driftwood && cove().stage) for (const [x, y] of BOAT_TILES) blocked[y * RW + x] = 1;
   for (const [, x, y, w] of RC.props || []) for (let k = 0; k < (w || 1); k++) blocked[y * RW + x + k] = 1;
   for (const b of RC.buildings || []) for (const [x, y] of bldTiles(b)) blocked[y * RW + x] = 1;
   if (RC.gate && !RC.gate.ok()) { const [a, b, c, d] = RC.gate.area; for (let y = b; y <= d; y++) for (let x = a; x <= c; x++) { blocked[y * RW + x] = 1; deco.push({ x, y, tex: (x + y) % 2 ? 'cg_boulder2' : 'cg_rock_pile', gate: 1 }); } }
@@ -249,7 +251,7 @@ function switchTex(sc, id, state) {
 
 /* ---------- the scenes */
 class Crag extends Route {
-  create() { super.create(); this.cragSetup(); }
+  create() { super.create(); this.cragSetup(); if (RC.beach) coveSetup(this); }
   cragSetup() {
     const st = crag(), key = this.scene.key, R = this.R;
     // crevasses filled on earlier visits stay filled
