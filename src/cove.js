@@ -109,7 +109,7 @@ Object.assign(ROUTES, {
     signs: { '40,13': 'Driftwood Cove. Fresh fish, fair winds, and the finest boats on the coast (says Hal).', '30,19': '__heal', '20,5': '__door:cv_sail', '20,6': '__door:cv_sail' },
     npcs: [{ kind: 'hal', tex: 'npc_shipwright', x: 22, y: 20, dir: 'down', door: 'cv_hal' }],
     trainers: [],
-    cvprops: [['cv_bollard', 18, 8], ['cv_bollard', 21, 8], ['cv_lantern', 17, 9], ['cv_anchor', 24, 11], ['cv_rope_spool', 25, 9], ['cv_glass_floats', 15, 9],
+    cvprops: [['cv_lantern', 17, 9], ['cv_anchor', 24, 11], ['cv_rope_spool', 25, 9], ['cv_glass_floats', 15, 9],
       ['cv_net_frame', 7, 16], ['cv_pot_box', 8, 18], ['cv_pot_round', 9, 15], ['cv_fish_crate', 31, 16], ['cv_barrels', 38, 18], ['cv_oar_rack', 29, 25],
       ['cv_oars', 20, 25], ['cv_rope_coil', 27, 20], ['cv_net_pile', 39, 25], ['cv_buoys', 41, 22], ['cv_lantern', 26, 13], ['cv_lantern', 36, 16]],
     exits: [{ r: [43, 12, 43, 17], to: y => ['dunes', { x: 1, y: 15, dir: 'right' }] }],
