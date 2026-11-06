@@ -66,7 +66,9 @@ const DERBY_CUPS = [
 const derby = () => (S.derby = S.derby || { won: {}, best: {}, wins: 0, races: 0 });
 const derbyWon = id => !!(derby().won[id]);
 const MONTY = (t, f = 0) => ({ who: 'monty', name: VILL.monty.name, img: VPIC['monty' + f], hearts: heartStr('monty'), t });
-const raceStage = sp => { const s = MON_STAGE[sp] || 1; return s >= 3 ? 3 : s >= 2 ? 2 : 1; };
+// a Fablemon's stage, counted along its evolution line (two-stage finals like Rampartoad count as second stages)
+const racePrev = sp => Object.keys(SPECIES).find(k => SPECIES[k].evo && SPECIES[k].evo[0] === sp);
+const raceStage = sp => { let n = 1, q = sp; while ((q = racePrev(q)) && n < 3) n++; return n; };
 const STAGE_NAME = ['', 'First stages', 'Second stages', 'Third forms'];
 function derbyEligible(m, cup) {
   if (SPECIES[m.sp].legend) return 'Legendary Fablemon can\'t race.';
