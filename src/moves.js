@@ -24,7 +24,7 @@ Object.assign(MOVES, {
   seedleech: { name: 'Seed Leech', type: 'Leaf', seed: 1, acc: 90 },
   bramblespikes: { name: 'Bramble Spikes', type: 'Leaf', hazard: 'thorns' },
   sunsoak: { name: 'Sun Soak', type: 'Leaf', heal: .5, sunHeal: 1 },
-  rootdrain: { name: 'Root Drain', type: 'Leaf', pow: 75, acc: 100, drain: .5 },
+  rootdrain: { name: 'Root Drain', type: 'Leaf', pow: 75, acc: 100, drain: .25 },
   calmingbloom: { name: 'Calming Bloom', type: 'Leaf', cure: 1 },
   overgrow: { name: 'Overgrow', type: 'Leaf', stats: [['self', 'atk', 1], ['self', 'def', 1]] },
   bloomburst: { name: 'Bloom Burst', type: 'Leaf', pow: 120, acc: 90, boost: ['self', 'atk', -2, 100] },

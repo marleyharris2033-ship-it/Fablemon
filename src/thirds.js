@@ -69,7 +69,7 @@ Object.assign(SPECIES.brookstride, { evo: ['torrentail', 36] });
 
 // signature moves: learned on evolving
 Object.assign(MOVES, {
-  lanterngrove: { name: 'Lantern Grove', type: 'Leaf', pow: 90, acc: 100, drain: .5 },
+  lanterngrove: { name: 'Lantern Grove', type: 'Leaf', pow: 90, acc: 100, drain: .25 },
   magmafist: { name: 'Magma Fist', type: 'Ember', pow: 100, acc: 95, st: ['brn', 30] },
   millflood: { name: 'Mill Flood', type: 'Tide', pow: 95, acc: 100, boost: ['foe', 'spd', -1, 100] },
   plumeflurry: { name: 'Plume Flurry', type: 'Wild', pow: 25, acc: 95, hits: [2, 5], crit: 1 },

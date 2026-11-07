@@ -3635,7 +3635,7 @@ function moveEffect(id) {
     if (M.prio > 0) t.push('Always strikes first.');
     if (M.crit) t.push('Lands critical hits far more often.');
     if (M.useDef) t.push("Uses the user's Defence instead of its Attack.");
-    if (M.drain) t.push('Heals the user by half the damage dealt.');
+    if (M.drain) t.push(`Heals the user by ${M.drain >= .5 ? 'half' : M.drain >= .3 ? 'a third' : 'a quarter'} of the damage dealt.`);
     if (M.recoil) t.push(`The user takes 1/${M.recoil} of the damage dealt.`);
     if (M.hex) t.push('Double power if the opponent has a status condition.');
     if (M.hexSlp) t.push('Double power if the opponent is asleep.');
@@ -3852,7 +3852,7 @@ const Battle = (() => {
       }
       Sound.play('hit'); await anim(spr(defSide), 'hurt', n > 1 ? 260 : 450);
       const fullBefore = def.hp >= monStat(def, 'hp');
-      def.hp = Math.max(0, def.hp - dmg); total += dmg;
+      total += Math.min(dmg, Math.max(0, def.hp)); def.hp = Math.max(0, def.hp - dmg);   // only damage actually dealt counts (for draining and recoil)
       if (def.hp === 0 && fullBefore && def.held === 'clinging_burr' && !(B.burr = B.burr || {})[def.uid + defSide]) { def.hp = 1; B.burr[def.uid + defSide] = 1; B.burrNow = 1; }
       // a Fablemon with a strong bond (10+) may hang on at 1 HP, once per battle
       if (defSide === 'me' && def.hp === 0 && (def.bond || 0) >= 10 && !(B.hung = B.hung || {})[def.uid] && Math.random() < def.bond / 100) { def.hp = 1; B.hung[def.uid] = 1; B.hungNow = 1; }
