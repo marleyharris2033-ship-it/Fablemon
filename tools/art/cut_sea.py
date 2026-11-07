@@ -1,7 +1,8 @@
 """Cut the Glimmer Sea art in art_incoming/sea into game sprites.
 
   props.png     -> src/sea.png / sea.json (atlas 'sea'): rocks, reefs, buoys, flotsam, wreck, islets
-  boat.png      -> src/boat_sail.png: the player's boat, 4 rows (down, left, right, up) x 2 bob frames of 48x48
+  boat.png      -> src/boat_sail.png: the player's boat, 4 rows (down, left, right, up) x 2 bob frames of 48x48,
+                   plus frame 8, the empty moored boat (from boat_empty_src.png)
   battle_bg.png -> src/battle_sea.jpg (cropped so the sandbar sits where the wild Fablemon stands)
 Run from the repo root:  python3 tools/art/cut_sea.py
 """
@@ -37,10 +38,13 @@ def atlas():
 def boat():
     a, m = C.load(A + 'boat.png'); cells = C.grid(a, m, 4, 2); F = 48
     k = (F - 2) / max(max(o['mask'].shape) for r in cells for o in r)
-    sheet = Image.new('RGBA', (F * 2, F * 4))
+    sheet = Image.new('RGBA', (F * 2, F * 5))
     for r in range(4):
         for c in range(2):
             im = C.shrink(cells[r][c], k); sheet.paste(im, (c * F + (F - im.width) // 2, r * F + F - im.height), im)
+    # frame 8: the empty boat moored at the pier (boat_empty_src.png is the right-facing frame with the farmer painted out)
+    a, m = C.load(A + 'boat_empty_src.png'); im = C.shrink(C.grid(a, m, 1, 1)[0][0], k)
+    sheet.paste(im, ((F - im.width) // 2, 4 * F + F - im.height), im)
     sheet.save(G + 'boat_sail.png')
 
 

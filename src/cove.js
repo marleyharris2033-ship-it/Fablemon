@@ -126,13 +126,14 @@ function beachGround(sc, R) {
   const c = document.createElement('canvas'); c.width = RW * T; c.height = RH * T;
   const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   const K = (x, y) => (x < 0 || y < 0 || x >= RW || y >= RH) ? '~' : R.kind[y * RW + x];
-  const sea = (x, y) => { const k = K(x, y); return k === '~' || k === 'P' || (RC.sail && k >= '0' && k <= '9'); }, bank = (x, y) => K(x, y) === '#';
+  const sea = (x, y) => { const k = K(x, y); return k === '~' || k === 'P' || (RC.sail && ((k >= '0' && k <= '9') || '<>^v*'.includes(k))); }, bank = (x, y) => K(x, y) === '#';
   const ter = sc.textures.get('terrain').getSourceImage();
   // how far each sea tile is from land (0 on land, up to 5 out at sea)
   const D = new Float32Array(RW * RH).fill(5), q = [];
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) if (!sea(x, y)) { D[y * RW + x] = 0; q.push([x, y]); }
   for (let h = 0; h < q.length; h++) { const [x, y] = q[h], d = D[y * RW + x] + 1; if (d > 5) continue; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= RW || ny >= RH || D[ny * RW + nx] <= d) continue; D[ny * RW + nx] = d; q.push([nx, ny]); } }
   const rgh = (x, y) => { const k = K(x, y); return k >= '0' && k <= '9' ? 1 : 0; };
+  const cur = (x, y) => '<>^v'.includes(K(x, y)) ? 1 : 0;
   const dist = (x, y) => (x < 0 || y < 0 || x >= RW || y >= RH) ? 5 : D[y * RW + x];
   const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
@@ -144,7 +145,9 @@ function beachGround(sc, R) {
         const d = (dist(x0, y0) * (1 - ax) + dist(x0 + 1, y0) * ax) * (1 - ay) + (dist(x0, y0 + 1) * (1 - ax) + dist(x0 + 1, y0 + 1) * ax) * ay;
         const t = Math.min(1, Math.max(0, (d - .6) / 3.6)), n = hash(X + u, Y + v), w = Math.sin((X + u) * .35 + (Y + v) * .9) > .82 && n < .5;
         const rf = RC.sail ? (rgh(x0, y0) * (1 - ax) + rgh(x0 + 1, y0) * ax) * (1 - ay) + (rgh(x0, y0 + 1) * (1 - ax) + rgh(x0 + 1, y0 + 1) * ax) * ay : 0;   // rough water, blended softly
-        const r = 104 - 66 * t - 16 * rf, gg = 186 - 78 * t - 22 * rf, b = 200 - 46 * t - 14 * rf;
+        const cf = RC.sail ? (cur(x0, y0) * (1 - ax) + cur(x0 + 1, y0) * ax) * (1 - ay) + (cur(x0, y0 + 1) * (1 - ax) + cur(x0 + 1, y0 + 1) * ax) * ay : 0;   // torrents: paler, faster water
+        let r = 104 - 66 * t - 16 * rf + 34 * cf, gg = 186 - 78 * t - 22 * rf + 40 * cf, b = 200 - 46 * t - 14 * rf + 26 * cf;
+        if (RC.storm) { r = r * .6 + 22; gg = gg * .66 + 24; b = b * .76 + 26; }   // grey, heavy storm water
         px(X + u, Y + v, `rgb(${Math.round(r + (w ? 40 : n < .1 ? -8 : 0))},${Math.round(gg + (w ? 40 : n < .1 ? -8 : 0))},${Math.round(b + (w ? 30 : 0))})`);
       }
       if (k >= '0' && k <= '9') {   // rough water: darker, with little breaking crests
@@ -153,6 +156,11 @@ function beachGround(sc, R) {
           g.fillStyle = 'rgba(30,70,120,.35)'; g.fillRect(cx, cy + 1, 5, 1);
           g.fillStyle = 'rgba(235,250,255,.75)'; g.fillRect(cx + 1, cy, 3, 1);
         }
+      }
+      if ('<>^v'.includes(k)) {   // a pale chevron pointing the way the torrent runs
+        const rot = { '>': (a, b) => [a, b], '<': (a, b) => [15 - a, b], 'v': (a, b) => [b, a], '^': (a, b) => [b, 15 - a] }[k];
+        g.fillStyle = 'rgba(225,248,255,.5)';
+        for (const o of [-3, 3]) for (const [a, b] of [[6, 4], [7, 5], [8, 6], [9, 7], [8, 8], [7, 9], [6, 10]]) { const [u, v] = rot(a + o, b); g.fillRect(X + u, Y + v, 1, 1); }
       }
       continue;
     }
@@ -200,7 +208,7 @@ function beachSparkle(sc, R) {
   }
 }
 function coveSetup(sc) {
-  beachSparkle(sc, sc.R);
+  if (!RC.storm) beachSparkle(sc, sc.R);
   if (RC.sail) seaSetup(sc);
   for (const [f, x, y] of RC.cvprops || []) sc.add.image(x * T + 8, y * T + 16, 'cove', f).setOrigin(.5, 1).setDepth(y * T + 15);
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass

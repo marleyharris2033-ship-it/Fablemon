@@ -746,6 +746,7 @@ function updateHUD() {
   const t = S.time; let d = 0;
   if (t >= 1080) d = Math.min(.55, (t - 1080) / 180 * .55);
   if (isWet(S.weather)) d = Math.max(d, .22);
+  if (typeof stormHere === 'function' && stormHere()) d = Math.max(d, .38);
   $('night').style.opacity = d;
 }
 
@@ -1412,7 +1413,9 @@ class World extends Phaser.Scene {
     }
     p.idleT = (p.idleT || 0) + dt;
     let next = null;
-    if (p.path.length) { next = p.path.shift(); if (!this.passable(next.x, next.y)) { p.path = []; next = null; } }
+    // a sea torrent has hold of the boat: it goes where the water goes
+    if (this.forceDir) { const [fx, fy] = DV[this.forceDir]; if (this.passable(p.x + fx, p.y + fy)) next = { x: p.x + fx, y: p.y + fy }; else this.forceDir = null; }
+    if (!next && p.path.length) { next = p.path.shift(); if (!this.passable(next.x, next.y)) { p.path = []; next = null; } }
     if (!next) {
       const k = this.keys;
       const kv = (k.W.isDown || k.UP.isDown) ? 'up' : (k.S.isDown || k.DOWN.isDown) ? 'down' : null, kh = (k.A.isDown || k.LEFT.isDown) ? 'left' : (k.D.isDown || k.RIGHT.isDown) ? 'right' : null;
@@ -1428,7 +1431,7 @@ class World extends Phaser.Scene {
         else if (p.turnT > 0) p.turnT -= dt;
         else if (!light) {
           const cands = [];
-          if (jd[2] && jd[1]) { const a = DV[jd[0]], b = DV[jd[1]]; cands.push([a[0] + b[0], a[1] + b[1]]); }
+          if (jd[2] && jd[1] && !this.boatSpr) { const a = DV[jd[0]], b = DV[jd[1]]; cands.push([a[0] + b[0], a[1] + b[1]]); }
           for (const d of [jd[0], jd[1]]) if (d) cands.push(DV[d]);
           for (const [dx, dy] of cands) {
             if (dx && dy) { if (this.passable(p.x + dx, p.y + dy) && this.passable(p.x + dx, p.y) && this.passable(p.x, p.y + dy)) { next = { x: p.x + dx, y: p.y + dy }; break; } }
@@ -4062,7 +4065,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && /^(dunes|driftwood|glimmer)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4527,7 +4530,7 @@ class Route extends World {
       for (let k = 1; k <= t.sight; k++) {
         const x = t.cx + dx * k, y = t.cy + dy * k;
         if (x === p.x && y === p.y) return { t, k };
-        if (this.R.blocked[y * RW + x]) break;
+        if (this.R.blocked[y * RW + x] && !this.boatSpr) break;   // at sea they can see right across the water
       }
     }
     return null;
@@ -4625,7 +4628,7 @@ class Route extends World {
     const i = y * RW + x, z = this.R.grass[i];
     if (z >= 0) {
       const g = this.grassSpr[i]; if (g) { this.tweens.add({ targets: g, scaleY: .8, yoyo: true, duration: 90 }); this.tweens.add({ targets: g, scaleX: { from: 1.15, to: 1 }, duration: 260, ease: 'Back.out' }); for (let k = 0; k < 3; k++) { const leaf = this.add.rectangle(x * T + 4 + Math.random() * 8, y * T + 8, 2, 1, RC.bog ? 0x8a9a4a : 0x6bb24a).setDepth(y * T + 16); this.tweens.add({ targets: leaf, x: leaf.x + (Math.random() - .5) * 14, y: leaf.y - 4 - Math.random() * 6, alpha: 0, duration: 420 + Math.random() * 200, ease: 'Quad.out', onComplete: () => leaf.destroy() }); } }
-      Sound.play('grass');
+      if (!this.boatSpr) Sound.play('grass');
       if (--this.stepsSafe <= 0 && Math.random() < 1 / 9 && team().some(m => m.hp > 0)) {
         this.stepsSafe = 3; this.p.path = []; this.p.pending = null;
         const [, , , , a, b, tag] = GRASS_ZONES[z]; Battle.start(rollWild(a, b, tag && RC[tag]));
@@ -4865,7 +4868,7 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
