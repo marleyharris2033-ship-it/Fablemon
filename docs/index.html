@@ -324,15 +324,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261107-120513">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261107-120513">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261107-120513">
+<link rel="manifest" href="manifest.webmanifest?v=20261107-120606">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261107-120606">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261107-120606">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-120513').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-120606').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -8763,7 +8763,7 @@ class BrLight extends World {
   arriveHook(x, y) { if (y >= LG_H - 1) { Sound.play('door'); travel(this, 'beaconreach', { x: LIGHT_AT.cx, y: LIGHT_AT.by + 1, dir: 'down' }); } }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'sail') + 1, 0,
-  { id: 'whale', name: 'Drive off the ice whale for Orrin', get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
+  { id: 'whale', get name() { return S.flags.whaleAsked ? 'Drive off the ice whale for Orrin' : 'Find Orrin, the lighthouse keeper, at Beaconreach'; }, get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
   { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then head into the lighthouse at the top of the town. Orrin waits inside.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
 const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach'); } }, BrLight];
 

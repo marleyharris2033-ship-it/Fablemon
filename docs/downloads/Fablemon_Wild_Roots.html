@@ -8754,7 +8754,7 @@ class BrLight extends World {
   arriveHook(x, y) { if (y >= LG_H - 1) { Sound.play('door'); travel(this, 'beaconreach', { x: LIGHT_AT.cx, y: LIGHT_AT.by + 1, dir: 'down' }); } }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'sail') + 1, 0,
-  { id: 'whale', name: 'Drive off the ice whale for Orrin', get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
+  { id: 'whale', get name() { return S.flags.whaleAsked ? 'Drive off the ice whale for Orrin' : 'Find Orrin, the lighthouse keeper, at Beaconreach'; }, get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
   { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then head into the lighthouse at the top of the town. Orrin waits inside.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
 const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach'); } }, BrLight];
 
