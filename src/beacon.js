@@ -63,7 +63,7 @@ ROUTES.beaconreach = {
     ['bench', 18, 15], ['bench', 32, 15], ['dune_grass', 6, 24], ['dune_grass', 38, 8], ['dune_grass', 3, 18], ['dune_grass', 29, 4], ['dune_grass', 9, 27],
     ['planter', 26, 11], ['planter', 12, 17], ['planter', 30, 19],
   ],
-  signs: { '23,29': 'Beaconreach. The light that never goes out. Mind the rocks, mind the weather, mind the Warden.', '12,13': "Beaconreach Lighthouse. Warden Orrin Brightwell keeps the lamp. Challengers: climb to the gallery!" },
+  signs: { '23,29': 'Beaconreach. The light that never goes out. Mind the rocks, mind the weather, mind the Warden.', '12,13': "Beaconreach Lighthouse. Warden Orrin Brightwell keeps the lamp. Challengers welcome inside!" },
   npcs: [], trainers: [],
   exits: [{ r: [21, 35, 22, 35], to: () => ['stormwatch', { x: 24, y: 11, dir: 'down' }] }],
   spawn: { x: 21, y: 33, dir: 'up' }, enc: { day: [['stormveil', 1]], night: [['stormveil', 1]] },
@@ -98,8 +98,8 @@ function beaconSetup(sc) {
 const BR_SHOP = [['tonic', 260], ['mon_treat', 600], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
 function beaconDoor(sc, id) {
   if (id === 'br_lighthouse') {
-    if (!S.crests || !S.crests.stone) return toast("The lighthouse door is bolted. A note: 'Gone up top. Come back with Granger's Stone Crest and I'll let you up. - O.B.'", 3400);
-    Sound.play('door'); return travel(sc, 'brlight', { x: 5, y: 12, dir: 'down' });
+    if (!S.crests || !S.crests.stone) return toast("The lighthouse door is bolted. A note: 'Up the lamp. Come back with Granger's Stone Crest and I'll let you up. - O.B.'", 3400);
+    Sound.play('door'); return travel(sc, 'brlight', { x: 10, y: 26, dir: 'up' });
   }
   Sound.play('door');
   if (id === 'br_clinic') return openModal('Beaconreach Clinic', '<p>The nurse wrings out her sleeves by the stove. "Through the strait in this? Sit by the fire, all of you. Tea\'s on."</p><div class="row"><button class="btn gold" data-a="heal">Heal my team</button></div>', a => {
@@ -136,27 +136,36 @@ function orrin(sc) {
   });
 }
 
-/* ---------- the lamp gallery at the top of the lighthouse (Orrin's arena): one painted picture, 30 x 20 tiles */
-const LG_W = 30, LG_H = 20, LG_BOSS = { x: 16, y: 13 }, LG_DOOR = { x: 5, y: 11 };
-const LG_WALK = (() => { const s = new Set(); for (let y = 12; y <= 19; y++) for (let x = 1; x <= 26 + (y > 15 ? 1 : 0); x++) s.add(x + ',' + y); s.add(LG_DOOR.x + ',' + LG_DOOR.y); return s; })();
+/* ---------- inside the lighthouse (Orrin's battle room): one painted picture, 21 x 28 tiles */
+const LG_W = 21, LG_H = 28, LG_BOSS = { x: 10, y: 9 };
+const LG_WALK = (() => {
+  const s = new Set(), r = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) s.add(x + ',' + y); };
+  r(3, 9, 15, 10);      // the floor in front of the winch
+  r(6, 11, 14, 20);     // the compass floor between the workshop and the chart desk
+  r(7, 21, 14, 23);
+  r(8, 24, 12, 27);     // the steps in
+  return s;
+})();
 class BrLight extends World {
   constructor() { super('brlight'); }
   create() {
     this.initWorld(LG_W, LG_H);
-    this.add.rectangle(-300, -300, LG_W * T + 600, LG_H * T + 600, 0x0a0a1a).setOrigin(0).setDepth(-20);
+    this.add.rectangle(-300, -300, LG_W * T + 600, LG_H * T + 600, 0x0a0808).setOrigin(0).setDepth(-20);
     this.add.image(0, 0, 'gym_br').setOrigin(0).setScale(.5).setDepth(-10);
-    const lamp = this.add.circle(6.4 * T, 3.2 * T, 34, 0xffd27a, .22).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 10);
-    this.tweens.add({ targets: lamp, alpha: .1, scale: 1.15, yoyo: true, repeat: -1, duration: 1400 });
+    for (const [x, y] of [[8.7, 3.3], [12.2, 3.3], [18.2, 4.5], [4.3, 13.5], [17.2, 14.7], [7.4, 22.8], [13.5, 22.8]]) {
+      const g = this.add.circle(x * T, y * T, 14, 0xffc870, .14).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 10);
+      this.tweens.add({ targets: g, alpha: .05, yoyo: true, repeat: -1, duration: 1200 + Math.random() * 700 });
+    }
     for (let r = 0; r < 4; r++) { const k = `orrin_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('tr_orrin', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 6, repeat: -1 }); }
     this.boss = this.add.sprite(LG_BOSS.x * T + 8, LG_BOSS.y * T + 15, 'tr_orrin', 0).setOrigin(.5, 1).setDepth(LG_BOSS.y * T + 15);
     this.shadow(this.boss, 12, 5);
-    const sp = S.spawn && S.spawn.scene === 'brlight' ? S.spawn : { x: 5, y: 12, dir: 'down' };
+    const sp = S.spawn && S.spawn.scene === 'brlight' ? S.spawn : { x: 10, y: 26, dir: 'up' };
     this.makePlayer(sp);
     const cam = this.cameras.main;
     cam.setBounds(-T * 2, -T, (LG_W + 4) * T, (LG_H + 2) * T); cam.startFollow(this.player, true, 1, 1); cam.setRoundPixels(true);
     this.applyZoom(); this.scale.on('resize', this.onResize, this); this.events.once('shutdown', () => this.scale.off('resize', this.onResize, this));
-    this.setupInput(); Sound.theme('route'); updateHUD(); renderHotbar(); FX.set('storm', false); this.fadeIn();
-    if (!S.flags.galleryGseen) { S.flags.galleryGseen = 1; setTimeout(() => toast("The lamp gallery. Rain sweeps across the stones, and Orrin is waiting by the railing.", 3200), 600); }
+    this.setupInput(); Sound.theme('route'); updateHUD(); renderHotbar(); FX.set('storm', true); this.fadeIn();
+    if (!S.flags.lightInSeen) { S.flags.lightInSeen = 1; setTimeout(() => toast("Inside the lighthouse. Rain rattles the windows, the great winch ticks, and Orrin is waiting on the compass floor.", 3400), 600); }
   }
   onResize() { this.applyZoom(); renderHotbar(); }
   passable(x, y) { return LG_WALK.has(x + ',' + y) && !(x === LG_BOSS.x && y === LG_BOSS.y); }
@@ -180,8 +189,8 @@ class BrLight extends World {
   }
   tapGoal() { }
   arrived() { const p = this.p; if (!p.path.length && p.pending) { p.pending = null; this.talk(); } this.arriveHook(p.x, p.y); }
-  arriveHook(x, y) { if (x === LG_DOOR.x && y === LG_DOOR.y) { Sound.play('door'); travel(this, 'beaconreach', { x: LIGHT_AT.cx, y: LIGHT_AT.by + 1, dir: 'down' }); } }
+  arriveHook(x, y) { if (y >= LG_H - 1) { Sound.play('door'); travel(this, 'beaconreach', { x: LIGHT_AT.cx, y: LIGHT_AT.by + 1, dir: 'down' }); } }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'sail') + 1, 0,
-  { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then climb the lighthouse. Orrin waits on the lamp gallery at the top.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
+  { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then head into the lighthouse at the top of the town. Orrin waits inside.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
 const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach'); } }, BrLight];

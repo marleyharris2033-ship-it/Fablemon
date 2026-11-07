@@ -3,8 +3,8 @@
   buildings + props -> src/beaconreach.png / beaconreach.json (atlas 'br')
   orrin_walk        -> src/tr_orrin.png (4x4 frames of 28x32, like the other trainers)
   orrin_portraits   -> row 12 of src/tr_portraits.png (ready, beaten)
-  arena             -> src/gym_br.jpg (960x640, drawn at half size: 30 x 20 tiles) and
-                       src/battle_beacon.jpg (960x540, the battle background for Orrin's fight)
+  lighthouse_inside -> src/gym_br.jpg (672x896, drawn at half size: 21 x 28 tiles), Orrin's battle room
+  arena             -> src/battle_beacon.jpg (960x540, the stormy gallery: battle background for Orrin's fight)
 Run from the repo root:  python3 tools/art/cut_beacon.py   (safe to re-run)
 """
 import json, os, sys
@@ -66,7 +66,7 @@ def orrin():
 
 def arena():
     im = Image.open(A + 'arena.png').convert('RGB')
-    im.resize((960, 640), Image.LANCZOS).save(G + 'gym_br.jpg', quality=88)
+    Image.open(A + 'lighthouse_inside.png').convert('RGB').resize((672, 896), Image.LANCZOS).save(G + 'gym_br.jpg', quality=88)
     im.crop((0, 160, 1536, 1024)).resize((960, 540), Image.LANCZOS).save(G + 'battle_beacon.jpg', quality=88)
 
 
