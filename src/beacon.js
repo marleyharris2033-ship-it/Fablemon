@@ -91,14 +91,63 @@ function beaconSetup(sc) {
   // your boat, tied up at the end of the pier
   const b = sc.add.image(24 * T, 34 * T + 22, 'boat_sail', 8).setOrigin(.5, 1).setDepth(34 * T + 15);
   sc.tweens.add({ targets: b, y: b.y + 1, yoyo: true, repeat: -1, duration: 1100, ease: 'Sine.inOut' });
+  orrinOutside(sc);
   if (!S.flags.beaconSeen) { S.flags.beaconSeen = 1; setTimeout(() => toast('Beaconreach. Rain hammers the slate roofs, and high above, the great lamp turns.', 3400), 700); }
+}
+
+/* ---------- the ice whale quest: Orrin wanders the headland by his lighthouse until it's done */
+const whaleReported = () => !!S.flags.whaleReported;
+const ORRIN_ROAM = [6, 10, 18, 12];   // x0, y0, x1, y1: the grass and lane in front of the lighthouse
+function orrinOutside(sc) {
+  if (whaleReported()) return;
+  const R = sc.R, spot = { x: 13, y: 11 };
+  for (let r = 0; r < 4; r++) { const k = `orrin_${DIRS[r]}`; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers('tr_orrin', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 6, repeat: -1 }); }
+  const spr = sc.add.sprite(spot.x * T + 8, spot.y * T + 15, 'tr_orrin', 0).setOrigin(.5, 1).setDepth(spot.y * T + 15);
+  sc.shadow(spr, 12, 5);
+  const o = sc.orrinNpc = { x: spot.x, y: spot.y, spr };
+  const place = () => { R.blocked[o.y * RW + o.x] = 1; ROUTE_SIGNS[o.x + ',' + o.y] = '__door:br_orrin'; };
+  const lift = () => { R.blocked[o.y * RW + o.x] = 0; delete ROUTE_SIGNS[o.x + ',' + o.y]; };
+  place();
+  if (!S.flags.whaleAsked) { const mark = sc.add.text(0, 0, '!', { fontFamily: 'ui-rounded, Nunito, system-ui, sans-serif', fontStyle: 'bold', fontSize: '15px', color: '#ffe35a', stroke: '#2a1e1a', strokeThickness: 3, resolution: 12 }).setOrigin(.5, 1).setDepth(9e6); o.mark = mark; }
+  sc.time.addEvent({ delay: 1900, loop: true, callback: () => {
+    if (sc.paused || o.talking || o.busy || !spr.active) return;
+    if (Math.random() < .35) return;
+    const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]), nx = o.x + dx, ny = o.y + dy, p = sc.p;
+    const dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
+    if (nx < ORRIN_ROAM[0] || ny < ORRIN_ROAM[1] || nx > ORRIN_ROAM[2] || ny > ORRIN_ROAM[3] || R.blocked[ny * RW + nx] || (p && ((p.x === nx && p.y === ny) || (p.x === o.x && p.y === o.y)))) { spr.setFrame(DIRS.indexOf(dir) * 4); return; }
+    lift(); o.x = nx; o.y = ny; place(); o.busy = 1; spr.play(`orrin_${dir}`);
+    sc.tweens.add({ targets: spr, x: nx * T + 8, y: ny * T + 15, duration: 420, onUpdate: () => spr.setDepth(spr.y), onComplete: () => { o.busy = 0; spr.stop(); spr.setFrame(DIRS.indexOf(dir) * 4); } });
+  } });
+  sc.events.on('update', () => { if (o.mark && spr.active) o.mark.setPosition(spr.x, spr.y - 32 + Math.round(Math.sin(sc.time.now / 200))); });
+}
+function orrinTalk(sc) {
+  const o = sc.orrinNpc; if (!o) return;
+  const p = sc.p; o.spr.setFrame(DIRS.indexOf(p.x < o.x ? 'left' : p.x > o.x ? 'right' : p.y < o.y ? 'up' : 'down') * 4);
+  const O = (t, f = 0) => ({ who: 'trainer', name: 'Orrin', img: trainerPic('orrin', f), t });
+  o.talking = 1; const done = () => { o.talking = 0; };
+  if (!S.flags.whaleAsked) {
+    S.flags.whaleAsked = 1; if (o.mark) { o.mark.destroy(); o.mark = null; }
+    return Talk.say([O("Whoa! A boat, through the strait, in THIS? Ha! Now that's a sailor!", 1),
+      O("Orrin Brightwell. I keep the lamp up there. Every night, every storm. And I'm the Warden here, if you're after a Crest."),
+      O("But I've got a problem first, and maybe you're the one to fix it. Something's been smashing up the fishing boats. Three this month."),
+      O("A whale. A white one, big as a church, made of ice. It's made its den in the lagoon at the Secret Isles, past the Tidewrack Shoals."),
+      O("Nobody's getting hurt on my water. Not while I keep this light. Go and drive it off, and I'll open the lighthouse and give you the fight of your life!", 1)], done);
+  }
+  if (!S.flags.whaleBeaten) return Talk.say([O(pick(["The whale's in the lagoon at the Secret Isles. South of the Glimmer Sea, through the Tidewrack Shoals. Watch the torrents!", "Another boat came in with its hull cracked like an egg this morning. That whale's getting bolder.", "Bring warm Fablemon. Ember ones. That thing breathes frost."]), 0)], done);
+  S.flags.whaleReported = 1;
+  return Talk.say([O("You did it?! The whole harbour's talking! The boats went out this morning and came back without a scratch!", 1),
+    O("I owe you, sailor. And I keep my word. The lighthouse is open. Meet me inside, and bring your best.", 1)], () => {
+    done(); sc.tweens.add({ targets: o.spr, alpha: 0, duration: 700, onComplete: () => { sc.R.blocked[o.y * RW + o.x] = 0; delete ROUTE_SIGNS[o.x + ',' + o.y]; o.spr.destroy(); sc.orrinNpc = null; } });
+    toast('Orrin heads into the lighthouse.', 2000);
+  });
 }
 
 /* ---------- doors */
 const BR_SHOP = [['tonic', 260], ['mon_treat', 600], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
 function beaconDoor(sc, id) {
+  if (id === 'br_orrin') return orrinTalk(sc);
   if (id === 'br_lighthouse') {
-    if (!S.crests || !S.crests.stone) return toast("The lighthouse door is bolted. A note: 'Up the lamp. Come back with Granger's Stone Crest and I'll let you up. - O.B.'", 3400);
+    if (!whaleReported()) return toast(S.flags.whaleAsked ? "The lighthouse door is bolted. Orrin won't open up until that whale's been dealt with." : "The lighthouse door is bolted. The keeper must be out somewhere on the headland.", 3000);
     Sound.play('door'); return travel(sc, 'brlight', { x: 10, y: 26, dir: 'up' });
   }
   Sound.play('door');
@@ -192,5 +241,6 @@ class BrLight extends World {
   arriveHook(x, y) { if (y >= LG_H - 1) { Sound.play('door'); travel(this, 'beaconreach', { x: LIGHT_AT.cx, y: LIGHT_AT.by + 1, dir: 'down' }); } }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'sail') + 1, 0,
+  { id: 'whale', name: 'Drive off the ice whale for Orrin', get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
   { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then head into the lighthouse at the top of the town. Orrin waits inside.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
 const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach'); } }, BrLight];

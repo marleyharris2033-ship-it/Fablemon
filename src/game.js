@@ -3911,7 +3911,11 @@ const Battle = (() => {
     B.foe = m; B.st.foe = {}; B.v.foe = {}; S.seen[m.sp] = 1;
     q('bfoe').src = monPic(m.sp, 'front'); q('bfoe').className = 'bmon'; box('foe');
     await anim('bfoe', 'enter-foe', 500);
-    await say(`${B.T.label} ${B.T.name} sent out ${SPECIES[m.sp].name}!`, 1300);
+    if (B.T.phase2) {   // a boss's second phase: same foe back on its feet, and angrier
+      for (const line of B.T.phase2) await say(line, 1700);
+      B.st.foe = { atk: 1, def: 1 }; box('foe'); Sound.play('levelup'); await anim('bfoe', 'buff', 500);
+      await say(`${SPECIES[m.sp].name}'s Attack and Defence rose!`, 1400);
+    } else await say(`${B.T.label} ${B.T.name} sent out ${SPECIES[m.sp].name}!`, 1300);
     await hazardIn('foe');
   }
   // what the opponent will do this turn
@@ -4069,7 +4073,8 @@ const Battle = (() => {
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
-    if (T) { await say(`${T.label} ${T.name} wants to battle!`, 1500); await say(`${T.label} ${T.name} sent out ${SPECIES[foe.sp].name}!`, 1300); }
+    if (T && T.intro) { for (const line of T.intro) await say(line, 1700); }
+    else if (T) { await say(`${T.label} ${T.name} wants to battle!`, 1500); await say(`${T.label} ${T.name} sent out ${SPECIES[foe.sp].name}!`, 1300); }
     else await say(`A wild ${SPECIES[foe.sp].name} appeared!`, 1500);
     await say(`Go, ${monName(B.me)}!`, 900);
     for (;;) {

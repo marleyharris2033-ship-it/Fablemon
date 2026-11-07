@@ -275,7 +275,7 @@ function coveOvernight() {
   S.flags.boatNews = C.stage;
 }
 function coveDoor(sc, id) {
-  if (id === 'cv_sail' || id === 'cv_beacon') return sailDoor(sc, id);
+  if (id === 'cv_sail' || id === 'cv_beacon' || id === 'cv_whale') return sailDoor(sc, id);
   if (id === 'cv_hal') { sc.face && sc.face(22, 20); return hal(sc); }
   if (id === 'cv_shipyard') return cove().stage >= BOAT_STAGES.length ? toast("Hal's shipyard. Sawdust, tar and a very happy shipwright.", 2400) : hal(sc);
   if (id === 'cv_hut') return toast('The fish hut is shut. A chalk board reads: "Gone fishing. Obviously."', 2600);

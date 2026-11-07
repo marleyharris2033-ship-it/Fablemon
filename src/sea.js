@@ -254,6 +254,7 @@ function seaSetup(sc) {
       sc.streaks.push({ s, x: x * T + 8, y: y * T + 4 + n * 8 + (d === 'up' || d === 'down' ? -4 + n * 0 : 0), ox: d === 'up' || d === 'down' ? -3 + n * 6 : 0, v: DV[d], ph: hash(x * 7 + n, y * 3) * 16 });
     }
   }
+  if (sc.scene.key === 'shoals') whaleSetup(sc);
   // the boat, with you at the wheel
   for (let r = 0; r < 4; r++) { const k = 'sail_' + DIRS[r]; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers('boat_sail', { frames: [r * 2, r * 2 + 1] }), frameRate: 2.5, repeat: -1 }); }
   sc.boatSpr = sc.add.sprite(0, 0, 'boat_sail', 0).setOrigin(.5, 1);
@@ -304,10 +305,45 @@ function sailDoor(sc, id) {
     return travel(sc, 'glimmer', ROUTES.glimmer.spawn);
   }
   if (id === 'cv_beacon') { Sound.play('door'); toast('You tie up at the Beaconreach jetty and climb ashore.', 1800); return travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
+  if (id === 'cv_whale') return whaleFight(sc);
   if (id === 'cv_isles') { Sound.play('door'); return toast("A bleached driftwood sign: THE SECRET ISLES. Whoever put it here didn't want visitors. The sand beyond is untouched...", 4500); }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'boat') + 1, 0,
   { id: 'sail', name: 'Sail to Beaconreach', hint: "Your boat is moored beside the Driftwood Cove pier. Sail north across the Glimmer Sea, then find a way through the torrents of Stormwatch Strait to Beaconreach's harbour.", done: () => !!(S.visited && S.visited.beaconSighted), reward: { gold: 2500, items: { tonic: 3 } } },
   { id: 'isles', name: 'Find the Secret Isles', hint: 'Sailors at the Cove whisper about islands hidden behind the torrents south of the Glimmer Sea.', done: () => !!(S.visited && S.visited.islesFound), reward: { gold: 3000, items: { mon_treat: 3 } } });
 Object.assign(EXTRA_HABITAT, { nipshade_2: 'The rough water of the Glimmer Sea, Tidewrack Shoals and Stormwatch Strait' });
+/* ---------- the ice whale (Orrin's request): a two-phase boss in the lagoon at the Secret Isles */
+const WHALE_AT = { x: 34, y: 30 };
+function whaleSetup(sc) {
+  const k = WHALE_AT.x + ',' + WHALE_AT.y, on = S.flags.whaleAsked && !S.flags.whaleBeaten;
+  if (!on) { if (ROUTE_SIGNS[k] === '__door:cv_whale') delete ROUTE_SIGNS[k]; return; }
+  ROUTE_SIGNS[k] = '__door:cv_whale'; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 1;
+  monAnims(sc, 'floecalf_2');
+  const w = sc.whale = sc.add.sprite(WHALE_AT.x * T + 8, WHALE_AT.y * T + 18, 'mon_floecalf_2', 4).setOrigin(.5, 1).setScale(1.6).setDepth(WHALE_AT.y * T + 15);
+  w.play('floecalf_2_left');
+  sc.tweens.add({ targets: w, y: w.y + 3, yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.inOut' });
+  const ring = sc.add.ellipse(w.x, w.y - 2, 70, 16, 0xe8f8ff, .35).setDepth(1.8);
+  sc.tweens.add({ targets: ring, scaleX: 1.3, scaleY: 1.3, alpha: .08, yoyo: true, repeat: -1, duration: 1500 });
+  sc.whaleRing = ring;
+}
+function whaleFight(sc) {
+  if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to face the whale. Rest them first.', 2400);
+  const N = t => ({ name: '???', img: monPic('floecalf_2'), t });
+  S.seen.floecalf_2 = 1;
+  Talk.say([N('The water in the lagoon turns to slush. Frost creeps across your deck...'), N('A mountain of ice rises from the deep. Two cold yellow eyes fix on your boat!')], () => {
+    const mk = () => { const m = wildMon('floecalf_2', 47); m.iv = { hp: 9, atk: 9, def: 9, spd: 9 }; m.moves = ['icebergbreach', 'rimewave', 'millrace', 'chillmist'].filter(id => MOVES[id]); m.hp = monStat(m, 'hp'); return m; };
+    const team2 = [mk(), mk()];
+    sc.cameras.main.shake(400, .008);
+    Battle.start(team2[0], { label: 'the', name: 'Ice Whale', team: team2, prize: 3000, heals: 0,
+      intro: ['The Ice Whale attacks!', "It's Rimeback, the berg-backed whale terrorising Orrin's boats!"],
+      phase2: ['The Ice Whale crashes back up through the lagoon!', 'It isn\'t finished yet. Its iceberg back cracks and glows with fury!'],
+      onWin: () => {
+        S.flags.whaleBeaten = 1; delete ROUTE_SIGNS[WHALE_AT.x + ',' + WHALE_AT.y]; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 0;
+        setTimeout(() => {
+          if (sc.whale) sc.tweens.add({ targets: [sc.whale, sc.whaleRing], alpha: 0, y: '+=10', duration: 1200, onComplete: () => { sc.whale && sc.whale.destroy(); sc.whaleRing && sc.whaleRing.destroy(); } });
+          toast('The Ice Whale sinks beneath the lagoon and swims off into the deep. The seas are safe again! Go and tell Orrin.', 4000);
+        }, 700);
+      } });
+  });
+}
 const SEA_SCENES = ['glimmer', 'shoals', 'stormwatch'].map(k => class extends Crag { constructor() { super(k); } });
