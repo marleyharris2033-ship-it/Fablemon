@@ -137,6 +137,7 @@ function buildAscii() {
   for (const [, x, y] of RC.cgprops || []) blocked[y * RW + x] = 1;
   for (const [, x, y, ok] of RC.qdprops || []) if (!ok || ok()) blocked[y * RW + x] = 1;
   for (const [, x, y] of RC.cvprops || []) blocked[y * RW + x] = 1;
+  for (const [, x, y] of RC.brprops || []) blocked[y * RW + x] = 1;
   if (RC.sail) for (let i = 0; i < N; i++) blocked[i] = (kind[i] === '~' || grass[i] >= 0 || '<>^v'.includes(kind[i])) ? 0 : 1;   // at sea the water is the road
   if (RC.sail) { for (const t of ROUTE_TRAINERS) blocked[t.y * RW + t.x] = 1; for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; } }
   for (const [f, x, y] of RC.seaprops || []) for (const [a, b] of seaFoot(f, x, y)) if (a >= 0 && b >= 0 && a < RW && b < RH) { blocked[b * RW + a] = 1; grass[b * RW + a] = -1; }

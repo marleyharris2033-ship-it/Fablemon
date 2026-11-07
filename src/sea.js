@@ -303,7 +303,7 @@ function sailDoor(sc, id) {
     Sound.play('door'); toast('You climb aboard and cast off!', 1600);
     return travel(sc, 'glimmer', ROUTES.glimmer.spawn);
   }
-  if (id === 'cv_beacon') { Sound.play('door'); return toast('A storm-battered sign on the jetty: BEACONREACH HARBOUR. Moorings closed while the harbour wall is rebuilt. Above you the lighthouse beam sweeps through the rain.', 5000); }
+  if (id === 'cv_beacon') { Sound.play('door'); toast('You tie up at the Beaconreach jetty and climb ashore.', 1800); return travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
   if (id === 'cv_isles') { Sound.play('door'); return toast("A bleached driftwood sign: THE SECRET ISLES. Whoever put it here didn't want visitors. The sand beyond is untouched...", 4500); }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'boat') + 1, 0,

@@ -16,7 +16,7 @@ const HELD_STAT = { fang_charm: 'atk', ironbark_charm: 'def', swift_feather: 'sp
 const heldStat = (m, k) => HELD_STAT[m.held] === k ? 1.1 : 1;
 // a Warden hands over their type's sigil (and anyone who beat them before this update gets theirs once)
 function giveSigil(t) { S.flags = S.flags || {}; const id = sigilOf(t[0].toUpperCase() + t.slice(1)); if (S.flags['sig_' + id]) return; S.flags['sig_' + id] = 1; inv.add(id, 1); renderHotbar(); setTimeout(() => toast(`The Warden also gave you a ${ITEMS[id].name}! Give it to a Fablemon to hold.`, 3400), 1500); }
-function catchUpSigils() { if (!S || !S.crests) return; if (S.crests.root) giveSigil('leaf'); if (S.crests.brook) giveSigil('tide'); if (S.crests.stone) giveSigil('stone'); }
+function catchUpSigils() { if (!S || !S.crests) return; if (S.crests.root) giveSigil('leaf'); if (S.crests.brook) giveSigil('tide'); if (S.crests.stone) giveSigil('stone'); if (S.crests.spark) giveSigil('spark'); }
 // icons: tinted copies of the charm art
 function heldIcons() {
   const tint = (base, col, id) => {

@@ -19,7 +19,7 @@ const MAP_PLACES = [
   { k: 'stormwatch', name: 'Stormwatch Strait', x: .11, y: .42, route: 1, notes: () => [S.visited && S.visited.beaconSighted ? '🗼 Through the torrents to Beaconreach' : '⛈ Always stormy. Torrents guard Beaconreach'] },
   { k: 'shoals', name: 'Tidewrack Shoals', x: .14, y: .7, route: 1, notes: () => [S.visited && S.visited.islesFound ? '🏝 The Secret Isles' : '🌊 Torrents to the south'] },
   { k: 'driftwood', name: 'Driftwood Cove', x: .22, y: .54, route: 1, notes: () => [((S.cove || {}).stage || 0) >= 4 ? '⛵ Your boat is ready' : `⛵ Hal's building your boat (${(S.cove || {}).stage || 0}/4)`] },
-  { k: 'beaconreach', name: 'Beaconreach', x: .1, y: .365, soon: 1, warden: ['?', 'spark', 4] },
+  { k: 'beaconreach', name: 'Beaconreach', x: .1, y: .365, route: 1, warden: ['Orrin', 'spark', 4] },
   { k: 'highmoor', name: 'Highmoor', x: .29, y: .16, soon: 1, warden: ['?', 'gale', 5] },
   { k: 'elderwood', name: 'Elderwood', x: .87, y: .22, soon: 1, warden: ['?', 'wild', 6] },
   { k: 'gloamhollow', name: 'Gloamhollow', x: .615, y: .33, soon: 1, warden: ['?', 'shade', 7] },
@@ -41,7 +41,7 @@ function placeNotes(P) {
   return lines;
 }
 function openMap() {
-  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown' }[scene.scene.key] || scene.scene.key) : '';
+  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown', brlight: 'beaconreach' }[scene.scene.key] || scene.scene.key) : '';
   const pins = MAP_PLACES.map((P, i) => {
     const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];
     const fog = seen ? '' : `<div class="wfog" style="left:${P.x * 100}%;top:${P.y * 100}%"></div>`;

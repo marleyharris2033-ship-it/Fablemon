@@ -4065,7 +4065,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4638,7 +4638,7 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : bhDoor(this, id); return true; }
     if (t === '__board') { bhBoard(); return true; }
     if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
@@ -4853,6 +4853,8 @@ async function bootGame() {
       this.load.atlas('qd', ASSET.qd, ASSET.qdJson);
       this.load.atlas('cove', ASSET.cove, ASSET.coveJson);
       this.load.atlas('sea', ASSET.sea, ASSET.seaJson);
+      this.load.atlas('br', ASSET.br, ASSET.brJson);
+      this.load.image('gym_br', ASSET.gymBr);
       this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
     }
     create() {
@@ -4868,12 +4870,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES],
   });
   Sound.music(true);
 }

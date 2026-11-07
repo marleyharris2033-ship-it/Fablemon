@@ -164,9 +164,9 @@ function beachGround(sc, R) {
       }
       continue;
     }
-    if (k === '#') {   // grassy dune bank
+    if (k === '#' || k === ';') {   // grassy dune bank (#), or plain walkable grass (;)
       const h = hash(x, y); g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
-      g.fillStyle = 'rgba(214,190,120,.28)'; g.fillRect(X, Y, T, T);
+      g.fillStyle = k === ';' ? 'rgba(60,80,70,.22)' : 'rgba(214,190,120,.28)'; g.fillRect(X, Y, T, T);
       continue;
     }
     // sand, damp near the water
@@ -209,6 +209,8 @@ function beachSparkle(sc, R) {
 }
 function coveSetup(sc) {
   if (!RC.storm) beachSparkle(sc, sc.R);
+  else { FX.set('storm', false); updateHUD(); }   // it never stops raining out here
+  if (RC.brprops) beaconSetup(sc);
   if (RC.sail) seaSetup(sc);
   for (const [f, x, y] of RC.cvprops || []) sc.add.image(x * T + 8, y * T + 16, 'cove', f).setOrigin(.5, 1).setDepth(y * T + 15);
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass
