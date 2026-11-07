@@ -39,6 +39,16 @@ def standin_walk(sheet, row, nrows, F):
     return out
 
 
+def real_walk(path, F):
+    a, m = C.load(path); cells = C.grid(a, m, 4, 4)
+    k = (F - 2) / max(max(o['mask'].shape) for row in cells for o in row)
+    out = Image.new('RGBA', (F * 4, F * 4))
+    for r in range(4):
+        for c in range(4):
+            im = C.shrink(cells[r][c], k); out.paste(im, (c * F + (F - im.width) // 2, r * F + F - im.height), im)
+    return out
+
+
 def main():
     C.A = A
     bt = Image.open(G + 'mon_battle.png').convert('RGBA'); ic = Image.open(G + 'mon_icons.png').convert('RGBA')
@@ -48,7 +58,7 @@ def main():
     pv = Image.new('RGBA', (176 + 8 + 128 + 8 + 48, len(MONS) * 182), (200, 220, 180, 255))
     for j, (sid, bs, br, bn, F) in enumerate(MONS):
         real = A + f'walk_{sid}.png'
-        sheet = C.walk_sheet(real, F) if os.path.exists(real) else standin_walk(bs, br, bn, F)
+        sheet = real_walk(real, F) if os.path.exists(real) else standin_walk(bs, br, bn, F)
         sheet.save(G + f'mon_{sid}.png')
         cell, icon = C.battle_pair(bs, br, bn)
         nb.paste(cell, (0, 64 * (BASE + j))); ni.paste(icon, (48 * (BASE + j), 0))
