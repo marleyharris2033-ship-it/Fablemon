@@ -324,15 +324,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261107-091714">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261107-091714">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261107-091714">
+<link rel="manifest" href="manifest.webmanifest?v=20261107-092335">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261107-092335">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261107-092335">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-091714').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-092335').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -8462,9 +8462,15 @@ Object.assign(EXTRA_HABITAT, {
 SEA_ENC.day.push(['foilfin', 12], ['kilnback', 6], ['floecalf', 4]); SEA_ENC.night.push(['inkwick', 14], ['floecalf', 3]);
 SHOAL_ENC.day.push(['kilnback', 14], ['foilfin', 8]); SHOAL_ENC.night.push(['inkwick', 14], ['kilnback', 8]);
 STORM_ENC.day.push(['riftshear', 16], ['floecalf', 5]); STORM_ENC.night.push(['riftshear', 14], ['inkwick', 14]);
-// a few sea trainers pick them up
-for (const [rt, id, team] of [['stormwatch', 'sw_t1', [['staticwing', 41], ['riftshear', 42], ['stormveil', 42]]], ['stormwatch', 'sw_t2', [['kilnback', 42], ['nipshade_2', 42], ['mirebellows', 43]]],
-  ['shoals', 'ts_t1', [['lotveil', 41], ['foilfin', 41], ['nipshade_2', 42]]], ['glimmer', 'gs_t3', [['mirebellows', 40], ['foilfin', 40], ['stormveil', 41]]]]) {
+// every sea trainer mixes the new sea Fablemon in with the old faces
+for (const [rt, id, team] of [
+  ['glimmer', 'gs_t1', [['brookstride', 38], ['foilfin', 38], ['inkwick', 39]]],
+  ['glimmer', 'gs_t2', [['whirlwyn', 39], ['foilfin', 39], ['staticwing', 40]]],
+  ['glimmer', 'gs_t3', [['mirebellows', 40], ['kilnback', 40], ['foilfin_2', 41]]],
+  ['shoals', 'ts_t1', [['lotveil', 41], ['kilnback', 41], ['foilfin_2', 42]]],
+  ['shoals', 'ts_t2', [['brookstride', 42], ['floecalf', 42], ['kilnback_2', 43], ['marshviper', 43]]],
+  ['stormwatch', 'sw_t1', [['staticwing', 41], ['riftshear', 42], ['foilfin_2', 42]]],
+  ['stormwatch', 'sw_t2', [['riftshear', 42], ['kilnback_2', 42], ['inkwick_2', 43], ['mirebellows', 43]]]]) {
   const t = ROUTES[rt].trainers.find(q => q.id === id); if (t) t.team = team;
 }
 

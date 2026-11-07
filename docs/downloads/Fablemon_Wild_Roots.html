@@ -8453,9 +8453,15 @@ Object.assign(EXTRA_HABITAT, {
 SEA_ENC.day.push(['foilfin', 12], ['kilnback', 6], ['floecalf', 4]); SEA_ENC.night.push(['inkwick', 14], ['floecalf', 3]);
 SHOAL_ENC.day.push(['kilnback', 14], ['foilfin', 8]); SHOAL_ENC.night.push(['inkwick', 14], ['kilnback', 8]);
 STORM_ENC.day.push(['riftshear', 16], ['floecalf', 5]); STORM_ENC.night.push(['riftshear', 14], ['inkwick', 14]);
-// a few sea trainers pick them up
-for (const [rt, id, team] of [['stormwatch', 'sw_t1', [['staticwing', 41], ['riftshear', 42], ['stormveil', 42]]], ['stormwatch', 'sw_t2', [['kilnback', 42], ['nipshade_2', 42], ['mirebellows', 43]]],
-  ['shoals', 'ts_t1', [['lotveil', 41], ['foilfin', 41], ['nipshade_2', 42]]], ['glimmer', 'gs_t3', [['mirebellows', 40], ['foilfin', 40], ['stormveil', 41]]]]) {
+// every sea trainer mixes the new sea Fablemon in with the old faces
+for (const [rt, id, team] of [
+  ['glimmer', 'gs_t1', [['brookstride', 38], ['foilfin', 38], ['inkwick', 39]]],
+  ['glimmer', 'gs_t2', [['whirlwyn', 39], ['foilfin', 39], ['staticwing', 40]]],
+  ['glimmer', 'gs_t3', [['mirebellows', 40], ['kilnback', 40], ['foilfin_2', 41]]],
+  ['shoals', 'ts_t1', [['lotveil', 41], ['kilnback', 41], ['foilfin_2', 42]]],
+  ['shoals', 'ts_t2', [['brookstride', 42], ['floecalf', 42], ['kilnback_2', 43], ['marshviper', 43]]],
+  ['stormwatch', 'sw_t1', [['staticwing', 41], ['riftshear', 42], ['foilfin_2', 42]]],
+  ['stormwatch', 'sw_t2', [['riftshear', 42], ['kilnback_2', 42], ['inkwick_2', 43], ['mirebellows', 43]]]]) {
   const t = ROUTES[rt].trainers.find(q => q.id === id); if (t) t.team = team;
 }
 
