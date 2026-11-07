@@ -96,10 +96,10 @@ function beaconSetup(sc) {
 }
 
 /* ---------- the ice whale quest: Orrin wanders the headland by his lighthouse until it's done */
-const whaleReported = () => !!S.flags.whaleReported;
+const whaleReported = () => !!S.flags.whaleReported || !!(S.crests && S.crests.spark);
 const ORRIN_ROAM = [6, 10, 18, 12];   // x0, y0, x1, y1: the grass and lane in front of the lighthouse
 function orrinOutside(sc) {
-  if (whaleReported()) return;
+  if (whaleReported() || (S.crests && S.crests.spark)) return;
   const R = sc.R, spot = { x: 13, y: 11 };
   for (let r = 0; r < 4; r++) { const k = `orrin_${DIRS[r]}`; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers('tr_orrin', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 6, repeat: -1 }); }
   const spr = sc.add.sprite(spot.x * T + 8, spot.y * T + 15, 'tr_orrin', 0).setOrigin(.5, 1).setDepth(spot.y * T + 15);

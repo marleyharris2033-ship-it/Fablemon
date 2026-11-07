@@ -315,7 +315,7 @@ Object.assign(EXTRA_HABITAT, { nipshade_2: 'The rough water of the Glimmer Sea, 
 /* ---------- the ice whale (Orrin's request): a two-phase boss in the lagoon at the Secret Isles */
 const WHALE_AT = { x: 34, y: 30 };
 function whaleSetup(sc) {
-  const k = WHALE_AT.x + ',' + WHALE_AT.y, on = S.flags.whaleAsked && !S.flags.whaleBeaten;
+  const k = WHALE_AT.x + ',' + WHALE_AT.y, on = (S.flags.whaleAsked || (S.crests && S.crests.spark)) && !S.flags.whaleBeaten;
   if (!on) { if (ROUTE_SIGNS[k] === '__door:cv_whale') delete ROUTE_SIGNS[k]; return; }
   ROUTE_SIGNS[k] = '__door:cv_whale'; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 1;
   monAnims(sc, 'floecalf_2');

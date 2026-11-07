@@ -324,15 +324,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261107-115522">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261107-115522">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261107-115522">
+<link rel="manifest" href="manifest.webmanifest?v=20261107-120513">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261107-120513">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261107-120513">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-115522').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261107-120513').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -8404,7 +8404,7 @@ Object.assign(EXTRA_HABITAT, { nipshade_2: 'The rough water of the Glimmer Sea, 
 /* ---------- the ice whale (Orrin's request): a two-phase boss in the lagoon at the Secret Isles */
 const WHALE_AT = { x: 34, y: 30 };
 function whaleSetup(sc) {
-  const k = WHALE_AT.x + ',' + WHALE_AT.y, on = S.flags.whaleAsked && !S.flags.whaleBeaten;
+  const k = WHALE_AT.x + ',' + WHALE_AT.y, on = (S.flags.whaleAsked || (S.crests && S.crests.spark)) && !S.flags.whaleBeaten;
   if (!on) { if (ROUTE_SIGNS[k] === '__door:cv_whale') delete ROUTE_SIGNS[k]; return; }
   ROUTE_SIGNS[k] = '__door:cv_whale'; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 1;
   monAnims(sc, 'floecalf_2');
@@ -8618,10 +8618,10 @@ function beaconSetup(sc) {
 }
 
 /* ---------- the ice whale quest: Orrin wanders the headland by his lighthouse until it's done */
-const whaleReported = () => !!S.flags.whaleReported;
+const whaleReported = () => !!S.flags.whaleReported || !!(S.crests && S.crests.spark);
 const ORRIN_ROAM = [6, 10, 18, 12];   // x0, y0, x1, y1: the grass and lane in front of the lighthouse
 function orrinOutside(sc) {
-  if (whaleReported()) return;
+  if (whaleReported() || (S.crests && S.crests.spark)) return;
   const R = sc.R, spot = { x: 13, y: 11 };
   for (let r = 0; r < 4; r++) { const k = `orrin_${DIRS[r]}`; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers('tr_orrin', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 6, repeat: -1 }); }
   const spr = sc.add.sprite(spot.x * T + 8, spot.y * T + 15, 'tr_orrin', 0).setOrigin(.5, 1).setDepth(spot.y * T + 15);
