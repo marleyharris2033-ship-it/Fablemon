@@ -8420,8 +8420,14 @@ function sailDoor(sc, id) {
   if (id === 'cv_sail') {
     if (!boatReady()) return toast('Hal is still building your boat.', 2000);
     if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired for a sea crossing. Rest them first.', 2400);
-    Sound.play('door'); toast('You climb aboard and cast off!', 1600);
-    return travel(sc, 'glimmer', ROUTES.glimmer.spawn);
+    const go = () => { Sound.play('door'); toast('You climb aboard and cast off!', 1600); travel(sc, 'glimmer', ROUTES.glimmer.spawn); };
+    if (!(S.visited && S.visited.beaconreach)) return go();
+    // once you've made it to Beaconreach, you know the safe way through the strait
+    return openModal('Your boat', '<p>Where to, captain?</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" data-a="beacon">Sail straight to Beaconreach</button><button class="btn" data-a="sea">Out onto the Glimmer Sea</button><button class="btn" data-a="no">Not now</button></div>', a => {
+      closeModal();
+      if (a === 'sea') return go();
+      if (a === 'beacon') { Sound.play('door'); toast('You follow the safe channel through the strait and tie up at Beaconreach.', 2400); travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
+    });
   }
   if (id === 'cv_beacon') { Sound.play('door'); toast('You tie up at the Beaconreach jetty and climb ashore.', 1800); return travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
   if (id === 'cv_whale') return whaleFight(sc);
