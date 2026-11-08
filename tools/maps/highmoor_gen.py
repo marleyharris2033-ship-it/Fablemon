@@ -133,6 +133,22 @@ def galeledges():
     return m.rows(), vanes, [(18, 49)], [(19, 0)]
 
 
+def highmoor():
+    """Highmoor town, on the clifftop above Gale Ledges (cliff legend; the west edge drops away into the misty gorge)."""
+    m = Map(44, 40, '.')
+    m.box(0, 0, 43, 1, '#'); m.box(41, 0, 43, 39, '#'); m.box(0, 39, 43, 39, '#'); m.box(0, 0, 2, 39, 'C')
+    m.box(3, 0, 6, 3, '#'); m.box(36, 2, 40, 4, '#')
+    m.box(20, 39, 23, 39, ',')
+    m.box(21, 11, 22, 38, ',')                                          # the high street, from the cliff road to the mill
+    m.box(5, 22, 38, 23, ',')                                           # the upper lane
+    m.box(5, 33, 38, 34, ',')                                           # the lower lane
+    m.box(17, 19, 26, 26, ',')                                          # the square
+    m.box(10, 19, 10, 21, ','); m.box(33, 19, 33, 21, ',')              # to the Weathervane and the clinic
+    m.box(10, 32, 10, 32, ','); m.box(33, 32, 33, 32, ',')              # to the kite-maker's and the windpump cottage
+    m.box(3, 12, 4, 27, '.')
+    return m.rows()
+
+
 def windward():
     """Windward Sound, the sea north of Beaconreach (sea legend: ~ sea, 0-9 rough water, * rock, . sand, # bank, , jetty)."""
     m = Map(44, 52, '~')
@@ -157,5 +173,7 @@ if __name__ == '__main__':
         if '-v' in sys.argv: show(rows, r['tiles'])
         out[name] = {'rows': rows, 'vanes': {k: {'x': v[0], 'y': v[1], 'dirs': v[2], 'start': v[3]} for k, v in vanes.items()}}
     out['windward'] = {'rows': windward()}
+    out['highmoor'] = {'rows': highmoor()}
+    if '-v' in sys.argv: show(out['highmoor']['rows'])
     if '-v' in sys.argv: show(out['windward']['rows'])
     json.dump(out, open('src/highmoor_maps.json', 'w'))

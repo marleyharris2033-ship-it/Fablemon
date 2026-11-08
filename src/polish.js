@@ -47,7 +47,7 @@ const QUEST_PLACE = { mail: 'farm', plant: 'farm', ship: 'farm', ranch: 'farm', 
   whale: () => S.flags.whaleAsked && !S.flags.whaleBeaten ? 'shoals' : 'beaconreach' };
 function questPlace() { const q = activeQuest(); if (!q) return ''; const v = QUEST_PLACE[q.id]; return typeof v === 'function' ? v() : v || ''; }
 function openMap() {
-  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown', brlight: 'beaconreach' }[scene.scene.key] || scene.scene.key) : '';
+  const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown', brlight: 'beaconreach', hmmill: 'highmoor' }[scene.scene.key] || scene.scene.key) : '';
   const goal = questPlace();
   const pins = MAP_PLACES.map((P, i) => {
     const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];

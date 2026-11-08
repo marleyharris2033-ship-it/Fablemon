@@ -69,12 +69,12 @@ Object.assign(ROUTES, {
     zones: [[0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 49, 51], [0, 0, 0, 0, 50, 52]],
     pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'tonic', n: 5 }, { id: 'gl4', x: 22, y: 35, item: 'sturdy_charm', n: 4 }],
     signs: { ...vaneSigns('galeledges'), '15,48': 'Gale Ledges. Stone pillars stand in the gorge like stepping stones. Three weathervanes steer the wind between them.',
-      '17,1': 'Highmoor is just over the ridge: you can hear the windmills creak. (Highmoor is coming soon!)', '24,4': '__heal' },
-    trainers: [], block: [[18, 0], [19, 0], [20, 0], [21, 0]],
-    decor: [['hm', 'hm_wall', 18, 0], ['hm', 'hm_wall', 20, 0], ['hm', 'hm_windswept_tree', 3, 48], ['hm', 'hm_heather', 36, 44], ['hm', 'hm_glider', 23, 47],
+      '17,1': 'North: Highmoor, the windmill town. You can hear the sails creaking from here.', '24,4': '__heal' },
+    trainers: [],
+    decor: [['hm', 'hm_windswept_tree', 3, 48], ['hm', 'hm_heather', 36, 44], ['hm', 'hm_glider', 23, 47],
       ['hm', 'hm_small_windmill', 30, 1], ['hm', 'hm_small_windmill', 8, 1], ['hm', 'hm_heather', 14, 3], ['hm', 'hm_kite_pole', 33, 5], ['hm', 'hm_birdhouse', 9, 36], ['hm', 'hm_millstone', 30, 37]],
     goal: { area: [2, 1, 37, 5], flag: 'galeTop', msg: 'You made it up the cliffs! Windmill sails turn just over the ridge. Highmoor is close.' },
-    exits: [{ r: [17, 49, 20, 49], to: x => ['heatherstep', { x: Math.max(16, Math.min(19, x - 2)), y: 1, dir: 'down' }] }],
+    exits: [{ r: [17, 49, 20, 49], to: x => ['heatherstep', { x: Math.max(16, Math.min(19, x - 2)), y: 1, dir: 'down' }] }, { r: [18, 0, 21, 0], to: x => ['highmoor', { x: Math.max(21, Math.min(22, x + 2)), y: 38, dir: 'up' }] }],
     spawn: { x: 18, y: 48, dir: 'up' }, enc: MOOR_ENC },
 });
 
@@ -200,6 +200,7 @@ function moorSetup(sc) {
     sc.vaneArrows[id] = a; a.setAngle({ E: 0, S: 90, W: 180, N: -90 }[vaneDir(sc, id)]);
   }
   const intro = { heatherstep: 'Heatherstep Cliffs. The wind roars up from the gorges. Highmoor is somewhere above.', galeledges: 'Gale Ledges. Stone pillars rise out of a great gorge, and the wind moans between them.' }[sc.scene.key];
+  if (RC.town) return;
   if (!S.flags[sc.scene.key + 'Seen']) { S.flags[sc.scene.key + 'Seen'] = 1; setTimeout(() => toast(intro, 3600), 700); }
   else setTimeout(() => toast(RC.name, 1800), 600);
 }
@@ -269,9 +270,9 @@ QUEST_PLACE.gale = () => { const v = S.visited || {}; return v.galeledges ? 'gal
   const i = MAP_PLACES.findIndex(P => P.k === 'highmoor');
   Object.assign(MAP_PLACES[i], { x: .245, y: .1 });
   MAP_PLACES.splice(i, 0,
-    { k: 'windward', name: 'Windward Sound', x: .17, y: .25, route: 1, notes: () => ["⛵ From Beaconreach's north jetty"] },
-    { k: 'heatherstep', name: 'Heatherstep Cliffs', al: 'b', x: .3, y: .175, route: 1, notes: () => ['🌬️ Ride the wind across the gorges'] },
-    { k: 'galeledges', name: 'Gale Ledges', x: .37, y: .125, route: 1, notes: () => [S.visited && S.visited.galeTop ? '✔ Reached the top' : '🌬️ Weathervane puzzle'] });
+    { k: 'windward', name: 'Windward Sound', x: .16, y: .29, route: 1, notes: () => ["⛵ From Beaconreach's north jetty"] },
+    { k: 'heatherstep', name: 'Heatherstep Cliffs', al: 'b', x: .29, y: .19, route: 1, notes: () => ['🌬️ Ride the wind across the gorges'] },
+    { k: 'galeledges', name: 'Gale Ledges', x: .37, y: .155, route: 1, notes: () => [S.visited && S.visited.galeTop ? '✔ Reached the top' : '🌬️ Weathervane puzzle'] });
 }
 Object.assign(EXTRA_HABITAT, { inkwick: EXTRA_HABITAT.inkwick || 'Windward Sound at night' });
 const HM_SCENES = ['windward', 'heatherstep', 'galeledges'].map(k => class extends Crag { constructor() { super(k); } });

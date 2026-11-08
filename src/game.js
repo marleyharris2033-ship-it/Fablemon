@@ -4094,7 +4094,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4888,6 +4888,7 @@ async function bootGame() {
       this.load.atlas('br', ASSET.br, ASSET.brJson);
       this.load.atlas('hm', ASSET.hm, ASSET.hmJson);
       this.load.image('gym_br', ASSET.gymBr);
+      this.load.image('gym_hm', ASSET.gymHm);
       this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
     }
     create() {
@@ -4903,12 +4904,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles', 'windward', 'heatherstep', 'galeledges'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles', 'windward', 'heatherstep', 'galeledges', 'highmoor', 'hmmill'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES, ...HM_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES, ...HM_SCENES, ...HMTOWN_SCENES],
   });
   Sound.music(true);
 }
