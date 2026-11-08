@@ -24,7 +24,7 @@ const MAP_PLACES = [
   { k: 'elderwood', name: 'Elderwood', x: .87, y: .22, soon: 1, warden: ['?', 'wild', 6] },
   { k: 'gloamhollow', name: 'Gloamhollow', x: .615, y: .33, soon: 1, warden: ['?', 'shade', 7] },
   { k: 'rootcrown', name: 'Rootcrown', x: .605, y: .05, soon: 1 },
-  { k: 'isles', name: 'Secret isles', x: .15, y: .835, soon: 1 },
+  { k: 'isles', name: 'Secret Isles', x: .15, y: .835, route: 1, notes: () => ['🏝 Five islands to explore. Rare Floecalf in the long grass'] },
 ];
 function placeSeen(P) { return P.soon ? false : P.route ? !!(S.visited && S.visited[P.k]) || (P.k === 'route1' && S.routeVisited) : P.seen(); }
 function placeNotes(P) {

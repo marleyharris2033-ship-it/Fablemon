@@ -306,7 +306,7 @@ function sailDoor(sc, id) {
   }
   if (id === 'cv_beacon') { Sound.play('door'); toast('You tie up at the Beaconreach jetty and climb ashore.', 1800); return travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
   if (id === 'cv_whale') return whaleFight(sc);
-  if (id === 'cv_isles') { Sound.play('door'); return toast("A bleached driftwood sign: THE SECRET ISLES. Whoever put it here didn't want visitors. The sand beyond is untouched...", 4500); }
+  if (id === 'cv_isles') { Sound.play('door'); toast('You tie up at the little jetty and step ashore.', 1800); return travel(sc, 'isles', ROUTES.isles.spawn); }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'boat') + 1, 0,
   { id: 'sail', name: 'Sail to Beaconreach', hint: "Your boat is moored beside the Driftwood Cove pier. Sail north across the Glimmer Sea, then find a way through the torrents of Stormwatch Strait to Beaconreach's harbour.", done: () => !!(S.visited && S.visited.beaconSighted), reward: { gold: 2500, items: { tonic: 3 } } },

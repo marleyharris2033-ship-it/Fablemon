@@ -488,6 +488,13 @@ const Sound = (() => {
     battle: { bpm: 152, roots: [45, 41, 43, 40], third: [3, 4, 4, 4], drums: true,
       mel: [69, 0, 72, 69, 76, 0, 74, 72, 72, 0, 69, 65, 69, 72, 74, 0, 71, 0, 74, 71, 79, 0, 77, 74, 76, 0, 75, 76, 80, 0, 76, 0,
             81, 0, 79, 76, 77, 0, 76, 74, 72, 74, 76, 72, 69, 0, 72, 0, 74, 0, 71, 67, 74, 77, 79, 0, 76, 75, 76, 80, 83, 0, 0, 0] },
+    // sea shanties in 6/8: an oom-pa-pa bass and a squeezebox-ish tune. 'sea' (minor, rolling) for sailing, 'harbour' (a jig) for the coast towns
+    sea: { bpm: 128, bar: 6, roots: [50, 50, 48, 48, 46, 48, 50, 45], third: [3, 3, 4, 4, 4, 4, 3, 4],
+      mel: [69, 0, 69, 69, 67, 65, 62, 0, 65, 69, 0, 0, 67, 0, 67, 67, 65, 64, 60, 0, 64, 67, 0, 0,
+            65, 0, 65, 65, 67, 69, 72, 0, 70, 69, 67, 0, 69, 0, 74, 72, 69, 67, 65, 64, 62, 61, 0, 0] },
+    harbour: { bpm: 156, bar: 6, roots: [43, 48, 43, 50, 43, 48, 50, 43], third: [4, 4, 4, 4, 4, 4, 4, 4],
+      mel: [67, 0, 71, 74, 0, 71, 72, 0, 76, 79, 76, 72, 71, 0, 74, 79, 0, 74, 72, 71, 69, 66, 0, 69,
+            67, 0, 71, 74, 76, 74, 72, 74, 76, 79, 0, 76, 74, 0, 72, 71, 69, 66, 67, 0, 0, 67, 0, 0] },
   };
   function perc(t, hi) {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
@@ -495,7 +502,16 @@ const Sound = (() => {
     s.connect(f); f.connect(g); g.connect(mus); s.start(t, Math.random() * .5); s.stop(t + .15);
   }
   function playTheme(T, i, t) {
-    const len = T.mel.length, k = i % len, bar = Math.floor(k / 8) % 4, beat = k % 8, root = T.roots[bar], spb = 60 / T.bpm / 2;
+    const len = T.mel.length, k = i % len, spb = 60 / T.bpm / 2;
+    if (T.bar === 6) {   // 6/8: bass on the big beats, light chord stabs between ("oom-pa-pa, oom-pa-pa")
+      const bar = Math.floor(k / 6) % T.roots.length, beat = k % 6, root = T.roots[bar];
+      if (beat === 0) note(root - 12, t, spb * 2.2, 'triangle', .18);
+      else if (beat === 3) note(root - 5, t, spb * 2.2, 'triangle', .14);
+      else { note(root + 12 + T.third[bar], t, spb * .7, 'square', .022); note(root + 19, t, spb * .7, 'square', .018); }
+      const m = T.mel[k]; if (m) { note(m, t, spb * 1.5, 'square', .04); note(m - 12, t, spb * 1.5, 'triangle', .03); }
+      return;
+    }
+    const bar = Math.floor(k / 8) % 4, beat = k % 8, root = T.roots[bar];
     note(root - 12 + (beat % 2 ? 12 : 0), t, spb * .9, T.drums ? 'square' : 'triangle', T.drums ? .07 : .16);
     if (beat % 2 === 1) { note(root + 12 + T.third[bar], t, spb * .8, 'square', .025); note(root + 19, t, spb * .8, 'square', .02); }
     const m = T.mel[k]; if (m) note(m, t, spb * 1.6, 'square', .045);
@@ -4077,7 +4093,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4513,6 +4529,7 @@ class Route extends World {
     S.visited = S.visited || {}; if (this.scene.key === 'route1') S.visited.route1 = S.visited.route1 || S.routeVisited;
     if (!S.visited[this.scene.key]) { S.visited[this.scene.key] = 1; if (!RC.quiet) setTimeout(() => toast(RC.town ? `Welcome to ${RC.name}!` : `${RC.name}. Wild Fablemon hide in the long grass!`, 3000), 600); }
     if (RC.town) Sound.theme('field');
+    if (RC.sail) Sound.theme('sea'); else if (RC.beach && (RC.town || RC.isles)) Sound.theme('harbour');
   }
   onResize() { this.applyZoom(); renderHotbar(); }
   // a plank footbridge drawn to fit the brook: deck, rails, posts, and a shadow on the water
@@ -4651,7 +4668,7 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : id.startsWith('tf_') ? folkTalk(this, id) : bhDoor(this, id); return true; }
     if (t === '__board') { bhBoard(); return true; }
     if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
@@ -4883,12 +4900,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES],
   });
   Sound.music(true);
 }

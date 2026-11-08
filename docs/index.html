@@ -325,15 +325,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261108-072151">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261108-072151">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261108-072151">
+<link rel="manifest" href="manifest.webmanifest?v=20261108-082517">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261108-082517">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261108-082517">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-072151').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-082517').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -1087,6 +1087,13 @@ const Sound = (() => {
     battle: { bpm: 152, roots: [45, 41, 43, 40], third: [3, 4, 4, 4], drums: true,
       mel: [69, 0, 72, 69, 76, 0, 74, 72, 72, 0, 69, 65, 69, 72, 74, 0, 71, 0, 74, 71, 79, 0, 77, 74, 76, 0, 75, 76, 80, 0, 76, 0,
             81, 0, 79, 76, 77, 0, 76, 74, 72, 74, 76, 72, 69, 0, 72, 0, 74, 0, 71, 67, 74, 77, 79, 0, 76, 75, 76, 80, 83, 0, 0, 0] },
+    // sea shanties in 6/8: an oom-pa-pa bass and a squeezebox-ish tune. 'sea' (minor, rolling) for sailing, 'harbour' (a jig) for the coast towns
+    sea: { bpm: 128, bar: 6, roots: [50, 50, 48, 48, 46, 48, 50, 45], third: [3, 3, 4, 4, 4, 4, 3, 4],
+      mel: [69, 0, 69, 69, 67, 65, 62, 0, 65, 69, 0, 0, 67, 0, 67, 67, 65, 64, 60, 0, 64, 67, 0, 0,
+            65, 0, 65, 65, 67, 69, 72, 0, 70, 69, 67, 0, 69, 0, 74, 72, 69, 67, 65, 64, 62, 61, 0, 0] },
+    harbour: { bpm: 156, bar: 6, roots: [43, 48, 43, 50, 43, 48, 50, 43], third: [4, 4, 4, 4, 4, 4, 4, 4],
+      mel: [67, 0, 71, 74, 0, 71, 72, 0, 76, 79, 76, 72, 71, 0, 74, 79, 0, 74, 72, 71, 69, 66, 0, 69,
+            67, 0, 71, 74, 76, 74, 72, 74, 76, 79, 0, 76, 74, 0, 72, 71, 69, 66, 67, 0, 0, 67, 0, 0] },
   };
   function perc(t, hi) {
     const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
@@ -1094,7 +1101,16 @@ const Sound = (() => {
     s.connect(f); f.connect(g); g.connect(mus); s.start(t, Math.random() * .5); s.stop(t + .15);
   }
   function playTheme(T, i, t) {
-    const len = T.mel.length, k = i % len, bar = Math.floor(k / 8) % 4, beat = k % 8, root = T.roots[bar], spb = 60 / T.bpm / 2;
+    const len = T.mel.length, k = i % len, spb = 60 / T.bpm / 2;
+    if (T.bar === 6) {   // 6/8: bass on the big beats, light chord stabs between ("oom-pa-pa, oom-pa-pa")
+      const bar = Math.floor(k / 6) % T.roots.length, beat = k % 6, root = T.roots[bar];
+      if (beat === 0) note(root - 12, t, spb * 2.2, 'triangle', .18);
+      else if (beat === 3) note(root - 5, t, spb * 2.2, 'triangle', .14);
+      else { note(root + 12 + T.third[bar], t, spb * .7, 'square', .022); note(root + 19, t, spb * .7, 'square', .018); }
+      const m = T.mel[k]; if (m) { note(m, t, spb * 1.5, 'square', .04); note(m - 12, t, spb * 1.5, 'triangle', .03); }
+      return;
+    }
+    const bar = Math.floor(k / 8) % 4, beat = k % 8, root = T.roots[bar];
     note(root - 12 + (beat % 2 ? 12 : 0), t, spb * .9, T.drums ? 'square' : 'triangle', T.drums ? .07 : .16);
     if (beat % 2 === 1) { note(root + 12 + T.third[bar], t, spb * .8, 'square', .025); note(root + 19, t, spb * .8, 'square', .02); }
     const m = T.mel[k]; if (m) note(m, t, spb * 1.6, 'square', .045);
@@ -4676,7 +4692,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -5112,6 +5128,7 @@ class Route extends World {
     S.visited = S.visited || {}; if (this.scene.key === 'route1') S.visited.route1 = S.visited.route1 || S.routeVisited;
     if (!S.visited[this.scene.key]) { S.visited[this.scene.key] = 1; if (!RC.quiet) setTimeout(() => toast(RC.town ? `Welcome to ${RC.name}!` : `${RC.name}. Wild Fablemon hide in the long grass!`, 3000), 600); }
     if (RC.town) Sound.theme('field');
+    if (RC.sail) Sound.theme('sea'); else if (RC.beach && (RC.town || RC.isles)) Sound.theme('harbour');
   }
   onResize() { this.applyZoom(); renderHotbar(); }
   // a plank footbridge drawn to fit the brook: deck, rails, posts, and a shadow on the water
@@ -5250,7 +5267,7 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : id.startsWith('tf_') ? folkTalk(this, id) : bhDoor(this, id); return true; }
     if (t === '__board') { bhBoard(); return true; }
     if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
@@ -5482,12 +5499,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES],
   });
   Sound.music(true);
 }
@@ -6797,7 +6814,7 @@ const MAP_PLACES = [
   { k: 'elderwood', name: 'Elderwood', x: .87, y: .22, soon: 1, warden: ['?', 'wild', 6] },
   { k: 'gloamhollow', name: 'Gloamhollow', x: .615, y: .33, soon: 1, warden: ['?', 'shade', 7] },
   { k: 'rootcrown', name: 'Rootcrown', x: .605, y: .05, soon: 1 },
-  { k: 'isles', name: 'Secret isles', x: .15, y: .835, soon: 1 },
+  { k: 'isles', name: 'Secret Isles', x: .15, y: .835, route: 1, notes: () => ['🏝 Five islands to explore. Rare Floecalf in the long grass'] },
 ];
 function placeSeen(P) { return P.soon ? false : P.route ? !!(S.visited && S.visited[P.k]) || (P.k === 'route1' && S.routeVisited) : P.seen(); }
 function placeNotes(P) {
@@ -7122,6 +7139,7 @@ function buildAscii() {
   for (const [, x, y, ok] of RC.qdprops || []) if (!ok || ok()) blocked[y * RW + x] = 1;
   for (const [, x, y] of RC.cvprops || []) blocked[y * RW + x] = 1;
   for (const [, x, y] of RC.brprops || []) blocked[y * RW + x] = 1;
+  for (const [, , x, y] of RC.decor || []) blocked[y * RW + x] = 1;
   if (RC.sail) for (let i = 0; i < N; i++) blocked[i] = (kind[i] === '~' || grass[i] >= 0 || '<>^v'.includes(kind[i])) ? 0 : 1;   // at sea the water is the road
   if (RC.sail) { for (const t of ROUTE_TRAINERS) blocked[t.y * RW + t.x] = 1; for (const k of Object.keys(ROUTE_SIGNS)) { const [x, y] = k.split(',').map(Number); blocked[y * RW + x] = 1; } }
   for (const [f, x, y] of RC.seaprops || []) for (const [a, b] of seaFoot(f, x, y)) if (a >= 0 && b >= 0 && a < RW && b < RH) { blocked[b * RW + a] = 1; grass[b * RW + a] = -1; }
@@ -7239,7 +7257,7 @@ function switchTex(sc, id, state) {
 
 /* ---------- the scenes */
 class Crag extends Route {
-  create() { super.create(); this.cragSetup(); if (RC.beach) coveSetup(this); }
+  create() { super.create(); this.cragSetup(); if (RC.beach) coveSetup(this); folkSetup(this); }
   cragSetup() {
     const st = crag(), key = this.scene.key, R = this.R;
     // crevasses filled on earlier visits stay filled
@@ -7881,6 +7899,7 @@ function coveSetup(sc) {
   if (!RC.storm) beachSparkle(sc, sc.R);
   else { FX.set('storm', false); updateHUD(); }   // it never stops raining out here
   if (RC.brprops) beaconSetup(sc);
+  if (RC.isles) islesSetup(sc);
   if (RC.sail) seaSetup(sc);
   for (const [f, x, y] of RC.cvprops || []) sc.add.image(x * T + 8, y * T + 16, 'cove', f).setOrigin(.5, 1).setDepth(y * T + 15);
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(0xd8d890);   // dune grass
@@ -7945,7 +7964,7 @@ function coveOvernight() {
   S.flags.boatNews = C.stage;
 }
 function coveDoor(sc, id) {
-  if (id === 'cv_sail' || id === 'cv_beacon' || id === 'cv_whale') return sailDoor(sc, id);
+  if (id === 'cv_sail' || id === 'cv_beacon' || id === 'cv_whale' || id === 'cv_isles') return sailDoor(sc, id);
   if (id === 'cv_hal') { sc.face && sc.face(22, 20); return hal(sc); }
   if (id === 'cv_shipyard') return cove().stage >= BOAT_STAGES.length ? toast("Hal's shipyard. Sawdust, tar and a very happy shipwright.", 2400) : hal(sc);
   if (id === 'cv_hut') return toast('The fish hut is shut. A chalk board reads: "Gone fishing. Obviously."', 2600);
@@ -8411,7 +8430,7 @@ function sailDoor(sc, id) {
   }
   if (id === 'cv_beacon') { Sound.play('door'); toast('You tie up at the Beaconreach jetty and climb ashore.', 1800); return travel(sc, 'beaconreach', ROUTES.beaconreach.spawn); }
   if (id === 'cv_whale') return whaleFight(sc);
-  if (id === 'cv_isles') { Sound.play('door'); return toast("A bleached driftwood sign: THE SECRET ISLES. Whoever put it here didn't want visitors. The sand beyond is untouched...", 4500); }
+  if (id === 'cv_isles') { Sound.play('door'); toast('You tie up at the little jetty and step ashore.', 1800); return travel(sc, 'isles', ROUTES.isles.spawn); }
 }
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'boat') + 1, 0,
   { id: 'sail', name: 'Sail to Beaconreach', hint: "Your boat is moored beside the Driftwood Cove pier. Sail north across the Glimmer Sea, then find a way through the torrents of Stormwatch Strait to Beaconreach's harbour.", done: () => !!(S.visited && S.visited.beaconSighted), reward: { gold: 2500, items: { tonic: 3 } } },
@@ -8789,6 +8808,169 @@ QUESTS.splice(QUESTS.findIndex(q => q.id === 'sail') + 1, 0,
   { id: 'whale', get name() { return S.flags.whaleAsked ? 'Drive off the ice whale for Orrin' : 'Find Orrin, the lighthouse keeper, at Beaconreach'; }, get hint() { return S.flags.whaleBeaten ? 'Tell Orrin the whale is gone. He wanders the headland by his lighthouse.' : S.flags.whaleAsked ? "The whale lurks in the lagoon at the Secret Isles, past the torrents of Tidewrack Shoals (south of the Glimmer Sea)." : "Find the lighthouse keeper on the headland at Beaconreach."; }, done: () => !!S.flags.whaleReported, reward: { gold: 2000, items: { tonic: 3 } } },
   { id: 'spark', name: 'Earn the Spark Crest from Warden Orrin', hint: "Tie up at the Beaconreach jetty, then head into the lighthouse at the top of the town. Orrin waits inside.", done: () => !!(S.crests && S.crests.spark), reward: { gold: 3000, items: { mon_treat: 3 } } });
 const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach'); } }, BrLight];
+
+/* ============================================================ Townsfolk
+   Villagers for the newer towns, drawn with the route-trainer sprites under new names. They wander the
+   walkable tiles of their town (never onto doors, signs or exits) and have a few lines each. Talk to them
+   by facing them. Loaded after beacon.js. */
+const TOWNSFOLK = {
+  quarrydown: [
+    { kind: 'miner', name: 'Dougie', at: [20, 26], lines: ["Granger? Best foreman I ever had. Never raises his voice. Never needs to.", "Mind the carts on the avenue. They've no brakes to speak of.", "Thirty years I've swung a pick in that pit. Still find something new every week."] },
+    { kind: 'climber', name: 'Bryn', at: [30, 18], lines: ["You came up through Cragside Heights? Those boulders still give me nightmares.", "Best view in the valley from the top of the Old Crane, once it's fixed.", "Granger's twin runs a shipyard on the coast. Can you imagine? Granger on a boat!"] },
+    { kind: 'rambler', name: 'Meg', at: [14, 20], lines: ["Stone & Supply sells seeds you won't find anywhere else. Geode Melons! Try them!", "Flintcorn's the only thing that'll grow through a frost round here.", "I walk the quarry rim every morning. Keeps the knees honest."] },
+    { kind: 'forager', name: 'Nell', at: [34, 26], lines: ["Wild Fablemon come down from the heights when it rains. Little rock ones, mostly.", "I sell my mushrooms at the station. The train crews love them.", "If you find a Flintcairn, leave it be. They sulk for weeks if you wake them."] },
+  ],
+  beaconreach: [
+    { kind: 'busker', name: 'Shanty Sam', at: [22, 24], lines: ["♪ Oh the lamp burns bright on Beaconreach, the storm can't put it out! ♪", "Every boat that makes it through the strait gets a song from me. Here's yours!", "Orrin taps his boots to my shanties. Don't tell him I told you."] },
+    { kind: 'birdwatcher', name: 'Old Tam', at: [33, 16], lines: ["Forty years at the lookout. I've seen a whale made of ice, you know. Twice!", "Gulls fly low before a big storm. They're flying low today. They always are.", "See the shoals to the south? There's islands behind them nobody visits."] },
+    { kind: 'ponddipper', name: 'Marigold', at: [12, 23], lines: ["I mend the nets. That whale tore three of them clean in half last month.", "Kilnback turtles warm themselves on the hot vents out past the shoals.", "Rain's the same as sunshine here, love. You just wear a bigger coat."] },
+    { kind: 'rambler', name: 'Harbourmaster Quill', at: [27, 30], lines: ["Tide's turning. Tide's always turning. That's the job.", "If the strait's too rough, I'll have you towed home. No shame in it.", "We used to get the ferry from Driftwood before the storms set in for good."] },
+  ],
+  driftwood: [
+    { kind: 'ponddipper', name: 'Rosie', at: [25, 20], lines: ["Hal's been whistling all week. He's happiest with sawdust in his beard.", "The rock pools by the pier are full of Nipshade at night. Watch your toes!", "My gran says the cove was busy as a market once. Maybe it will be again."] },
+    { kind: 'busker', name: 'Fiddler Jory', at: [20, 14], lines: ["Pull up a crate! I know every shanty there is, and a few that aren't yet.", "Hal and Granger used to sing together. Granger had the better voice. Don't tell Hal.", "♪ Haul away, haul away, the boat's not built in a day! ♪"] },
+    { kind: 'forager', name: 'Kit', at: [30, 24], lines: ["I comb the beach for driftwood every morning. Hal buys the good bits.", "Saltgrass Dunes are full of Fablemon that like the sea air.", "Ever been out past the Glimmer Sea? They say the water turns grey and never stops raining."] },
+  ],
+};
+function folkSetup(sc) {
+  const list = TOWNSFOLK[sc.scene.key]; if (!list) return;
+  const R = sc.R, exits = RC.exits || [];
+  const inExit = (x, y) => exits.some(e => x >= e.r[0] && x <= e.r[2] && y >= e.r[1] && y <= e.r[3]);
+  const free = (x, y) => x > 0 && y > 0 && x < RW - 1 && y < RH - 1 && !R.blocked[y * RW + x] && !ROUTE_SIGNS[x + ',' + y] && !inExit(x, y) && !ROUTE_SIGNS[x + ',' + (y - 1)];
+  sc.folk = [];
+  list.forEach((f, i) => {
+    // nearest free tile to where they like to stand
+    let spot = null;
+    for (let r = 0; r < 12 && !spot; r++) for (let dy = -r; dy <= r && !spot; dy++) for (let dx = -r; dx <= r && !spot; dx++) {
+      const x = f.at[0] + dx, y = f.at[1] + dy; if (free(x, y) && !sc.folk.some(o => o.x === x && o.y === y) && !(sc.p && sc.p.x === x && sc.p.y === y)) spot = { x, y };
+    }
+    if (!spot) return;
+    const key = 'tr_' + trArt(f.kind);
+    for (let r = 0; r < 4; r++) { const k = `${key}_walk_${DIRS[r]}`; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers(key, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 6, repeat: -1 }); }
+    const spr = sc.add.sprite(spot.x * T + 8, spot.y * T + 15, key, 0).setOrigin(.5, 1).setDepth(spot.y * T + 15);
+    sc.shadow(spr, 12, 5);
+    const o = { ...f, i, x: spot.x, y: spot.y, home: spot, spr, key };
+    const id = `tf_${sc.scene.key}_${i}`;
+    o.place = () => { R.blocked[o.y * RW + o.x] = 1; ROUTE_SIGNS[o.x + ',' + o.y] = '__door:' + id; };
+    o.lift = () => { R.blocked[o.y * RW + o.x] = 0; if (ROUTE_SIGNS[o.x + ',' + o.y] === '__door:' + id) delete ROUTE_SIGNS[o.x + ',' + o.y]; };
+    o.place(); sc.folk.push(o);
+  });
+  sc.time.addEvent({ delay: 1400, loop: true, callback: () => {
+    if (sc.paused || !sc.p) return;
+    for (const o of sc.folk) {
+      if (o.busy || o.talking || !o.spr.active || Math.random() < .55) continue;
+      const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]), nx = o.x + dx, ny = o.y + dy, p = sc.p;
+      const dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
+      if (Math.abs(nx - o.home.x) > 5 || Math.abs(ny - o.home.y) > 4 || !free(nx, ny) || (p.x === nx && p.y === ny) || (p.x === o.x && p.y === o.y) || (p.path && p.path.some(q => q.x === nx && q.y === ny))) { o.spr.setFrame(DIRS.indexOf(dir) * 4); continue; }
+      o.lift(); o.x = nx; o.y = ny; o.place(); o.busy = 1; o.spr.play(`${o.key}_walk_${dir}`);
+      sc.tweens.add({ targets: o.spr, x: nx * T + 8, y: ny * T + 15, duration: 480, onUpdate: () => o.spr.active && o.spr.setDepth(o.spr.y), onComplete: () => { o.busy = 0; if (!o.spr.active) return; o.spr.stop(); o.spr.setFrame(DIRS.indexOf(dir) * 4); } });
+    }
+  } });
+}
+function folkTalk(sc, id) {
+  const i = +id.split('_').pop(), o = (sc.folk || []).find(f => f.i === i); if (!o) return;
+  const p = sc.p; o.spr.setFrame(DIRS.indexOf(p.x < o.x ? 'left' : p.x > o.x ? 'right' : p.y < o.y ? 'up' : 'down') * 4);
+  o.talking = 1; S.town.talked = S.town.talked || {};
+  const k = sc.scene.key + o.name, n = S.town.talked[k] || 0; S.town.talked[k] = n + 1;
+  Talk.say([{ who: 'trainer', name: o.name, img: trainerPic(o.kind, 0), t: o.lines[n % o.lines.length] }], () => { o.talking = 0; });
+}
+
+/* ============================================================ The Secret Isles
+   Land at the jetty at the bottom of Tidewrack Shoals to explore. Five islands linked by boardwalks and a sandbar:
+   Landing Isle (top), Westwatch Isle, Frostbay Isle (the whale nursery), the Great Isle with its lagoon and a
+   healing spring, and a tiny treasure islet. Rare sea Fablemon (Floecalf above all) live in the long grass,
+   a few castaway trainers hide out here, and there's treasure to find. Map drawn from text (beach painter);
+   generated and checked so every island can be reached from the jetty. */
+const ISLES_MAP = [
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..,,...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.....;;;.....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~....;;;;00;;;....~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~....;;;0000000;;;.~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~..;;;;000000000;;..~~~~~~~~~~~~.~~~..~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~...;;;;;0000000;;;...~~~~~~~~~~........~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~....;;;;;;;;;;;;;...~~~~~~~~~............~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~...;;;;;;;;;;;;....,,,,,,,,~....;11;;;;..~~~~~",
+  "~~~~~~~~~~~..~~~~~~~~~~~~~~...;;;;;;;;;;;...,,,,,,,,,..;;;1111111;..~~~~",
+  "~~~~~~~.......~~~~~~~~~~~~~~....;...;;.....~~~~~~~~~...;;111111111...~~~",
+  "~~~~~~...........,,,,,,,,,,~~~~........~~~~~~~~~~~~~...;1111111111;..~~~",
+  "~~~~~...000;;;;..,,,,,,,,,,~~~~~~~,,~~~~~~~~~~~~~~~....;1111111111;;.~~~",
+  "~~~~...00000;;;;..~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~...;;;111111111;;.~~~",
+  "~~~~..0000000;;;...~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~..;;;111111111;..~~~",
+  "~~~~.000000000;;;..~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~..;;;;1111111;....~~",
+  "~~~~.000000000;;;;.~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~.;;;;;11;;;;;...~~~",
+  "~~~..000000000;;;;.~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~..;;;;;;;;;;;..~~~~",
+  "~~~...0000000;;;;;.~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~....;;;;;;;....~~~~",
+  "~~~~.;;00000;;;;;...~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~......;;....~~~~~",
+  "~~~~.;;;000;;;;;;...~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~........~~~~~~~~",
+  "~~~~..;;;;;;;;;;...~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~..~~~~~~~~~~~",
+  "~~~~...;;;;;;;;;...~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~..;;;;;;;;...~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~....;;;;....~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~...........~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~.......~~~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~..,~~~~~~~~~~~~~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~..~~~.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~~~~~~~~~~................~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~~~~~~.......................~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~~~..........;;..;;;..........~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~~......;;..;;;;;;;;;;;;;.........~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,~~~~~~~~......;;;;;;;;;;;;;;;;;;;;;......~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,,,,,,,,......;;;;;;;;;;;;;;;;;;;;;;;.......~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~,,,,,,,,......;222;;;;;;;;;;;;;;;;;;;;;;.....~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~.....2222222;;;;;;;;;;;;;;;;;;;;......~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~....22222222222;;;;;;;~~~;;;;;;;;;.....~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~....22222222222;;;;;~~~~~~~;;;;;;;;.....~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~...222222222222;;;;~~~~~~~~~;;;;;;;.....~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~....22222222222;;;;~~~~~~~~~;;;;;;;.....~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~.....2222222222;;;;~~~~~~~~~;;;;;;.....~~~~~..;....~~~~",
+  "~~~~~~~~~~~~~~~~~~.....222222;;;;;;;;~~~~~~~;;;;;;......~~~~..;;;;;;.~~~",
+  "~~~~~~~~~~~~~~~~~~......;222;;;;;;;;;;;~~~;;;22222...........;;;;;;;.~~~",
+  "~~~~~~~~~~~~~~~~~~~......;;;;;;;;;;;;;;;;2222222222...~......;;;;;;;..~~",
+  "~~~~~~~~~~~~~~~~~~~~......;;;;;;;;;;;;;;;2222222222..~~~~~~~.;;;;;;;.~~~",
+  "~~~~~~~~~~~~~~~~~~~~~......;;..;;;;;;;;;;;222222222..~~~~~~~..;;;;;..~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~..........;;..;;;....22222..~~~~~~~~~~~.......~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~.......................~~~~~~~~~~~~~~~.~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~................~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..~~~.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+  "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+];
+const ISLES_ENC = {
+  day: [['floecalf', 16], ['kilnback', 14], ['foilfin', 12], ['reefarer_cotton', 10], ['lotveil', 10], ['nipshade', 8], ['brookstride', 8], ['whirlwyn', 8]],
+  night: [['inkwick', 16], ['floecalf', 14], ['nipshade', 12], ['duskcloak', 10], ['kilnback', 8], ['lotveil', 8]],
+};
+ROUTES.isles = {
+  name: 'Secret Isles', w: 72, h: 56, ascii: ISLES_MAP, crag: true, beach: true, isles: true,
+  zones: [[0, 0, 0, 0, 42, 44], [0, 0, 0, 0, 43, 45], [0, 0, 0, 0, 44, 46]],
+  paths: [], ponds: [], bridge: null, open: [], clear: [],
+  pickups: [{ id: 'is1', x: 65, y: 46, item: 'heartwood_charm', n: 1 }, { id: 'is2', x: 7, y: 24, gold: 8000 }, { id: 'is3', x: 62, y: 20, item: 'swift_feather', n: 1 },
+    { id: 'is4', x: 32, y: 50, item: 'mon_treat', n: 5 }, { id: 'is5', x: 30, y: 6, item: 'ironbark_charm', n: 1 }, { id: 'is6', x: 51, y: 38, item: 'fang_charm', n: 1 }],
+  signs: { '37,4': 'The Secret Isles. Five islands, one jetty, and no visitors in living memory. Mind the tide.', '36,34': '__heal', '56,45': 'A sandbar to the little islet. Something glints in the sand over there...' },
+  trainers: [
+    { id: 'is_t1', kind: 'forager', name: 'Castaway Pip', x: 30, y: 9, dir: 'right', sight: 4, team: [['kilnback', 43], ['lotveil_3', 44], ['foilfin_2', 44]] },
+    { id: 'is_t2', kind: 'rambler', name: 'Beachcomber Ash', x: 14, y: 23, dir: 'up', sight: 4, team: [['nipshade_2', 44], ['reefarer_cotton_3', 44], ['kilnback_2', 45]] },
+    { id: 'is_t3', kind: 'birdwatcher', name: 'Whalewatcher Fen', x: 57, y: 19, dir: 'up', sight: 4, team: [['floecalf', 45], ['whorlcrest', 45], ['inkwick_2', 46]] },
+    { id: 'is_t4', kind: 'ponddipper', name: 'Lagoon Lou', x: 44, y: 36, dir: 'left', sight: 4, team: [['foilfin_2', 45], ['lotveil_3', 46], ['riftshear_2', 46], ['floecalf', 47]] },
+  ],
+  cvprops: [['cv_boat2', 33, 3], ['cv_glass_floats', 38, 5], ['cv_barrels', 29, 12], ['cv_anchor', 22, 46], ['cv_oars', 50, 48], ['cv_net_frame', 8, 13], ['cv_lantern', 37, 33], ['cv_fish_crate', 63, 22]],
+  decor: [['br', 'br_dune_grass', 41, 11], ['br', 'br_dune_grass', 7, 26], ['br', 'br_dune_grass', 52, 12], ['br', 'br_dune_grass', 26, 49], ['br', 'br_dune_grass', 46, 49],
+    ['br', 'br_telescope', 66, 17], ['br', 'br_rowboat', 30, 34], ['br', 'br_bench', 39, 32], ['br', 'br_planter', 47, 35], ['sea', 'sea_rock_tall', 3, 30], ['sea', 'sea_rock', 49, 22], ['sea', 'sea_rock', 22, 6], ['sea', 'sea_flotsam', 60, 49]],
+  exits: [{ r: [35, 0, 36, 0], to: () => ['shoals', { x: 24, y: 30, dir: 'up' }] }],
+  spawn: { x: 35, y: 2, dir: 'down' }, enc: ISLES_ENC,
+};
+// rocks in the water and a few island props; they block the tile they stand on
+function islesSetup(sc) {
+  for (const [atlas, f, x, y] of RC.decor || []) sc.add.image(x * T + 8, y * T + 16, atlas, f).setOrigin(.5, 1).setDepth(y * T + 15);
+  if (!S.flags.islesLanded) { S.flags.islesLanded = 1; S.visited = S.visited || {}; S.visited.islesFound = 1; setTimeout(() => toast('You step onto the Secret Isles. White sand, warm water, and nobody for miles. Time to explore!', 3600), 700); }
+}
+TOWNSFOLK.isles = [
+  { kind: 'wispwatcher', name: 'Old Moss, the hermit', at: [38, 36], lines: ["Visitors! Haven't had one of those since... well, ever. Mind the spring, it's for everyone.", "The white whale raises her calves in the bay on the east island. Floecalf, the little ones. Shy as anything.", "Five islands, and I've named every rock on them. That one's Gerald.", "There's a glint on the little islet past the sandbar. Been meaning to fetch it for twenty years."] },
+];
+const ISLES_SCENES = [class extends Crag { constructor() { super('isles'); } }];
 
 /* ============================================================ The Smallroot Derby
    A racing league at the north of Smallroot, run by Monty Quickstep. You steer your own Fablemon round a
