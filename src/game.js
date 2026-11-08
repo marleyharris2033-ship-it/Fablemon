@@ -4983,18 +4983,10 @@ function refreshTitle() {
   const has = !!lastSlot();
   document.querySelectorAll('#title .hit').forEach(el => { const t = el.dataset.t; el.classList.toggle('off', t === 'continue' && !has);   /* Load stays on: it also restores backups */ });
 }
-function layoutTitle() {
-  // portrait art on phones, landscape art on wider screens; the logo and real buttons sit on top
-  const wide = innerWidth / innerHeight >= .9;
-  $('title').classList.toggle('wide', wide);
-  document.querySelector('#title .bg').style.backgroundImage = `url(${wide ? ASSET.titleWide : ASSET.titleTall})`;
-}
 async function initTitle() {
   // the menu shows at once; the game's pictures load behind it, and a button only waits for them if you're quicker
-  $('titleImg').src = ASSET.titleLogo; layoutTitle(); refreshTitle();
-  // nothing shows until the logo and the background are decoded, then it all fades in together
-  const pic = src => { const im = new Image(); im.src = src; return im.decode ? im.decode().catch(() => { }) : new Promise(r => { im.onload = im.onerror = r; }); };
-  Promise.all([pic(ASSET.titleLogo), pic(innerWidth / innerHeight >= .9 ? ASSET.titleWide : ASSET.titleTall), $('titleImg').decode ? $('titleImg').decode().catch(() => { }) : 0]).then(() => $('title').classList.add('ready'));
+  // the menu's own pictures sit at the top of the page, so it is already on screen while the game downloads
+  refreshTitle(); $('cloudNote').textContent = '';
   const art = (async () => {
     await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics();
     ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
@@ -5012,7 +5004,6 @@ async function initTitle() {
       if (t === 'settings') openSettings(false);
     };
   });
-  layoutTitle(); window.addEventListener('resize', layoutTitle);
 }
 initTitle();
 setupTouch();
