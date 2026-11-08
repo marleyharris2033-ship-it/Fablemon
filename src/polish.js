@@ -40,15 +40,22 @@ function placeNotes(P) {
   if (P.extra) lines.push(P.extra());
   return lines;
 }
+// where the current task is pointing, so the map can show a "!" on that place
+const QUEST_PLACE = { mail: 'farm', plant: 'farm', ship: 'farm', ranch: 'farm', job: 'farm', cook: 'farm', town: 'town', starter: 'town', repair: 'town', restore: 'town', rowan: 'town', west: 'town',
+  catch: 'route1', lane: 'route2', warden: 'route2', bog: 'route3', fen: 'route4', brook: 'brookholt', quarry: 'quarrydown', stone: 'quarrydown',
+  cove: 'dunes', boat: 'driftwood', sail: 'stormwatch', spark: 'beaconreach', isles: 'shoals',
+  whale: () => S.flags.whaleAsked && !S.flags.whaleBeaten ? 'shoals' : 'beaconreach' };
+function questPlace() { const q = activeQuest(); if (!q) return ''; const v = QUEST_PLACE[q.id]; return typeof v === 'function' ? v() : v || ''; }
 function openMap() {
   const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown', brlight: 'beaconreach' }[scene.scene.key] || scene.scene.key) : '';
+  const goal = questPlace();
   const pins = MAP_PLACES.map((P, i) => {
     const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];
     const fog = seen ? '' : `<div class="wfog" style="left:${P.x * 100}%;top:${P.y * 100}%"></div>`;
     const badge = w && seen ? `<span class="wbadge ${won ? 'won' : ''}">${won ? '✔' : w[2]}</span>` : '';
-    return `${fog}<button class="wpin ${seen ? '' : 'unseen'} ${here === P.k ? 'here' : ''} ${P.al ? 'al-' + P.al : ''}" data-a="pin" data-i="${i}" style="left:${P.x * 100}%;top:${P.y * 100}%">${here === P.k ? '<i class="wyou">▼</i>' : ''}<b>${seen ? P.name : '???'}</b>${badge}</button>`;
+    return `${fog}<button class="wpin ${seen ? '' : 'unseen'} ${here === P.k ? 'here' : ''} ${P.al ? 'al-' + P.al : ''}" data-a="pin" data-i="${i}" style="left:${P.x * 100}%;top:${P.y * 100}%">${here === P.k ? '<i class="wyou">▼</i>' : ''}${goal === P.k ? '<i class="wgoal">!</i>' : ''}<b>${seen ? P.name : '???'}</b>${badge}</button>`;
   }).join('');
-  openModal('Map', `<div class="wmap"><img src="${ASSET.worldmap}" alt="World map">${pins}</div><div id="wmapInfo" class="hint">Tap a place to see what's there.</div>`, (a, d) => {
+  openModal('Map', `<div class="wmap"><img src="${ASSET.worldmap}" alt="World map">${pins}</div><div id="wmapInfo" class="hint">${goal ? `<b style="color:#d99a1e">!</b> ${activeQuest().name}. ` : ''}Tap a place to see what's there.</div>`, (a, d) => {
     if (a !== 'pin') return;
     const P = MAP_PLACES[+d.i], seen = placeSeen(P);
     $('wmapInfo').innerHTML = seen ? `<b>${P.k === 'farm' ? 'Wild Roots Farm' : P.name}</b>${here === P.k ? ' <i>(you are here)</i>' : ''}<br>${placeNotes(P).join('<br>')}` : P.soon ? '<b>???</b><br>Somewhere you haven\'t been yet.' : '<b>???</b><br>You haven\'t found this place yet.';

@@ -86,7 +86,7 @@ Object.assign(MOVES, {
   deepdew: { name: 'Deep Dew', type: 'Leaf', pow: 80, acc: 100, hexSlp: 1 },
   pitfallgulp: { name: 'Pitfall Gulp', type: 'Leaf', pow: 100, acc: 95, st: ['psn', 30] },
   crownstorm: { name: 'Crown Storm', type: 'Spark', pow: 110, acc: 85, st: ['par', 30] },
-  grimroots: { name: 'Grim Roots', type: 'Shade', pow: 95, acc: 100, drain: .3 },
+  grimroots: { name: 'Grim Roots', type: 'Shade', pow: 95, acc: 100, drain: .25 },
   blazekick: { name: 'Blaze Kick', type: 'Ember', pow: 95, acc: 95, crit: 1, st: ['brn', 20] },
   pineconestorm: { name: 'Pinecone Storm', type: 'Leaf', pow: 25, acc: 95, hits: [2, 5] },
   belfrypeal: { name: 'Belfry Peal', type: 'Glow', pow: 95, acc: 100, flinch: 30 },

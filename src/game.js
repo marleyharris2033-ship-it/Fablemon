@@ -554,6 +554,14 @@ function save() {
   saveOpts();
   return Cloud.put(slot, data);
 }
+// quiet autosave: on every change of area and after every battle, so a crash never costs a whole day
+let lastCloudAuto = 0;
+function autoSave() {
+  if (!S || !S.mons) return;
+  S.savedAt = Date.now();
+  try { localStorage.setItem(slotKey(slot), JSON.stringify(snapshot())); localStorage.setItem(SAVE_KEY + '_last', String(slot)); } catch (e) { }
+  if (Date.now() - lastCloudAuto > 120000) { lastCloudAuto = Date.now(); try { Cloud.put(slot, snapshot()); } catch (e) { } }
+}
 function manualSave() {
   if (!scene || !scene.p || scene.sleeping) return;
   const p = scene.p;
@@ -2852,7 +2860,7 @@ class Farm extends World {
 function travel(sc, to, sp) {
   if (sc.sleeping) return;
   sc.sleeping = true; $('fade').style.opacity = 1; Sound.play('step', 0);
-  setTimeout(() => { S.spawn = { scene: to, ...sp }; sc.scene.start(to); }, 380);
+  setTimeout(() => { S.spawn = { scene: to, ...sp }; autoSave(); sc.scene.start(to); }, 380);
 }
 
 /* -------------------------------------------------------------- House */
@@ -4061,7 +4069,7 @@ const Battle = (() => {
       q('bfoe').style.visibility = ''; q('bfoebox').style.visibility = ''; q('bmebox').style.visibility = '';
     }
   }
-  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); } refreshTeamBtn(); updateHUD(); Sound.music(true); }
+  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); if (scene.p) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; } refreshTeamBtn(); updateHUD(); Sound.music(true); setTimeout(autoSave, 50); }
   const foeLabel = () => B.wild ? 'The wild ' : 'The opposing ';
   async function run(foe, T) {
     const first = team().find(m => m.hp > 0);

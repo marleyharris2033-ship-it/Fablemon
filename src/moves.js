@@ -20,7 +20,7 @@ Object.assign(MOVES, {
   curlnap: { name: 'Curl Up', type: 'Wild', rest: 1 },
   sharpen: { name: 'Sharpen', type: 'Wild', critUp: 2 },
   // ---- Leaf
-  sapsip: { name: 'Sap Sip', type: 'Leaf', pow: 50, acc: 100, drain: .5 },
+  sapsip: { name: 'Sap Sip', type: 'Leaf', pow: 50, acc: 100, drain: .25 },
   seedleech: { name: 'Seed Leech', type: 'Leaf', seed: 1, acc: 90 },
   bramblespikes: { name: 'Bramble Spikes', type: 'Leaf', hazard: 'thorns' },
   sunsoak: { name: 'Sun Soak', type: 'Leaf', heal: .5, sunHeal: 1 },
@@ -41,7 +41,7 @@ Object.assign(MOVES, {
   raincall: { name: 'Rain Call', type: 'Tide', weather: 'rain' },
   springsip: { name: 'Spring Sip', type: 'Tide', heal: .5 },
   boilspout: { name: 'Boil Spout', type: 'Tide', pow: 75, acc: 100, st: ['brn', 30] },
-  soakup: { name: 'Soak Up', type: 'Tide', pow: 65, acc: 100, drain: .5 },
+  soakup: { name: 'Soak Up', type: 'Tide', pow: 65, acc: 100, drain: .25 },
   tidedance: { name: 'Tide Dance', type: 'Tide', stats: [['self', 'atk', 1], ['self', 'spd', 1]] },
   tidalcrash: { name: 'Tidal Crash', type: 'Tide', pow: 110, acc: 85 },
   // ---- Stone

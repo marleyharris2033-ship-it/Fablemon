@@ -299,6 +299,7 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 .wpin b{font:700 11px var(--pix);color:#2a1e1a;background:rgba(251,243,217,.92);border:2px solid #5e3b20;padding:1px 4px}
 .wpin.unseen b{color:#e8e0cc;background:rgba(40,40,46,.7);border-color:#1e1e22}
 .wpin.here b{background:#ffe9a0;border-color:#d99a1e}
+.wgoal{font:900 15px var(--pix);font-style:normal;color:#ffe35a;-webkit-text-stroke:1px #2a1e1a;text-shadow:0 1px 0 #2a1e1a;animation:wgoal .9s ease-in-out infinite alternate}@keyframes wgoal{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 .wyou{position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:#d04030;font-style:normal;font-size:14px;text-shadow:0 1px 0 #fff}
 .wbadge{font:700 10px var(--ui);background:#f2c14e;color:#412402;border:2px solid #854f0b;border-radius:50%;width:17px;height:17px;display:inline-flex;align-items:center;justify-content:center}
 .wbadge.won{background:#7cc24a;color:#173404;border-color:#3b6d11}
@@ -1142,6 +1143,14 @@ function save() {
   try { localStorage.setItem(slotKey(slot), JSON.stringify(data)); localStorage.setItem(SAVE_KEY + '_last', String(slot)); } catch (e) { }
   saveOpts();
   return Cloud.put(slot, data);
+}
+// quiet autosave: on every change of area and after every battle, so a crash never costs a whole day
+let lastCloudAuto = 0;
+function autoSave() {
+  if (!S || !S.mons) return;
+  S.savedAt = Date.now();
+  try { localStorage.setItem(slotKey(slot), JSON.stringify(snapshot())); localStorage.setItem(SAVE_KEY + '_last', String(slot)); } catch (e) { }
+  if (Date.now() - lastCloudAuto > 120000) { lastCloudAuto = Date.now(); try { Cloud.put(slot, snapshot()); } catch (e) { } }
 }
 function manualSave() {
   if (!scene || !scene.p || scene.sleeping) return;
@@ -3441,7 +3450,7 @@ class Farm extends World {
 function travel(sc, to, sp) {
   if (sc.sleeping) return;
   sc.sleeping = true; $('fade').style.opacity = 1; Sound.play('step', 0);
-  setTimeout(() => { S.spawn = { scene: to, ...sp }; sc.scene.start(to); }, 380);
+  setTimeout(() => { S.spawn = { scene: to, ...sp }; autoSave(); sc.scene.start(to); }, 380);
 }
 
 /* -------------------------------------------------------------- House */
@@ -4650,7 +4659,7 @@ const Battle = (() => {
       q('bfoe').style.visibility = ''; q('bfoebox').style.visibility = ''; q('bmebox').style.visibility = '';
     }
   }
-  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); } refreshTeamBtn(); updateHUD(); Sound.music(true); }
+  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); if (scene.p) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; } refreshTeamBtn(); updateHUD(); Sound.music(true); setTimeout(autoSave, 50); }
   const foeLabel = () => B.wild ? 'The wild ' : 'The opposing ';
   async function run(foe, T) {
     const first = team().find(m => m.hp > 0);
@@ -5806,7 +5815,7 @@ Object.assign(MOVES, {
   curlnap: { name: 'Curl Up', type: 'Wild', rest: 1 },
   sharpen: { name: 'Sharpen', type: 'Wild', critUp: 2 },
   // ---- Leaf
-  sapsip: { name: 'Sap Sip', type: 'Leaf', pow: 50, acc: 100, drain: .5 },
+  sapsip: { name: 'Sap Sip', type: 'Leaf', pow: 50, acc: 100, drain: .25 },
   seedleech: { name: 'Seed Leech', type: 'Leaf', seed: 1, acc: 90 },
   bramblespikes: { name: 'Bramble Spikes', type: 'Leaf', hazard: 'thorns' },
   sunsoak: { name: 'Sun Soak', type: 'Leaf', heal: .5, sunHeal: 1 },
@@ -5827,7 +5836,7 @@ Object.assign(MOVES, {
   raincall: { name: 'Rain Call', type: 'Tide', weather: 'rain' },
   springsip: { name: 'Spring Sip', type: 'Tide', heal: .5 },
   boilspout: { name: 'Boil Spout', type: 'Tide', pow: 75, acc: 100, st: ['brn', 30] },
-  soakup: { name: 'Soak Up', type: 'Tide', pow: 65, acc: 100, drain: .5 },
+  soakup: { name: 'Soak Up', type: 'Tide', pow: 65, acc: 100, drain: .25 },
   tidedance: { name: 'Tide Dance', type: 'Tide', stats: [['self', 'atk', 1], ['self', 'spd', 1]] },
   tidalcrash: { name: 'Tidal Crash', type: 'Tide', pow: 110, acc: 85 },
   // ---- Stone
@@ -6795,15 +6804,22 @@ function placeNotes(P) {
   if (P.extra) lines.push(P.extra());
   return lines;
 }
+// where the current task is pointing, so the map can show a "!" on that place
+const QUEST_PLACE = { mail: 'farm', plant: 'farm', ship: 'farm', ranch: 'farm', job: 'farm', cook: 'farm', town: 'town', starter: 'town', repair: 'town', restore: 'town', rowan: 'town', west: 'town',
+  catch: 'route1', lane: 'route2', warden: 'route2', bog: 'route3', fen: 'route4', brook: 'brookholt', quarry: 'quarrydown', stone: 'quarrydown',
+  cove: 'dunes', boat: 'driftwood', sail: 'stormwatch', spark: 'beaconreach', isles: 'shoals',
+  whale: () => S.flags.whaleAsked && !S.flags.whaleBeaten ? 'shoals' : 'beaconreach' };
+function questPlace() { const q = activeQuest(); if (!q) return ''; const v = QUEST_PLACE[q.id]; return typeof v === 'function' ? v() : v || ''; }
 function openMap() {
   const here = scene ? ({ house: 'farm', bhgym: 'brookholt', cragmine: 'crag3', qdpit: 'quarrydown', brlight: 'beaconreach' }[scene.scene.key] || scene.scene.key) : '';
+  const goal = questPlace();
   const pins = MAP_PLACES.map((P, i) => {
     const seen = placeSeen(P), w = P.warden, won = w && (S.crests || {})[w[1]];
     const fog = seen ? '' : `<div class="wfog" style="left:${P.x * 100}%;top:${P.y * 100}%"></div>`;
     const badge = w && seen ? `<span class="wbadge ${won ? 'won' : ''}">${won ? '✔' : w[2]}</span>` : '';
-    return `${fog}<button class="wpin ${seen ? '' : 'unseen'} ${here === P.k ? 'here' : ''} ${P.al ? 'al-' + P.al : ''}" data-a="pin" data-i="${i}" style="left:${P.x * 100}%;top:${P.y * 100}%">${here === P.k ? '<i class="wyou">▼</i>' : ''}<b>${seen ? P.name : '???'}</b>${badge}</button>`;
+    return `${fog}<button class="wpin ${seen ? '' : 'unseen'} ${here === P.k ? 'here' : ''} ${P.al ? 'al-' + P.al : ''}" data-a="pin" data-i="${i}" style="left:${P.x * 100}%;top:${P.y * 100}%">${here === P.k ? '<i class="wyou">▼</i>' : ''}${goal === P.k ? '<i class="wgoal">!</i>' : ''}<b>${seen ? P.name : '???'}</b>${badge}</button>`;
   }).join('');
-  openModal('Map', `<div class="wmap"><img src="${ASSET.worldmap}" alt="World map">${pins}</div><div id="wmapInfo" class="hint">Tap a place to see what's there.</div>`, (a, d) => {
+  openModal('Map', `<div class="wmap"><img src="${ASSET.worldmap}" alt="World map">${pins}</div><div id="wmapInfo" class="hint">${goal ? `<b style="color:#d99a1e">!</b> ${activeQuest().name}. ` : ''}Tap a place to see what's there.</div>`, (a, d) => {
     if (a !== 'pin') return;
     const P = MAP_PLACES[+d.i], seen = placeSeen(P);
     $('wmapInfo').innerHTML = seen ? `<b>${P.k === 'farm' ? 'Wild Roots Farm' : P.name}</b>${here === P.k ? ' <i>(you are here)</i>' : ''}<br>${placeNotes(P).join('<br>')}` : P.soon ? '<b>???</b><br>Somewhere you haven\'t been yet.' : '<b>???</b><br>You haven\'t found this place yet.';
@@ -7041,14 +7057,14 @@ Object.assign(ROUTES, {
     exits: [{ r: [16, 49, 18, 49], to: x => ['brookholt', { x: x + 5, y: 1, dir: 'down' }] }, { r: [16, 0, 18, 0], to: x => ['crag2', { x: x + 2, y: 42, dir: 'up' }] }],
     spawn: { x: 17, y: 47, dir: 'up' }, enc: CRAG_ENC },
   crag2: { name: 'Cragside Heights', w: 40, h: 44, quiet: true, ascii: 'crag2', crag: true,
-    zones: [[0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 24, 26], [0, 0, 0, 0, 25, 27], [0, 0, 0, 0, 26, 28]],
+    zones: [[0, 0, 0, 0, 26, 28], [0, 0, 0, 0, 27, 29], [0, 0, 0, 0, 28, 30], [0, 0, 0, 0, 29, 31]],
     pickups: [{ id: 'h1', x: 33, y: 25, item: 'root_charm', n: 5 }, { id: 'h2', x: 6, y: 15, item: 'tonic', n: 3 }, { id: 'h3', x: 33, y: 3, gold: 2000 }, { id: 'h4', x: 7, y: 36, item: 'honey', n: 3 }],
     signs: { '15,35': 'A crevasse cuts across the road. That boulder looks loose: walk into it to push it. Fill the gap and you can cross!', '23,31': '__cgcairn', '5,26': 'West: the Old Rail Cutting. The miners rode carts down to the old mine.', '31,19': '__cgcairn', '21,13': '__cgcairn', '17,3': '__heal' },
     trainers: [
-      { id: 'ch1', kind: 'climber', name: 'Gwen', x: 26, y: 38, dir: 'left', sight: 4, team: [['staticwing', 26], ['flintburrow', 26], ['whirlwyn', 27]] },
-      { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['clinkit', 27], ['kilnook', 28]] },
-      { id: 'ch3', kind: 'climber', name: 'Effie', x: 9, y: 12, dir: 'right', sight: 4, team: [['ramruff', 28], ['craglet', 28], ['staticwing', 29]] },
-      { id: 'ch4', kind: 'miner', name: 'Morgan', x: 29, y: 6, dir: 'left', sight: 3, team: [['flintburrow', 29], ['duskcloak', 29], ['brashlet', 30]] },
+      { id: 'ch1', kind: 'climber', name: 'Gwen', x: 26, y: 38, dir: 'left', sight: 4, team: [['staticwing', 28], ['flintburrow', 28], ['whirlwyn', 29]] },
+      { id: 'ch2', kind: 'miner', name: 'Dai', x: 31, y: 29, dir: 'left', sight: 4, team: [['clinkit', 29], ['kilnook', 30]] },
+      { id: 'ch3', kind: 'climber', name: 'Effie', x: 9, y: 12, dir: 'right', sight: 4, team: [['ramruff', 30], ['craglet_2', 31], ['staticwing', 31]] },
+      { id: 'ch4', kind: 'miner', name: 'Morgan', x: 29, y: 6, dir: 'left', sight: 3, team: [['flintburrow', 31], ['duskcloak', 32], ['pyrebrash', 33]] },
     ],
     gate: { area: [18, 0, 20, 1], sign: [21, 2], ok: () => false, text: "The road to Quarrydown is still buried under the landslide. The road crews are digging it out. (Coming soon!)" },
     exits: [{ r: [17, 43, 21, 43], to: x => ['crag1', { x: Math.max(16, Math.min(18, x - 2)), y: 1, dir: 'down' }] }, { r: [0, 25, 0, 27], to: y => ['crag3', { x: 44, y: y + 2, dir: 'left' }], axis: 'y' }],
@@ -7060,9 +7076,9 @@ Object.assign(ROUTES, {
       '22,30': '__cgbell', '10,21': '__cgbell', '39,12': '__cgbell', '44,6': '__cgbell', '20,12': '__cgbell', '3,9': '__cgbell',
       '36,28': '__cgcart:A', '30,28': '__cgcart:B', '25,23': '__cgcart:C', '16,19': '__cgcart:D', '32,14': '__cgcart:E', '34,7': '__cgcart:F', '40,4': '__cgcart:G', '26,10': '__cgcart:H', '9,3': '__cgcart:I' },
     trainers: [
-      { id: 'rc1', kind: 'miner', name: 'Ifor', x: 11, y: 19, dir: 'right', sight: 4, team: [['flintburrow', 28], ['mortoad', 28]] },
-      { id: 'rc2', kind: 'climber', name: 'Sian', x: 42, y: 5, dir: 'left', sight: 2, team: [['whirlwyn', 28], ['staticwing', 29]] },
-      { id: 'rc3', kind: 'miner', name: 'Huw', x: 22, y: 10, dir: 'right', sight: 3, team: [['cindhop', 29], ['clinkit', 29], ['mortoad', 30]] },
+      { id: 'rc1', kind: 'miner', name: 'Ifor', x: 11, y: 19, dir: 'right', sight: 4, team: [['flintburrow', 30], ['rampartoad', 31]] },
+      { id: 'rc2', kind: 'climber', name: 'Sian', x: 42, y: 5, dir: 'left', sight: 2, team: [['whirlwyn', 31], ['staticwing', 32]] },
+      { id: 'rc3', kind: 'miner', name: 'Huw', x: 22, y: 10, dir: 'right', sight: 3, team: [['cindhop_2', 32], ['clinkit_2', 32], ['rampartoad', 33]] },
     ],
     switches: { W1: { x: 25, y: 19, trunk: 'S', a: 'W', b: 'E' }, W2: { x: 34, y: 4, trunk: 'S', a: 'W', b: 'E' }, W3: { x: 26, y: 4, trunk: 'E', a: 'S', b: 'N' } },
     depot: { x: 40, y: 27, dir: 'left' }, tunnel: { x: 5, y: 2 },
@@ -8031,7 +8047,7 @@ Object.assign(MOVES, {
   deepdew: { name: 'Deep Dew', type: 'Leaf', pow: 80, acc: 100, hexSlp: 1 },
   pitfallgulp: { name: 'Pitfall Gulp', type: 'Leaf', pow: 100, acc: 95, st: ['psn', 30] },
   crownstorm: { name: 'Crown Storm', type: 'Spark', pow: 110, acc: 85, st: ['par', 30] },
-  grimroots: { name: 'Grim Roots', type: 'Shade', pow: 95, acc: 100, drain: .3 },
+  grimroots: { name: 'Grim Roots', type: 'Shade', pow: 95, acc: 100, drain: .25 },
   blazekick: { name: 'Blaze Kick', type: 'Ember', pow: 95, acc: 95, crit: 1, st: ['brn', 20] },
   pineconestorm: { name: 'Pinecone Storm', type: 'Leaf', pow: 25, acc: 95, hits: [2, 5] },
   belfrypeal: { name: 'Belfry Peal', type: 'Glow', pow: 95, acc: 100, flinch: 30 },
