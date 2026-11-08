@@ -325,15 +325,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261108-065924">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261108-065924">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261108-065924">
+<link rel="manifest" href="manifest.webmanifest?v=20261108-071439">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261108-071439">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261108-071439">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-065924').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-071439').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -8648,13 +8648,13 @@ function orrinOutside(sc) {
   place();
   if (!S.flags.whaleAsked) { const mark = sc.add.text(0, 0, '!', { fontFamily: 'ui-rounded, Nunito, system-ui, sans-serif', fontStyle: 'bold', fontSize: '15px', color: '#ffe35a', stroke: '#2a1e1a', strokeThickness: 3, resolution: 12 }).setOrigin(.5, 1).setDepth(9e6); o.mark = mark; }
   sc.time.addEvent({ delay: 1900, loop: true, callback: () => {
-    if (sc.paused || o.talking || o.busy || !spr.active) return;
+    if (sc.paused || o.talking || o.busy || o.gone || !spr.active) return;
     if (Math.random() < .35) return;
     const [dx, dy] = pick([[1, 0], [-1, 0], [0, 1], [0, -1]]), nx = o.x + dx, ny = o.y + dy, p = sc.p;
     const dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up';
     if (nx < ORRIN_ROAM[0] || ny < ORRIN_ROAM[1] || nx > ORRIN_ROAM[2] || ny > ORRIN_ROAM[3] || R.blocked[ny * RW + nx] || (p && ((p.x === nx && p.y === ny) || (p.x === o.x && p.y === o.y)))) { spr.setFrame(DIRS.indexOf(dir) * 4); return; }
     lift(); o.x = nx; o.y = ny; place(); o.busy = 1; spr.play(`orrin_${dir}`);
-    sc.tweens.add({ targets: spr, x: nx * T + 8, y: ny * T + 15, duration: 420, onUpdate: () => spr.setDepth(spr.y), onComplete: () => { o.busy = 0; spr.stop(); spr.setFrame(DIRS.indexOf(dir) * 4); } });
+    sc.tweens.add({ targets: spr, x: nx * T + 8, y: ny * T + 15, duration: 420, onUpdate: () => spr.setDepth(spr.y), onComplete: () => { o.busy = 0; if (!spr.active) return; spr.stop(); spr.setFrame(DIRS.indexOf(dir) * 4); } });
   } });
   sc.events.on('update', () => { if (o.mark && spr.active) o.mark.setPosition(spr.x, spr.y - 32 + Math.round(Math.sin(sc.time.now / 200))); });
 }
@@ -8675,7 +8675,7 @@ function orrinTalk(sc) {
   S.flags.whaleReported = 1;
   return Talk.say([O("You did it?! The whole harbour's talking! The boats went out this morning and came back without a scratch!", 1),
     O("I owe you, sailor. And I keep my word. The lighthouse is open. Meet me inside, and bring your best.", 1)], () => {
-    done(); sc.tweens.add({ targets: o.spr, alpha: 0, duration: 700, onComplete: () => { sc.R.blocked[o.y * RW + o.x] = 0; delete ROUTE_SIGNS[o.x + ',' + o.y]; o.spr.destroy(); sc.orrinNpc = null; } });
+    o.gone = 1; sc.tweens.killTweensOf(o.spr); o.spr.stop(); done(); sc.tweens.add({ targets: o.spr, alpha: 0, duration: 700, onComplete: () => { sc.R.blocked[o.y * RW + o.x] = 0; delete ROUTE_SIGNS[o.x + ',' + o.y]; o.spr.destroy(); sc.orrinNpc = null; } });
     toast('Orrin heads into the lighthouse.', 2000);
   });
 }
