@@ -444,6 +444,7 @@ const Sound = (() => {
     chop() { noise(.09, 'bandpass', 900, .55, 1.5); tone(130, .08, 'square', .1, 90); },
     pick() { tone(1500, .06, 'triangle', .22, 1150); noise(.05, 'highpass', 2600, .22); tone(210, .05, 'square', .07); },
     rustle() { noise(.16, 'bandpass', 3000, .28, 1.2, 0, 1500); },
+    gust() { noise(.75, 'bandpass', 420, .34, .7, 0, 1500); noise(.5, 'highpass', 2200, .07, 1, .12); },
     swish() { noise(.14, 'bandpass', 2400, .2, 2, 0, 700); },
     hoe() { noise(.11, 'lowpass', 800, .45); tone(160, .06, 'square', .07, 110); },
     water() { for (let i = 0; i < 5; i++) tone(500 + Math.random() * 700, .05, 'sine', .07, null, i * .04); noise(.25, 'lowpass', 1500, .16); },
@@ -4093,7 +4094,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4463,7 +4464,7 @@ class Route extends World {
     this.initWorld(RW, RH);
     const R = this.R = buildRoute();
     const data = []; for (let y = 0; y < RH; y++) data.push(Array.from(R.tiles.slice(y * RW, y * RW + RW)));
-    if (RC.ascii) (RC.beach ? beachGround : cragGround)(this, R); else {
+    if (RC.ascii) (RC.beach ? beachGround : RC.moor ? moorGround : cragGround)(this, R); else {
       if (RC.bog) bogTerrain(this);
       this.map = this.make.tilemap({ data, tileWidth: T, tileHeight: T });
       this.ground = this.map.createLayer(0, this.map.addTilesetImage('terrain', RC.bog ? 'terrain_bog' : 'terrain_x', T, T, 1, 2), 0, 0);
@@ -4491,7 +4492,7 @@ class Route extends World {
     for (const b of RC.buildings || []) { const fr = b.repair && !(b.done ? b.done() : bhDone(b.id)) ? b.old : b.frame; const im = this.add.image(b.cx * T + 8, b.by * T + 16, b.atlas || 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15); im.noShadow = 1; this.tall.push(im); }
     for (const [k, v] of Object.entries(ROUTE_SIGNS)) {
       const [x, y] = k.split(',').map(Number);
-      if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg') || v.startsWith('__qd')) continue;
+      if (v.startsWith('__door:') || v === '__board' || v.startsWith('__cg') || v.startsWith('__qd') || v.startsWith('__wvane')) continue;
       if (v.startsWith('__lever:')) {
         const on = !!sluice()[v.slice(8)];
         if (this.textures.exists('bog')) { this.add.image(x * T + 8, y * T + 16, 'bog', on ? 'lever_down' : 'lever_up').setOrigin(.5, 1).setDepth(y * T + 15); continue; }
@@ -4668,7 +4669,8 @@ class Route extends World {
   sign(x, y) {
     const t = ROUTE_SIGNS[x + ',' + y]; if (!t) return false;
     this.face(x, y);
-    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : id.startsWith('tf_') ? folkTalk(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__door:')) { const id = t.slice(7); id.startsWith('qd_') ? qdDoor(this, id) : id.startsWith('cv_') ? coveDoor(this, id) : id.startsWith('br_') ? beaconDoor(this, id) : id.startsWith('tf_') ? folkTalk(this, id) : id.startsWith('hm_') ? hmDoor(this, id) : bhDoor(this, id); return true; }
+    if (t.startsWith('__wvane:')) { vaneTurn(this, t.slice(8)); return true; }
     if (t === '__board') { bhBoard(); return true; }
     if (t === '__qdboard') { qdBoard(); return true; }
     if (t.startsWith('__cg')) { this.cragSign(t, x, y); return true; }
@@ -4884,6 +4886,7 @@ async function bootGame() {
       this.load.atlas('cove', ASSET.cove, ASSET.coveJson);
       this.load.atlas('sea', ASSET.sea, ASSET.seaJson);
       this.load.atlas('br', ASSET.br, ASSET.brJson);
+      this.load.atlas('hm', ASSET.hm, ASSET.hmJson);
       this.load.image('gym_br', ASSET.gymBr);
       this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
     }
@@ -4900,12 +4903,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles', 'windward', 'heatherstep', 'galeledges'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES, ...HM_SCENES],
   });
   Sound.music(true);
 }

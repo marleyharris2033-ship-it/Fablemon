@@ -256,7 +256,7 @@ function switchTex(sc, id, state) {
 
 /* ---------- the scenes */
 class Crag extends Route {
-  create() { super.create(); this.cragSetup(); if (RC.beach) coveSetup(this); folkSetup(this); }
+  create() { super.create(); this.cragSetup(); if (RC.beach) coveSetup(this); if (RC.moor || RC.hmsea) moorSetup(this); folkSetup(this); }
   cragSetup() {
     const st = crag(), key = this.scene.key, R = this.R;
     // crevasses filled on earlier visits stay filled
@@ -411,6 +411,7 @@ class Crag extends Route {
   }
   frameHook(dt) {
     if (this.boatSpr) seaFrame(this, dt);
+    if (RC.moor) moorFrame(this, dt);
     super.frameHook(dt);
     if (this.halo) this.halo.setPosition(this.player.x, this.player.y - 6);
     // after the legend battle: caught, knocked out (back tomorrow) or fled from (still there)
@@ -424,6 +425,7 @@ class Crag extends Route {
   }
   // exits are exact strips of tiles at the map's edge
   arriveHook(x, y) {
+    if (RC.moor && windArrive(this, x, y)) return;
     if (this.boatSpr) seaArrive(this, x, y);
     for (const e of RC.exits || []) { const [a, b, c, d] = e.r; if (x >= a && x <= c && y >= b && y <= d) { const [to, sp] = e.to(e.axis === 'y' ? y : x); if (to === 'cragmine' || to === 'crag3' && RC.mine) Sound.play('door'); return travel(this, to, sp); } }
     super.arriveHook(x, y);

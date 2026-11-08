@@ -261,10 +261,11 @@ function seaSetup(sc) {
   const f0 = sc.fastAt; sc.fastAt = (x, y) => !!sc.forceDir || (f0 ? f0.call(sc, x, y) : false);
   sc.forceDir = null;
   if (RC.storm) { FX.set('storm', false); updateHUD(); }
-  const first = { glimmer: 'sailed', stormwatch: 'stormSeen', shoals: 'shoalsSeen' }[sc.scene.key];
+  const first = { glimmer: 'sailed', stormwatch: 'stormSeen', shoals: 'shoalsSeen', windward: 'windwardSeen' }[sc.scene.key];
   const intro = { glimmer: 'The Glimmer Sea! Stormwatch Strait and Beaconreach lie to the north. Wild Fablemon swim in the choppy water.',
     stormwatch: 'Stormwatch Strait. Rain lashes the deck and the torrents run wild. Beaconreach is somewhere beyond them.',
-    shoals: 'Tidewrack Shoals. The torrents here have wrecked many boats. Pick your way carefully!' }[sc.scene.key];
+    shoals: 'Tidewrack Shoals. The torrents here have wrecked many boats. Pick your way carefully!',
+    windward: 'Windward Sound. A stiff wind fills the sail. Far to the north, windmills turn on the clifftops.' }[sc.scene.key];
   if (!S.flags[first]) { S.flags[first] = 1; setTimeout(() => toast(intro, 3800), 700); }
   else setTimeout(() => toast(RC.name, 1800), 600);
 }
