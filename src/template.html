@@ -93,7 +93,7 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 @media (max-aspect-ratio: 1/1){#intro .frame{width:100vw}}
 @media (max-height: 430px){#icap{position:absolute;bottom:8px;margin:0;min-height:0;background:rgba(251,243,217,.94)}#intro .frame{width:100vw;height:100vh;aspect-ratio:auto}}
 /* title */
-#title{position:fixed;inset:0;z-index:40;background:#1d2b1d;overflow:hidden}
+#title{position:fixed;inset:0;z-index:40;background:#1d2b1d;overflow:hidden;opacity:0;transition:opacity .35s}#title.ready{opacity:1}
 #title .bg{position:absolute;inset:0;background-size:cover;background-position:center bottom;animation:tdrift 40s ease-in-out infinite alternate}
 @keyframes tdrift{from{transform:scale(1.04)}to{transform:scale(1.1) translateY(-1%)}}
 #title .sky{position:absolute;left:0;right:0;top:0;height:46%;background:linear-gradient(rgba(20,30,60,.28),transparent)}

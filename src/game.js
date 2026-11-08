@@ -4990,16 +4990,22 @@ function layoutTitle() {
   document.querySelector('#title .bg').style.backgroundImage = `url(${wide ? ASSET.titleWide : ASSET.titleTall})`;
 }
 async function initTitle() {
-  await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics();
-  ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
-  $('titleImg').src = ASSET.titleLogo;
-  refreshTitle();
+  // the menu shows at once; the game's pictures load behind it, and a button only waits for them if you're quicker
+  $('titleImg').src = ASSET.titleLogo; layoutTitle(); refreshTitle();
+  // nothing shows until the logo and the background are decoded, then it all fades in together
+  const pic = src => { const im = new Image(); im.src = src; return im.decode ? im.decode().catch(() => { }) : new Promise(r => { im.onload = im.onerror = r; }); };
+  Promise.all([pic(ASSET.titleLogo), pic(innerWidth / innerHeight >= .9 ? ASSET.titleWide : ASSET.titleTall), $('titleImg').decode ? $('titleImg').decode().catch(() => { }) : 0]).then(() => $('title').classList.add('ready'));
+  const art = (async () => {
+    await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics();
+    ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
+  })();
   syncSlots().then(ok => { refreshTitle(); $('cloudNote').textContent = ok ? '☁️ Saves backed up to your account' : ''; });
   document.querySelectorAll('#title .hit').forEach(el => {
     const t = el.dataset.t;
-    el.onclick = () => {
+    el.onclick = async () => {
       if (el.classList.contains('off')) return;
       Sound.play('click');
+      await art;
       if (t === 'continue') startFrom(lastSlot(), false);
       if (t === 'load') loadDialog();
       if (t === 'new') newGameDialog();
