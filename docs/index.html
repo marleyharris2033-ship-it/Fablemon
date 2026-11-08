@@ -325,15 +325,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261108-102716">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261108-102716">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261108-102716">
+<link rel="manifest" href="manifest.webmanifest?v=20261108-103403">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261108-103403">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261108-103403">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-102716').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-103403').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -686,6 +686,7 @@ const ITEMS = {
   berry_crumble: { name: 'Berry Crumble', stack: 99, heal: 50, sell: 60, desc: 'A Fablemon favourite. In battle, or from a Fablemon\'s Info page, it restores half a Fablemon\'s HP.' },
   feed: { name: 'Fablemon Feed', stack: 999, sell: 5, desc: "Hattie's own mix of grains and dried berries. Put it in a Feeding Trough like a crop." },
   sturdy_charm: { name: 'Sturdy Charm', stack: 99, sell: 40, desc: "Gideon's iron-bound charm. Throw it in battle: 1.5× more likely to catch than a Root Charm." },
+  skyward_charm: { name: 'Skyward Charm', stack: 99, sell: 100, desc: "Highmoor's best charm: woven from kite silk around a Kitlet feather. Throw it in battle: 2× more likely to catch than a Root Charm." },
   hearty_stew: { name: 'Hearty Stew', stack: 99, eat: 170, sell: 430, desc: "Barney's recipe. Potatoes, carrots and turnip, slow-cooked. Restores 170 energy." },
   corn_fritters: { name: 'Corn Fritters', stack: 99, eat: 110, sell: 300, desc: "Barney's recipe. Crispy and golden. Restores 110 energy." },
   tavern_pie: { name: 'Tavern Pie', stack: 99, eat: 280, sell: 820, desc: "Barney's famous pie. Restores 280 energy." },
@@ -985,6 +986,15 @@ function loadExtraIcons() {
       g.fillStyle = '#c99059'; g.beginPath(); g.arc(11, 13, 5, 0, 7); g.fill();
       g.fillStyle = '#4e9a3a'; g.beginPath(); g.ellipse(12, 14, 2.5, 4.5, .6, 0, 7); g.fill();
       g.fillStyle = '#7cc24a'; g.fillRect(11, 12, 1, 4); g.fillStyle = '#e8d080'; g.fillRect(10, 6, 4, 2);
+    }).toDataURL();
+    ICONS.skyward_charm = mk(g => {   // a sky-blue charm bound in gold, with a white feather
+      g.fillStyle = '#3a2a1e'; g.fillRect(11, 1, 2, 6);
+      g.fillStyle = '#1e2a3a'; g.beginPath(); g.arc(12, 14, 8, 0, 7); g.fill();
+      g.fillStyle = '#4a9ad8'; g.beginPath(); g.arc(12, 14, 7, 0, 7); g.fill();
+      g.fillStyle = '#9ad0f4'; g.beginPath(); g.arc(11, 12, 4.5, 0, 7); g.fill();
+      g.fillStyle = '#e8c048'; g.fillRect(4, 13, 16, 2); g.fillRect(11, 6, 2, 16);
+      g.fillStyle = '#ffffff'; g.beginPath(); g.ellipse(15, 11, 1.8, 5, .7, 0, 7); g.fill(); g.fillStyle = '#c0d8e8'; g.fillRect(14, 10, 1, 4);
+      g.fillStyle = '#e8d080'; g.fillRect(10, 6, 4, 2);
     }).toDataURL();
     ICONS.sturdy_charm = mk(g => {
       g.fillStyle = '#3a2a1e'; g.fillRect(11, 1, 2, 6);
@@ -4361,9 +4371,9 @@ const Battle = (() => {
         const c = inv.count('root_charm'), full = B.me.hp >= monStat(B.me, 'hp');
         const heals = Object.keys(ITEMS).filter(id => ITEMS[id].heal && inv.count(id));
         q('bmsg').textContent = 'Use an item.';
-        const c2 = inv.count('sturdy_charm');
-        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: full })), { html: 'Back', v: null }]);
-        if (it === 'charm' || it === 'sturdy') return { kind: 'charm', id: it === 'sturdy' ? 'sturdy_charm' : 'root_charm' };
+        const c2 = inv.count('sturdy_charm'), c3 = inv.count('skyward_charm');
+        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...(c3 ? [{ html: `<img src="${iconFor('skyward_charm')}">Skyward Charm ×${c3}`, v: 'skyward', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: full })), { html: 'Back', v: null }]);
+        if (it === 'charm' || it === 'sturdy' || it === 'skyward') return { kind: 'charm', id: it === 'sturdy' ? 'sturdy_charm' : it === 'skyward' ? 'skyward_charm' : 'root_charm' };
         if (it) return { kind: 'heal', id: it };
       }
       if (a === 'team') { const m = await pickMon(false); if (m && m !== B.me) return { kind: 'switch', m }; }
@@ -4635,7 +4645,7 @@ const Battle = (() => {
     await say(`You threw a ${ITEMS[cid].name}!`, 700);
     const c = q('bcharm'); c.src = iconFor(cid); c.className = 'throw'; await sleep(650);
     Sound.play('pop'); q('bfoe').classList.add('absorb'); await sleep(450);
-    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1);
+    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : cid === 'skyward_charm' ? 2 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1);
     const a = Math.max(1, ((3 * M - 2 * B.foe.hp) * rate) / (3 * M));
     const b = a >= 255 ? 65536 : 1048560 / Math.sqrt(Math.sqrt(16711680 / a));
     let shakes = 0; while (shakes < 4 && Math.random() * 65536 < b) shakes++;
@@ -4693,7 +4703,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges|highmoor)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -6485,7 +6495,7 @@ function festFireflies(f) {
 }
 
 // --- Fall: the Harvest Show
-const SHOW_SKIP = new Set(['wood', 'stone', 'fiber', 'root_charm', 'sturdy_charm', 'fertiliser', 'feed', 'premium_feed', 'bog_peat', 'mon_treat', 'tonic']);
+const SHOW_SKIP = new Set(['wood', 'stone', 'fiber', 'root_charm', 'sturdy_charm', 'skyward_charm', 'fertiliser', 'feed', 'premium_feed', 'bog_peat', 'mon_treat', 'tonic']);
 function festHarvest(f) {
   const ids = [...new Set(inv.slots.filter(s => s && ITEMS[s.id] && ITEMS[s.id].sell && !ITEMS[s.id].seed && !SHOW_SKIP.has(s.id)).map(s => s.id))].sort((a, b) => ITEMS[b].sell - ITEMS[a].sell);
   if (!ids.length) { closeModal(); return Talk.say([BRAMBLE("You've nothing to enter, dear! Bring a crop, a fish or a dish next time. Do stay for the pie, though.")], () => festEnd(f, 'You watched the Harvest Show.')); }
@@ -9048,7 +9058,7 @@ Object.assign(ROUTES, {
     spawn: { x: 17, y: 58, dir: 'up' }, enc: MOOR_ENC },
   galeledges: { ...MOOR_BASE, name: 'Gale Ledges', w: 40, h: 50, ascii: HM_MAPS.galeledges.rows, vanes: HM_MAPS.galeledges.vanes,
     zones: [[0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 49, 51], [0, 0, 0, 0, 50, 52]],
-    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'tonic', n: 5 }, { id: 'gl4', x: 22, y: 35, item: 'sturdy_charm', n: 4 }],
+    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'skyward_charm', n: 3 }, { id: 'gl4', x: 22, y: 35, item: 'sturdy_charm', n: 4 }],
     signs: { ...vaneSigns('galeledges'), '15,48': 'Gale Ledges. Stone pillars stand in the gorge like stepping stones. Three weathervanes steer the wind between them.',
       '17,1': 'North: Highmoor, the windmill town. You can hear the sails creaking from here.', '24,4': '__heal' },
     trainers: [],
@@ -9245,7 +9255,7 @@ function hmDoor(sc, id) {
 
 /* ---------- quest, map */
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'spark') + 1, 0,
-  { id: 'gale', name: 'Climb to Highmoor', hint: "The Gale Warden lives in Highmoor, the windmill town on the cliffs to the north. Sail from Beaconreach's north jetty across Windward Sound, then ride the wind up Heatherstep Cliffs and Gale Ledges.", done: () => !!(S.visited && S.visited.galeTop), reward: { gold: 4000, items: { tonic: 3 } } });
+  { id: 'gale', name: 'Climb to Highmoor', hint: "The Gale Warden lives in Highmoor, the windmill town on the cliffs to the north. Sail from Beaconreach's north jetty across Windward Sound, then ride the wind up Heatherstep Cliffs and Gale Ledges.", done: () => !!(S.visited && S.visited.galeTop), reward: { gold: 4000, items: { skyward_charm: 5 } } });
 QUEST_PLACE.gale = () => { const v = S.visited || {}; return v.galeledges ? 'galeledges' : v.heatherstep ? 'heatherstep' : v.windward ? 'windward' : 'beaconreach'; };
 {
   const i = MAP_PLACES.findIndex(P => P.k === 'highmoor');
@@ -9347,7 +9357,7 @@ CREST_INFO.gale = ['🌬️ Gale Crest', '#5aa0b8'];
 { const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
 ROUTES.highmoor = {
   name: 'Highmoor', w: 44, h: 40, ascii: HM_MAPS.highmoor.rows, crag: true, moor: true, town: true, zones: [], paths: [], ponds: [], bridge: null, open: [], clear: [],
-  pickups: [{ id: 'hm1', x: 4, y: 13, item: 'swift_feather', n: 1 }, { id: 'hm2', x: 39, y: 37, gold: 5000 }],
+  pickups: [{ id: 'hm1', x: 4, y: 13, item: 'swift_feather', n: 1 }, { id: 'hm3', x: 40, y: 6, item: 'skyward_charm', n: 3 }, { id: 'hm2', x: 39, y: 37, gold: 5000 }],
   buildings: [
     { id: 'hm_mill', atlas: 'hm', frame: 'hm_windmill', cx: 22, by: 10, door: 0, name: 'Highmoor Mill' },
     { id: 'hm_shop', atlas: 'hm', frame: 'hm_shop', cx: 10, by: 18, door: 0, name: 'The Weathervane' },
@@ -9368,13 +9378,13 @@ ROUTES.highmoor = {
 };
 TOWNSFOLK.highmoor = [
   { kind: 'climber', name: 'Gorse, the shepherd', at: [12, 27], lines: ["Heathfoal herds come right up to the walls in winter. Sweet things. Kick like mules.", "Climbed Gale Ledges, did you? With the vanes and all? Tamsin set half of those up herself.", "Watch the sky over the mill. When the kites come down, the weather's turning."] },
-  { kind: 'birdwatcher', name: 'Pip, the kite-flyer', at: [30, 27], lines: ["Kitlet hovers on the updrafts just like my kites do. I copied the design. Don't tell it.", "Tamsin once glided from the mill all the way to Beaconreach. Orrin nearly dropped his lamp!", "Snowy owls nest in the windmill sails. They glare at you if you wake them in the day."] },
+  { kind: 'birdwatcher', name: 'Pip, the kite-flyer', at: [30, 27], lines: ["Kitlet hovers on the updrafts just like my kites do. I copied the design. Don't tell it.", "Tamsin once glided from the mill all the way to Beaconreach. Orrin nearly dropped his lamp!", "Snowy owls nest in the windmill sails. They glare at you if you wake them in the day.", "See the Skyward Charms at the Weathervane? Woven from my kite silk round a Kitlet feather. Twice as good as a Root Charm!"] },
   { kind: 'forager', name: 'Elspeth, the baker', at: [18, 16], lines: ["Highmoor flour makes the best bread on the coast. The mill never stops turning, that's the secret.", "Tamsin's grandad built the windpump. He still fixes it every spring, whether it's broken or not.", "Wishling seeds glow in the evenings. We put them in jars on the windowsills."] },
   { kind: 'rambler', name: 'Old Windrow', at: [34, 36], lines: ["My granddaughter? She was born with the wind in her hair and has never once combed it out.", "Fifty years I've worked that windpump. Talks to me, it does. Mostly complaining.", "Beat Tamsin and she'll laugh like it's the best day of her life. Lose and she'll laugh just the same."] },
 ];
 
 /* ---------- doors */
-const HM_SHOP = [['tonic', 280], ['mon_treat', 650], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
+const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 280], ['mon_treat', 650], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
 const _hmDoor = hmDoor;
 hmDoor = function (sc, id) {
   if (id === 'hm_land') return _hmDoor(sc, id);

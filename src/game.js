@@ -87,6 +87,7 @@ const ITEMS = {
   berry_crumble: { name: 'Berry Crumble', stack: 99, heal: 50, sell: 60, desc: 'A Fablemon favourite. In battle, or from a Fablemon\'s Info page, it restores half a Fablemon\'s HP.' },
   feed: { name: 'Fablemon Feed', stack: 999, sell: 5, desc: "Hattie's own mix of grains and dried berries. Put it in a Feeding Trough like a crop." },
   sturdy_charm: { name: 'Sturdy Charm', stack: 99, sell: 40, desc: "Gideon's iron-bound charm. Throw it in battle: 1.5× more likely to catch than a Root Charm." },
+  skyward_charm: { name: 'Skyward Charm', stack: 99, sell: 100, desc: "Highmoor's best charm: woven from kite silk around a Kitlet feather. Throw it in battle: 2× more likely to catch than a Root Charm." },
   hearty_stew: { name: 'Hearty Stew', stack: 99, eat: 170, sell: 430, desc: "Barney's recipe. Potatoes, carrots and turnip, slow-cooked. Restores 170 energy." },
   corn_fritters: { name: 'Corn Fritters', stack: 99, eat: 110, sell: 300, desc: "Barney's recipe. Crispy and golden. Restores 110 energy." },
   tavern_pie: { name: 'Tavern Pie', stack: 99, eat: 280, sell: 820, desc: "Barney's famous pie. Restores 280 energy." },
@@ -386,6 +387,15 @@ function loadExtraIcons() {
       g.fillStyle = '#c99059'; g.beginPath(); g.arc(11, 13, 5, 0, 7); g.fill();
       g.fillStyle = '#4e9a3a'; g.beginPath(); g.ellipse(12, 14, 2.5, 4.5, .6, 0, 7); g.fill();
       g.fillStyle = '#7cc24a'; g.fillRect(11, 12, 1, 4); g.fillStyle = '#e8d080'; g.fillRect(10, 6, 4, 2);
+    }).toDataURL();
+    ICONS.skyward_charm = mk(g => {   // a sky-blue charm bound in gold, with a white feather
+      g.fillStyle = '#3a2a1e'; g.fillRect(11, 1, 2, 6);
+      g.fillStyle = '#1e2a3a'; g.beginPath(); g.arc(12, 14, 8, 0, 7); g.fill();
+      g.fillStyle = '#4a9ad8'; g.beginPath(); g.arc(12, 14, 7, 0, 7); g.fill();
+      g.fillStyle = '#9ad0f4'; g.beginPath(); g.arc(11, 12, 4.5, 0, 7); g.fill();
+      g.fillStyle = '#e8c048'; g.fillRect(4, 13, 16, 2); g.fillRect(11, 6, 2, 16);
+      g.fillStyle = '#ffffff'; g.beginPath(); g.ellipse(15, 11, 1.8, 5, .7, 0, 7); g.fill(); g.fillStyle = '#c0d8e8'; g.fillRect(14, 10, 1, 4);
+      g.fillStyle = '#e8d080'; g.fillRect(10, 6, 4, 2);
     }).toDataURL();
     ICONS.sturdy_charm = mk(g => {
       g.fillStyle = '#3a2a1e'; g.fillRect(11, 1, 2, 6);
@@ -3762,9 +3772,9 @@ const Battle = (() => {
         const c = inv.count('root_charm'), full = B.me.hp >= monStat(B.me, 'hp');
         const heals = Object.keys(ITEMS).filter(id => ITEMS[id].heal && inv.count(id));
         q('bmsg').textContent = 'Use an item.';
-        const c2 = inv.count('sturdy_charm');
-        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: full })), { html: 'Back', v: null }]);
-        if (it === 'charm' || it === 'sturdy') return { kind: 'charm', id: it === 'sturdy' ? 'sturdy_charm' : 'root_charm' };
+        const c2 = inv.count('sturdy_charm'), c3 = inv.count('skyward_charm');
+        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...(c3 ? [{ html: `<img src="${iconFor('skyward_charm')}">Skyward Charm ×${c3}`, v: 'skyward', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: full })), { html: 'Back', v: null }]);
+        if (it === 'charm' || it === 'sturdy' || it === 'skyward') return { kind: 'charm', id: it === 'sturdy' ? 'sturdy_charm' : it === 'skyward' ? 'skyward_charm' : 'root_charm' };
         if (it) return { kind: 'heal', id: it };
       }
       if (a === 'team') { const m = await pickMon(false); if (m && m !== B.me) return { kind: 'switch', m }; }
@@ -4036,7 +4046,7 @@ const Battle = (() => {
     await say(`You threw a ${ITEMS[cid].name}!`, 700);
     const c = q('bcharm'); c.src = iconFor(cid); c.className = 'throw'; await sleep(650);
     Sound.play('pop'); q('bfoe').classList.add('absorb'); await sleep(450);
-    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1);
+    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : cid === 'skyward_charm' ? 2 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1);
     const a = Math.max(1, ((3 * M - 2 * B.foe.hp) * rate) / (3 * M));
     const b = a >= 255 ? 65536 : 1048560 / Math.sqrt(Math.sqrt(16711680 / a));
     let shakes = 0; while (shakes < 4 && Math.random() * 65536 < b) shakes++;
@@ -4094,7 +4104,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges|highmoor)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');

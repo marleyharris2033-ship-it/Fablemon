@@ -317,7 +317,7 @@ function festFireflies(f) {
 }
 
 // --- Fall: the Harvest Show
-const SHOW_SKIP = new Set(['wood', 'stone', 'fiber', 'root_charm', 'sturdy_charm', 'fertiliser', 'feed', 'premium_feed', 'bog_peat', 'mon_treat', 'tonic']);
+const SHOW_SKIP = new Set(['wood', 'stone', 'fiber', 'root_charm', 'sturdy_charm', 'skyward_charm', 'fertiliser', 'feed', 'premium_feed', 'bog_peat', 'mon_treat', 'tonic']);
 function festHarvest(f) {
   const ids = [...new Set(inv.slots.filter(s => s && ITEMS[s.id] && ITEMS[s.id].sell && !ITEMS[s.id].seed && !SHOW_SKIP.has(s.id)).map(s => s.id))].sort((a, b) => ITEMS[b].sell - ITEMS[a].sell);
   if (!ids.length) { closeModal(); return Talk.say([BRAMBLE("You've nothing to enter, dear! Bring a crop, a fish or a dish next time. Do stay for the pie, though.")], () => festEnd(f, 'You watched the Harvest Show.')); }

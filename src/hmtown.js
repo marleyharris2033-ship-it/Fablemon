@@ -6,7 +6,7 @@ CREST_INFO.gale = ['🌬️ Gale Crest', '#5aa0b8'];
 { const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
 ROUTES.highmoor = {
   name: 'Highmoor', w: 44, h: 40, ascii: HM_MAPS.highmoor.rows, crag: true, moor: true, town: true, zones: [], paths: [], ponds: [], bridge: null, open: [], clear: [],
-  pickups: [{ id: 'hm1', x: 4, y: 13, item: 'swift_feather', n: 1 }, { id: 'hm2', x: 39, y: 37, gold: 5000 }],
+  pickups: [{ id: 'hm1', x: 4, y: 13, item: 'swift_feather', n: 1 }, { id: 'hm3', x: 40, y: 6, item: 'skyward_charm', n: 3 }, { id: 'hm2', x: 39, y: 37, gold: 5000 }],
   buildings: [
     { id: 'hm_mill', atlas: 'hm', frame: 'hm_windmill', cx: 22, by: 10, door: 0, name: 'Highmoor Mill' },
     { id: 'hm_shop', atlas: 'hm', frame: 'hm_shop', cx: 10, by: 18, door: 0, name: 'The Weathervane' },
@@ -27,13 +27,13 @@ ROUTES.highmoor = {
 };
 TOWNSFOLK.highmoor = [
   { kind: 'climber', name: 'Gorse, the shepherd', at: [12, 27], lines: ["Heathfoal herds come right up to the walls in winter. Sweet things. Kick like mules.", "Climbed Gale Ledges, did you? With the vanes and all? Tamsin set half of those up herself.", "Watch the sky over the mill. When the kites come down, the weather's turning."] },
-  { kind: 'birdwatcher', name: 'Pip, the kite-flyer', at: [30, 27], lines: ["Kitlet hovers on the updrafts just like my kites do. I copied the design. Don't tell it.", "Tamsin once glided from the mill all the way to Beaconreach. Orrin nearly dropped his lamp!", "Snowy owls nest in the windmill sails. They glare at you if you wake them in the day."] },
+  { kind: 'birdwatcher', name: 'Pip, the kite-flyer', at: [30, 27], lines: ["Kitlet hovers on the updrafts just like my kites do. I copied the design. Don't tell it.", "Tamsin once glided from the mill all the way to Beaconreach. Orrin nearly dropped his lamp!", "Snowy owls nest in the windmill sails. They glare at you if you wake them in the day.", "See the Skyward Charms at the Weathervane? Woven from my kite silk round a Kitlet feather. Twice as good as a Root Charm!"] },
   { kind: 'forager', name: 'Elspeth, the baker', at: [18, 16], lines: ["Highmoor flour makes the best bread on the coast. The mill never stops turning, that's the secret.", "Tamsin's grandad built the windpump. He still fixes it every spring, whether it's broken or not.", "Wishling seeds glow in the evenings. We put them in jars on the windowsills."] },
   { kind: 'rambler', name: 'Old Windrow', at: [34, 36], lines: ["My granddaughter? She was born with the wind in her hair and has never once combed it out.", "Fifty years I've worked that windpump. Talks to me, it does. Mostly complaining.", "Beat Tamsin and she'll laugh like it's the best day of her life. Lose and she'll laugh just the same."] },
 ];
 
 /* ---------- doors */
-const HM_SHOP = [['tonic', 280], ['mon_treat', 650], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
+const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 280], ['mon_treat', 650], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
 const _hmDoor = hmDoor;
 hmDoor = function (sc, id) {
   if (id === 'hm_land') return _hmDoor(sc, id);
