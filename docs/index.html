@@ -325,15 +325,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261108-071439">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261108-071439">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261108-071439">
+<link rel="manifest" href="manifest.webmanifest?v=20261108-072151">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261108-072151">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261108-072151">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-071439').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261108-072151').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -8707,7 +8707,14 @@ function beaconDoor(sc, id) {
 TRAINER_TYPES.orrin = { label: 'Warden', challenge: ['Let the storm decide!'], lose: ['Ha! What a strike!'], after: ['Thunder is just the sky cheering.'] };
 TRAINER_ROW.orrin = 12;
 // Spark Fablemon from the old routes and the strait's own sea creatures; Squalljaw is his ace
-const ORRIN_TEAM = [['moonspark', 40], ['foilfin_2', 41], ['stormveil_3', 42], ['kilnback_2', 42], ['inkwick_2', 43], ['riftshear_2', 44]];
+// hand-picked moves; his partner Maelstromaw is the ace (evolved early: it's been riding the strait with him for years)
+const ORRIN_TEAM = [
+  ['moonspark', 44, ['moonbolt', 'boltwing', 'windslice', 'chargeup']],
+  ['foilfin_2', 45, ['windslice', 'galeforce', 'undertow', 'swiftwing']],
+  ['kilnback_2', 45, ['scaldspout', 'cinderslam', 'smoulder', 'kilnguard']],
+  ['inkwick_2', 46, ['prismbeam', 'nightdrop', 'haunt', 'lumenpulse']],
+  ['stormveil_3', 47, ['crownstorm', 'arclash', 'millrace', 'rainveil']],
+  ['riftshear_3', 49, ['maelstrommaw', 'stormlash', 'windslice', 'chargeup']]];
 function orrin(sc) {
   const O = (t, f = 0) => ({ who: 'trainer', name: 'Warden Orrin', img: trainerPic('orrin', f), t });
   if (S.crests && S.crests.spark) return Talk.say([O(pick(["Thunder's just the sky cheering. Come and listen to it with me any time!", "The lamp's lit, the strait's wild, and you're still standing. Perfect night!", "Keep that Spark Crest close. It hums when a storm's coming."]), 1)]);
@@ -8716,7 +8723,7 @@ function orrin(sc) {
     O("Orrin Brightwell. I keep the lamp. Every night, every storm, no matter what. Nobody's been lost out there since I took it on, and nobody will be."),
     O("But a Warden's got to know who's crossing his water. Thunder's just the sky cheering, sailor. Let's give it something to cheer about!", 1)], () => {
     const tm = ORRIN_TEAM.map(wardenMon);
-    Battle.start(tm[0], { label: 'Warden', name: 'Orrin', team: tm, prize: 5500, boss: true, heals: 2, lose: 'The storm always wins in the end. Dry off and come back swinging!', onWin: () => {
+    Battle.start(tm[0], { label: 'Warden', name: 'Orrin', team: tm, prize: 7000, boss: true, heals: 2, lose: 'The storm always wins in the end. Dry off and come back swinging!', onWin: () => {
       S.crests = S.crests || {}; S.crests.spark = 1; giveSigil('spark'); S.trainers = S.trainers || {}; S.trainers.orrin = 1;
       setTimeout(() => { Sound.play('gotcha'); Talk.say([O('HA! What a strike! I felt that one in my boots!', 1), O("The storm always passes. But you? You're the kind of lightning that stays."), O('Here: the Spark Crest. It hums when a storm is coming. Wear it out on the water and you\'ll never be caught off guard.', 1)]); }, 600);
     } });
