@@ -2032,7 +2032,7 @@ function doJob(m, t) {
   }
   else if (type === 'Tide') { if (!tl || tl.w) return; tl.w = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.splash(t.x, t.y); } }
   else if (type === 'Ember') { if (!tl || !tl.crop || tl.crop.dead || tl.heat) return; tl.heat = 1; if (fs) { fs.drawTilled(t.x, t.y); fs.chips(t.x * T + 8, t.y * T + 10, 0xe0703a); } }
-  else if (type === 'Gale') { if (!tl || !cropRipe(tl.crop)) return; const it = CROPS[tl.crop.type].item; delete tl.crop; toStore(it, 1); msg = `+1 ${ITEMS[it].name}`; if (fs) fs.drawTilled(t.x, t.y); }
+  else if (type === 'Gale') { if (!tl || !cropRipe(tl.crop)) return; const it = CROPS[tl.crop.type].item; if (!regrowAfterPick(tl)) delete tl.crop; toStore(it, 1); msg = `+1 ${ITEMS[it].name}`; if (fs) fs.drawTilled(t.x, t.y); }
   else if (type === 'Spark') {
     const o = S.objs[k]; if (!o || o.boost) return;
     o.boost = 1; if (o.t === 'compost') o.doneDay--; msg = '⚡ Charged!';
@@ -2132,10 +2132,10 @@ class Farm extends World {
     for (const d of Object.values(farm.debris)) if (d && !d.gone) this.spawnDebris(d);
     { const hf = houseFoot(); this.clearDebrisIn(hf[0], hf[1], hf[2], hf[3]); this.clearDebrisIn(BIN.x, BIN.y, BIN.x + 1, BIN.y); this.clearDebrisIn(MAILBOX.x, MAILBOX.y, MAILBOX.x, MAILBOX.y); this.clearDebrisIn(DOOR.x, DOOR.y, DOOR.x, DOOR.y + 1); }
     this.setupRanch();
-    this.cropSprites = {}; this.fenceSprites = {};
+    this.cropSprites = {}; this.fenceSprites = {}; this.glows = [];
     for (const k of Object.keys(S.tilled)) { const [x, y] = k.split(',').map(Number); this.drawTilled(x, y); }
     for (const k of Object.keys(S.paths)) { const [x, y] = k.split(',').map(Number); this.drawPath(x, y); }
-    this.objSprites = {}; this.glows = [];
+    this.objSprites = {}; this.glows = this.glows || [];
     for (const k of Object.keys(S.objs)) { const [x, y] = k.split(',').map(Number); this.drawObj(x, y); }
     for (const k of Object.keys(S.fences)) { const [x, y] = k.split(',').map(Number); this.drawFence(x, y); }
 
@@ -2524,6 +2524,7 @@ class Farm extends World {
     const img = ck ? this.add.image(x * T + 8, y * T + 15, ck).setOrigin(.5, 1).setDepth(y * T + 14) : this.add.image(x * T + 8, y * T + 15, 'objects', fr).setOrigin(.5, 1).setDepth(y * T + 14);
     if (c.dead) img.setTint(0x8a7050);
     const parts = [img, ...parts0];
+    if (CROPS[c.type].glow && !c.dead && cropStage(c) >= 2 && this.glows) { const gl = this.add.circle(x * T + 8, y * T + 6, 12, 0xffd27a, 0).setDepth(9e6 - 10).setBlendMode(Phaser.BlendModes.ADD); parts.push(gl); this.glows.push(gl); }   // lantern gourds light up the field at night
     if (cropRipe(c)) { const sp = this.add.rectangle(x * T + 13, y * T + 3, 2, 2, 0xfff7c0).setDepth(y * T + 15); this.tweens.add({ targets: sp, alpha: .2, duration: 500, yoyo: true, repeat: -1 }); parts.push(sp); }
     this.cropSprites[k] = parts;
   }
@@ -2592,7 +2593,7 @@ class Farm extends World {
   harvest(x, y) {
     const k = x + ',' + y, tl = S.tilled[k], c = tl.crop, C = CROPS[c.type];
     const n = Math.random() < .1 ? 2 : 1, q = C.geode ? Math.max(rollQuality(tl), Math.random() < .3 ? 1 : 0) : rollQuality(tl), id = q && QUAL[C.item] ? QUAL[C.item][q - 1] : C.item;
-    delete tl.crop; delete tl.fq; this.drawTilled(x, y);
+    if (!regrowAfterPick(tl)) delete tl.crop; delete tl.fq; this.drawTilled(x, y);
     if (q) toast(`${q === 2 ? '🌟 Gold' : '⭐ Silver'} quality ${ITEMS[C.item].name}!`, 1400);
     this.giveDrops({ [id]: n }, x * T + 8, y * T + 4);
   }
@@ -4723,10 +4724,12 @@ class Route extends World {
 function nightly(passedOut) {
   const before = seasonIdx(S.day);
   S.day++; S.time = 360; S.energy = passedOut ? Math.round(S.maxEnergy * .75) : S.maxEnergy;
+  const wasWet = isWet(S.weather);
   S.weather = S.tomorrow; S.tomorrow = rollWeather(S.day + 1);
   const si = seasonIdx(S.day), newSeason = si !== before;
   let withered = 0;
   for (const [tk, t] of Object.entries(S.tilled)) {
+    if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop) && wasWet && CROPS[t.crop.type].rain) t.crop.g++;   // rain-loving crops (Sea Samphire) grow an extra day
     if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } if (t.heat && !cropRipe(t.crop)) { t.crop.warm = (t.crop.warm || 0) + .5; if (t.crop.warm >= 1) { t.crop.warm -= 1; t.crop.g++; } } }
     t.heat = 0;
     if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].hardy && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
