@@ -792,7 +792,7 @@ function sortBackpack() {
     const s = sl[i]; if (!s) continue; const max = ITEMS[s.id].stack || 99;
     for (let j = i + 1; j < sl.length && s.n < max; j++) { const t = sl[j]; if (t && t.id === s.id) { const k = Math.min(max - s.n, t.n); s.n += k; t.n -= k; if (!t.n) sl[j] = null; } }
   }
-  const cat = id => { const it = ITEMS[id]; return it.tool ? 0 : it.seed ? 1 : it.qbase || Object.values(CROPS).some(c => c.item === id) ? 2 : it.eat || it.heal ? 3 : it.place ? 5 : 4; };
+  const cat = id => { const it = ITEMS[id]; return it.tool ? 0 : it.seed ? 1 : it.qbase || Object.values(CROPS).some(c => c.item === id) ? 2 : it.eat || it.heal || it.cure ? 3 : it.place ? 5 : 4; };
   const rest = sl.slice(12).filter(Boolean).sort((a, b) => cat(a.id) - cat(b.id) || ITEMS[a.id].name.localeCompare(ITEMS[b.id].name));
   for (let i = 12; i < sl.length; i++) sl[i] = rest[i - 12] || null;
   inv.emit();
@@ -868,7 +868,7 @@ function openCooking() {
   const render = () => COOKING.map((r, k) => [r, k]).filter(([r]) => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest)).map(([r, k]) => {
     const it = ITEMS[r.out], need = { ...r.need, wood: 1 }, ok = Object.entries(need).every(([id, n]) => inv.count(id) >= n);
     const parts = Object.entries(need).map(([id, n]) => `<span class="need ${inv.count(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${n}</span>`).join('');
-    return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : `♥ Heals ${it.heal}% of a Fablemon`}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
+    return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : it.heal ? `♥ Heals ${it.heal}% of a Fablemon` : '✚ Cures status problems'}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
   }).join('');
   openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire. Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
     if (a === 'refresh') { $('mBody').querySelector('.mlist').innerHTML = render(); return; }
@@ -1565,7 +1565,7 @@ const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.flo
 const ivMul = (m, k) => 1 + ((m.iv && m.iv[k]) || 5) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
-const healAmt = (id, m) => Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100));   // healing items restore a share of max HP
+const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
 const team = () => S.mons.filter(m => m.loc === 'team');
 const lead = () => team()[0] || null;
 function newMon(sp, lv = 5) { const m = { uid: S.nextId++, sp, nick: '', lv, xp: lv ** 3, loc: 'team', out: false, bond: 0, moves: movesAt(sp, lv), iv: rollIV() }; m.hp = monStat(m, 'hp'); return m; }
@@ -1673,7 +1673,7 @@ function openMonInfo(m, back) {
     ${m.uid >= 0 ? heldRow(m) : ''}
     <p style="margin:10px 0 4px;display:flex;justify-content:space-between;align-items:center"><b>Moves</b>${m.uid >= 0 ? '<button class="btn sm" data-a="moves">Change moves</button>' : ''}</p>${(m.moves || []).map(id => moveCard(id, m)).join('')}
     ${(() => { const nx = (LEARN[m.sp] || []).find(([l, id]) => l > m.lv && !m.moves.includes(id)); return nx ? `<p class="hint">Next new move: <b>${MOVES[nx[1]].name}</b> at level ${nx[0]}.</p>` : ''; })()}
-    ${m.hp < monStat(m, 'hp') ? `<div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(ITEMS).filter(id => ITEMS[id].heal && inv.count(id)).map(id => `<button class="btn gold sm" data-a="feed" data-id="${id}"><img src="${iconFor(id)}" style="width:18px;vertical-align:middle;image-rendering:pixelated"> ${ITEMS[id].name} (${inv.count(id)})</button>`).join('')}</div>` : ''}
+    ${m.hp < monStat(m, 'hp') || m.status ? `<div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${Object.keys(ITEMS).filter(id => inv.count(id) && ((ITEMS[id].heal && m.hp < monStat(m, 'hp')) || (ITEMS[id].cure && m.status))).map(id => `<button class="btn gold sm" data-a="feed" data-id="${id}"><img src="${iconFor(id)}" style="width:18px;vertical-align:middle;image-rendering:pixelated"> ${ITEMS[id].name} (${inv.count(id)})</button>`).join('')}</div>` : ''}
     <div class="row" style="display:flex;gap:6px;align-items:center"><input id="nick" maxlength="12" placeholder="Nickname" value="${m.nick}" style="font-family:inherit;font-size:15px;padding:6px;border:2px solid var(--green);border-radius:6px;flex:1;min-width:0"><button class="btn gold" data-a="rename">Rename</button></div>
     <div class="row" style="margin-top:8px"><button class="btn" data-a="back">Back</button></div>`;
   openModal(monName(m), render(), (a, dd) => {
@@ -3771,10 +3771,10 @@ const Battle = (() => {
       }
       if (a === 'bag') {
         const c = inv.count('root_charm'), full = B.me.hp >= monStat(B.me, 'hp');
-        const heals = Object.keys(ITEMS).filter(id => ITEMS[id].heal && inv.count(id));
+        const heals = Object.keys(ITEMS).filter(id => (ITEMS[id].heal || ITEMS[id].cure) && inv.count(id));
         q('bmsg').textContent = 'Use an item.';
         const c2 = inv.count('sturdy_charm'), c3 = inv.count('skyward_charm');
-        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...(c3 ? [{ html: `<img src="${iconFor('skyward_charm')}">Skyward Charm ×${c3}`, v: 'skyward', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: full })), { html: 'Back', v: null }]);
+        const it = await menu([{ html: `<img src="${iconFor('root_charm')}">Root Charm ×${c}`, v: 'charm', off: !c || !B.wild }, ...(c2 ? [{ html: `<img src="${iconFor('sturdy_charm')}">Sturdy Charm ×${c2}`, v: 'sturdy', off: !B.wild }] : []), ...(c3 ? [{ html: `<img src="${iconFor('skyward_charm')}">Skyward Charm ×${c3}`, v: 'skyward', off: !B.wild }] : []), ...heals.map(id => ({ html: `<img src="${iconFor(id)}">${ITEMS[id].name} ×${inv.count(id)}`, v: id, off: ITEMS[id].heal ? full && !(ITEMS[id].cure && B.me.status) : !B.me.status })), { html: 'Back', v: null }]);
         if (it === 'charm' || it === 'sturdy' || it === 'skyward') return { kind: 'charm', id: it === 'sturdy' ? 'sturdy_charm' : it === 'skyward' ? 'skyward_charm' : 'root_charm' };
         if (it) return { kind: 'heal', id: it };
       }
@@ -4128,7 +4128,7 @@ const Battle = (() => {
           if (await throwCharm(act.id)) return finish();
         } else if (act.kind === 'heal') {
           inv.remove(act.id, 1); renderHotbar(); const h = Math.min(monStat(B.me, 'hp') - B.me.hp, healAmt(act.id, B.me)); if (ITEMS[act.id].cure && B.me.status) { B.me.status = null; box('me'); } B.me.hp += h; Sound.play('pop');
-          box('me'); await anim('bme', 'buff', 400); await say(`${monName(B.me)} ate the ${ITEMS[act.id].name} and recovered ${h} HP!`, 1400);
+          box('me'); await anim('bme', 'buff', 400); await say(h ? `${monName(B.me)} ate the ${ITEMS[act.id].name} and recovered ${h} HP!` : `${monName(B.me)} drank the ${ITEMS[act.id].name} and feels much better!`, 1400);
         } else if (act.kind === 'switch') {
           await say(`Come back, ${monName(B.me)}!`, 800); await sendOut(act.m); await say(`Go, ${monName(B.me)}!`, 800); await hazardIn('me');
         } else {
