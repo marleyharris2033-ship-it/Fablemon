@@ -1506,7 +1506,7 @@ class World extends Phaser.Scene {
   bump() { }
   fadeIn() {
     setTimeout(() => { $('fade').style.opacity = 0; }, 60);
-    const out = this.scene.key !== 'house'; FX.ambient(out ? [ 'petals', null, 'leaves', null ][seasonIdx(S.day)] : null);
+    const out = this.scene.key !== 'house' && !(ROUTES[this.scene.key] && ROUTES[this.scene.key].snow); FX.ambient(out ? [ 'petals', null, 'leaves', null ][seasonIdx(S.day)] : null);
     if (!this.dressed) { this.dressed = 1; try { seasonDress(this); } catch (e) { console.warn('season dress', e); } }
   }
 }

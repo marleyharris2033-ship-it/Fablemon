@@ -435,7 +435,7 @@ const SEASON_PROPS = [
 ];
 const FLAT_PROPS = new Set(['p_petals', 'a_litter', 'a_leafpile', 'w_snowpile', 'w_puddle']);
 function seasonDress(sc) {
-  const key = sc.scene.key; if (key === 'house' || key === 'cragmine' || (sc.R && RC.beach) || !sc.textures.exists('seasonal')) return;
+  const key = sc.scene.key; if (key === 'house' || key === 'cragmine' || (sc.R && (RC.beach || RC.snow)) || !sc.textures.exists('seasonal')) return;
   const si = seasonIdx(S.day), P = SEASON_PROPS[si]; let mw, mh, ok, spots = [];
   if (key === 'farm') {
     mw = W; mh = H;

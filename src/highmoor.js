@@ -106,7 +106,20 @@ function moorGround(sc, R) {
       }
       continue;
     }
-    if (k === '#') { g.drawImage(CRAG_TEX[h < .5 ? 'cobble' : 'cobble_moss2'], (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); g.fillStyle = 'rgba(46,34,40,.36)'; g.fillRect(X, Y, T, T); continue; }
+    if (k === '#') { g.drawImage(CRAG_TEX[h < .5 || RC.snow ? 'cobble' : 'cobble_moss2'], (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); g.fillStyle = RC.snow ? 'rgba(70,84,110,.34)' : 'rgba(46,34,40,.36)'; g.fillRect(X, Y, T, T);
+      if (RC.snow) { g.fillStyle = 'rgba(240,246,255,.55)'; for (let i = 0; i < 5; i++) g.fillRect(X + Math.floor(hash(x * 5 + i, y) * 13), Y + Math.floor(hash(x, y * 5 + i) * 13), 3, 2); }
+      continue; }
+    if (RC.snow && k !== 'H') {   // Windcrown Peak: deep snow, wind-rippled, a trodden track for the path
+      const path = k === ',';
+      for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+        const n = hash(X + u, Y + v), rip = Math.sin((X + u) * .35 + (Y + v) * .9 + Math.sin((Y + v) * .2) * 2) > .82 ? -10 : 0;
+        const base = path ? [220, 226, 238] : [236, 242, 250], j = (n < .08 ? -8 : n > .96 ? 5 : 0) + rip;
+        px(X + u, Y + v, `rgb(${base[0] + j},${base[1] + j},${base[2] + Math.round(j * .6)})`);
+      }
+      if (path) { g.fillStyle = 'rgba(150,160,184,.55)'; for (let i = 0; i < 2; i++) { const fx = X + 3 + Math.floor(hash(x, y + i) * 9), fy = Y + 2 + i * 7; g.fillRect(fx, fy, 2, 3); g.fillRect(fx + 3, fy + 2, 2, 3); } }
+      else if (h > .88) { px(X + 6, Y + 10, '#8a94a8'); px(X + 7, Y + 10, '#6a7488'); px(X + 6, Y + 9, '#fff'); }   // a pebble poking through
+      continue;
+    }
     if (k === ',') { g.drawImage(CRAG_TEX.dirt_light, (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); continue; }
     if (k === 'H') {   // wooden steps set into the cliff
       g.fillStyle = '#5a3a22'; g.fillRect(X, Y, T, T);
@@ -130,6 +143,7 @@ function moorGround(sc, R) {
       if (deep === 2) g.drawImage(CRAG_TEX.cliff2, (x & 1) * T, 12, T, 18, X, Y + 18, T, 16);
       const gr = g.createLinearGradient(0, Y + 6, 0, Y + hgt); gr.addColorStop(0, 'rgba(18,22,36,0)'); gr.addColorStop(1, 'rgba(18,22,36,.92)');
       g.fillStyle = gr; g.fillRect(X, Y + 6, T, hgt - 6);
+      if (RC.snow) { g.fillStyle = 'rgba(110,130,170,.32)'; g.fillRect(X, Y, T, hgt); g.fillStyle = '#eef4fc'; g.fillRect(X, Y, T, 3); for (let i = 0; i < 4; i++) g.fillRect(X + i * 4 + (hash(x, i + 9) * 2 | 0), Y + 3, 2, 1 + (hash(i + 9, x) * 4 | 0)); }
     }
     g.fillStyle = 'rgba(240,232,210,.55)';
     if (!gorge(x, y + 1)) g.fillRect(X, Y + T - 1, T, 1);
@@ -142,7 +156,8 @@ function moorGround(sc, R) {
   // raised rock: cliff faces and shadows, as on the mountain roads
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
     if (!rock(x, y)) continue;
-    if (land(x, y + 1)) { g.drawImage(CRAG_TEX.ledge, (x & 1) * T, 14, T, 18, x * T, y * T - 2, T, 18); g.fillStyle = 'rgba(20,12,6,.35)'; g.fillRect(x * T, y * T + T, T, 2); }
+    if (land(x, y + 1)) { g.drawImage(CRAG_TEX.ledge, (x & 1) * T, 14, T, 18, x * T, y * T - 2, T, 18); g.fillStyle = 'rgba(20,12,6,.35)'; g.fillRect(x * T, y * T + T, T, 2);
+      if (RC.snow) { g.fillStyle = 'rgba(90,110,150,.3)'; g.fillRect(x * T, y * T - 2, T, 18); g.fillStyle = '#eef4fc'; g.fillRect(x * T, y * T - 2, T, 4); for (let i = 0; i < 4; i++) g.fillRect(x * T + i * 4 + (hash(x, i) * 2 | 0), y * T + 2, 2, 1 + (hash(i, x) * 3 | 0)); } }
     g.fillStyle = 'rgba(20,12,6,.5)';
     if (land(x - 1, y)) g.fillRect(x * T, y * T, 1, T);
     if (land(x + 1, y)) g.fillRect(x * T + T - 1, y * T, 1, T);
@@ -172,15 +187,23 @@ function windAt(sc, x, y) {
   return WIND_FIXED[k] || ('abcd'.includes(k) && RC.vanes && RC.vanes[k.toUpperCase()] ? vaneDir(sc, k.toUpperCase()) : null);
 }
 function moorSetup(sc) {
-  for (const [atlas, f, x, y] of RC.decor || []) { const im = sc.add.image(x * T + 8, y * T + 16, atlas, f).setOrigin(.5, 1).setDepth(y * T + 15); if (/tree|windmill|cottage/.test(f)) sc.tall.push(im); }
+  for (const [atlas, f, x, y] of RC.decor || []) { const im = sc.add.image(x * T + 8, y * T + 16, atlas, f).setOrigin(.5, 1).setDepth(y * T + 15); if (RC.snow) im.setTint(0xe4ecff); if (/tree|windmill|cottage/.test(f)) sc.tall.push(im); }
   for (const [x, y] of RC.block || []) sc.R.blocked[y * RW + x] = 1;
   if (RC.hmsea) return;
   if (!sc.textures.exists('hm_tuft')) {   // long heather: the heather prop, drawn at tuft size
     const fr = sc.textures.getFrame('hm', 'hm_heather'), c = document.createElement('canvas'); c.width = 18; c.height = 13; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
     g.drawImage(fr.source.image, fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, 0, 0, 18, 13); sc.textures.addCanvas('hm_tuft', c);
   }
-  for (const s of Object.values(sc.grassSpr || {})) s.setTexture('hm_tuft').clearTint().setFlipX(hash(s.x, s.y) > .5);
-  FX.ambient('leaves');
+  if (RC.snow && !sc.textures.exists('hm_tuft_snow')) {   // frosted heather: the same tufts, bleached pale blue and capped with snow
+    const src = sc.textures.get('hm_tuft').getSourceImage(), c = document.createElement('canvas'); c.width = 18; c.height = 13; const g = c.getContext('2d'); g.drawImage(src, 0, 0);
+    const d = g.getImageData(0, 0, 18, 13), a = d.data;
+    for (let i = 0; i < a.length; i += 4) { if (!a[i + 3]) continue; const l = (a[i] * .3 + a[i + 1] * .55 + a[i + 2] * .15) / 255, y = (i / 4 / 18) | 0, cap = y < 5 && (!(i / 4 >= 18) || !a[i - 18 * 4 + 3]) ? 40 : 0;
+      a[i] = Math.min(255, 70 + l * 150 + cap); a[i + 1] = Math.min(255, 96 + l * 140 + cap); a[i + 2] = Math.min(255, 140 + l * 110 + cap); }
+    g.putImageData(d, 0, 0); sc.textures.addCanvas('hm_tuft_snow', c);
+  }
+  for (const s of Object.values(sc.grassSpr || {})) s.setTexture(RC.snow ? 'hm_tuft_snow' : 'hm_tuft').clearTint().setFlipX(hash(s.x, s.y) > .5);
+  if (RC.snow) { FX.set('snow', true); FX.ambient(null); } else FX.ambient('leaves');
+  if (typeof hmPlaceSetup === 'function') hmPlaceSetup(sc);
   // streaks of wind drift the way each swirl blows
   if (!sc.textures.exists('wind_streak')) { const gr = sc.make.graphics({ add: false }); gr.fillStyle(0xffffff, 1).fillRect(6, 0, 8, 2); gr.fillStyle(0xffffff, .5).fillRect(0, 0, 6, 2); gr.generateTexture('wind_streak', 14, 2); gr.destroy(); }
   if (!sc.textures.exists('wind_arrow')) { const gr = sc.make.graphics({ add: false }); gr.fillStyle(0x2a2030, 1).fillTriangle(14, 6, 6, 0, 6, 12).fillRect(0, 4, 8, 4); gr.fillStyle(0xffffff, 1).fillTriangle(12, 6, 7, 2, 7, 10).fillRect(1, 5, 7, 2); gr.generateTexture('wind_arrow', 15, 13); gr.destroy(); }
@@ -199,7 +222,7 @@ function moorSetup(sc) {
     sc.tweens.add({ targets: a, y: a.y - 2, yoyo: true, repeat: -1, duration: 700, ease: 'Sine.inOut' });
     sc.vaneArrows[id] = a; a.setAngle({ E: 0, S: 90, W: 180, N: -90 }[vaneDir(sc, id)]);
   }
-  const intro = { heatherstep: 'Heatherstep Cliffs. The wind roars up from the gorges. Highmoor is somewhere above.', galeledges: 'Gale Ledges. Stone pillars rise out of a great gorge, and the wind moans between them.' }[sc.scene.key];
+  const intro = { heatherstep: 'Heatherstep Cliffs. The wind roars up from the gorges. Highmoor is somewhere above.', galeledges: 'Gale Ledges. Stone pillars rise out of a great gorge, and the wind moans between them.', windcrown: 'Windcrown Peak. Snow squeaks underfoot, and a freezing wind howls down from the summit.' }[sc.scene.key];
   if (RC.town) return;
   if (!S.flags[sc.scene.key + 'Seen']) { S.flags[sc.scene.key + 'Seen'] = 1; setTimeout(() => toast(intro, 3600), 700); }
   else setTimeout(() => toast(RC.name, 1800), 600);

@@ -146,7 +146,32 @@ def highmoor():
     m.box(10, 19, 10, 21, ','); m.box(33, 19, 33, 21, ',')              # to the Weathervane and the clinic
     m.box(10, 32, 10, 32, ','); m.box(33, 32, 33, 32, ',')              # to the kite-maker's and the windpump cottage
     m.box(3, 12, 4, 27, '.')
+    m.box(28, 0, 29, 10, ','); m.box(23, 11, 29, 11, ',')                 # the track behind the mill, up to Windcrown Peak
     return m.rows()
+
+
+def windcrown():
+    """Windcrown Peak, the snowy summit north of Highmoor (cliff legend, painted as snow). Three snowfields stacked up
+    the mountain, gorges between them. Vane A (band B) sends you up to the west snowfield; vane B (band C, west) sends
+    you over the ice-crack to the east snowfield, where a steady updraft lifts you to the summit."""
+    m = Map(32, 46)
+    # band A: the foot of the peak, where the track from Highmoor comes in
+    m.box(2, 40, 29, 44, '.'); m.box(14, 40, 17, 45, ','); m.box(3, 41, 10, 44, '6'); m.box(21, 41, 28, 43, '6')
+    m.box(1, 37, 30, 39, 'C'); m.put(8, 40, '^')
+    # band B: a wide snowfield; vane A on the east side
+    m.box(2, 27, 29, 36, '.'); m.box(3, 30, 12, 35, '7'); m.box(18, 31, 27, 35, '7')
+    m.put(20, 36, 'v'); m.put(6, 27, 'a')
+    m.box(1, 24, 30, 26, 'C')
+    # band C: split by an ice-crack; vane B on the west half sends you east over it
+    m.box(2, 14, 29, 23, '.'); m.box(14, 14, 17, 23, 'C')
+    m.box(3, 15, 11, 20, '8'); m.box(20, 17, 28, 21, '8')
+    m.put(12, 23, 'v'); m.put(13, 18, 'b'); m.put(18, 20, '<')
+    m.box(1, 11, 30, 13, 'C'); m.put(24, 14, '^')
+    # the summit: a snowy crown of rock, the storm sits on top
+    m.box(4, 2, 27, 10, '.'); m.box(12, 1, 19, 4, '.'); m.box(10, 6, 21, 10, ',')
+    m.put(10, 10, 'v')
+    for x, y in [(4, 2), (27, 2), (4, 10), (27, 10)]: m.put(x, y, '#')
+    return m.rows(), {'A': (27, 30, ['E', 'S', 'W', 'N'], 0), 'B': (7, 16, ['N', 'E', 'S', 'W'], 0)}, [(15, 45)], [(15, 3)]
 
 
 def windward():
@@ -165,7 +190,7 @@ def windward():
 
 if __name__ == '__main__':
     out = {}
-    for name, fn in [('heatherstep', heatherstep), ('galeledges', galeledges)]:
+    for name, fn in [('heatherstep', heatherstep), ('galeledges', galeledges), ('windcrown', windcrown)]:
         rows, vanes, st, gl = fn()
         assert all(len(r) == len(rows[0]) for r in rows)
         r = solve(rows, vanes, st, gl)
