@@ -47,7 +47,7 @@ Object.assign(MOVES, {
 const MOVE_CAT = Object.fromEntries(('emberpuff weirwave gust staticbuzz nightdrop wildfire bogbubble mirejet wispshock smoulder boilspout soakup windslice galeforce eclipse ' +
   'sapsip rootdrain bloomburst haunt dreamsip mirebellow lilyhex dewslumber nectartrap stormlash scaldspout geodestorm glint lumenpulse prismbeam radiance lanterngrove ' +
   'millflood whorlwind moonbolt lurelight petalhex deepdew crownstorm grimroots belfrypeal rimewave whiteout wishwind umbralcorona arclash overload undertow splashjet downdraft ' +
-  'frostbreath snowdrift blizzard sunbeam haloburst heatwave sandblast').split(' ').map(k => [k, 'e']));
+  'frostbreath snowdrift blizzard sunbeam haloburst heatwave sandblast crescentsquall').split(' ').map(k => [k, 'e']));
 const moveCat = id => MOVE_CAT[id] || 'p';
 
 /* ---------- each Fablemon's own physical and elemental stats: [Attack, Defence, Elemental Attack, Elemental Defence] */

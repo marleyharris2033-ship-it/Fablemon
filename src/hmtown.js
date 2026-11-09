@@ -270,7 +270,14 @@ function hmPlaceSetup(sc) {
 /* ---------- Windcrown Peak: the snowy summit north of Highmoor, and the storm on its crown.
    The cloud dragon (Gale/Frost legendary) roosts in the storm. Until its art is in the game, the storm can still be
    faced: the shape inside bursts out and flies off, and the wind drops. */
-const WC_DRAGON = { sp: 'wc_dragon', lv: 60, name: 'the cloud dragon' }, WC_STORM = { x: 15, y: 3 };
+SPECIES.cirrovale = { name: 'Cirrovale', title: 'Cloud Dragon Fablemon', type: 'Frost', type2: 'Gale', legend: true, base: { hp: 100, atk: 94, def: 92, eatk: 128, edef: 112, spd: 114 }, exp: 300, rate: 8,
+  desc: 'The Cloud Dragon Fablemon. Cirrovale can hang motionless above Highmoor, steering the wind through gaps in its crescent cloud wings. Locals know winter is coming when they spot two ribbons of snow trailing from its forked tail on a clear day.' };
+// signature: a crescent of frozen wind sweeps the field; may sharpen its own Elemental Attack. Only 5 uses.
+MOVES.crescentsquall = { name: 'Crescent Squall', type: 'Frost', pow: 95, acc: 95, boost: ['self', 'eatk', 1, 30], pp: 5 };
+LEARN.cirrovale = [[1, 'gust'], [1, 'frostfeather'], [1, 'chillmist'], [1, 'updraft'], [50, 'galeforce'], [55, 'frostbreath'], [60, 'crescentsquall'], [64, 'blizzard'], [68, 'windchant']];
+MON_ORDER.push('cirrovale'); MON_STAGE.cirrovale = 3;
+EXTRA_HABITAT.cirrovale = 'Roosts in the storm on the summit of Windcrown Peak, north of Highmoor';
+const WC_DRAGON = { sp: 'cirrovale', lv: 60, name: 'Cirrovale' }, WC_STORM = { x: 15, y: 3 };
 const wcDragonReady = sc => !!(SPECIES[WC_DRAGON.sp] && sc.textures.exists('mon_' + WC_DRAGON.sp));
 ROUTES.windcrown = { ...MOOR_BASE, name: 'Windcrown Peak', w: 32, h: 46, ascii: HM_MAPS.windcrown.rows, vanes: HM_MAPS.windcrown.vanes, snow: true,
   zones: [0, 1, 2, 3, 4, 5].map(() => [0, 0, 0, 0, 55, 56]).concat([[0, 0, 0, 0, 55, 57], [0, 0, 0, 0, 56, 58], [0, 0, 0, 0, 57, 58]]),
@@ -305,7 +312,9 @@ function wcSetup(sc) {
   sc.tweens.add({ targets: whirl, scale: 1.4, alpha: .1, yoyo: true, repeat: -1, duration: 900 });
   sc.wcCloud = cloud; sc.wcWhirl = whirl;
   if (dragonHere) {
-    sc.wcDragon = sc.add.sprite(cx, y * T + 16, 'mon_' + WC_DRAGON.sp, 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    const sp = WC_DRAGON.sp;
+    for (let r = 0; r < 4; r++) { const ak = `${sp}_${DIRS[r]}`; if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers('mon_' + sp, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 5, repeat: -1 }); }
+    sc.wcDragon = sc.add.sprite(cx, y * T + 18, 'mon_' + sp, 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
     if (sc.anims.exists(WC_DRAGON.sp + '_down')) sc.wcDragon.play(WC_DRAGON.sp + '_down');
     sc.tweens.add({ targets: sc.wcDragon, y: sc.wcDragon.y - 3, yoyo: true, repeat: -1, duration: 1300, ease: 'Sine.inOut' });
   }
