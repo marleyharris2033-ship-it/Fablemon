@@ -84,15 +84,17 @@ function delphine(sc) {
 
 /* ---------- the train from Smallroot (after the 2nd Crest) */
 function svcStation() {
-  const been = S.visited && S.visited.brookholt, qd = S.visited && S.visited.quarrydown;
+  const been = S.visited && S.visited.brookholt, qd = S.visited && S.visited.quarrydown, hm = S.visited && S.visited.highmoor;
   openModal('Smallroot Station', `<p style="text-align:center;font-size:22px">🚂</p><p><b>Departures</b></p>
     <div class="proj"><b>Brookholt, via the fen</b><span class="st">${been ? 'On time' : 'Visit Brookholt first'}</span></div>
     <div class="proj"><b>Quarrydown, via the mountain line</b><span class="st">${qd ? 'On time' : 'Visit Quarrydown first'}</span></div>
     <div class="proj"><b>14:40 to the City</b><span class="st">Line closed</span></div>
+    ${hm ? `<p style="margin-top:8px">🪁 A Kestrel Kites glider is tethered at the end of the platform. "Highmoor-bound!" calls the pilot. "We ride the updrafts off the hills. Hold on tight."</p><div class="row"><button class="btn gold" data-a="hm">Fly to Highmoor</button></div>` : ''}
     ${been || qd ? `<div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${been ? '<button class="btn gold" data-a="go">Ride to Brookholt</button>' : ''}${qd ? '<button class="btn gold" data-a="qd">Ride to Quarrydown</button>' : ''}</div>` : ''}
     ${!been || !qd ? `<p class="hint">"Walk there once, and I'll know where to take you," Stanley says.</p>` : ''}`, a => {
     if (a === 'go') { closeModal(); travel(scene, 'brookholt', { x: 6, y: 24, dir: 'down' }); }
     if (a === 'qd') { closeModal(); travel(scene, 'quarrydown', { x: 12, y: 22, dir: 'down' }); }
+    if (a === 'hm') { closeModal(); Sound.play('gust'); toast('The glider lifts off the platform and climbs the warm air over the hills, north to the windmill cliffs...', 2200); setTimeout(() => travel(scene, 'highmoor', { x: 10, y: 33, dir: 'down' }), 900); }
   });
 }
 

@@ -333,15 +333,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261109-213454">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261109-213454">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261109-213454">
+<link rel="manifest" href="manifest.webmanifest?v=20261109-221931">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261109-221931">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261109-221931">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261109-213454').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261109-221931').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -6087,15 +6087,17 @@ function delphine(sc) {
 
 /* ---------- the train from Smallroot (after the 2nd Crest) */
 function svcStation() {
-  const been = S.visited && S.visited.brookholt, qd = S.visited && S.visited.quarrydown;
+  const been = S.visited && S.visited.brookholt, qd = S.visited && S.visited.quarrydown, hm = S.visited && S.visited.highmoor;
   openModal('Smallroot Station', `<p style="text-align:center;font-size:22px">🚂</p><p><b>Departures</b></p>
     <div class="proj"><b>Brookholt, via the fen</b><span class="st">${been ? 'On time' : 'Visit Brookholt first'}</span></div>
     <div class="proj"><b>Quarrydown, via the mountain line</b><span class="st">${qd ? 'On time' : 'Visit Quarrydown first'}</span></div>
     <div class="proj"><b>14:40 to the City</b><span class="st">Line closed</span></div>
+    ${hm ? `<p style="margin-top:8px">🪁 A Kestrel Kites glider is tethered at the end of the platform. "Highmoor-bound!" calls the pilot. "We ride the updrafts off the hills. Hold on tight."</p><div class="row"><button class="btn gold" data-a="hm">Fly to Highmoor</button></div>` : ''}
     ${been || qd ? `<div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${been ? '<button class="btn gold" data-a="go">Ride to Brookholt</button>' : ''}${qd ? '<button class="btn gold" data-a="qd">Ride to Quarrydown</button>' : ''}</div>` : ''}
     ${!been || !qd ? `<p class="hint">"Walk there once, and I'll know where to take you," Stanley says.</p>` : ''}`, a => {
     if (a === 'go') { closeModal(); travel(scene, 'brookholt', { x: 6, y: 24, dir: 'down' }); }
     if (a === 'qd') { closeModal(); travel(scene, 'quarrydown', { x: 12, y: 22, dir: 'down' }); }
+    if (a === 'hm') { closeModal(); Sound.play('gust'); toast('The glider lifts off the platform and climbs the warm air over the hills, north to the windmill cliffs...', 2200); setTimeout(() => travel(scene, 'highmoor', { x: 10, y: 33, dir: 'down' }), 900); }
   });
 }
 
@@ -9432,7 +9434,7 @@ hmDoor = function (sc, id) {
     const render = () => `<p>A golden rooster turns on the roof of the Weathervane. Inside: jars of honey, wheels of cheese, and a shelf of charms. "Everything up here's blown in from somewhere," laughs the shopkeeper.</p><div class="mlist">${HM_SHOP.map(([i, p, c]) => shopRow(i, p, c || 0, 1)).join('')}</div>`;
     return openModal('The Weathervane', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
   }
-  if (id === 'hm_kites') return openModal('Kestrel Kites', '<p>Kites of every colour hang from the rafters. The kite-maker winks. "Long way down, isn\'t it? Strap into one of my gliders and the sea wind will carry you home. Highmoor\'s always here when you want to climb back up."</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" data-a="cove">Glide to Driftwood Cove</button><button class="btn gold" data-a="beacon">Glide to Beaconreach</button><button class="btn" data-a="no">Not today</button></div>', a => {
+  if (id === 'hm_kites') return openModal('Kestrel Kites', '<p>Kites of every colour hang from the rafters. The kite-maker winks. "Long way down, isn\'t it? Strap into one of my gliders and the sea wind will carry you home. When you want to come back, I keep a glider at Smallroot Station. Just ask on the platform."</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn gold" data-a="cove">Glide to Driftwood Cove</button><button class="btn gold" data-a="beacon">Glide to Beaconreach</button><button class="btn" data-a="no">Not today</button></div>', a => {
     closeModal(); if (a !== 'cove' && a !== 'beacon') return;
     Sound.play('gust'); toast('You launch off the cliff edge and soar out over the sea...', 2200);
     setTimeout(() => a === 'cove' ? travel(sc, 'driftwood', { x: 30, y: 16, dir: 'down' }) : travel(sc, 'beaconreach', { x: 21, y: 22, dir: 'down' }), 900);
