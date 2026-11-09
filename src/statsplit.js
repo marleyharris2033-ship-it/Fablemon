@@ -6,7 +6,8 @@
    Each species' four stats are in SPLIT below: [Attack, Defence, Elemental Attack, Elemental Defence]. They were
    worked out from its old Attack and Defence, the kind of moves it learns, and its types (Stone is tough against
    physical hits, Glow and Spark against elemental ones), then can be tuned by hand here.
-   Stat-changing moves move both kinds together: "Attack +1" raises Attack and Elemental Attack.
+   Each of the five battle stats has its own stat stages: Harden raises only Defence, Geode Ward only Elemental
+   Defence. Held charms (Fang, Ironbark) and food buffs help both kinds. Potential is rolled separately for all six stats.
    This file loads last, after every Fablemon and move is defined. It also holds the new Frost and Glow moves,
    second-type attacks for dual types that lacked them, catch-up XP and the move tutor in Brookholt. */
 
@@ -25,6 +26,21 @@ Object.assign(MOVES, {
   starfall: { name: 'Starfall', type: 'Glow', pow: 100, acc: 90 },
   gleamrest: { name: 'Gleam Rest', type: 'Glow', heal: .5 },
   // for the move tutor
+  // elemental boosting moves, a counterpart to Harden, Fortify, Stoke the Fire, Overgrow and the rest
+  bloomward: { name: 'Bloom Ward', type: 'Leaf', stat: ['self', 'edef', 1] },
+  sungather: { name: 'Sun Gather', type: 'Leaf', stats: [['self', 'eatk', 1], ['self', 'edef', 1]] },
+  kindle: { name: 'Kindle', type: 'Ember', stat: ['self', 'eatk', 2] },
+  heathaze: { name: 'Heat Haze', type: 'Ember', stat: ['self', 'edef', 1] },
+  moontide: { name: 'Moon Tide', type: 'Tide', stats: [['self', 'eatk', 1], ['self', 'spd', 1]] },
+  mistveil: { name: 'Mist Veil', type: 'Tide', stat: ['self', 'edef', 1] },
+  geodeward: { name: 'Geode Ward', type: 'Stone', stat: ['self', 'edef', 1] },
+  crystalshell: { name: 'Crystal Shell', type: 'Stone', stat: ['self', 'edef', 2] },
+  staticfocus: { name: 'Static Focus', type: 'Spark', stats: [['self', 'eatk', 1], ['self', 'spd', 1]] },
+  nightfocus: { name: 'Night Focus', type: 'Shade', stats: [['self', 'eatk', 2], ['self', 'edef', -1]] },
+  radiantaura: { name: 'Radiant Aura', type: 'Glow', stats: [['self', 'eatk', 1], ['self', 'edef', 1]] },
+  prismward: { name: 'Prism Ward', type: 'Glow', stat: ['self', 'edef', 2] },
+  windchant: { name: 'Wind Chant', type: 'Gale', stats: [['self', 'eatk', 1], ['self', 'spd', 1]] },
+  icemirror: { name: 'Ice Mirror', type: 'Frost', stats: [['self', 'eatk', 1], ['self', 'edef', 1]] },
   heatwave: { name: 'Heatwave', type: 'Ember', pow: 85, acc: 95, st: ['brn', 10] },
   sandblast: { name: 'Sandblast', type: 'Stone', pow: 80, acc: 95 },
 });
@@ -169,6 +185,36 @@ addLearn(after('cindimple', 2), [[40, 'rockslide'], [46, 'landslide']]);        
 addLearn(after('muddlebub', 2), [[42, 'landslide']]);                              // Mirelure: Stone
 addLearn(after('tusskip', 2), [[40, 'bonfirekick'], [46, 'furnacefist']]);         // Plumevix: Ember
 addLearn(after('bristlecone', 2), [[46, 'galeforce']]);                            // Pinewarden: Gale
+
+// elemental boosting moves, given to Fablemon whose stats lean elemental (elemental attackers and elemental tanks)
+addLearn(lineOf('lotling'), [[14, 'bloomward'], [30, 'sungather']]);
+addLearn(lineOf('logloom'), [[20, 'bloomward']]);
+addLearn(lineOf('puffpiper_cotton'), [[16, 'bloomward'], [32, 'sungather']]);
+addLearn(lineOf('bristlecone'), [[24, 'bloomward'], [38, 'sungather']]);
+addLearn(lineOf('kilnback'), [[30, 'heathaze'], [46, 'kindle']]);
+addLearn(lineOf('cindimple'), [[20, 'heathaze'], [38, 'kindle']]);
+addLearn(lineOf('rillip'), [[12, 'mistveil'], [28, 'moontide']]);
+addLearn(lineOf('lotling'), [[22, 'moontide']]);
+addLearn(lineOf('puffpiper'), [[22, 'moontide']]);
+addLearn(lineOf('glimmerjel'), [[20, 'moontide'], [30, 'staticfocus']]);
+addLearn(lineOf('muddlebub'), [[24, 'moontide'], [34, 'crystalshell']]);
+addLearn(lineOf('whirplet'), [[20, 'mistveil'], [28, 'windchant']]);
+addLearn(lineOf('brooknook'), [[16, 'mistveil']]);
+addLearn(lineOf('floecalf'), [[34, 'mistveil'], [42, 'icemirror']]);
+addLearn(lineOf('nipshade'), [[34, 'mistveil'], [44, 'crystalshell']]);
+addLearn(lineOf('fenfang'), [[24, 'mistveil'], [34, 'nightfocus']]);
+addLearn(lineOf('clinkit'), [[18, 'geodeward'], [36, 'crystalshell'], [44, 'radiantaura'], [52, 'prismward']]);
+addLearn(lineOf('flintuck'), [[22, 'geodeward']]);
+addLearn(lineOf('mortoad'), [[24, 'geodeward']]);
+addLearn(lineOf('sundrowse'), [[22, 'geodeward'], [36, 'crystalshell']]);
+addLearn(lineOf('craglet'), [[28, 'geodeward']]);
+addLearn(lineOf('fuzzwick'), [[20, 'staticfocus'], [40, 'radiantaura']]);
+addLearn(lineOf('riftshear'), [[40, 'staticfocus']]);
+addLearn(lineOf('duskwick'), [[24, 'nightfocus'], [40, 'windchant']]);
+addLearn(lineOf('inkwick'), [[38, 'nightfocus'], [44, 'radiantaura'], [52, 'prismward']]);
+addLearn(lineOf('wishling'), [[40, 'windchant'], [48, 'radiantaura'], [56, 'prismward']]);
+addLearn(lineOf('kitlet'), [[42, 'windchant']]);
+addLearn(lineOf('flurrowl'), [[46, 'icemirror']]);
 
 /* ---------- catch-up XP: a Fablemon 10 or more levels below the next Warden's ace learns 1.5x as fast */
 const WARDEN_ORDER = ['root', 'brook', 'stone', 'spark', 'gale', 'hearth'];

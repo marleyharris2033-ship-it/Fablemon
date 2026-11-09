@@ -405,7 +405,7 @@ class Crag extends Route {
     const img = monPic('fulgarok'), L = t => ({ name: '???', img, t });
     S.seen.fulgarok = 1;
     Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('Thunder rolls through the mine. Fulgarok, the Geode Storm Fablemon, rises from its sleep!')], () => {
-      const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 9, atk: 9, def: 9, spd: 9 }; m.hp = monStat(m, 'hp');
+      const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
       this.legendFight = m; this.cameras.main.shake(400, .008); Battle.start(m);
     });
   }

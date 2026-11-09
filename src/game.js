@@ -1570,8 +1570,8 @@ const SPECIES = {
 const TEAM_MAX = 6, ROAM_MAX = 8;
 const IV_KEYS = ['hp', 'atk', 'def', 'eatk', 'edef', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', eatk: 'Elem. Attack', edef: 'Elem. Defence', spd: 'Speed' };
 const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.floor(Math.random() * (11 - lo))]));
-// potential for the elemental stats falls back to the physical one, for Fablemon from saves made before they existed
-const ivOf = (m, k) => (m.iv && (m.iv[k] || (k === 'eatk' ? m.iv.atk : k === 'edef' ? m.iv.def : 0))) || 5;
+// every stat has its own potential; Fablemon from saves made before the elemental stats existed roll theirs the first time it's needed
+const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eatk' || k === 'edef')) m.iv[k] = 1 + Math.floor(Math.random() * 10); return m.iv[k] || 5; };
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
@@ -3633,7 +3633,13 @@ const LEARN = {
   brashlet: [[1, 'tackle'], [1, 'smokescreen'], [5, 'emberpuff'], [9, 'quickhop'], [12, 'cinderslam'], [15, 'bonfirekick']],
   duskwick: [[1, 'tackle'], [1, 'moonglare'], [5, 'shadownip'], [9, 'drowse'], [12, 'nightdrop']],
 };
-function movesAt(sp, lv) { return (LEARN[sp] || LEARN.tusskip).filter(([l]) => l <= lv).map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i).slice(-4); }
+// the four most recent moves it knows, but never more than one non-attacking move while it has attacks to fill the gaps
+function movesAt(sp, lv) {
+  const all = (LEARN[sp] || LEARN.tusskip).filter(([l]) => l <= lv).map(([, m]) => m).filter((m, i, a) => a.indexOf(m) === i), out = [], spare = [];
+  for (let i = all.length - 1; i >= 0 && out.length < 4; i--) { const M = MOVES[all[i]]; if (!M.pow && !M.fixed && out.some(m => !MOVES[m].pow && !MOVES[m].fixed)) spare.push(all[i]); else out.push(all[i]); }
+  while (out.length < 4 && spare.length) out.push(spare.shift());
+  return all.filter(m => out.includes(m));
+}
 const EFF = {
   // every type has two strengths and two weaknesses
   Leaf: { Tide: 2, Stone: 2, Ember: .5, Leaf: .5, Gale: .5 },
@@ -3656,7 +3662,7 @@ const stabOf = (mt, sp) => hasType(sp, mt) ? 1.5 : 1;
 const STATUS = { psn: ['Poisoned', '#8a4ab0', 'was poisoned'], brn: ['Burned', '#d0542a', 'was burned'], slp: ['Asleep', '#5b7aa8', 'fell asleep'], par: ['Dazed', '#c9a21e', 'is dazed and may not be able to move'] };
 const IMMUNE = { brn: 'Ember', par: 'Spark', psn: 'Stone' };
 // plain sentences about what a move does
-const STAT_LABEL = { atk: 'Attack and Elemental Attack', def: 'Defence and Elemental Defence', spd: 'Speed' };
+const STAT_LABEL = { atk: 'Attack', def: 'Defence', eatk: 'Elemental Attack', edef: 'Elemental Defence', spd: 'Speed' };
 const statText = ([who, k, n]) => `${n > 0 ? 'Raises' : 'Lowers'} ${who === 'self' ? 'its own' : "the opponent's"} ${STAT_LABEL[k]}${Math.abs(n) > 1 ? ' sharply' : ''}`;
 const WEATHER_TEXT = { rain: 'Rain: Tide moves are 50% stronger and Ember moves 50% weaker', sun: 'Harsh sun: Ember moves are 50% stronger and Tide moves 50% weaker', gloom: 'Gloom: Shade moves are 50% stronger' };
 function moveEffect(id) {
@@ -3704,7 +3710,7 @@ function moveCard(id, m, tag = '') {
     <small>${moveEffect(id)}${M.pow && strong.length ? ` Super effective against ${strong.join(', ')}.` : ''}</small></div>`;
 }
 const ppMax = id => { const M = MOVES[id]; if (M.pp) return M.pp; if (M.protect || M.heal || M.rest || M.weather) return 10; if (!M.pow && !M.fixed) return M.st || M.seed ? 15 : 20; return M.pow >= 110 ? 8 : M.pow >= 80 ? 12 : M.pow >= 60 ? 15 : 25; };
-const moveTag = id => { const M = MOVES[id]; if (M.pow) return (moveCat(id) === 'e' ? 'Elem ' : 'Phys ') + M.pow + (M.hits ? '×' + M.hits[0] + '–' + M.hits[1] : '') + (M.prio > 0 ? ' · First' : ''); if (M.fixed) return 'Lv dmg'; if (M.st) return STATUS[M.st[0]][0]; if (M.protect) return 'Protect'; if (M.heal || M.rest) return 'Heal'; if (M.weather) return { rain: 'Rain', sun: 'Sun', gloom: 'Gloom' }[M.weather]; if (M.hazard) return 'Hazard'; if (M.seed) return 'Seed'; if (M.haze) return 'Clear stats'; if (M.cure) return 'Cure team'; if (M.critUp) return '▲Crit'; const x = (M.stats || [M.stat])[0]; return x ? (x[2] > 0 ? '▲' : '▼') + { atk: 'Atk', def: 'Def', spd: 'Spd' }[x[1]] : ''; };
+const moveTag = id => { const M = MOVES[id]; if (M.pow) return (moveCat(id) === 'e' ? 'Elem ' : 'Phys ') + M.pow + (M.hits ? '×' + M.hits[0] + '–' + M.hits[1] : '') + (M.prio > 0 ? ' · First' : ''); if (M.fixed) return 'Lv dmg'; if (M.st) return STATUS[M.st[0]][0]; if (M.protect) return 'Protect'; if (M.heal || M.rest) return 'Heal'; if (M.weather) return { rain: 'Rain', sun: 'Sun', gloom: 'Gloom' }[M.weather]; if (M.hazard) return 'Hazard'; if (M.seed) return 'Seed'; if (M.haze) return 'Clear stats'; if (M.cure) return 'Cure team'; if (M.critUp) return '▲Crit'; const x = (M.stats || [M.stat])[0]; return x ? (x[2] > 0 ? '▲' : '▼') + { atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[x[1]] : ''; };
 const ppLeft = (m, id) => (m.pp && m.pp[id] != null) ? m.pp[id] : ppMax(id);
 function restMon(m) { m.hp = monStat(m, 'hp'); m.pp = {}; m.status = null; }
 const STAGE = s => s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
@@ -3754,7 +3760,7 @@ const Battle = (() => {
     const xp = side === 'me' ? `<div class="bxp"><i style="width:${100 * Math.max(0, Math.min(1, (m.xp - m.lv ** 3) / (xpNext(m) - m.lv ** 3)))}%"></i></div>` : '';
     const caught = side === 'foe' && S.caught[m.sp] ? '<span title="Befriended before" style="color:#c0392b">♥</span> ' : '';
     const stc = (m.status ? `<span class="tchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '')
-      + Object.entries((B.st || {})[side] || {}).filter(([, n]) => n).map(([k, n]) => `<span class="tchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', spd: 'Spd' }[k] || k}${n > 0 ? '▲' : '▼'}${Math.abs(n) > 1 ? Math.abs(n) : ''}</span>`).join('');
+      + Object.entries((B.st || {})[side] || {}).filter(([, n]) => n).map(([k, n]) => `<span class="tchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k] || k}${n > 0 ? '▲' : '▼'}${Math.abs(n) > 1 ? Math.abs(n) : ''}</span>`).join('');
     q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
   }
   function sprites() {
@@ -3799,7 +3805,7 @@ const Battle = (() => {
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
-  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k0) * STAGE(B.st[side][k0] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
+  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k0) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
   const nameOf = side => (side === 'foe' ? foeLabel() : '') + monName(side === 'me' ? B.me : B.foe);
   async function inflict(side, st) {
     const m = side === 'me' ? B.me : B.foe;
@@ -3817,7 +3823,7 @@ const Battle = (() => {
     const tgt = who === 'self' ? side : other(side), cur = B.st[tgt][k] || 0, nx = Math.max(-6, Math.min(6, cur + n)), nm = monName(monOf(tgt));
     if (monOf(tgt).hp <= 0) return;
     if (nx === cur) return say(`${nm}'s ${STAT_LABEL[k]} won't go any ${n > 0 ? 'higher' : 'lower'}!`, 1000);
-    B.st[tgt][k] = nx; Sound.play(n > 0 ? 'pop' : 'error');
+    B.st[tgt][k] = nx; box(tgt); Sound.play(n > 0 ? 'pop' : 'error');
     await anim(spr(tgt), n > 0 ? 'buff' : 'debuff', 400);
     return say(`${nm}'s ${STAT_LABEL[k]} ${n > 0 ? 'rose' : 'fell'}${Math.abs(n) > 1 ? ' sharply' : ''}!`, 1100);
   }
@@ -3960,7 +3966,7 @@ const Battle = (() => {
     await anim('bfoe', 'enter-foe', 500);
     if (B.T.phase2) {   // a boss's second phase: same foe back on its feet, and angrier
       for (const line of B.T.phase2) await say(line, 1700);
-      B.st.foe = { atk: 1, def: 1 }; box('foe'); Sound.play('levelup'); await anim('bfoe', 'buff', 500);
+      B.st.foe = { atk: 1, def: 1, eatk: 1, edef: 1 }; box('foe'); Sound.play('levelup'); await anim('bfoe', 'buff', 500);
       await say(`${SPECIES[m.sp].name}'s Attack and Defence rose!`, 1400);
     } else await say(`${B.T.label} ${B.T.name} sent out ${SPECIES[m.sp].name}!`, 1300);
     await hazardIn('foe');

@@ -338,7 +338,7 @@ function whaleFight(sc) {
   const N = t => ({ name: '???', img: monPic('floecalf_2'), t });
   S.seen.floecalf_2 = 1;
   Talk.say([N('The water in the lagoon turns to slush. Frost creeps across your deck...'), N('A mountain of ice rises from the deep. Two cold yellow eyes fix on your boat!')], () => {
-    const mk = () => { const m = wildMon('floecalf_2', 47); m.iv = { hp: 9, atk: 9, def: 9, spd: 9 }; m.moves = ['icebergbreach', 'rimewave', 'millrace', 'chillmist'].filter(id => MOVES[id]); m.hp = monStat(m, 'hp'); return m; };
+    const mk = () => { const m = wildMon('floecalf_2', 47); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.moves = ['icebergbreach', 'rimewave', 'millrace', 'chillmist'].filter(id => MOVES[id]); m.hp = monStat(m, 'hp'); return m; };
     const team2 = [mk(), mk()];
     sc.cameras.main.shake(400, .008);
     Battle.start(team2[0], { label: 'the', name: 'Ice Whale', team: team2, prize: 3000, heals: 0,
