@@ -458,7 +458,7 @@ const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 const lockedRow = (id, crest, label) => `<div class="shoprow" style="opacity:.55"><img src="${iconFor(id)}" style="filter:grayscale(1)"><div class="g"><b>${label || ITEMS[id].name}</b><small>🔒 After your ${ORD[crest]} Crest</small></div></div>`;
 const shopRow = (id, p0, crest = 0, n = 1, p = friendPrice(p0)) => crestCount() < crest ? lockedRow(id, crest, n > 1 ? `${ITEMS[id].name} ×${n}` : '') : `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}${n > 1 ? ' ×' + n : ''}</b><small>${ITEMS[id].desc}</small></div><button class="btn gold" data-a="buy" data-id="${id}" data-p="${p}" data-n="${n}" ${S.gold < p ? 'disabled' : ''}>${p}g</button></div>`;
 function svcClinic() {
-  const shop = [['berry', 30, 0], ['honey', 150, 0], ['berry_crumble', 120, 1], ['tonic', 260, 2], ['mon_treat', 300, 3]];
+  const shop = [['berry', 30, 0], ['honey', 150, 0], ['berry_crumble', 120, 1], ['tonic', 260, 2], ['mon_treat', 200, 3]];
   const render = () => `<p>Willa looks after your whole team for free.</p><div class="row"><button class="btn gold" data-a="heal">Heal my team</button></div>
     <p style="margin-top:10px"><b>Medicine</b></p><div class="mlist">${shop.map(([id, p, c]) => shopRow(id, p, c)).join('')}</div>`;
   openModal('Smallroot Clinic', render(), (a, d) => {
@@ -687,6 +687,7 @@ const ITEMS = {
   hearty_stew: { name: 'Hearty Stew', stack: 99, eat: 170, sell: 430, desc: "Barney's recipe. Potatoes, carrots and turnip, slow-cooked. Restores 170 energy." },
   corn_fritters: { name: 'Corn Fritters', stack: 99, eat: 110, sell: 300, desc: "Barney's recipe. Crispy and golden. Restores 110 energy." },
   tavern_pie: { name: 'Tavern Pie', stack: 99, eat: 280, sell: 820, desc: "Barney's famous pie. Restores 280 energy." },
+  hearth_elixir: { name: 'Hearthroot Elixir', stack: 99, heal: 100, cure: 1, sell: 500, desc: "A rare golden draught pressed from Hearthroot sap. Fully restores a Fablemon's HP and cures any status problem. Only sold in Highmoor, and it isn't cheap." },
   mon_treat: { name: 'Fablemon Feast', stack: 99, heal: 50, sell: 150, desc: 'Berries baked in honey. Restores half a Fablemon\'s HP, in battle or from its Info page.' },
   oak_sapling: { name: 'Oak Sapling', stack: 99, place: 'obj', obj: 'sap_oak', desc: 'Plant it on grass. Grows into an oak tree in 7 days.' },
   pine_sapling: { name: 'Pine Sapling', stack: 99, place: 'obj', obj: 'sap_pine', desc: 'Plant it on grass. Grows into a pine tree in 7 days.' },
@@ -971,6 +972,13 @@ function loadExtraIcons() {
     ICONS.tomato_salad = plate(g => { g.fillStyle = '#4e9a3a'; g.fillRect(4, 11, 16, 4); for (const [x, y] of [[5, 9], [11, 8], [15, 10]]) { g.fillStyle = '#2a1e1a'; g.fillRect(x, y, 5, 5); g.fillStyle = '#d8402a'; g.fillRect(x + 1, y + 1, 3, 3); } });
     ICONS.pumpkin_pie = plate(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 9, 18, 8); g.fillStyle = '#c99462'; g.fillRect(4, 10, 16, 6); g.fillStyle = '#e88a2a'; g.fillRect(5, 10, 14, 4); g.fillStyle = '#fff6e0'; g.fillRect(10, 9, 4, 2); });
     ICONS.berry_crumble = mk(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 8, 18, 13); g.fillStyle = '#e8e0d0'; g.fillRect(4, 14, 16, 6); g.fillStyle = '#d8b070'; g.fillRect(4, 9, 16, 5); g.fillStyle = '#b04070'; for (const x of [6, 11, 16]) g.fillRect(x, 12, 2, 2); }).toDataURL();
+    ICONS.hearth_elixir = mk(g => {   // a little golden bottle with a leaf on the cork
+      g.fillStyle = '#2a1e1a'; g.fillRect(7, 8, 10, 14); g.fillRect(9, 3, 6, 6);
+      g.fillStyle = '#f2b830'; g.fillRect(8, 10, 8, 11); g.fillStyle = '#ffe27a'; g.fillRect(9, 11, 3, 6); g.fillStyle = '#c8861a'; g.fillRect(13, 15, 3, 6);
+      g.fillStyle = '#e8e0d0'; g.fillRect(8, 9, 8, 1);
+      g.fillStyle = '#8a5a2a'; g.fillRect(10, 4, 4, 4); g.fillStyle = '#5ab04a'; g.fillRect(14, 2, 4, 3); g.fillRect(16, 1, 2, 1);
+      g.fillStyle = '#fff6c0'; g.fillRect(10, 12, 1, 3);
+    }).toDataURL();
     ICONS.mon_treat = mk(g => { g.fillStyle = '#2a1e1a'; g.fillRect(4, 6, 16, 15); g.fillStyle = '#f2c14e'; g.fillRect(5, 7, 14, 13); g.fillStyle = '#c0304a'; for (const [x, y] of [[7, 9], [12, 8], [9, 13], [14, 13]]) g.fillRect(x, y, 3, 3); g.fillStyle = '#fff3a0'; g.fillRect(6, 8, 3, 1); g.fillStyle = '#e04a6a'; g.fillRect(11, 2, 3, 3); }).toDataURL();
     ICONS.hearty_stew = bowl('#8a4a2a', '#e8a040'); ICONS.corn_fritters = plate(g => { for (const [x, y] of [[4, 10], [10, 8], [14, 11]]) { g.fillStyle = '#2a1e1a'; g.fillRect(x, y, 7, 6); g.fillStyle = '#e8b030'; g.fillRect(x + 1, y + 1, 5, 4); g.fillStyle = '#fff0a0'; g.fillRect(x + 1, y + 1, 2, 1); } });
     ICONS.tavern_pie = plate(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 8, 18, 9); g.fillStyle = '#b07038'; g.fillRect(4, 9, 16, 7); g.fillStyle = '#d89a58'; for (let x = 5; x < 19; x += 3) g.fillRect(x, 10, 2, 5); g.fillStyle = '#f0c080'; g.fillRect(5, 9, 6, 1); });
@@ -5054,13 +5062,14 @@ function useRoute(key) {
   BRIDGE = RC.bridge ? { ...RC.bridge } : null;
 }
 const beatTrainer = id => !!(S.trainers && S.trainers[id]);
-// Rematches: once beaten, a trainer can be fought again after each new Crest. Their team is raised to the
-// level of trainers in the next area (keeping its spread) and evolves where it can.
-const REMATCH_TOP = [0, 22, 30, 38, 46, 54, 62, 70, 80];
-const rematchReady = t => !t.boss && beatTrainer(t.id) && crestCount() > ((S.trainerCrest || {})[t.id] || 0);
+// Rematches: any trainer you've beaten will battle again, once a day. Their team is raised to the level of the ace
+// of the strongest Warden you've beaten (keeping its spread) and evolves where it can.
+const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 72 };
+const rematchLevel = () => Math.max(0, ...Object.keys(S.crests || {}).filter(k => S.crests[k]).map(k => WARDEN_ACE[k] || 0));
+const rematchReady = t => !t.boss && beatTrainer(t.id) && ((S.rematchDay || {})[t.id] || 0) !== S.day;
 function rematchTeam(t) {
   if (!beatTrainer(t.id)) return t.team;
-  const top = Math.max(...t.team.map(([, l]) => l)), want = REMATCH_TOP[Math.min(8, crestCount())];
+  const top = Math.max(...t.team.map(([, l]) => l)), want = rematchLevel();
   if (want <= top) return t.team;
   return t.team.map(([sp, lv]) => { const nl = want - (top - lv); let s = sp, e; while ((e = SPECIES[s].evo) && MON_ORDER.includes(e[0]) && nl >= e[1]) s = e[0]; return [s, nl]; });
 }
@@ -5219,7 +5228,7 @@ class Route extends World {
     Talk.say([{ who: 'trainer', name: who, img: pic, t: pick(TT.challenge) }], () => {
       const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => trainerMon(sp, lv)), again = beatTrainer(t.id);
       // prize money: 25g per level of their strongest Fablemon the first time, 12g per level in rematches
-      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); } });
+      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); if (again) { S.rematchDay = S.rematchDay || {}; S.rematchDay[t.id] = S.day; } } });
     });
   }
   talkTrainer(t) {
@@ -5229,14 +5238,14 @@ class Route extends World {
     if (t.boss) return Talk.say([{ who: 'trainer', name: `Warden ${t.name}`, img: trainerPic(t.kind, 1), t: pick(["Keep that Root Crest polished, dear.", "Your Fablemon look happy. That's the real prize.", "Mind how you go. The other Wardens won't go easy on you."]) }]);
     if (rematchReady(t)) {
       const top = Math.max(...rematchTeam(t).map(([, l]) => l));
-      return Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 0), t: `Oi, it's you! I've been training since we last met. My team's around level ${top} now. Rematch?` }], () =>
+      return Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 0), t: pick([`Oi, it's you! Fancy another go? My team's around level ${top} now.`, `Back for more? I've been training. My team's around level ${top}.`, `A rematch? Go on then. My Fablemon are up to level ${top}!`]) }], () =>
         openModal('Rematch?', `<p>Battle ${TT.label} ${t.name} again? Their Fablemon are now up to <b>level ${top}</b>.</p><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-a="yes">Battle!</button><button class="btn" data-a="no">Not now</button></div>`, a => {
           closeModal(); if (a !== 'yes') return;
           if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
           this.startTrainerBattle(t);
         }));
     }
-    Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 1), t: pick(TT.after) }]);
+    Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 1), t: pick(TT.after) + ' (Ready for a rematch tomorrow.)' }]);
   }
   frameHook(dt) {
     this.fadeAcc += dt; if (this.fadeAcc < .08) return; this.fadeAcc = 0;
@@ -8698,7 +8707,7 @@ function orrinTalk(sc) {
 }
 
 /* ---------- doors */
-const BR_SHOP = [['tonic', 260], ['mon_treat', 600], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
+const BR_SHOP = [['tonic', 260], ['mon_treat', 250], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
 function beaconDoor(sc, id) {
   if (id === 'br_orrin') return orrinTalk(sc);
   if (id === 'br_lighthouse') {
@@ -9039,7 +9048,7 @@ Object.assign(ROUTES, {
     spawn: { x: 17, y: 58, dir: 'up' }, enc: MOOR_ENC },
   galeledges: { ...MOOR_BASE, name: 'Gale Ledges', w: 40, h: 50, ascii: HM_MAPS.galeledges.rows, vanes: HM_MAPS.galeledges.vanes,
     zones: [[0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 49, 51], [0, 0, 0, 0, 50, 52]],
-    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'skyward_charm', n: 3 }, { id: 'gl4', x: 22, y: 35, item: 'sturdy_charm', n: 4 }],
+    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'skyward_charm', n: 3 }, { id: 'gl4', x: 22, y: 35, item: 'hearth_elixir', n: 1 }],
     signs: { ...vaneSigns('galeledges'), '15,48': 'Gale Ledges. Stone pillars stand in the gorge like stepping stones. Three weathervanes steer the wind between them.',
       '17,1': 'North: Highmoor, the windmill town. You can hear the sails creaking from here.', '24,4': '__heal' },
     trainers: [],
@@ -9365,7 +9374,7 @@ TOWNSFOLK.highmoor = [
 ];
 
 /* ---------- doors */
-const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 280], ['mon_treat', 650], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
+const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 280], ['mon_treat', 250], ['hearth_elixir', 3000], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
 const _hmDoor = hmDoor;
 hmDoor = function (sc, id) {
   if (id === 'hm_land') return _hmDoor(sc, id);
@@ -9488,13 +9497,13 @@ const HMTOWN_SCENES = [class extends Crag { constructor() { super('highmoor'); }
      Highmoor Wheat (Highmoor)    the base of the new baking recipes
      Moorberries (Highmoor)       a bush: after the first harvest it fruits again every 3 days, all season */
 Object.assign(ITEMS, {
-  samphire_seeds: { name: 'Sea Samphire Seeds', stack: 999, seed: 'samphire', sell: 35, desc: 'Spring and summer. A salty sea succulent that loves the rain: it grows an extra day whenever it rains. Ready in 6 days. Sold only in Beaconreach.' },
+  samphire_seeds: { name: 'Sea Samphire Seeds', stack: 999, seed: 'samphire', sell: 25, desc: 'Spring and summer. A salty sea succulent that loves the rain: it grows an extra day whenever it rains. Ready in 6 days. Sold only in Beaconreach.' },
   lanterngourd_seeds: { name: 'Lantern Gourd Seeds', stack: 999, seed: 'lanterngourd', sell: 75, desc: 'Autumn. Paper-thin gourds that glow in your fields at night, like little lighthouse lamps. Ready in 11 days. Sold only in Beaconreach.' },
   moorwheat_seeds: { name: 'Highmoor Wheat Seeds', stack: 999, seed: 'moorwheat', sell: 50, desc: 'Summer and autumn. Tall golden wheat from the windmill town, for bread and baking. Ready in 8 days. Sold only in Highmoor.' },
   moorberry_seeds: { name: 'Moorberry Seeds', stack: 999, seed: 'moorberry', sell: 70, desc: 'Spring and summer. A heathland bush: after the first harvest it fruits again every 3 days until the season ends. Ready in 7 days. Sold only in Highmoor.' },
-  samphire: { name: 'Sea Samphire', stack: 999, sell: 120, desc: 'Crisp, salty sea greens. Sells for 120g.' },
+  samphire: { name: 'Sea Samphire', stack: 999, sell: 140, desc: 'Crisp, salty sea greens. Sells for 140g.' },
   lantern_gourd: { name: 'Lantern Gourd', stack: 999, sell: 400, desc: 'It still glows faintly after picking. Sells for 400g.' },
-  highmoor_wheat: { name: 'Highmoor Wheat', stack: 999, sell: 200, desc: 'Golden wheat from the windy moor. Sells for 200g.' },
+  highmoor_wheat: { name: 'Highmoor Wheat', stack: 999, sell: 260, desc: 'Golden wheat from the windy moor. Sells for 260g.' },
   moorberry: { name: 'Moorberries', stack: 999, sell: 110, desc: 'Dusky blue moorland berries, sweet and tart. Sells for 110g.' },
   samphire_fritters: { name: 'Samphire Fritters', stack: 99, eat: 70, sell: 360, desc: 'Crispy golden fritters full of salty samphire. Restores 70 energy.' },
   lantern_soup: { name: 'Lantern Gourd Soup', stack: 99, eat: 90, sell: 760, desc: 'A velvety orange soup that glows a little in the bowl. Restores 90 energy.' },
@@ -9515,7 +9524,7 @@ COOKING.push(
   { out: 'highmoor_loaf', need: { highmoor_wheat: 2 } }, { out: 'moorberry_scones', need: { moorberry: 2, highmoor_wheat: 1 } },
   { out: 'moorberry_crumble', need: { moorberry: 2, highmoor_wheat: 1, honey: 1 } },
 );
-BR_SHOP.unshift(['samphire_seeds', 70], ['lanterngourd_seeds', 150]);
+BR_SHOP.unshift(['samphire_seeds', 50], ['lanterngourd_seeds', 150]);
 HM_SHOP.unshift(['moorwheat_seeds', 100], ['moorberry_seeds', 140]);
 if (ASSET.coastcrops) for (const [k, v] of Object.entries(ASSET.coastcrops.crops)) SAP_CANVAS[k] = rgbaCanvas(v);
 // Silver and Gold versions, like every other crop

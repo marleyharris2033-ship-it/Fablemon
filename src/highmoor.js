@@ -67,7 +67,7 @@ Object.assign(ROUTES, {
     spawn: { x: 17, y: 58, dir: 'up' }, enc: MOOR_ENC },
   galeledges: { ...MOOR_BASE, name: 'Gale Ledges', w: 40, h: 50, ascii: HM_MAPS.galeledges.rows, vanes: HM_MAPS.galeledges.vanes,
     zones: [[0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 48, 50], [0, 0, 0, 0, 49, 51], [0, 0, 0, 0, 50, 52]],
-    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'skyward_charm', n: 3 }, { id: 'gl4', x: 22, y: 35, item: 'sturdy_charm', n: 4 }],
+    pickups: [{ id: 'gl1', x: 32, y: 26, item: 'heartwood_charm', n: 1 }, { id: 'gl2', x: 4, y: 14, gold: 7000 }, { id: 'gl3', x: 36, y: 1, item: 'skyward_charm', n: 3 }, { id: 'gl4', x: 22, y: 35, item: 'hearth_elixir', n: 1 }],
     signs: { ...vaneSigns('galeledges'), '15,48': 'Gale Ledges. Stone pillars stand in the gorge like stepping stones. Three weathervanes steer the wind between them.',
       '17,1': 'North: Highmoor, the windmill town. You can hear the sails creaking from here.', '24,4': '__heal' },
     trainers: [],

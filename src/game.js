@@ -91,6 +91,7 @@ const ITEMS = {
   hearty_stew: { name: 'Hearty Stew', stack: 99, eat: 170, sell: 430, desc: "Barney's recipe. Potatoes, carrots and turnip, slow-cooked. Restores 170 energy." },
   corn_fritters: { name: 'Corn Fritters', stack: 99, eat: 110, sell: 300, desc: "Barney's recipe. Crispy and golden. Restores 110 energy." },
   tavern_pie: { name: 'Tavern Pie', stack: 99, eat: 280, sell: 820, desc: "Barney's famous pie. Restores 280 energy." },
+  hearth_elixir: { name: 'Hearthroot Elixir', stack: 99, heal: 100, cure: 1, sell: 500, desc: "A rare golden draught pressed from Hearthroot sap. Fully restores a Fablemon's HP and cures any status problem. Only sold in Highmoor, and it isn't cheap." },
   mon_treat: { name: 'Fablemon Feast', stack: 99, heal: 50, sell: 150, desc: 'Berries baked in honey. Restores half a Fablemon\'s HP, in battle or from its Info page.' },
   oak_sapling: { name: 'Oak Sapling', stack: 99, place: 'obj', obj: 'sap_oak', desc: 'Plant it on grass. Grows into an oak tree in 7 days.' },
   pine_sapling: { name: 'Pine Sapling', stack: 99, place: 'obj', obj: 'sap_pine', desc: 'Plant it on grass. Grows into a pine tree in 7 days.' },
@@ -375,6 +376,13 @@ function loadExtraIcons() {
     ICONS.tomato_salad = plate(g => { g.fillStyle = '#4e9a3a'; g.fillRect(4, 11, 16, 4); for (const [x, y] of [[5, 9], [11, 8], [15, 10]]) { g.fillStyle = '#2a1e1a'; g.fillRect(x, y, 5, 5); g.fillStyle = '#d8402a'; g.fillRect(x + 1, y + 1, 3, 3); } });
     ICONS.pumpkin_pie = plate(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 9, 18, 8); g.fillStyle = '#c99462'; g.fillRect(4, 10, 16, 6); g.fillStyle = '#e88a2a'; g.fillRect(5, 10, 14, 4); g.fillStyle = '#fff6e0'; g.fillRect(10, 9, 4, 2); });
     ICONS.berry_crumble = mk(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 8, 18, 13); g.fillStyle = '#e8e0d0'; g.fillRect(4, 14, 16, 6); g.fillStyle = '#d8b070'; g.fillRect(4, 9, 16, 5); g.fillStyle = '#b04070'; for (const x of [6, 11, 16]) g.fillRect(x, 12, 2, 2); }).toDataURL();
+    ICONS.hearth_elixir = mk(g => {   // a little golden bottle with a leaf on the cork
+      g.fillStyle = '#2a1e1a'; g.fillRect(7, 8, 10, 14); g.fillRect(9, 3, 6, 6);
+      g.fillStyle = '#f2b830'; g.fillRect(8, 10, 8, 11); g.fillStyle = '#ffe27a'; g.fillRect(9, 11, 3, 6); g.fillStyle = '#c8861a'; g.fillRect(13, 15, 3, 6);
+      g.fillStyle = '#e8e0d0'; g.fillRect(8, 9, 8, 1);
+      g.fillStyle = '#8a5a2a'; g.fillRect(10, 4, 4, 4); g.fillStyle = '#5ab04a'; g.fillRect(14, 2, 4, 3); g.fillRect(16, 1, 2, 1);
+      g.fillStyle = '#fff6c0'; g.fillRect(10, 12, 1, 3);
+    }).toDataURL();
     ICONS.mon_treat = mk(g => { g.fillStyle = '#2a1e1a'; g.fillRect(4, 6, 16, 15); g.fillStyle = '#f2c14e'; g.fillRect(5, 7, 14, 13); g.fillStyle = '#c0304a'; for (const [x, y] of [[7, 9], [12, 8], [9, 13], [14, 13]]) g.fillRect(x, y, 3, 3); g.fillStyle = '#fff3a0'; g.fillRect(6, 8, 3, 1); g.fillStyle = '#e04a6a'; g.fillRect(11, 2, 3, 3); }).toDataURL();
     ICONS.hearty_stew = bowl('#8a4a2a', '#e8a040'); ICONS.corn_fritters = plate(g => { for (const [x, y] of [[4, 10], [10, 8], [14, 11]]) { g.fillStyle = '#2a1e1a'; g.fillRect(x, y, 7, 6); g.fillStyle = '#e8b030'; g.fillRect(x + 1, y + 1, 5, 4); g.fillStyle = '#fff0a0'; g.fillRect(x + 1, y + 1, 2, 1); } });
     ICONS.tavern_pie = plate(g => { g.fillStyle = '#2a1e1a'; g.fillRect(3, 8, 18, 9); g.fillStyle = '#b07038'; g.fillRect(4, 9, 16, 7); g.fillStyle = '#d89a58'; for (let x = 5; x < 19; x += 3) g.fillRect(x, 10, 2, 5); g.fillStyle = '#f0c080'; g.fillRect(5, 9, 6, 1); });
@@ -4458,13 +4466,14 @@ function useRoute(key) {
   BRIDGE = RC.bridge ? { ...RC.bridge } : null;
 }
 const beatTrainer = id => !!(S.trainers && S.trainers[id]);
-// Rematches: once beaten, a trainer can be fought again after each new Crest. Their team is raised to the
-// level of trainers in the next area (keeping its spread) and evolves where it can.
-const REMATCH_TOP = [0, 22, 30, 38, 46, 54, 62, 70, 80];
-const rematchReady = t => !t.boss && beatTrainer(t.id) && crestCount() > ((S.trainerCrest || {})[t.id] || 0);
+// Rematches: any trainer you've beaten will battle again, once a day. Their team is raised to the level of the ace
+// of the strongest Warden you've beaten (keeping its spread) and evolves where it can.
+const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 72 };
+const rematchLevel = () => Math.max(0, ...Object.keys(S.crests || {}).filter(k => S.crests[k]).map(k => WARDEN_ACE[k] || 0));
+const rematchReady = t => !t.boss && beatTrainer(t.id) && ((S.rematchDay || {})[t.id] || 0) !== S.day;
 function rematchTeam(t) {
   if (!beatTrainer(t.id)) return t.team;
-  const top = Math.max(...t.team.map(([, l]) => l)), want = REMATCH_TOP[Math.min(8, crestCount())];
+  const top = Math.max(...t.team.map(([, l]) => l)), want = rematchLevel();
   if (want <= top) return t.team;
   return t.team.map(([sp, lv]) => { const nl = want - (top - lv); let s = sp, e; while ((e = SPECIES[s].evo) && MON_ORDER.includes(e[0]) && nl >= e[1]) s = e[0]; return [s, nl]; });
 }
@@ -4623,7 +4632,7 @@ class Route extends World {
     Talk.say([{ who: 'trainer', name: who, img: pic, t: pick(TT.challenge) }], () => {
       const tm = rematchTeam(t), teamMons = tm.map(([sp, lv]) => trainerMon(sp, lv)), again = beatTrainer(t.id);
       // prize money: 25g per level of their strongest Fablemon the first time, 12g per level in rematches
-      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); } });
+      Battle.start(teamMons[0], { label: TT.label, name: t.name, team: teamMons, prize: Math.max(...tm.map(([, l]) => l)) * (again ? 12 : 25), lose: pick(TT.lose), onWin: () => { S.trainers = S.trainers || {}; S.trainers[t.id] = 1; S.trainerCrest = S.trainerCrest || {}; S.trainerCrest[t.id] = crestCount(); if (again) { S.rematchDay = S.rematchDay || {}; S.rematchDay[t.id] = S.day; } } });
     });
   }
   talkTrainer(t) {
@@ -4633,14 +4642,14 @@ class Route extends World {
     if (t.boss) return Talk.say([{ who: 'trainer', name: `Warden ${t.name}`, img: trainerPic(t.kind, 1), t: pick(["Keep that Root Crest polished, dear.", "Your Fablemon look happy. That's the real prize.", "Mind how you go. The other Wardens won't go easy on you."]) }]);
     if (rematchReady(t)) {
       const top = Math.max(...rematchTeam(t).map(([, l]) => l));
-      return Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 0), t: `Oi, it's you! I've been training since we last met. My team's around level ${top} now. Rematch?` }], () =>
+      return Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 0), t: pick([`Oi, it's you! Fancy another go? My team's around level ${top} now.`, `Back for more? I've been training. My team's around level ${top}.`, `A rematch? Go on then. My Fablemon are up to level ${top}!`]) }], () =>
         openModal('Rematch?', `<p>Battle ${TT.label} ${t.name} again? Their Fablemon are now up to <b>level ${top}</b>.</p><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-a="yes">Battle!</button><button class="btn" data-a="no">Not now</button></div>`, a => {
           closeModal(); if (a !== 'yes') return;
           if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
           this.startTrainerBattle(t);
         }));
     }
-    Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 1), t: pick(TT.after) }]);
+    Talk.say([{ who: 'trainer', name: `${TT.label} ${t.name}`, img: trainerPic(t.kind, 1), t: pick(TT.after) + ' (Ready for a rematch tomorrow.)' }]);
   }
   frameHook(dt) {
     this.fadeAcc += dt; if (this.fadeAcc < .08) return; this.fadeAcc = 0;

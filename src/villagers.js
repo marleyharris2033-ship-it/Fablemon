@@ -87,7 +87,7 @@ const ORD = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
 const lockedRow = (id, crest, label) => `<div class="shoprow" style="opacity:.55"><img src="${iconFor(id)}" style="filter:grayscale(1)"><div class="g"><b>${label || ITEMS[id].name}</b><small>🔒 After your ${ORD[crest]} Crest</small></div></div>`;
 const shopRow = (id, p0, crest = 0, n = 1, p = friendPrice(p0)) => crestCount() < crest ? lockedRow(id, crest, n > 1 ? `${ITEMS[id].name} ×${n}` : '') : `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}${n > 1 ? ' ×' + n : ''}</b><small>${ITEMS[id].desc}</small></div><button class="btn gold" data-a="buy" data-id="${id}" data-p="${p}" data-n="${n}" ${S.gold < p ? 'disabled' : ''}>${p}g</button></div>`;
 function svcClinic() {
-  const shop = [['berry', 30, 0], ['honey', 150, 0], ['berry_crumble', 120, 1], ['tonic', 260, 2], ['mon_treat', 300, 3]];
+  const shop = [['berry', 30, 0], ['honey', 150, 0], ['berry_crumble', 120, 1], ['tonic', 260, 2], ['mon_treat', 200, 3]];
   const render = () => `<p>Willa looks after your whole team for free.</p><div class="row"><button class="btn gold" data-a="heal">Heal my team</button></div>
     <p style="margin-top:10px"><b>Medicine</b></p><div class="mlist">${shop.map(([id, p, c]) => shopRow(id, p, c)).join('')}</div>`;
   openModal('Smallroot Clinic', render(), (a, d) => {
