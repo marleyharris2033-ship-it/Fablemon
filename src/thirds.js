@@ -9,11 +9,11 @@ const THIRDS = ['hedgerholt', 'hearthrusk', 'merewheel', 'plumevix', 'whorlcrest
 
 Object.assign(SPECIES, {
   // ---- starters (evolve at 36)
-  hedgerholt: { name: 'Hedgerholt', type: 'Leaf', base: { hp: 85, atk: 80, def: 100, spd: 60 }, exp: 220, rate: 45,
+  hedgerholt: { name: 'Hedgerholt', type: 'Leaf', base: { hp: 98, atk: 92, def: 115, spd: 69 }, exp: 220, rate: 45,
     desc: 'Its bramble has grown into a walking thicket crowned with twisting branches. Seed pods glow like lanterns in its leaves, lighting the way for lost travellers.' },
-  hearthrusk: { name: 'Hearthrusk', type: 'Ember', type2: 'Stone', base: { hp: 90, atk: 105, def: 80, spd: 55 }, exp: 220, rate: 45,
+  hearthrusk: { name: 'Hearthrusk', type: 'Ember', type2: 'Stone', base: { hp: 102, atk: 119, def: 91, spd: 62 }, exp: 220, rate: 45,
     desc: 'A towering kiln of molten rock with a crest of glowing crystals. Its fists burn hot enough to fire clay, and its footsteps leave warm prints for hours.' },
-  merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 85, atk: 80, def: 80, spd: 100 }, exp: 220, rate: 45,
+  merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 94, atk: 88, def: 88, spd: 110 }, exp: 220, rate: 45,
     desc: 'The spring on its back has become a brimming fountain, and its flower tail turns like a golden mill wheel. Wherever it rests, a fresh spring bubbles up.' },
   // ---- Meadow lines
   plumevix: { name: 'Plumevix', type: 'Wild', type2: 'Ember', base: { hp: 78, atk: 92, def: 66, spd: 104 }, exp: 215, rate: 45,
