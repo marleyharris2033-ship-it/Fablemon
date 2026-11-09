@@ -1568,9 +1568,11 @@ const SPECIES = {
   merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 94, atk: 88, def: 88, spd: 110 } },
 };
 const TEAM_MAX = 6, ROAM_MAX = 8;
-const IV_KEYS = ['hp', 'atk', 'def', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', spd: 'Speed' };
+const IV_KEYS = ['hp', 'atk', 'def', 'eatk', 'edef', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', eatk: 'Elem. Attack', edef: 'Elem. Defence', spd: 'Speed' };
 const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.floor(Math.random() * (11 - lo))]));
-const ivMul = (m, k) => 1 + ((m.iv && m.iv[k]) || 5) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
+// potential for the elemental stats falls back to the physical one, for Fablemon from saves made before they existed
+const ivOf = (m, k) => (m.iv && (m.iv[k] || (k === 'eatk' ? m.iv.atk : k === 'edef' ? m.iv.def : 0))) || 5;
+const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
@@ -1662,7 +1664,7 @@ function openJournal(focus) {
       <p>${has ? s0.desc : 'You have only glimpsed this Fablemon. Catch one to learn more about it.'}</p>
       <p><small><b>Found:</b> ${HABITAT(sp)}</small></p>${has ? `<p><small><b>Role:</b> ${LINE_ROLE[baseOf(sp)] || 'Unknown'}</small></p>
       <p><small><b>Evolution:</b> ${evoChain(sp)}</small></p>
-      <p><small><b>Base stats:</b> HP ${s0.base.hp} · Attack ${s0.base.atk} · Defence ${s0.base.def} · Speed ${s0.base.spd}</small></p>
+      <p><small><b>Base stats:</b> HP ${s0.base.hp} · Attack ${s0.base.atk} · Defence ${s0.base.def} · Elem. Attack ${s0.base.eatk} · Elem. Defence ${s0.base.edef} · Speed ${s0.base.spd}</small></p>
       <p style="margin:8px 0 4px"><b>Moves it learns</b></p><div class="jmoves">${(LEARN[sp] || []).map(([l, id]) => `<div class="jmv" style="--tc:${TYPES[MOVES[id].type]}"><span class="jl">Lv ${l}</span><b>${MOVES[id].name}</b><span class="tchip" style="background:${TYPES[MOVES[id].type]}">${MOVES[id].type}</span><small>${moveTag(id)}</small></div>`).join('')}</div>` : ''}
       <div class="row"><button class="btn" data-a="back">Back to Journal</button></div>`;
   };
@@ -1676,7 +1678,7 @@ function openMonInfo(m, back) {
   const render = () => `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[sp.type]}"><img src="${monPic(m.sp, 'front')}"></span>
     <div><b style="font-size:18px">${monName(m)}</b>${m.nick ? `<br><small>${sp.name}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
     <p>${sp.desc || ''}</p>
-    <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
+    <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Elem. Attack ${monStat(m, 'eatk')} · Elem. Defence ${monStat(m, 'edef')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
     ${ivPanel(m)}
     ${m.uid >= 0 ? heldRow(m) : ''}
     <p style="margin:10px 0 4px;display:flex;justify-content:space-between;align-items:center"><b>Moves</b>${m.uid >= 0 ? '<button class="btn sm" data-a="moves">Change moves</button>' : ''}</p>${(m.moves || []).map(id => moveCard(id, m)).join('')}
@@ -1807,7 +1809,7 @@ function openRanch() {
     const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
     const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
     const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
-        <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')} · Def ${monStat(m, 'def')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
+        <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
         <div class="rbtns">${m.loc === 'team'
           ? `${team()[0] !== m ? '<button class="btn sm" data-a="lead">Make lead</button>' : ''}<button class="btn sm" data-a="toRanch">Leave at ranch</button>`
           : `${team().length < TEAM_MAX ? '<button class="btn gold sm" data-a="toTeam">Take along</button>' : ''}${J ? `<button class="btn sm ${m.job ? 'gold' : ''}" data-a="job">${m.job ? 'Change job' : 'Give job'}</button>` : ''}${m.job ? '<button class="btn sm" data-a="stopjob">Stop job</button>' : ''}<button class="btn sm" data-a="roam">${m.out ? 'Bring in' : 'Let roam'}</button>`}
@@ -3654,7 +3656,7 @@ const stabOf = (mt, sp) => hasType(sp, mt) ? 1.5 : 1;
 const STATUS = { psn: ['Poisoned', '#8a4ab0', 'was poisoned'], brn: ['Burned', '#d0542a', 'was burned'], slp: ['Asleep', '#5b7aa8', 'fell asleep'], par: ['Dazed', '#c9a21e', 'is dazed and may not be able to move'] };
 const IMMUNE = { brn: 'Ember', par: 'Spark', psn: 'Stone' };
 // plain sentences about what a move does
-const STAT_LABEL = { atk: 'Attack', def: 'Defence', spd: 'Speed' };
+const STAT_LABEL = { atk: 'Attack and Elemental Attack', def: 'Defence and Elemental Defence', spd: 'Speed' };
 const statText = ([who, k, n]) => `${n > 0 ? 'Raises' : 'Lowers'} ${who === 'self' ? 'its own' : "the opponent's"} ${STAT_LABEL[k]}${Math.abs(n) > 1 ? ' sharply' : ''}`;
 const WEATHER_TEXT = { rain: 'Rain: Tide moves are 50% stronger and Ember moves 50% weaker', sun: 'Harsh sun: Ember moves are 50% stronger and Tide moves 50% weaker', gloom: 'Gloom: Shade moves are 50% stronger' };
 function moveEffect(id) {
@@ -3674,6 +3676,7 @@ function moveEffect(id) {
   if (M.st && !M.pow) t.push(`Leaves the opponent ${st}.`);
   if (M.fixed) t.push("Always deals damage equal to the user's level.");
   if (M.pow) {
+    t.push(moveCat(id) === 'e' ? 'Elemental: uses Elemental Attack against Elemental Defence.' : 'Physical: uses Attack against Defence.');
     t.push(M.pow >= 100 ? 'A huge attack.' : M.pow >= 80 ? 'A very strong attack.' : M.pow >= 65 ? 'A strong attack.' : M.pow >= 50 ? 'A solid attack.' : 'A light attack.');
     if (M.hits) t.push(`Hits ${M.hits[0]}–${M.hits[1]} times in a row.`);
     if (M.prio > 0) t.push('Always strikes first.');
@@ -3701,7 +3704,7 @@ function moveCard(id, m, tag = '') {
     <small>${moveEffect(id)}${M.pow && strong.length ? ` Super effective against ${strong.join(', ')}.` : ''}</small></div>`;
 }
 const ppMax = id => { const M = MOVES[id]; if (M.pp) return M.pp; if (M.protect || M.heal || M.rest || M.weather) return 10; if (!M.pow && !M.fixed) return M.st || M.seed ? 15 : 20; return M.pow >= 110 ? 8 : M.pow >= 80 ? 12 : M.pow >= 60 ? 15 : 25; };
-const moveTag = id => { const M = MOVES[id]; if (M.pow) return 'Pow ' + M.pow + (M.hits ? '×' + M.hits[0] + '–' + M.hits[1] : '') + (M.prio > 0 ? ' · First' : ''); if (M.fixed) return 'Lv dmg'; if (M.st) return STATUS[M.st[0]][0]; if (M.protect) return 'Protect'; if (M.heal || M.rest) return 'Heal'; if (M.weather) return { rain: 'Rain', sun: 'Sun', gloom: 'Gloom' }[M.weather]; if (M.hazard) return 'Hazard'; if (M.seed) return 'Seed'; if (M.haze) return 'Clear stats'; if (M.cure) return 'Cure team'; if (M.critUp) return '▲Crit'; const x = (M.stats || [M.stat])[0]; return x ? (x[2] > 0 ? '▲' : '▼') + { atk: 'Atk', def: 'Def', spd: 'Spd' }[x[1]] : ''; };
+const moveTag = id => { const M = MOVES[id]; if (M.pow) return (moveCat(id) === 'e' ? 'Elem ' : 'Phys ') + M.pow + (M.hits ? '×' + M.hits[0] + '–' + M.hits[1] : '') + (M.prio > 0 ? ' · First' : ''); if (M.fixed) return 'Lv dmg'; if (M.st) return STATUS[M.st[0]][0]; if (M.protect) return 'Protect'; if (M.heal || M.rest) return 'Heal'; if (M.weather) return { rain: 'Rain', sun: 'Sun', gloom: 'Gloom' }[M.weather]; if (M.hazard) return 'Hazard'; if (M.seed) return 'Seed'; if (M.haze) return 'Clear stats'; if (M.cure) return 'Cure team'; if (M.critUp) return '▲Crit'; const x = (M.stats || [M.stat])[0]; return x ? (x[2] > 0 ? '▲' : '▼') + { atk: 'Atk', def: 'Def', spd: 'Spd' }[x[1]] : ''; };
 const ppLeft = (m, id) => (m.pp && m.pp[id] != null) ? m.pp[id] : ppMax(id);
 function restMon(m) { m.hp = monStat(m, 'hp'); m.pp = {}; m.status = null; }
 const STAGE = s => s >= 0 ? (2 + s) / 2 : 2 / (2 - s);
@@ -3715,7 +3718,7 @@ const CHARM_GIFT = [
 function giveCharms() { if (S.gotCharms) return; S.gotCharms = true; inv.add('root_charm', 5); inv.add('berry', 3); renderHotbar(); toast('Received 5 Root Charms and 3 Hearthberries!', 2600); }
 
 // trainers' Fablemon have steady, slightly-above-average potential so fights stay predictable
-const trainerMon = (sp, lv) => { const m = wildMon(sp, lv); m.iv = { hp: 6, atk: 6, def: 6, spd: 6 }; m.hp = monStat(m, 'hp'); return m; };
+const trainerMon = (sp, lv) => { const m = wildMon(sp, lv); m.iv = { hp: 6, atk: 6, def: 6, eatk: 6, edef: 6, spd: 6 }; m.hp = monStat(m, 'hp'); return m; };
 function wildMon(sp, lv) { const m = { uid: -1, sp, nick: '', lv, xp: lv ** 3, moves: movesAt(sp, lv), iv: rollIV() }; m.hp = monStat(m, 'hp'); return m; }
 const canFight = m => m.loc === 'team' && m.hp > 0;
 
@@ -3796,7 +3799,7 @@ const Battle = (() => {
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
-  function stat(side, k) { const m = side === 'me' ? B.me : B.foe; return monStat(m, k) * heldStat(m, k) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k) : 1); }
+  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k0) * STAGE(B.st[side][k0] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
   const nameOf = side => (side === 'foe' ? foeLabel() : '') + monName(side === 'me' ? B.me : B.foe);
   async function inflict(side, st) {
     const m = side === 'me' ? B.me : B.foe;
@@ -3891,7 +3894,7 @@ const Battle = (() => {
         const bondCrit = side === 'me' ? Math.min(20, att.bond || 0) / 400 : 0;   // up to +5% for a close bond
         const crit = Math.random() < [1 / 16, 1 / 8, 1 / 2, 1][Math.min(3, (M.crit ? 1 : 0) + (va.crit || 0))] + bondCrit ? 1.5 : 1; if (crit > 1) crits++;
         const pw = M.pow * (att.held === sigilOf(M.type) ? 1.15 : 1) * (M.hex && def.status ? 2 : 1) * (M.hexSlp && def.status === 'slp' ? 2 : 1) * (M.desperate && att.hp < monStat(att, 'hp') / 3 ? 2 : 1);
-        const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : 'atk') * (att.status === 'brn' && !M.useDef ? .5 : 1) / stat(defSide, 'def')) / 50) + 2;
+        const base = Math.floor(Math.floor((2 * att.lv / 5 + 2) * pw * stat(side, M.useDef ? 'def' : moveCat(id) === 'e' ? 'eatk' : 'atk') * (att.status === 'brn' && !M.useDef && moveCat(id) !== 'e' ? .5 : 1) / stat(defSide, moveCat(id) === 'e' ? 'edef' : 'def')) / 50) + 2;
         dmg = Math.max(1, Math.floor(base * stab * e * crit * wxMul(M.type) * (.85 + Math.random() * .15)));
       }
       Sound.play('hit'); await anim(spr(defSide), 'hurt', n > 1 ? 260 : 450);
@@ -3944,7 +3947,7 @@ const Battle = (() => {
   }
   // how well a foe Fablemon matches up against the player's: higher is better for the foe
   const bestHit = (a, d) => Math.max(1, ...a.moves.map(id => { const M = MOVES[id]; return M.pow ? M.pow * effOn(M.type, d.sp) * stabOf(M.type, a.sp) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) : M.fixed ? 50 : 0; }));
-  const matchup = (f, me) => bestHit(f, me) * monStat(f, 'atk') / (bestHit(me, f) * monStat(me, 'atk')) * (f.hp / monStat(f, 'hp') + .2);
+  const matchup = (f, me) => bestHit(f, me) * Math.max(monStat(f, 'atk'), monStat(f, 'eatk')) / (bestHit(me, f) * Math.max(monStat(me, 'atk'), monStat(me, 'eatk'))) * (f.hp / monStat(f, 'hp') + .2);
   const foeLeft = () => B.T ? B.T.team.filter(m => m.hp > 0) : (B.foe.hp > 0 ? [B.foe] : []);
   function nextFoe() {
     const left = foeLeft().filter(m => m !== B.foe); if (!left.length) return null;
@@ -4026,10 +4029,10 @@ const Battle = (() => {
     const S0 = SPECIES[B.foe.sp], gain = Math.max(1, Math.floor((S0.exp || 50) * B.foe.lv / 5 * .9 * (B.wild ? 1 : 1.5) * (S.xpDay === S.day ? 1.5 : 1) * (hasPerk('rowan') ? 1.1 : 1)));   // ×0.9: a little grinding is part of the game
     const fought = [...B.used].map(uid => S.mons.find(x => x.uid === uid)).filter(m => m && m.hp > 0);
     const rest = team().filter(m => m.hp > 0 && !fought.includes(m)), share = Math.max(1, Math.floor(gain / 2));
-    for (const m of rest) m.xp += Math.floor(share * (m.held === 'study_leaf' ? 1.2 : 1));
+    for (const m of rest) m.xp += Math.floor(share * (m.held === 'study_leaf' ? 1.2 : 1) * catchUp(m));
     if (rest.length) await say(`The rest of your team gained ${share} experience each.`, 1100);
     for (const m of [...fought, ...rest]) {
-      if (fought.includes(m)) { const gg = Math.floor(gain * (m.held === 'study_leaf' ? 1.2 : 1)); m.xp += gg; if (m === B.me) box('me'); await say(`${monName(m)} gained ${gg} experience!`, 1100); }
+      if (fought.includes(m)) { const gg = Math.floor(gain * (m.held === 'study_leaf' ? 1.2 : 1) * catchUp(m)); m.xp += gg; if (m === B.me) box('me'); await say(`${monName(m)} gained ${gg} experience!`, 1100); }
       while (m.lv < 100 && m.xp >= xpNext(m)) {
         const oldMax = monStat(m, 'hp'); m.lv++; m.hp += monStat(m, 'hp') - oldMax; m.bond = (m.bond || 0);
         Sound.play('levelup'); if (m === B.me) { box('me'); await anim('bme', 'buff', 400); }

@@ -32,16 +32,17 @@ function heldIcons() {
 }
 
 /* ---------- potential panel on a Fablemon's info page */
-function ivBest(m) { return IV_KEYS.map(k => [k, (m.iv || {})[k] || 5]).sort((a, b) => b[1] - a[1])[0]; }
+function ivBest(m) { return IV_KEYS.map(k => [k, ivOf(m, k)]).sort((a, b) => b[1] - a[1])[0]; }
 function ivRole(m) {
-  const top = IV_KEYS.map(k => [k, (m.iv || {})[k] || 5]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(x => x[0]).sort().join('+');
+  // the role looks at the better of each pair (Attack or Elemental Attack, Defence or Elemental Defence)
+  const v = k => ivOf(m, k), top = [['hp', v('hp')], ['atk', Math.max(v('atk'), v('eatk'))], ['def', Math.max(v('def'), v('edef'))], ['spd', v('spd')]].sort((a, b) => b[1] - a[1]).slice(0, 2).map(x => x[0]).sort().join('+');
   return { 'def+hp': 'Tank', 'atk+spd': 'Striker', 'atk+hp': 'Bruiser', 'atk+def': 'Juggernaut', 'hp+spd': 'Runner', 'def+spd': 'Guardian' }[top] || '';
 }
 function ivPanel(m) {
   if (!m.iv) return '';
-  const total = IV_KEYS.reduce((a, k) => a + m.iv[k], 0), grade = total >= 34 ? 'Outstanding' : total >= 28 ? 'Great' : total >= 20 ? 'Good' : 'Modest';
-  const bar = k => `<div class="ivr"><span>${IV_NAME[k]}</span><i>${Array.from({ length: 10 }, (_, j) => `<b class="${j < m.iv[k] ? 'on' : ''}"></b>`).join('')}</i><em>${m.iv[k]}</em></div>`;
-  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/40)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. Each point adds 1% to that stat, so a 10 gives +10%.</small></div>`;
+  const total = IV_KEYS.reduce((a, k) => a + ivOf(m, k), 0), grade = total >= 51 ? 'Outstanding' : total >= 42 ? 'Great' : total >= 30 ? 'Good' : 'Modest';
+  const bar = k => `<div class="ivr"><span>${IV_NAME[k]}</span><i>${Array.from({ length: 10 }, (_, j) => `<b class="${j < ivOf(m, k) ? 'on' : ''}"></b>`).join('')}</i><em>${ivOf(m, k)}</em></div>`;
+  return `<div class="ivp"><div style="display:flex;justify-content:space-between"><b>Potential</b><small>${grade} (${total}/60)${ivRole(m) ? ` · suits a <b>${ivRole(m)}</b>` : ''}</small></div>${IV_KEYS.map(bar).join('')}<small class="hint">Every Fablemon is born with its own potential. Each point adds 1% to that stat, so a 10 gives +10%.</small></div>`;
 }
 function heldRow(m) {
   const it = m.held && ITEMS[m.held];

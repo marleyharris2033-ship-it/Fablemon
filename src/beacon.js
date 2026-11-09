@@ -143,7 +143,7 @@ function orrinTalk(sc) {
 }
 
 /* ---------- doors */
-const BR_SHOP = [['tonic', 260], ['mon_treat', 250], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
+const BR_SHOP = [['tonic', 110], ['mon_treat', 250], ['sturdy_charm', 130], ['swift_feather', 900], ['heartwood_charm', 1600], ['spark_sigil', 2000, 4]];
 function beaconDoor(sc, id) {
   if (id === 'br_orrin') return orrinTalk(sc);
   if (id === 'br_lighthouse') {
