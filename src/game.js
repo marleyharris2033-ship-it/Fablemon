@@ -1552,12 +1552,12 @@ const SPECIES = {
   hollowbark: { name: 'Hollowbark', type: 'Shade', type2: 'Leaf', evo: ['hollowbark_3', 38], base: { hp: 70, atk: 72, def: 90, spd: 30 }, exp: 142, rate: 90, desc: 'Its log has grown into a hollow old tree, crowned with moss and mushrooms. A shadow watches from inside the trunk, and dark claws creep out from the roots to guard the bog at night.' },
   marshviper: { name: 'Marshviper', type: 'Tide', type2: 'Shade', base: { hp: 80, atk: 104, def: 72, spd: 90 }, exp: 215, rate: 30, desc: 'Its reed segments have grown into a long, banded coil under a crown of marsh leaves. It rears up from still water without a ripple and fires a scalding jet from its funnel tail.' },
   // later stages: art to come
-  briamble: { exp: 142, rate: 45, name: 'Briamble', type: 'Leaf', base: { hp: 65, atk: 60, def: 80, spd: 50 }, evo: ['hedgerholt', 36], desc: 'Its twig nest has grown into a tangle of bramble and thorns, with ripening seed pods tucked inside. Its white whiskers rustle like dry leaves.' },
-  hedgerholt: { name: 'Hedgerholt', type: 'Leaf', base: { hp: 85, atk: 80, def: 100, spd: 60 } },
-  kilnook: { exp: 142, rate: 45, name: 'Kilnook', type: 'Ember', base: { hp: 70, atk: 80, def: 65, spd: 45 }, evo: ['hearthrusk', 36], desc: 'Its clay plates have hardened like fired brick. Three furnace vents roar along its back, and its fists are hot enough to bake bread.' },
-  hearthrusk: { name: 'Hearthrusk', type: 'Ember', base: { hp: 90, atk: 105, def: 80, spd: 55 } },
-  weirlet: { exp: 142, rate: 45, name: 'Weirlet', type: 'Tide', base: { hp: 65, atk: 60, def: 60, spd: 80 }, evo: ['merewheel', 36], desc: 'The spring pool on its back has deepened, and its flower tail now spins like a little water wheel. It can turn a stream to follow it.' },
-  merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 85, atk: 80, def: 80, spd: 100 } },
+  briamble: { exp: 142, rate: 45, name: 'Briamble', type: 'Leaf', base: { hp: 70, atk: 65, def: 86, spd: 54 }, evo: ['hedgerholt', 36], desc: 'Its twig nest has grown into a tangle of bramble and thorns, with ripening seed pods tucked inside. Its white whiskers rustle like dry leaves.' },
+  hedgerholt: { name: 'Hedgerholt', type: 'Leaf', base: { hp: 98, atk: 92, def: 115, spd: 69 } },
+  kilnook: { exp: 142, rate: 45, name: 'Kilnook', type: 'Ember', base: { hp: 75, atk: 86, def: 70, spd: 48 }, evo: ['hearthrusk', 36], desc: 'Its clay plates have hardened like fired brick. Three furnace vents roar along its back, and its fists are hot enough to bake bread.' },
+  hearthrusk: { name: 'Hearthrusk', type: 'Ember', base: { hp: 102, atk: 119, def: 91, spd: 62 } },
+  weirlet: { exp: 142, rate: 45, name: 'Weirlet', type: 'Tide', base: { hp: 69, atk: 63, def: 63, spd: 85 }, evo: ['merewheel', 36], desc: 'The spring pool on its back has deepened, and its flower tail now spins like a little water wheel. It can turn a stream to follow it.' },
+  merewheel: { name: 'Merewheel', type: 'Tide', base: { hp: 94, atk: 88, def: 88, spd: 110 } },
 };
 const TEAM_MAX = 6, ROAM_MAX = 8;
 const IV_KEYS = ['hp', 'atk', 'def', 'spd'], IV_NAME = { hp: 'HP', atk: 'Attack', def: 'Defence', spd: 'Speed' };
