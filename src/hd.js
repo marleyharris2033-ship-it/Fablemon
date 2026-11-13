@@ -46,6 +46,8 @@ function hdWorldSwap(sc) {
     const old = tm.get(key), img = tm.get(hk).getSourceImage(); tm.remove(hk);
     const T = tm.addImage(key + '__new', img); if (!T) return;
     try { build(old, T); } catch (e) { tm.remove(key + '__new'); return; }
+    T.source[0].resolution = 3;   // the renderer draws cut size / resolution, so 3x pixels show at the small size
+    for (const n of T.getFrameNames()) T.get(n).updateUVs();
     T.setFilter(Phaser.Textures.FilterMode.LINEAR);
     tm.remove(key); tm.renameTexture(key + '__new', key);
   };

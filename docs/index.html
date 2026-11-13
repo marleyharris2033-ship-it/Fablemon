@@ -334,15 +334,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261113-224552">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261113-224552">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261113-224552">
+<link rel="manifest" href="manifest.webmanifest?v=20261113-225333">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261113-225333">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261113-225333">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261113-224552').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261113-225333').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -10624,6 +10624,8 @@ function hdWorldSwap(sc) {
     const old = tm.get(key), img = tm.get(hk).getSourceImage(); tm.remove(hk);
     const T = tm.addImage(key + '__new', img); if (!T) return;
     try { build(old, T); } catch (e) { tm.remove(key + '__new'); return; }
+    T.source[0].resolution = 3;   // the renderer draws cut size / resolution, so 3x pixels show at the small size
+    for (const n of T.getFrameNames()) T.get(n).updateUVs();
     T.setFilter(Phaser.Textures.FilterMode.LINEAR);
     tm.remove(key); tm.renameTexture(key + '__new', key);
   };
