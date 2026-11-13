@@ -60,7 +60,7 @@ early(['craglet_2', 'cindhop_2', 'bristlecone_2', 'clinkit_2', 'ramruff_2'], bat
 early(['bristlecone_2'], walk='walk_bristlecone_2', cols=4, stand=0)
 early(['fleecebolt', 'whirlwyn', 'cloverguard', 'flintburrow', 'staticwing', 'duskcloak'], battle='battle_fleecebolt-whirlwyn-cloverguard-flintburrow-staticwing-duskcloak')
 early(['rampartoad', 'pyrebrash'], battle='battle_rampartoad-pyrebrash'); early(['brookstride'], battle='battle_brookstride')
-early(['muddlebub', 'lotling', 'puffpiper_cotton', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom'], battle='battle_muddlebub-lotling-puffpiper_cotton-sundrowse-tipplecup-glimmerjel-logloom')
+early(['muddlebub', 'lotling', 'unused_chick', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom'], battle='battle_muddlebub-lotling-puffpiper_cotton-sundrowse-tipplecup-glimmerjel-logloom')
 for s_ in ['duskcloak', 'staticwing', 'brookstride', 'rampartoad', 'pyrebrash']: early([s_], walk='walk_' + s_)
 for s_ in ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']: early([s_], walk='walk_' + s_, cols=4, stand=0)
 # bog walk sheets from the zip (13 Nov), 4 frames per row
@@ -160,6 +160,7 @@ def main():
     only = set(sys.argv[sys.argv.index('--only') + 1].split(',')) if '--only' in sys.argv else None
     pv = []
     for sid, d in MONS.items():
+        if sid.startswith('unused_'): continue      # art kept on file but not in the game (the chick Puffpiper, 13 Nov: the user chose the cotton frog)
         if only and sid not in only: continue
         got = []
         if 'b' in d and os.path.exists(d['b'][0]):
