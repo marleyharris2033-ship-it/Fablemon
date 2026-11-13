@@ -2,8 +2,10 @@
 const SIGIL_TYPES = ['Leaf', 'Ember', 'Tide', 'Stone', 'Gale', 'Spark', 'Shade', 'Wild'];
 const sigilOf = type => type.toLowerCase() + '_sigil';
 Object.assign(ITEMS, {
-  fang_charm: { name: 'Fang Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Attack by 10%.' },
-  ironbark_charm: { name: 'Ironbark Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Defence by 10%.' },
+  fang_charm: { name: 'Fang Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Attack by 10% (physical moves).' },
+  ironbark_charm: { name: 'Ironbark Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Defence by 10% (against physical moves).' },
+  starpetal_charm: { name: 'Starpetal Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Elemental Attack by 10%.' },
+  mossveil_charm: { name: 'Mossveil Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Elemental Defence by 10%.' },
   swift_feather: { name: 'Swift Feather', stack: 99, held: 1, sell: 300, desc: 'Held: raises Speed by 10%.' },
   heartwood_charm: { name: 'Heartwood Charm', stack: 99, held: 1, sell: 500, desc: 'Held: restores 1/16 of its health at the end of every turn.' },
   clinging_burr: { name: 'Clinging Burr', stack: 99, held: 1, sell: 600, desc: 'Held: once per battle, survives a hit that would knock it out from full health.' },
@@ -11,8 +13,8 @@ Object.assign(ITEMS, {
   lucky_acorn: { name: 'Lucky Acorn', stack: 99, held: 1, sell: 500, desc: 'Held: if it takes part, trainer prize money is 25% higher.' },
 });
 for (const t of SIGIL_TYPES) ITEMS[sigilOf(t)] = { name: `${t} Sigil`, stack: 99, held: 1, sell: 700, type: t, desc: `Held: ${t} moves are 15% stronger.` };
-const HELD_SHOP = [['fang_charm', 900, 1], ['ironbark_charm', 900, 1], ['swift_feather', 900, 1], ['study_leaf', 1200, 1], ['lucky_acorn', 1500, 1], ['heartwood_charm', 1600, 2], ['clinging_burr', 1800, 2], ...SIGIL_TYPES.map(t => [sigilOf(t), 2000, 2])];
-const HELD_STAT = { fang_charm: 'atk', ironbark_charm: 'def', swift_feather: 'spd' };
+const HELD_SHOP = [['fang_charm', 900, 1], ['ironbark_charm', 900, 1], ['starpetal_charm', 900, 1], ['mossveil_charm', 900, 1], ['swift_feather', 900, 1], ['study_leaf', 1200, 1], ['lucky_acorn', 1500, 1], ['heartwood_charm', 1600, 2], ['clinging_burr', 1800, 2], ...SIGIL_TYPES.map(t => [sigilOf(t), 2000, 2])];
+const HELD_STAT = { fang_charm: 'atk', ironbark_charm: 'def', starpetal_charm: 'eatk', mossveil_charm: 'edef', swift_feather: 'spd' };   // each charm lifts one stat only
 const heldStat = (m, k) => HELD_STAT[m.held] === k ? 1.1 : 1;
 // a Warden hands over their type's sigil (and anyone who beat them before this update gets theirs once)
 function giveSigil(t) { S.flags = S.flags || {}; const id = sigilOf(t[0].toUpperCase() + t.slice(1)); if (S.flags['sig_' + id]) return; S.flags['sig_' + id] = 1; inv.add(id, 1); renderHotbar(); setTimeout(() => toast(`The Warden also gave you a ${ITEMS[id].name}! Give it to a Fablemon to hold.`, 3400), 1500); }
@@ -26,7 +28,7 @@ function heldIcons() {
       ICONS[id] = c.toDataURL(); ICON_CANVAS[id] = c;
     }; im.src = ICONS[base] || ICONS.wood; ICONS[id] = ICONS[base] || ICONS.wood;
   };
-  tint('sturdy_charm', '#d04030', 'fang_charm'); tint('sturdy_charm', '#8a5a2a', 'ironbark_charm'); tint('root_charm', '#4aa0e0', 'swift_feather');
+  tint('sturdy_charm', '#d04030', 'fang_charm'); tint('sturdy_charm', '#8a5a2a', 'ironbark_charm'); tint('root_charm', '#4aa0e0', 'swift_feather'); tint('sturdy_charm', '#b060d0', 'starpetal_charm'); tint('sturdy_charm', '#3a9a8a', 'mossveil_charm');
   tint('root_charm', '#3a9a3a', 'heartwood_charm'); tint('berry', '#7a6a2a', 'clinging_burr'); tint('root_charm', '#e0c040', 'study_leaf'); tint('honey', '#a06020', 'lucky_acorn');
   for (const t of SIGIL_TYPES) tint('sturdy_charm', TYPES[t], sigilOf(t));
 }

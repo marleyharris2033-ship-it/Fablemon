@@ -33,7 +33,7 @@ TOWNSFOLK.highmoor = [
 ];
 
 /* ---------- doors */
-const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 110], ['mon_treat', 250], ['hearth_elixir', 3000], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
+const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 110], ['mon_treat', 250], ['hearth_elixir', 3000], ['swift_feather', 900], ['fang_charm', 900], ['starpetal_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
 const _hmDoor = hmDoor;
 hmDoor = function (sc, id) {
   if (id === 'hm_land') return _hmDoor(sc, id);

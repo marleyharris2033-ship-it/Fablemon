@@ -333,15 +333,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261109-221931">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261109-221931">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261109-221931">
+<link rel="manifest" href="manifest.webmanifest?v=20261113-114328">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261113-114328">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261113-114328">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261109-221931').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261113-114328').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -2180,6 +2180,8 @@ const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eat
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
+// Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
+const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
 const team = () => S.mons.filter(m => m.loc === 'team');
 const lead = () => team()[0] || null;
@@ -2250,7 +2252,7 @@ function evoChain(sp) {
   let s = baseOf(sp); const out = [];
   for (let k = 0; k < 4 && s; k++) {
     const known = SPECIES[s] && MON_ORDER.includes(s), seen = known && (S.seen[s] || S.caught[s]);
-    out.push(s === sp ? `<b>${SPECIES[s].name}</b>` : seen ? SPECIES[s].name : '???');
+    out.push(s === sp ? `<b>${SPECIES[s].name}</b>` : seen ? SPECIES[s].name : '???');   // (a line keeps one form all the way up, so the page's own form tag covers it)
     const e = SPECIES[s] && SPECIES[s].evo; if (!e) break;
     out.push(`<span style="opacity:.7">→ Lv ${e[1]} →</span>`); s = e[0];
   }
@@ -2260,7 +2262,7 @@ function openJournal(focus) {
   const list = MON_ORDER, seen = list.filter(sp => S.seen[sp] || S.caught[sp] || S.mons.some(m => m.sp === sp)), caught = list.filter(sp => S.caught[sp] || S.mons.some(m => m.sp === sp));
   const card = (sp, i) => {
     const has = caught.includes(sp), saw = seen.includes(sp), num = String(i + 1).padStart(3, '0');
-    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? '<span class="jc">●</span>' : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}</span></button>`;
+    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? '<span class="jc">●</span>' : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}${saw && formTag(sp) ? `<br><small style="font-weight:400;opacity:.75">${formTag(sp)}</small>` : ''}</span></button>`;
   };
   const grid = () => `<div class="subbar"><span>Seen <b>${seen.length}</b> · Caught <b>${caught.length}</b> <small>of ${list.length}</small></span></div><div class="jgrid">${list.map(card).join('')}</div><p class="hint">Tap a Fablemon you've seen to read about it. ● means you've caught one.</p>`;
   const page = sp => {
@@ -2281,7 +2283,7 @@ function openJournal(focus) {
 function openMonInfo(m, back) {
   const sp = SPECIES[m.sp];
   const render = () => `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[sp.type]}"><img src="${monPic(m.sp, 'front')}"></span>
-    <div><b style="font-size:18px">${monName(m)}</b>${m.nick ? `<br><small>${sp.name}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
+    <div><b style="font-size:18px">${monName(m)}</b>${m.nick || sp.form ? `<br><small>${[m.nick ? sp.name : '', sp.form || ''].filter(Boolean).join(', ')}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
     <p>${sp.desc || ''}</p>
     <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Elem. Attack ${monStat(m, 'eatk')} · Elem. Defence ${monStat(m, 'edef')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
     ${ivPanel(m)}
@@ -4410,7 +4412,7 @@ const Battle = (() => {
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
-  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k0) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
+  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
   const nameOf = side => (side === 'foe' ? foeLabel() : '') + monName(side === 'me' ? B.me : B.foe);
   async function inflict(side, st) {
     const m = side === 'me' ? B.me : B.foe;
@@ -4803,7 +4805,7 @@ const ENCOUNTERS = {
   night: [['duskwick', 35], ['fuzzwick', 25], ['tusskip', 20], ['flintuck', 20]],
 };
 function rollWild(lvMin, lvMax, extra) {
-  const night = S.time >= 1140 || S.time < 360, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])];
+  const night = S.time >= 1140 || S.time < 360, wb = RC && RC.winter && seasonDay().si === 3 ? RC.winter : null, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])].map(([s, w]) => [s, wb && wb[s] ? w * wb[s] : w]);   // RC.winter: { species: weight multiplier in winter }
   let r = Math.random() * tab.reduce((a, [, w]) => a + w, 0), sp = tab[0][0];
   for (const [s, w] of tab) { if ((r -= w) < 0) { sp = s; break; } }
   return wildMon(sp, lvMin + Math.floor(Math.random() * (lvMax - lvMin + 1)));
@@ -6901,8 +6903,10 @@ function seasonalLine(id) {
 const SIGIL_TYPES = ['Leaf', 'Ember', 'Tide', 'Stone', 'Gale', 'Spark', 'Shade', 'Wild'];
 const sigilOf = type => type.toLowerCase() + '_sigil';
 Object.assign(ITEMS, {
-  fang_charm: { name: 'Fang Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Attack by 10%.' },
-  ironbark_charm: { name: 'Ironbark Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Defence by 10%.' },
+  fang_charm: { name: 'Fang Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Attack by 10% (physical moves).' },
+  ironbark_charm: { name: 'Ironbark Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Defence by 10% (against physical moves).' },
+  starpetal_charm: { name: 'Starpetal Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Elemental Attack by 10%.' },
+  mossveil_charm: { name: 'Mossveil Charm', stack: 99, held: 1, sell: 300, desc: 'Held: raises Elemental Defence by 10%.' },
   swift_feather: { name: 'Swift Feather', stack: 99, held: 1, sell: 300, desc: 'Held: raises Speed by 10%.' },
   heartwood_charm: { name: 'Heartwood Charm', stack: 99, held: 1, sell: 500, desc: 'Held: restores 1/16 of its health at the end of every turn.' },
   clinging_burr: { name: 'Clinging Burr', stack: 99, held: 1, sell: 600, desc: 'Held: once per battle, survives a hit that would knock it out from full health.' },
@@ -6910,8 +6914,8 @@ Object.assign(ITEMS, {
   lucky_acorn: { name: 'Lucky Acorn', stack: 99, held: 1, sell: 500, desc: 'Held: if it takes part, trainer prize money is 25% higher.' },
 });
 for (const t of SIGIL_TYPES) ITEMS[sigilOf(t)] = { name: `${t} Sigil`, stack: 99, held: 1, sell: 700, type: t, desc: `Held: ${t} moves are 15% stronger.` };
-const HELD_SHOP = [['fang_charm', 900, 1], ['ironbark_charm', 900, 1], ['swift_feather', 900, 1], ['study_leaf', 1200, 1], ['lucky_acorn', 1500, 1], ['heartwood_charm', 1600, 2], ['clinging_burr', 1800, 2], ...SIGIL_TYPES.map(t => [sigilOf(t), 2000, 2])];
-const HELD_STAT = { fang_charm: 'atk', ironbark_charm: 'def', swift_feather: 'spd' };
+const HELD_SHOP = [['fang_charm', 900, 1], ['ironbark_charm', 900, 1], ['starpetal_charm', 900, 1], ['mossveil_charm', 900, 1], ['swift_feather', 900, 1], ['study_leaf', 1200, 1], ['lucky_acorn', 1500, 1], ['heartwood_charm', 1600, 2], ['clinging_burr', 1800, 2], ...SIGIL_TYPES.map(t => [sigilOf(t), 2000, 2])];
+const HELD_STAT = { fang_charm: 'atk', ironbark_charm: 'def', starpetal_charm: 'eatk', mossveil_charm: 'edef', swift_feather: 'spd' };   // each charm lifts one stat only
 const heldStat = (m, k) => HELD_STAT[m.held] === k ? 1.1 : 1;
 // a Warden hands over their type's sigil (and anyone who beat them before this update gets theirs once)
 function giveSigil(t) { S.flags = S.flags || {}; const id = sigilOf(t[0].toUpperCase() + t.slice(1)); if (S.flags['sig_' + id]) return; S.flags['sig_' + id] = 1; inv.add(id, 1); renderHotbar(); setTimeout(() => toast(`The Warden also gave you a ${ITEMS[id].name}! Give it to a Fablemon to hold.`, 3400), 1500); }
@@ -6925,7 +6929,7 @@ function heldIcons() {
       ICONS[id] = c.toDataURL(); ICON_CANVAS[id] = c;
     }; im.src = ICONS[base] || ICONS.wood; ICONS[id] = ICONS[base] || ICONS.wood;
   };
-  tint('sturdy_charm', '#d04030', 'fang_charm'); tint('sturdy_charm', '#8a5a2a', 'ironbark_charm'); tint('root_charm', '#4aa0e0', 'swift_feather');
+  tint('sturdy_charm', '#d04030', 'fang_charm'); tint('sturdy_charm', '#8a5a2a', 'ironbark_charm'); tint('root_charm', '#4aa0e0', 'swift_feather'); tint('sturdy_charm', '#b060d0', 'starpetal_charm'); tint('sturdy_charm', '#3a9a8a', 'mossveil_charm');
   tint('root_charm', '#3a9a3a', 'heartwood_charm'); tint('berry', '#7a6a2a', 'clinging_burr'); tint('root_charm', '#e0c040', 'study_leaf'); tint('honey', '#a06020', 'lucky_acorn');
   for (const t of SIGIL_TYPES) tint('sturdy_charm', TYPES[t], sigilOf(t));
 }
@@ -9354,7 +9358,7 @@ const HM_MONS = ['kitlet', 'kitlet_2', 'kitlet_3', 'flurrowl', 'flurrowl_2', 'fl
 MON_ORDER.push(...HM_MONS);
 Object.assign(MON_STAGE, { kitlet_2: 2, kitlet_3: 3, flurrowl_2: 2, flurrowl_3: 3, wishling_2: 2, wishling_3: 3, heathfoal_2: 2 });
 Object.assign(EXTRA_HABITAT, {
-  kitlet: 'Heatherstep Cliffs and Gale Ledges (sometimes over Windward Sound)', flurrowl: 'Rare: Heatherstep Cliffs and Gale Ledges, mostly at night',
+  kitlet: 'Heatherstep Cliffs and Gale Ledges (sometimes over Windward Sound)', flurrowl: 'Rare: Heatherstep Cliffs and Gale Ledges, mostly at night. Far more of them come down with the winter snow',
   wishling: 'Heatherstep Cliffs and Gale Ledges (glows brightest at night)', heathfoal: 'Heatherstep Cliffs (sometimes Gale Ledges), in the daytime',
 });
 // where they live: the routes to Highmoor get their own wild tables, with the moorland Fablemon from earlier routes mixed in
@@ -9369,6 +9373,13 @@ ROUTES.galeledges.enc = {
   day: [['kitlet', 16], ['wishling', 12], ['heathfoal', 10], ['craglet_2', 10], ['whirlwyn', 7], ['staticwing', 6], ['bristlecone_2', 6], ['ramruff_2', 4], ['flurrowl', 5], ['craglet_3', 2], ['whorlcrest', 2]],
   night: [['wishling', 16], ['flurrowl', 12], ['kitlet', 8], ['duskcloak', 8], ['clinkit_2', 8], ['staticwing', 6], ['duskwyrm', 2], ['clinkit_3', 2]],
 };
+// Highmoor gets the first snow: three times as many Flurrowl in winter
+for (const k of ['windward', 'heatherstep', 'galeledges']) ROUTES[k].winter = { flurrowl: 3 };
+// two sailors on the islands of Windward Sound (easy to sail round)
+ROUTES.windward.trainers = [
+  { id: 'ws_t1', kind: 'rambler', name: 'Cormac', x: 36, y: 43, dir: 'left', sight: 4, team: [['foilfin_2', 46], ['stormveil_3', 46], ['riftshear_2', 47]] },
+  { id: 'ws_t2', kind: 'birdwatcher', name: 'Petra', x: 8, y: 28, dir: 'right', sight: 4, team: [['kitlet', 46], ['staticwing', 47], ['whorlcrest', 47], ['kilnback_2', 48]] },
+];
 // trainers on the cliffs and the pillars: the new Fablemon alongside old mountain and moorland faces
 ROUTES.heatherstep.trainers = [
   { id: 'hs_t1', kind: 'climber', name: 'Ffion', x: 24, y: 44, dir: 'left', sight: 4, team: [['craglet_2', 48], ['kitlet', 48], ['ramruff_2', 49], ['heathfoal', 49]] },
@@ -9418,7 +9429,7 @@ TOWNSFOLK.highmoor = [
 ];
 
 /* ---------- doors */
-const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 110], ['mon_treat', 250], ['hearth_elixir', 3000], ['swift_feather', 900], ['fang_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
+const HM_SHOP = [['skyward_charm', 300], ['sturdy_charm', 130], ['tonic', 110], ['mon_treat', 250], ['hearth_elixir', 3000], ['swift_feather', 900], ['fang_charm', 900], ['starpetal_charm', 900], ['heartwood_charm', 1600], ['clinging_burr', 1800], ['gale_sigil', 2000, 5]];
 const _hmDoor = hmDoor;
 hmDoor = function (sc, id) {
   if (id === 'hm_land') return _hmDoor(sc, id);

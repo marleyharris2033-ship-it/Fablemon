@@ -50,7 +50,7 @@ const HM_MONS = ['kitlet', 'kitlet_2', 'kitlet_3', 'flurrowl', 'flurrowl_2', 'fl
 MON_ORDER.push(...HM_MONS);
 Object.assign(MON_STAGE, { kitlet_2: 2, kitlet_3: 3, flurrowl_2: 2, flurrowl_3: 3, wishling_2: 2, wishling_3: 3, heathfoal_2: 2 });
 Object.assign(EXTRA_HABITAT, {
-  kitlet: 'Heatherstep Cliffs and Gale Ledges (sometimes over Windward Sound)', flurrowl: 'Rare: Heatherstep Cliffs and Gale Ledges, mostly at night',
+  kitlet: 'Heatherstep Cliffs and Gale Ledges (sometimes over Windward Sound)', flurrowl: 'Rare: Heatherstep Cliffs and Gale Ledges, mostly at night. Far more of them come down with the winter snow',
   wishling: 'Heatherstep Cliffs and Gale Ledges (glows brightest at night)', heathfoal: 'Heatherstep Cliffs (sometimes Gale Ledges), in the daytime',
 });
 // where they live: the routes to Highmoor get their own wild tables, with the moorland Fablemon from earlier routes mixed in
@@ -65,6 +65,13 @@ ROUTES.galeledges.enc = {
   day: [['kitlet', 16], ['wishling', 12], ['heathfoal', 10], ['craglet_2', 10], ['whirlwyn', 7], ['staticwing', 6], ['bristlecone_2', 6], ['ramruff_2', 4], ['flurrowl', 5], ['craglet_3', 2], ['whorlcrest', 2]],
   night: [['wishling', 16], ['flurrowl', 12], ['kitlet', 8], ['duskcloak', 8], ['clinkit_2', 8], ['staticwing', 6], ['duskwyrm', 2], ['clinkit_3', 2]],
 };
+// Highmoor gets the first snow: three times as many Flurrowl in winter
+for (const k of ['windward', 'heatherstep', 'galeledges']) ROUTES[k].winter = { flurrowl: 3 };
+// two sailors on the islands of Windward Sound (easy to sail round)
+ROUTES.windward.trainers = [
+  { id: 'ws_t1', kind: 'rambler', name: 'Cormac', x: 36, y: 43, dir: 'left', sight: 4, team: [['foilfin_2', 46], ['stormveil_3', 46], ['riftshear_2', 47]] },
+  { id: 'ws_t2', kind: 'birdwatcher', name: 'Petra', x: 8, y: 28, dir: 'right', sight: 4, team: [['kitlet', 46], ['staticwing', 47], ['whorlcrest', 47], ['kilnback_2', 48]] },
+];
 // trainers on the cliffs and the pillars: the new Fablemon alongside old mountain and moorland faces
 ROUTES.heatherstep.trainers = [
   { id: 'hs_t1', kind: 'climber', name: 'Ffion', x: 24, y: 44, dir: 'left', sight: 4, team: [['craglet_2', 48], ['kitlet', 48], ['ramruff_2', 49], ['heathfoal', 49]] },

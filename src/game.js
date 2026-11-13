@@ -1575,6 +1575,8 @@ const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eat
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
 const monName = m => m.nick || SPECIES[m.sp].name;
+// Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
+const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
 const team = () => S.mons.filter(m => m.loc === 'team');
 const lead = () => team()[0] || null;
@@ -1645,7 +1647,7 @@ function evoChain(sp) {
   let s = baseOf(sp); const out = [];
   for (let k = 0; k < 4 && s; k++) {
     const known = SPECIES[s] && MON_ORDER.includes(s), seen = known && (S.seen[s] || S.caught[s]);
-    out.push(s === sp ? `<b>${SPECIES[s].name}</b>` : seen ? SPECIES[s].name : '???');
+    out.push(s === sp ? `<b>${SPECIES[s].name}</b>` : seen ? SPECIES[s].name : '???');   // (a line keeps one form all the way up, so the page's own form tag covers it)
     const e = SPECIES[s] && SPECIES[s].evo; if (!e) break;
     out.push(`<span style="opacity:.7">→ Lv ${e[1]} →</span>`); s = e[0];
   }
@@ -1655,7 +1657,7 @@ function openJournal(focus) {
   const list = MON_ORDER, seen = list.filter(sp => S.seen[sp] || S.caught[sp] || S.mons.some(m => m.sp === sp)), caught = list.filter(sp => S.caught[sp] || S.mons.some(m => m.sp === sp));
   const card = (sp, i) => {
     const has = caught.includes(sp), saw = seen.includes(sp), num = String(i + 1).padStart(3, '0');
-    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? '<span class="jc">●</span>' : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}</span></button>`;
+    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? '<span class="jc">●</span>' : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}${saw && formTag(sp) ? `<br><small style="font-weight:400;opacity:.75">${formTag(sp)}</small>` : ''}</span></button>`;
   };
   const grid = () => `<div class="subbar"><span>Seen <b>${seen.length}</b> · Caught <b>${caught.length}</b> <small>of ${list.length}</small></span></div><div class="jgrid">${list.map(card).join('')}</div><p class="hint">Tap a Fablemon you've seen to read about it. ● means you've caught one.</p>`;
   const page = sp => {
@@ -1676,7 +1678,7 @@ function openJournal(focus) {
 function openMonInfo(m, back) {
   const sp = SPECIES[m.sp];
   const render = () => `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[sp.type]}"><img src="${monPic(m.sp, 'front')}"></span>
-    <div><b style="font-size:18px">${monName(m)}</b>${m.nick ? `<br><small>${sp.name}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
+    <div><b style="font-size:18px">${monName(m)}</b>${m.nick || sp.form ? `<br><small>${[m.nick ? sp.name : '', sp.form || ''].filter(Boolean).join(', ')}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
     <p>${sp.desc || ''}</p>
     <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Elem. Attack ${monStat(m, 'eatk')} · Elem. Defence ${monStat(m, 'edef')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
     ${ivPanel(m)}
@@ -3805,7 +3807,7 @@ const Battle = (() => {
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
-  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k0) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
+  function stat(side, k) { const m = side === 'me' ? B.me : B.foe, k0 = k === 'eatk' ? 'atk' : k === 'edef' ? 'def' : k; return monStat(m, k) * heldStat(m, k) * STAGE(B.st[side][k] || 0) * (k === 'spd' && m.status === 'par' ? .5 : 1) * (side === 'me' ? buffMul(k0) : 1); }
   const nameOf = side => (side === 'foe' ? foeLabel() : '') + monName(side === 'me' ? B.me : B.foe);
   async function inflict(side, st) {
     const m = side === 'me' ? B.me : B.foe;
@@ -4198,7 +4200,7 @@ const ENCOUNTERS = {
   night: [['duskwick', 35], ['fuzzwick', 25], ['tusskip', 20], ['flintuck', 20]],
 };
 function rollWild(lvMin, lvMax, extra) {
-  const night = S.time >= 1140 || S.time < 360, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])];
+  const night = S.time >= 1140 || S.time < 360, wb = RC && RC.winter && seasonDay().si === 3 ? RC.winter : null, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])].map(([s, w]) => [s, wb && wb[s] ? w * wb[s] : w]);   // RC.winter: { species: weight multiplier in winter }
   let r = Math.random() * tab.reduce((a, [, w]) => a + w, 0), sp = tab[0][0];
   for (const [s, w] of tab) { if ((r -= w) < 0) { sp = s; break; } }
   return wildMon(sp, lvMin + Math.floor(Math.random() * (lvMax - lvMin + 1)));
