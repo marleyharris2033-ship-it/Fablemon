@@ -3057,7 +3057,7 @@ const Talk = (() => {
   const el = $('talk');
   function show() {
     const L = lines[i], who = L.who;
-    if (L.img) { $('tface').style.backgroundImage = `url(${L.img})`; $('tface').style.backgroundSize = '80px 80px'; $('tface').style.backgroundPosition = '0 0'; }
+    if (L.img) { $('tface').style.backgroundImage = `url(${L.img})`; $('tface').style.backgroundSize = '80px 80px'; $('tface').style.backgroundPosition = '0 0'; $('tface').style.imageRendering = HD_SMOOTH.has(L.img) ? 'auto' : ''; }
     else { $('tface').style.backgroundImage = `url(${ASSET.portraits})`; $('tface').style.backgroundSize = ''; $('tface').style.backgroundPosition = `${-(L.f || 0) * 80}px ${-FACES[who] * 80}px`; }
         $('tname').innerHTML = `<span>${L.name || NPC_NAMES[who]}</span><span class="h">${L.name ? (L.hearts || '') : heartStr(who)}</span>`;
     full = L.t.replace(/\{name\}/g, S.name); let n = 0;
@@ -4928,8 +4928,10 @@ async function bootGame() {
       this.load.image('gym_br', ASSET.gymBr);
       this.load.image('gym_hm', ASSET.gymHm);
       this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
+      hdWorldLoad(this.load);   // high-detail town art (hd.js)
     }
     create() {
+      hdWorldSwap(this);   // high-detail town art (hd.js)
       // copy each terrain tile's edge pixels outward by one so no seams show between tiles
       const src = this.textures.get('terrain').getSourceImage(), cols = Math.floor(src.width / T), rows = Math.floor(src.height / T);
       const c = document.createElement('canvas'); c.width = cols * (T + 2); c.height = rows * (T + 2);
@@ -5013,7 +5015,7 @@ async function initTitle() {
   // the menu's own pictures sit at the top of the page, so it is already on screen while the game downloads
   refreshTitle(); $('cloudNote').textContent = '';
   const art = (async () => {
-    await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics();
+    await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics(); hdPortraits();
     ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
   })();
   syncSlots().then(ok => { refreshTitle(); $('cloudNote').textContent = ok ? '☁️ Saves backed up to your account' : ''; });

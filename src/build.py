@@ -13,6 +13,12 @@ assets = {
 }
 # high-detail Fablemon art cut by tools/art/cut_hd.py: hd/<id>_f|_b|_i|_w.webp -> ASSET.hd[id] = {f, b, i, w}
 import os, glob
+# high-detail town atlases and character sheets cut by tools/art/cut_hd_world.py -> ASSET.hdWorld[name] = {img, frames?}
+assets['hdWorld'] = {}
+for p in sorted(glob.glob('hd_world/*.webp')):
+    n = os.path.basename(p)[:-5]; e = {'img': uri(p, 'image/webp')}
+    if os.path.exists(p[:-5] + '.json'): e['frames'] = {k: v['frame'] for k, v in json.load(open(p[:-5] + '.json'))['frames'].items()}
+    assets['hdWorld'][n] = e
 assets['hd'] = {}
 for p in sorted(glob.glob('hd/*.webp')):
     sid, kind = os.path.basename(p)[:-5].rsplit('_', 1); assets['hd'].setdefault(sid, {})[kind] = uri(p, 'image/webp')
