@@ -63,6 +63,8 @@ early(['rampartoad', 'pyrebrash'], battle='battle_rampartoad-pyrebrash'); early(
 early(['muddlebub', 'lotling', 'puffpiper_cotton', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom'], battle='battle_muddlebub-lotling-puffpiper_cotton-sundrowse-tipplecup-glimmerjel-logloom')
 for s_ in ['duskcloak', 'staticwing', 'brookstride', 'rampartoad', 'pyrebrash']: early([s_], walk='walk_' + s_)
 for s_ in ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']: early([s_], walk='walk_' + s_, cols=4, stand=0)
+# bog walk sheets from the zip (13 Nov), 4 frames per row
+for s_ in ['marshviper', 'muddlebub', 'puffpiper', 'puffpiper_cotton', 'logloom', 'glimmerjel', 'lotling', 'sundrowse', 'tipplecup']: early([s_], walk='walk_' + s_, cols=4, stand=0)
 # five crag second stages on one sheet, strips of different widths (x ranges measured from the gaps)
 for sid, x0, x1, c in [('craglet_2', 0, 418, 4), ('clinkit_2', 1129, 1604, 4), ('ramruff_2', 1604, 2172, 4)]:
     MONS.setdefault(sid, {})['w'] = (E + 'walk_crag2_all.png', 1, 0, c, 0, (x0, x1)); early(['cindhop_2'], walk='walk_cindhop_2', cols=4, stand=0)
