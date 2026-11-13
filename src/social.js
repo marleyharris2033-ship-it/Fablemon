@@ -237,7 +237,7 @@ const PLACE = ['1st', '2nd', '3rd', '4th'];
 function festRace(f) {
   const mons = team().filter(m => m.hp > 0);
   if (!mons.length) { closeModal(); return Talk.say([BRAMBLE("Oh dear, you'll need a Fablemon fit to run! Come back after a rest.")]); }
-  openModal('🏁 Choose your runner', `<p>Who will race?</p><div class="mlist">${mons.map((m, i) => `<div class="shoprow"><img src="${monPic(m.sp)}"><div class="g"><b>${monName(m)}</b><small>Lv ${m.lv} · Speed ${monStat(m, 'spd')}</small></div><button class="btn gold" data-a="go" data-i="${i}">Race</button></div>`).join('')}</div>`, (a, d) => { if (a === 'go') runRace(f, mons[+d.i]); });
+  openModal('🏁 Choose your runner', `<p>Who will race?</p><div class="mlist">${mons.map((m, i) => `<div class="shoprow"><img src="${monPicOf(m)}"><div class="g"><b>${monName(m)}</b><small>Lv ${m.lv} · Speed ${monStat(m, 'spd')}</small></div><button class="btn gold" data-a="go" data-i="${i}">Race</button></div>`).join('')}</div>`, (a, d) => { if (a === 'go') runRace(f, mons[+d.i]); });
 }
 function runRace(f, mine) {
   const yr = seasonDay().year;

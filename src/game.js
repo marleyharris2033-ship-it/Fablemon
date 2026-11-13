@@ -1574,7 +1574,7 @@ const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.flo
 const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eatk' || k === 'edef')) m.iv[k] = 1 + Math.floor(Math.random() * 10); return m.iv[k] || 5; };
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
-const monName = m => m.nick || SPECIES[m.sp].name;
+const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '');   // ✦ marks a Fabled one (see fabled.js)
 // Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
 const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
@@ -1601,17 +1601,17 @@ const monPic = (sp, k = 'icon') => (MONPIC[sp] || MONPIC[MON_ORDER[MON_ORDER.ind
 let teamBtnKey = null;
 function refreshTeamBtn() {
   const b = $('bTeam'); if (!b || !S) return;
-  const m = lead() || S.mons[0], key = m ? m.sp : '';
+  const m = lead() || S.mons[0], key = m ? m.sp + (m.fab ? 'F' : '') : '';
   b.style.display = S.mons.length ? 'flex' : 'none';
-  if (key !== teamBtnKey) { teamBtnKey = key; b.innerHTML = m ? `<img src="${monPic(m.sp)}" style="width:36px;height:36px">` : ''; }
+  if (key !== teamBtnKey) { teamBtnKey = key; b.innerHTML = m ? `<img src="${monPicOf(m)}" style="width:36px;height:36px">` : ''; }
 }
 
 /* ---------- team screen */
 function typeChip(t) { if (SPECIES[t]) return typesOf(t).map(typeChip).join(''); return `<span class="tchip" style="background:${TYPES[t]}">${t}</span>`; }
 function hpBar(m) { const mx = monStat(m, 'hp'), v = Math.max(0, Math.min(m.hp ?? mx, mx)), pc = v / mx; return `<span class="hpwrap"><span class="hpl">HP</span><span class="hpb"><i style="width:${100 * pc}%;background:${pc > .5 ? '#5cc85a' : pc > .2 ? '#f0b02a' : '#e0503a'}"></i></span></span><span class="hpn">${v}/${mx}</span>`; }
-const badge = (sp, size = 52) => `<span class="mbadge" style="--tc:${TYPES[SPECIES[sp].type]};width:${size}px;height:${size}px"><img src="${monPic(sp)}"></span>`;
+const badge = (sp, size = 52, m) => `<span class="mbadge" style="--tc:${TYPES[SPECIES[sp].type]};width:${size}px;height:${size}px"><img src="${m ? monPicOf(m) : monPic(sp)}"></span>`;
 function monRow(m, buttons, lead) {
-  return `<div class="mrow${lead ? ' lead' : ''}" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp)}<div class="g"><div class="mn">${monName(m)}<span class="lv">Lv ${m.lv}</span></div><div class="mt">${typeChip(m.sp)}${hpBar(m)}</div></div><div class="mb">${buttons}</div></div>`;
+  return `<div class="mrow${lead ? ' lead' : ''}" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 52, m)}<div class="g"><div class="mn">${monName(m)}<span class="lv">Lv ${m.lv}</span></div><div class="mt">${typeChip(m.sp)}${hpBar(m)}</div></div><div class="mb">${buttons}</div></div>`;
 }
 function openTeam() {
   const render = () => {
@@ -1657,12 +1657,12 @@ function openJournal(focus) {
   const list = MON_ORDER, seen = list.filter(sp => S.seen[sp] || S.caught[sp] || S.mons.some(m => m.sp === sp)), caught = list.filter(sp => S.caught[sp] || S.mons.some(m => m.sp === sp));
   const card = (sp, i) => {
     const has = caught.includes(sp), saw = seen.includes(sp), num = String(i + 1).padStart(3, '0');
-    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? '<span class="jc">●</span>' : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}${saw && formTag(sp) ? `<br><small style="font-weight:400;opacity:.75">${formTag(sp)}</small>` : ''}</span></button>`;
+    return `<button class="jcard ${has ? 'caught' : saw ? 'seen' : 'unknown'}" data-a="${saw ? 'view' : ''}" data-sp="${sp}" style="--tc:${saw ? TYPES[SPECIES[sp].type] : '#8a7a5e'}"><span class="jn">#${num}</span><img src="${monPic(sp)}">${has ? `<span class="jc">●${S.fab && S.fab[sp] ? '<b style="color:#e0a020">✦</b>' : ''}</span>` : ''}<span class="jname">${saw ? SPECIES[sp].name : '???'}${saw && formTag(sp) ? `<br><small style="font-weight:400;opacity:.75">${formTag(sp)}</small>` : ''}</span></button>`;
   };
-  const grid = () => `<div class="subbar"><span>Seen <b>${seen.length}</b> · Caught <b>${caught.length}</b> <small>of ${list.length}</small></span></div><div class="jgrid">${list.map(card).join('')}</div><p class="hint">Tap a Fablemon you've seen to read about it. ● means you've caught one.</p>`;
+  const grid = () => `<div class="subbar"><span>Seen <b>${seen.length}</b> · Caught <b>${caught.length}</b> <small>of ${list.length}</small>${Object.keys(S.fab || {}).length ? ` · Fabled ✦ <b>${Object.keys(S.fab).length}</b>` : ''}</span></div><div class="jgrid">${list.map(card).join('')}</div><p class="hint">Tap a Fablemon you've seen to read about it. ● means you've caught one.</p>`;
   const page = sp => {
     const s0 = SPECIES[sp], has = caught.includes(sp), i = list.indexOf(sp);
-    return `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[s0.type]}"><img src="${monPic(sp, 'front')}"></span><div><div class="jn">#${String(i + 1).padStart(3, '0')}</div><b style="font-size:20px" class="pixt">${s0.name}</b>${s0.form ? ` <small>(${s0.form})</small>` : ''}<br>${typeChip(sp)}${has ? '<span class="tchip" style="background:#c0392b">Caught</span>' : '<span class="tchip" style="background:#8a7a5e">Seen</span>'}</div></div>
+    return `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[s0.type]}"><img src="${monPic(sp, 'front')}"></span>${S.fab && S.fab[sp] ? `<span class="showcase" style="--tc:#e0a020" title="Fabled"><img src="${fabPic(sp, 'front')}"></span>` : ''}<div><div class="jn">#${String(i + 1).padStart(3, '0')}</div><b style="font-size:20px" class="pixt">${s0.name}</b>${s0.form ? ` <small>(${s0.form})</small>` : ''}<br>${typeChip(sp)}${has ? '<span class="tchip" style="background:#c0392b">Caught</span>' : '<span class="tchip" style="background:#8a7a5e">Seen</span>'}</div></div>
       <p>${has ? s0.desc : 'You have only glimpsed this Fablemon. Catch one to learn more about it.'}</p>
       <p><small><b>Found:</b> ${HABITAT(sp)}</small></p>${has ? `<p><small><b>Role:</b> ${LINE_ROLE[baseOf(sp)] || 'Unknown'}</small></p>
       <p><small><b>Evolution:</b> ${evoChain(sp)}</small></p>
@@ -1677,7 +1677,7 @@ function openJournal(focus) {
 }
 function openMonInfo(m, back) {
   const sp = SPECIES[m.sp];
-  const render = () => `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[sp.type]}"><img src="${monPic(m.sp, 'front')}"></span>
+  const render = () => `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[sp.type]}"><img src="${monPicOf(m, 'front')}"></span>
     <div><b style="font-size:18px">${monName(m)}</b>${m.nick || sp.form ? `<br><small>${[m.nick ? sp.name : '', sp.form || ''].filter(Boolean).join(', ')}</small>` : ''}<br>${typeChip(m.sp)} <b>Lv ${m.lv}</b><br>${hpBar(m)}<br><small>Bond: ${'♥'.repeat(Math.min(5, Math.ceil(m.bond / 4))) || '–'}</small></div></div>
     <p>${sp.desc || ''}</p>
     <p><small>Attack ${monStat(m, 'atk')} · Defence ${monStat(m, 'def')} · Elem. Attack ${monStat(m, 'eatk')} · Elem. Defence ${monStat(m, 'edef')} · Speed ${monStat(m, 'spd')} · XP to next level: ${Math.max(0, xpNext(m) - m.xp)}</small></p>
@@ -1732,11 +1732,11 @@ Object.assign(World.prototype, {
   makeFollower() {
     if (this.fol) { this.fol.spr.destroy(); this.fol = null; }
     const m = lead(); if (!m || !this.textures.exists('mon_' + walkSp(m.sp))) return;
-    monAnims(this, walkSp(m.sp));
+    const wid = walkId(this, m); monAnims(this, wid);
     const p = this.p, [dx, dy] = DV[p.dir];
     let x = p.x - dx, y = p.y - dy; if (!this.passable(x, y)) { x = p.x; y = p.y; }
-    const spr = this.add.sprite(0, 0, 'mon_' + walkSp(m.sp), DIRS.indexOf(p.dir) * 4).setOrigin(.5, 1);
-    this.fol = { m, spr, x, y, px: x * T + 8, py: y * T + 8, dir: p.dir, moving: false, bob: 0, bt: 0 };
+    const spr = this.add.sprite(0, 0, 'mon_' + wid, DIRS.indexOf(p.dir) * 4).setOrigin(.5, 1);
+    this.fol = { m, wid, spr, x, y, px: x * T + 8, py: y * T + 8, dir: p.dir, moving: false, bob: 0, bt: 0 };
     this.shadow(spr, Math.round(spr.width * .55), 5);
     this.drawFollower();
   },
@@ -1753,7 +1753,7 @@ Object.assign(World.prototype, {
     const dx = ox * T + 8 - f.px, dy = oy * T + 8 - f.py;
     f.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
     f.x = ox; f.y = oy; f.moving = true;
-    const k = `${walkSp(f.m.sp)}_${f.dir}`; if (f.spr.anims.currentAnim?.key !== k || !f.spr.anims.isPlaying) f.spr.play(k);
+    const k = `${f.wid}_${f.dir}`; if (f.spr.anims.currentAnim?.key !== k || !f.spr.anims.isPlaying) f.spr.play(k);
   },
   updateFollower(dt) {
     const f = this.fol; if (!f) return;
@@ -1789,7 +1789,7 @@ function openRanch() {
   const at = () => S.mons.filter(m => m.loc === 'ranch');
   const outN = () => at().filter(m => m.out).length;
   const card = (m, extra = '') => `<button class="rcard${sel === m.uid ? ' sel' : ''}${extra}" data-a="pick" data-u="${m.uid}" style="--tc:${TYPES[SPECIES[m.sp].type]}">
-      <span class="rb">${m.job ? '⚒' : ''}${m.out && !m.job ? '🌾' : ''}${m.held ? '🎒' : ''}</span><img src="${monPic(m.sp)}"><span class="rl">Lv ${m.lv}</span><small>${monName(m)}</small></button>`;
+      <span class="rb">${m.job ? '⚒' : ''}${m.out && !m.job ? '🌾' : ''}${m.held ? '🎒' : ''}</span><img src="${monPicOf(m)}"><span class="rl">Lv ${m.lv}</span><small>${monName(m)}</small></button>`;
   const sorted = list => {
     const by = { lv: (a, b) => b.lv - a.lv, name: (a, b) => monName(a).localeCompare(monName(b)), type: (a, b) => SPECIES[a.sp].type.localeCompare(SPECIES[b.sp].type) || b.lv - a.lv,
       spd: (a, b) => monStat(b, 'spd') - monStat(a, 'spd'), new: (a, b) => b.uid - a.uid, old: (a, b) => a.uid - b.uid, job: (a, b) => (!!b.job - !!a.job) || (!!b.out - !!a.out) || b.lv - a.lv }[V.sort] || ((a, b) => b.lv - a.lv);
@@ -1810,7 +1810,7 @@ function openRanch() {
     const st = Object.entries(S.workStore || {}).filter(([, n]) => n);
     const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
     const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
-    const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
+    const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44, m)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
         <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
         <div class="rbtns">${m.loc === 'team'
           ? `${team()[0] !== m ? '<button class="btn sm" data-a="lead">Make lead</button>' : ''}<button class="btn sm" data-a="toRanch">Leave at ranch</button>`
@@ -2820,13 +2820,13 @@ class Farm extends World {
     const d = ranchDoor();
     for (const m of S.mons.filter(m => m.loc === 'ranch' && m.out)) {
       if (!this.textures.exists('mon_' + walkSp(m.sp))) continue;
-      monAnims(this, walkSp(m.sp));
+      const wid = walkId(this, m); monAnims(this, wid);
       let x = d.x, y = d.y + 2;
       const [ax0, ay0, ax1, ay1] = m.job ? jobArea(m.job) : [d.x - 5, d.y + 1, d.x + 5, d.y + 6];
       for (let i = 0; i < 40; i++) { const tx = ax0 + Math.floor(Math.random() * (ax1 - ax0 + 1)), ty = ay0 + Math.floor(Math.random() * (ay1 - ay0 + 1)); if (this.passable(tx, ty) && !this.roamerAt(tx, ty) && !S.tilled[tx + ',' + ty]) { x = tx; y = ty; break; } }
-      const spr = this.add.sprite(x * T + 8, y * T + 15, 'mon_' + walkSp(m.sp), 0).setOrigin(.5, 1).setDepth(y * T + 15);
+      const spr = this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1).setDepth(y * T + 15);
       this.shadow(spr, Math.round(spr.width * .55), 5);
-      this.roamers.push({ m, spr, x, y, px: x * T + 8, py: y * T + 8, dir: 'down', moving: false, steps: 0, wait: Math.random() * 2 });
+      this.roamers.push({ m, wid, spr, x, y, px: x * T + 8, py: y * T + 8, dir: 'down', moving: false, steps: 0, wait: Math.random() * 2 });
     }
   }
   roamerAt(x, y) { return (this.roamers || []).find(r => r.x === x && r.y === y); }
@@ -2851,7 +2851,7 @@ class Farm extends World {
       const ok = this.passable(nx, ny) && !(this.p.x === nx && this.p.y === ny) && !this.roamerAt(nx, ny) && inZone && (r.m.job || !S.tilled[nx + ',' + ny]);
       if (!ok) { r.steps = 0; r.wait = .5; continue; }
       r.x = nx; r.y = ny; r.moving = true; r.steps--;
-      const k = `${walkSp(r.m.sp)}_${r.dir}`; if (r.spr.anims.currentAnim?.key !== k || !r.spr.anims.isPlaying) r.spr.play(k);
+      const k = `${r.wid}_${r.dir}`; if (r.spr.anims.currentAnim?.key !== k || !r.spr.anims.isPlaying) r.spr.play(k);
     }
   }
   /* a worker walks next to its job tile, then does it */
@@ -2870,7 +2870,7 @@ class Farm extends World {
     if (!opts.length || opts[0][0] > dist + .5) { r.taskT += dt * 4; return; }
     const [, dd, nx, ny] = opts[0];
     r.dir = dd; r.x = nx; r.y = ny; r.moving = true;
-    const k = `${walkSp(r.m.sp)}_${r.dir}`; if (r.spr.anims.currentAnim?.key !== k || !r.spr.anims.isPlaying) r.spr.play(k);
+    const k = `${r.wid}_${r.dir}`; if (r.spr.anims.currentAnim?.key !== k || !r.spr.anims.isPlaying) r.spr.play(k);
   }
   pet(r) {
     this.face(r.x, r.y); this.p.busy = .4;
@@ -3766,7 +3766,7 @@ const Battle = (() => {
     q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
   }
   function sprites() {
-    q('bfoe').src = monPic(B.foe.sp, 'front'); q('bme').src = monPic(B.me.sp, 'back');
+    q('bfoe').src = monPicOf(B.foe, 'front'); q('bme').src = monPicOf(B.me, 'back');
     q('bfoe').className = 'bmon'; q('bme').className = 'bmon';
   }
   const anim = (id, cls, ms) => { const e = q(id); e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); return sleep(ms); };
@@ -3803,7 +3803,7 @@ const Battle = (() => {
   }
   async function pickMon(forced) {
     q('bmsg').textContent = forced ? 'Choose who goes next.' : 'Switch to which Fablemon?';
-    const opts = team().map(m => ({ html: `<img src="${monPic(m.sp)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small>`, v: m, off: m.hp <= 0 || m === B.me }));
+    const opts = team().map(m => ({ html: `<img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small>`, v: m, off: m.hp <= 0 || m === B.me }));
     if (!forced) opts.push({ html: 'Back', v: null });
     return menu(opts);
   }
@@ -3964,7 +3964,7 @@ const Battle = (() => {
   async function foeSwitch(m, msg) {
     if (msg) await say(msg, 1100);
     B.foe = m; B.st.foe = {}; B.v.foe = {}; S.seen[m.sp] = 1;
-    q('bfoe').src = monPic(m.sp, 'front'); q('bfoe').className = 'bmon'; box('foe');
+    q('bfoe').src = monPicOf(m, 'front'); q('bfoe').className = 'bmon'; box('foe');
     await anim('bfoe', 'enter-foe', 500);
     if (B.T.phase2) {   // a boss's second phase: same foe back on its feet, and angrier
       for (const line of B.T.phase2) await say(line, 1700);
@@ -4073,15 +4073,15 @@ const Battle = (() => {
     for (let i = 0; i < Math.min(3, shakes); i++) { c.className = 'throw sit'; void c.offsetWidth; c.className = 'throw sit wobble'; Sound.play('wobble'); await sleep(750); }
     if (shakes >= 4) {
       Sound.play('gotcha'); c.className = 'throw sit glow';
-      await say(`Gotcha! ${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
-      const m = newMon(B.foe.sp, B.foe.lv); m.iv = { ...B.foe.iv }; m.hp = Math.min(B.foe.hp, monStat(m, 'hp')); m.moves = B.foe.moves.slice(); m.xp = B.foe.xp;
+      await say(`Gotcha! ${B.foe.fab ? 'The Fabled ' : ''}${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
+      const m = newMon(B.foe.sp, B.foe.lv); m.iv = { ...B.foe.iv }; m.hp = Math.min(B.foe.hp, monStat(m, 'hp')); m.moves = B.foe.moves.slice(); m.xp = B.foe.xp; if (B.foe.fab) { m.fab = 1; fabNote(m.sp); }
       S.caught[m.sp] = 1; S.flags.catches = (S.flags.catches || 0) + 1;
       { const best = ivBest(m); if (best[1] >= 8) await say(`It looks like it has great ${IV_NAME[best[0]]}! (${best[1]}/10)`, 1600); }
       const nm = SPECIES[m.sp].name, home = S.ranch === 2 ? 'your ranch' : 'wait at your farm until you build a ranch';
       if (team().length < TEAM_MAX) { giveMon(m); await say(`${nm} joined your team!`, 1800); return true; }
       // team is full: send the new one home, or swap it with someone in the team
       q('bmsg').textContent = `Your team is full. Keep ${nm} with you by sending someone else home?`;
-      const out = await menu([{ html: `Send ${nm} home`, v: null, cls: 'gold' }, ...team().map(t => ({ html: `<img src="${monPic(t.sp)}">Swap ${monName(t)} <small>Lv ${t.lv}</small>`, v: t }))]);
+      const out = await menu([{ html: `Send ${nm} home`, v: null, cls: 'gold' }, ...team().map(t => ({ html: `<img src="${monPicOf(t)}">Swap ${monName(t)} <small>Lv ${t.lv}</small>`, v: t }))]);
       if (!out) { m.loc = 'ranch'; S.mons.push(m); refreshTeamBtn(); await say(`${nm} went to ${home}.`, 1800); return true; }
       const pos = S.mons.indexOf(out);
       out.loc = 'ranch'; out.out = false; out.job = null;
@@ -4105,12 +4105,13 @@ const Battle = (() => {
       const to = evoOf(m); if (!to) continue;
       const from = m.sp, oldName = monName(m), oldMax = monStat(m, 'hp');
       q('bfoe').style.visibility = 'hidden'; q('bfoebox').style.visibility = 'hidden'; q('bmebox').style.visibility = 'hidden';
-      const me = q('bme'); me.src = monPic(from, 'front'); me.className = 'bmon evolving';
+      const me = q('bme'); const pic = sp => monPicOf({ sp, fab: m.fab }, 'front'); if (m.fab) { fabWarm(to); fabPic(from, 'front'); }
+      me.src = pic(from); me.className = 'bmon evolving';
       Sound.theme('none'); await say(`What? ${oldName} is evolving!`, 1800);
-      for (let i = 0; i < 6; i++) { me.src = monPic(i % 2 ? to : from, 'front'); Sound.play('wobble'); await sleep(Math.max(140, 420 - i * 55)); }
+      for (let i = 0; i < 6; i++) { me.src = pic(i % 2 ? to : from); Sound.play('wobble'); await sleep(Math.max(140, 420 - i * 55)); }
       m.sp = to; m.hp = Math.min(monStat(m, 'hp'), m.hp + (monStat(m, 'hp') - oldMax));
-      me.src = monPic(to, 'front'); me.className = 'bmon evolved'; Sound.play('gotcha');
-      S.caught[to] = 1; S.seen[to] = 1;
+      me.src = pic(to); me.className = 'bmon evolved'; Sound.play('gotcha');
+      S.caught[to] = 1; S.seen[to] = 1; if (m.fab) fabNote(to);
       await say(`Congratulations! ${oldName} evolved into ${SPECIES[to].name}!`, 2400);
       for (const [l, id] of LEARN[to] || []) if ((l === m.lv || (SIGNATURE[to] && SIGNATURE[to][1] === id && l <= m.lv)) && !m.moves.includes(id)) await learn(m, id);
       q('bfoe').style.visibility = ''; q('bfoebox').style.visibility = ''; q('bmebox').style.visibility = '';
@@ -4130,6 +4131,7 @@ const Battle = (() => {
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
     if (T && T.intro) { for (const line of T.intro) await say(line, 1700); }
     else if (T) { await say(`${T.label} ${T.name} wants to battle!`, 1500); await say(`${T.label} ${T.name} sent out ${SPECIES[foe.sp].name}!`, 1300); }
+    else if (foe.fab) { setTimeout(() => { q('bfoe').src = monPicOf(foe, 'front'); fabSparkle(q('bfoe')); }, 450); await say(`✦ A Fabled ${SPECIES[foe.sp].name} appeared! ✦`, 2200); await say('Its colours are like something out of an old story...', 1700); }
     else await say(`A wild ${SPECIES[foe.sp].name} appeared!`, 1500);
     await say(`Go, ${monName(B.me)}!`, 900);
     for (;;) {
@@ -4203,7 +4205,9 @@ function rollWild(lvMin, lvMax, extra) {
   const night = S.time >= 1140 || S.time < 360, wb = RC && RC.winter && seasonDay().si === 3 ? RC.winter : null, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])].map(([s, w]) => [s, wb && wb[s] ? w * wb[s] : w]);   // RC.winter: { species: weight multiplier in winter }
   let r = Math.random() * tab.reduce((a, [, w]) => a + w, 0), sp = tab[0][0];
   for (const [s, w] of tab) { if ((r -= w) < 0) { sp = s; break; } }
-  return wildMon(sp, lvMin + Math.floor(Math.random() * (lvMax - lvMin + 1)));
+  const m = wildMon(sp, lvMin + Math.floor(Math.random() * (lvMax - lvMin + 1)));
+  if (Math.random() < FAB_ODDS) { m.fab = 1; fabWarm(sp); }   // a Fabled one: rare colours (fabled.js)
+  return m;
 }
 
 /* ========================================================= Meadow Trail

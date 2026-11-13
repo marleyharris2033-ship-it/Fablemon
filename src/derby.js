@@ -129,7 +129,7 @@ function pickRacer(cup) {
   const mons = team();
   const rows = mons.map(m => {
     const why = derbyEligible(m, cup), st = raceStats(m, cup.cap);
-    return `<div class="shoprow" style="${why ? 'opacity:.5' : ''}"><img src="${monPic(m.sp)}"><div class="g"><b>${monName(m)}</b> <small>Lv ${m.lv}${m.lv > cup.cap ? ` → races as Lv ${cup.cap}` : ''}</small>
+    return `<div class="shoprow" style="${why ? 'opacity:.5' : ''}"><img src="${monPicOf(m)}"><div class="g"><b>${monName(m)}</b> <small>Lv ${m.lv}${m.lv > cup.cap ? ` → races as Lv ${cup.cap}` : ''}</small>
       <small style="display:block">${why || `Speed ${Math.round(st.spd)} · Attack ${st.atk} · Defence ${st.def} · HP ${st.hp}${m.held === 'swift_feather' ? ' · 🪶' : ''}`}</small></div>
       ${why ? '' : `<button class="btn gold sm" data-a="go" data-u="${m.uid}">Race</button>`}</div>`;
   }).join('');
