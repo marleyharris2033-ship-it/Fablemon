@@ -4206,7 +4206,7 @@ function rollWild(lvMin, lvMax, extra) {
   let r = Math.random() * tab.reduce((a, [, w]) => a + w, 0), sp = tab[0][0];
   for (const [s, w] of tab) { if ((r -= w) < 0) { sp = s; break; } }
   const m = wildMon(sp, lvMin + Math.floor(Math.random() * (lvMax - lvMin + 1)));
-  if (Math.random() < FAB_ODDS) { m.fab = 1; fabWarm(sp); }   // a Fabled one: rare colours (fabled.js)
+  if (Math.random() < FAB_ODDS) fabMake(m);   // a Fabled one: rare colours and high potential (fabled.js)
   return m;
 }
 

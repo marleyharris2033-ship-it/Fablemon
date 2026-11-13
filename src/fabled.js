@@ -1,6 +1,6 @@
 /* ============================================================ Fabled Fablemon
    About 1 wild Fablemon in 400 is Fabled: the same creature in rare colours, with a sparkle and a ✦ by its
-   name. It is cosmetic only (no stat change) and stays Fabled when it evolves. The colours are made here in
+   name. It also has at least 7 potential in every stat, and stays Fabled when it evolves. The colours are made here in
    code by shifting each sprite's hues, so every Fablemon has a Fabled look with no extra art.
    A mon is Fabled when m.fab is set. S.fab[species] records which Fabled ones you've owned. */
 const FAB_ODDS = 1 / 400;
@@ -46,6 +46,8 @@ function walkId(sc, m) {
   }
   return id;
 }
+// turn a wild Fablemon Fabled: rare colours, and every potential is 7 to 10
+function fabMake(m) { m.fab = 1; m.iv = m.iv || {}; for (const k of IV_KEYS) m.iv[k] = 7 + Math.floor(Math.random() * 4); m.hp = monStat(m, 'hp'); fabWarm(m.sp); return m; }
 function fabNote(sp) { S.fab = S.fab || {}; S.fab[sp] = 1; }
 // the sparkle when a Fabled one enters battle
 (function () { const st = document.createElement('style'); st.textContent = '.fabstar{position:absolute;pointer-events:none;color:#fff7c0;text-shadow:0 0 6px #ffd84a,0 0 2px #fff;font-size:18px;animation:fabstar .9s ease-out forwards;z-index:5}@keyframes fabstar{0%{transform:scale(0) rotate(0);opacity:0}30%{transform:scale(1.3) rotate(40deg);opacity:1}100%{transform:scale(.2) rotate(120deg) translateY(-14px);opacity:0}}'; document.head.appendChild(st); })();
