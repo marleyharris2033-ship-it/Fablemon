@@ -5015,7 +5015,7 @@ async function initTitle() {
   // the menu's own pictures sit at the top of the page, so it is already on screen while the game downloads
   refreshTitle(); $('cloudNote').textContent = '';
   const art = (async () => {
-    await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics(); hdPortraits();
+    await loadIcons(); await loadMonPics(); await loadExtraIcons(); applyItemArt(); await loadTrainerPics(); await loadVillPics(); hdPortraits(); await hdItems();
     ['bBag', 'bCraft', 'bMenu'].forEach((id, i) => $(id).innerHTML = `<img src="${ICONS[['bag', 'craft', 'menu'][i]]}">`);
   })();
   syncSlots().then(ok => { refreshTitle(); $('cloudNote').textContent = ok ? '☁️ Saves backed up to your account' : ''; });

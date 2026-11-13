@@ -28,8 +28,8 @@ document.addEventListener('load', e => {
    Each small texture keeps its frame names and sizes, but its pixels come from a 3x picture, drawn smoothly.
    Atlases: frames are matched by name. Sheets: by grid (frame i = column i % cols, row i / cols). */
 const HDW = ASSET.hdWorld || {};
-const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea', town: 'town', houses: 'houses' };
-const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', 'tools', 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble'];
+const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea', town: 'town', houses: 'houses', objects: 'objects', seasonal: 'seasonal', bog: 'bog' };
+const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', 'tools', 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble', 'tr_reedcutter', 'tr_wispwatcher', 'tr_delphine'];
 function hdWorldLoad(loader, snow = {}) {
   for (const [key, n] of Object.entries(HDW_ATLAS)) if (HDW[n]) loader.image(key + '__hd', snow[n + 'HD'] || HDW[n].img);   // winter: snow-capped copies (social.js)
   for (const n of HDW_SHEET) if (HDW[n]) loader.image(n + '__hd', HDW[n].img);
@@ -63,6 +63,34 @@ function hdWorldSwap(sc) {
 // portraits: use the 240px ones where they exist (ASSET.hd.port_<who>_<0|1>)
 function hdPortraits() {
   const P = (who, f) => HD['port_' + who] && HD['port_' + who][f];
-  for (const who of ['granger', 'orrin', 'tamsin', 'rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
+  for (const who of ['granger', 'orrin', 'tamsin', 'rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment', 'reedcutter', 'wispwatcher', 'delphine']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
   for (const who of ['hal', 'monty']) for (const f of [0, 1]) { const u = P(who, f); if (u) { VPIC[who + f] = u; HD_SMOOTH.add(u); } }
+}
+
+/* ---- bag icons and placed farm objects (hd_world/items: i_<item> 72px icons, o_<obj> 3x pictures) ----
+   Each becomes a canvas marked _hdk = 3. Canvases go into the game through textures.addCanvas, which is
+   wrapped below so a marked canvas shows at a third of its size, drawn smoothly. */
+function hdShrinkTexture(T, k) {
+  T.source[0].resolution = k;
+  for (const n of T.getFrameNames(true)) {
+    const f = T.get(n), w = f.cutWidth / k, h = f.cutHeight / k;
+    f.width = f.realWidth = w; f.height = f.realHeight = h; f.halfWidth = Math.floor(w / 2); f.halfHeight = Math.floor(h / 2); f.centerX = Math.floor(w / 2); f.centerY = Math.floor(h / 2);
+    if (f.data) { f.data.sourceSize.w = f.data.spriteSourceSize.w = w; f.data.sourceSize.h = f.data.spriteSourceSize.h = h; }
+    f.updateUVs();
+  }
+  T.setFilter(Phaser.Textures.FilterMode.LINEAR);
+}
+(function () {
+  const P = Phaser.Textures.TextureManager.prototype, add = P.addCanvas;
+  P.addCanvas = function (key, source, skipCache) { const T = add.call(this, key, source, skipCache); if (T && source && source._hdk) hdShrinkTexture(T, source._hdk); return T; };
+})();
+async function hdItems() {
+  const E = HDW.items; if (!E) return;
+  const img = await loadImg(E.img);
+  for (const [n, r] of Object.entries(E.frames)) {
+    const c = document.createElement('canvas'); c.width = r.w; c.height = r.h; c.getContext('2d').drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h); c._hdk = 3;
+    const id = n.slice(2);
+    if (n[0] === 'i') { const u = c.toDataURL(); ICONS[id] = u; ICON_CANVAS[id] = c; HD_SMOOTH.add(u); }
+    else SAP_CANVAS[id] = c;
+  }
 }

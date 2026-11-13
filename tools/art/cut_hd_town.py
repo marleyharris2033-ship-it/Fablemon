@@ -37,8 +37,96 @@ def fit_building(o, w, h):
     im = H.soft(o, s); out = Image.new('RGBA', (W, Hh)); out.paste(im, ((W - im.width) // 2, Hh - im.height), im); return out
 
 
-def cells(path, rows, cols):
-    a, m = C.load(path); return C.grid(a, m, rows, cols)
+def cells(path, rows, cols, keep=.04):
+    a, m = C.load(path)
+    if keep == .04: return C.grid(a, m, rows, cols)
+    ys, xs = np.where(m); y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    RY = C.cuts_at(m[:, x0:x1].sum(1), rows, y0, y1); CX = C.cuts_at(m[y0:y1].sum(0), cols, x0, x1)
+    return [[C.piece(a, m, RY[r], RY[r + 1], CX[c], CX[c + 1], keep=keep) for c in range(cols)] for r in range(rows)]
+
+
+def flat(g): return [o for row in g for o in row]
+
+
+def atlas_hd(name, new):
+    """the small atlas src/<name>.png/json at 3x: frames in `new` cut from originals, the rest old pixels enlarged"""
+    tj = json.load(open(f'src/{name}.json'))['frames']; small = Image.open(f'src/{name}.png').convert('RGBA')
+    ims = {}
+    for fn, f in tj.items():
+        r = f['frame']; w, h = r['w'], r['h']
+        ims[fn] = fit_building(new[fn], w, h) if fn in new else small.crop((r['x'], r['y'], r['x'] + w, r['y'] + h)).resize((w * K, h * K), Image.NEAREST)
+    missing = set(new) - set(tj); assert not missing, missing
+    pack(ims, name); print(name, 'new art for', len(new), 'of', len(tj))
+
+
+# shared prop cut-outs (props.png and farm_objects.png are also the bag icons, see items())
+def props():
+    return dict(zip(['lantern', 'barrel', 'crate', 'bench', 'planter', 'flowerbed', 'hedge', 'bush', 'wildflowers', 'rockery', 'lamp', 'wall', 'pillar', 'birdbath', 'sundial', 'bird_house'],
+                    flat(cells(A + 'props.png', 4, 4))))
+
+
+def farm_objects():
+    return dict(zip(['pot', 'well', 'mine', 'compost', 'beehive', 'trough', 'big_chest', 'fishing_hut', 'training_ring', 'quality_sprinkler', 'golden_sprinkler',
+                     'busy_beehive', 'quick_compost', 'deluxe_trough', 'farmstand', 'dirt_path'], flat(cells(A + 'farm_objects.png', 4, 4))))
+
+
+def decor():
+    return dict(zip(['stone_lantern', 'garden_fountain', 'topiary', 'hearth_lantern', 'hearth_sapling', 'oak_sapling', 'pine_sapling', 'apple_sapling'],
+                    flat(cells(A + 'decor.png', 2, 4))))
+
+
+def objects():
+    P = props()
+    atlas_hd('objects', {'lantern_post': P['lantern'], 'barrel': P['barrel'], 'crate': P['crate'], 'bush_round': P['bush'], 'wildflowers': P['wildflowers'], 'rock_pair': P['rockery']})
+
+
+def seasonal():
+    new = {}
+    for sheet, names in [('season_winter', ['w_snowman', 'w_snowman_s', 'w_snowpile', 'w_snowbush', 'w_puddle', 'w_firewood', 'w_wreath', 'w_lantern']),
+                         ('season_autumn', ['a_leafpile', 'a_litter', 'a_pumpkins', 'a_jack', 'a_scarecrow', 'a_haypump', 'a_mush', 'a_apples']),
+                         ('season_summer', ['s_sunflower', 's_umbrella', 's_melon', 's_stand', 's_flowers', 's_hay', 's_dragonfly', 's_lanterns']),
+                         ('season_spring', ['p_petals', 'p_bush', 'p_tulips', 'p_daffs', 'p_birdbox', 'p_planter', 'p_fly_open', 'p_fly_closed'])]:
+        new.update(zip(names, flat(cells(A + sheet + '.png', 2, 4, keep=.002))))
+    atlas_hd('seasonal', new)
+
+
+def bog():
+    """bog_props.png: a row of ground tiles (not used: the ground is composed at 1x), then props laid out freely"""
+    a, m = C.load(A + 'bog_props.png'); m[:280] = False
+    lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=2)); lab = lab * m
+    sz = ndimage.sum(m, lab, range(1, n + 1)); cm = ndimage.center_of_mass(m, lab, range(1, n + 1))
+    at = {'cattail': (300, 410), 'tuft': (565, 475), 'bog_grass': (825, 460), 'post': (1025, 600), 'dead_tree': (1270, 540), 'log': (255, 630),
+          'stump': (570, 630), 'lilies': (815, 630), 'signpost': (340, 815), 'lever_up': (600, 815), 'lever_down': (805, 860)}
+    groups = {k: [] for k in at}
+    for i in range(n):
+        if sz[i] < 60: continue
+        y, x = cm[i]; k = min(at, key=lambda k: (at[k][0] - x) ** 2 + (at[k][1] - y) ** 2)
+        if (at[k][0] - x) ** 2 + (at[k][1] - y) ** 2 < 160 ** 2: groups[k].append(i + 1)
+    new = {}
+    for k, ids in groups.items():
+        g = np.isin(lab, ids) & m; ys, xs = np.where(g); sl = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
+        new[k] = dict(rgb=a[sl], mask=g[sl])
+    atlas_hd('bog', new)
+
+
+def items():
+    """bag icons (72px, 3x the 24px ones) and placed-object pictures (3x their old size) -> hd_world/items"""
+    old = json.load(open('src/itemart.json'))
+    P, F, D = props(), farm_objects(), decor()
+    obj_of = {'pot': 'pot', 'well': 'well', 'mine': 'mine', 'compost': 'compost', 'beehive': 'beehive', 'trough': 'trough', 'big_chest': 'chest2', 'fishing_hut': 'fishhut',
+              'training_ring': 'ring', 'quality_sprinkler': 'sprinkler2', 'golden_sprinkler': 'sprinkler3', 'busy_beehive': 'beehive2', 'quick_compost': 'compost2',
+              'deluxe_trough': 'trough2', 'birdbath': 'birdbath', 'sundial': 'sundial', 'bird_house': 'birdhouse', 'stone_lantern': 'stonelantern',
+              'garden_fountain': 'gfountain', 'topiary': 'topiary', 'hearth_lantern': 'hearthlantern', 'hearth_sapling': 'hearthsap', 'oak_sapling': 'sap_oak',
+              'pine_sapling': 'sap_pine', 'apple_sapling': 'sap_apple'}
+    ims = {}
+    for iid, o in {**P, **F, **D}.items():
+        if iid in old['icons']:
+            k = 22 * K / max(o['mask'].shape); im = H.soft(o, k); c = Image.new('RGBA', (24 * K, 24 * K))
+            c.paste(im, ((24 * K - im.width) // 2, 23 * K - im.height), im); ims['i_' + iid] = c
+        ob = obj_of.get(iid)
+        if ob and ob in old['objs']:
+            w, h = old['objs'][ob][:2]; ims['o_' + ob] = fit_building(o, w, h)
+    pack(ims, 'items'); print('items', sum(k.startswith('i_') for k in ims), 'icons,', sum(k.startswith('o_') for k in ims), 'objects')
 
 
 def town():
@@ -53,6 +141,9 @@ def town():
     a, m = C.load(A + 'hearthroot.png'); hh = a.shape[0] // 2
     top = C.grid(a[:hh], m[:hh], 1, 3)[0]; bot = C.grid(a[hh:], m[hh:], 1, 2)[0]
     for i, o in enumerate(top + bot): new[f'hearth{i}'] = o
+    new['derby'] = cells(A + 'derby_arch.png', 1, 1, keep=.002)[0][0]
+    P = props()
+    new.update(bench=P['bench'], planter=P['planter'], flowerbed=P['flowerbed'], hedge=P['hedge'], lamp=P['lamp'], stall=farm_objects()['farmstand'])
     ims = {}
     for name, f in tj.items():
         r = f['frame']; w, h = r['w'], r['h']
@@ -113,6 +204,7 @@ def trainers():
                         ('walk_busker_allotment.png', ['busker', 'allotment'])]:
         for i, k in enumerate(kinds): sheet_like(f'src/tr_{k}.png', 28, 32, walk3(A + path, 2, i), 'tr_' + k)
     sheet_like('src/npc_bramble.png', 28, 32, walk3(A + 'bramble_walk.png', 1, 0), 'npc_bramble')
+    for k in ['reedcutter', 'wispwatcher', 'delphine']: sheet_like(f'src/tr_{k}.png', 28, 32, cells(A + f'walk_{k}.png', 4, 4), 'tr_' + k)
 
 
 def tools():
@@ -131,9 +223,16 @@ def portraits():
             im = H.soft(o, kk); bg = Image.new('RGBA', (S, S), (0xcf, 0xe3, 0xb2, 255))
             bg.paste(im, ((S - im.width) // 2, S - im.height), im)
             bg.convert('RGB').save(f'src/hd/port_{kind}_{j}.webp', 'WEBP', quality=85, method=6)
+    for kind in ['reedcutter', 'wispwatcher', 'delphine']:
+        for j, o in enumerate(cells(A + f'port_{kind}.png', 1, 2)[0]):
+            k = 63 / max(o['mask'].shape); im = H.soft(o, k * S / 64); bg = Image.new('RGBA', (S, S), (0xcf, 0xe3, 0xb2, 255))
+            bg.paste(im, ((S - im.width) // 2, S - im.height), im); bg.convert('RGB').save(f'src/hd/port_{kind}_{j}.webp', 'WEBP', quality=85, method=6)
+        kinds.append(kind)
     print('portraits', kinds)
 
 
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
-    town(); houses(); trainers(); tools(); portraits()
+    only = sys.argv[1:]
+    for f in [town, houses, trainers, tools, portraits, objects, seasonal, bog, items]:
+        if not only or f.__name__ in only: f()

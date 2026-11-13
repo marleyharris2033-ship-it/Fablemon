@@ -518,7 +518,7 @@ async function winterAtlases() {
   const out = {};
   for (const k of ['town', 'houses', 'bh', 'bog']) out[k] = snowCap(await loadImg(ASSET[k]));
   const HW = ASSET.hdWorld || {};
-  for (const k of ['town', 'houses']) if (HW[k]) out[k + 'HD'] = snowCap(await loadImg(HW[k].img), 3);
+  for (const k of ['town', 'houses', 'bog']) if (HW[k]) out[k + 'HD'] = snowCap(await loadImg(HW[k].img), 3);
   return out;
 }
 
