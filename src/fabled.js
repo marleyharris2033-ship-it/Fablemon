@@ -30,7 +30,8 @@ function fabPic(sp, k = 'icon') {
   const im = FABSRC[key]; if (!im) { const src = monPic(sp, k); if (src) { const i2 = new Image(); i2.onload = () => { try { teamBtnKey = null; refreshTeamBtn(); } catch (e) { } }; i2.src = src; FABSRC[key] = i2; } }
   const img = FABSRC[key]; if (!img || !img.complete || !img.naturalWidth) return monPic(sp, k);   // not decoded yet: the normal picture for a moment
   const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0);
-  return FABPIC[key] = fabRecolor(c, sp).toDataURL();
+  const url = fabRecolor(c, sp).toDataURL(); if (img.naturalWidth > 64) HD_SMOOTH.add(url);   // a big picture: draw it smoothly (hd.js)
+  return FABPIC[key] = url;
 }
 function monPicOf(m, k = 'icon') { return m && m.fab ? fabPic(m.sp, k) : monPic(m.sp, k); }
 // warm up a Fabled mon's pictures so they're ready by the time they're shown
@@ -42,7 +43,7 @@ function walkId(sc, m) {
   if (!sc.textures.exists(key)) {
     const t = sc.textures.get('mon_' + sp), src = t.getSourceImage(), fw = t.get(0).width;
     const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0);
-    sc.textures.addSpriteSheet(key, fabRecolor(c, sp), { frameWidth: fw, frameHeight: fw });
+    sc.textures.addSpriteSheet(key, fabRecolor(c, sp), { frameWidth: fw, frameHeight: fw });   // (fw is already the big size for high-detail sheets)
   }
   return id;
 }

@@ -12,6 +12,7 @@
 html,body{margin:0;height:100%;overflow:hidden;background:#1d2b1d;font-family:var(--ui);font-variant-numeric:tabular-nums lining-nums;color:var(--ink);user-select:none;-webkit-user-select:none;touch-action:none}
 #game{position:fixed;inset:0}
 #game canvas{image-rendering:pixelated}
+img[src^="data:image/webp"]{image-rendering:auto !important}   /* high-detail Fablemon art (hd.js) is drawn smoothly */
 .panel{background:var(--cream);border:3px solid var(--green);border-radius:6px;box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 0 0 2px var(--cream2)}
 #hud{position:fixed;inset:0;pointer-events:none;display:none;z-index:5}
 #hud > *{pointer-events:auto}

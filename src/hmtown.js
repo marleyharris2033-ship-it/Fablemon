@@ -314,7 +314,7 @@ function wcSetup(sc) {
   if (dragonHere) {
     const sp = WC_DRAGON.sp;
     for (let r = 0; r < 4; r++) { const ak = `${sp}_${DIRS[r]}`; if (!sc.anims.exists(ak)) sc.anims.create({ key: ak, frames: sc.anims.generateFrameNumbers('mon_' + sp, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 5, repeat: -1 }); }
-    sc.wcDragon = sc.add.sprite(cx, y * T + 18, 'mon_' + sp, 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    sc.wcDragon = hdSpr(sc.add.sprite(cx, y * T + 18, 'mon_' + sp, 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15), sp);
     if (sc.anims.exists(WC_DRAGON.sp + '_down')) sc.wcDragon.play(WC_DRAGON.sp + '_down');
     sc.tweens.add({ targets: sc.wcDragon, y: sc.wcDragon.y - 3, yoyo: true, repeat: -1, duration: 1300, ease: 'Sine.inOut' });
   }
@@ -333,7 +333,7 @@ function wcSetup(sc) {
 function wcCalm(sc, msg) {
   const first = !S.flags.windCalm; S.flags.windCalm = 1;
   delete ROUTE_SIGNS[WC_STORM.x + ',' + WC_STORM.y]; sc.R.blocked[WC_STORM.y * RW + WC_STORM.x] = 0;
-  for (const o of [sc.wcCloud, sc.wcWhirl, sc.wcDragon]) if (o) sc.tweens.add({ targets: o, alpha: 0, scale: 1.6, duration: 1400, onComplete: () => o.destroy() });
+  for (const o of [sc.wcCloud, sc.wcWhirl, sc.wcDragon]) if (o) sc.tweens.add({ targets: o, alpha: 0, scale: o === sc.wcDragon ? o.scale * 1.07 : 1.6, duration: 1400, onComplete: () => o.destroy() });
   sc.wcCloud = sc.wcWhirl = sc.wcDragon = null;
   toast(msg, 4200);
   if (first) setTimeout(() => toast('The wind has dropped! Head back down to Highmoor: Tamsin will be waiting on the mill floor.', 3600), 4400);

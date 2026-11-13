@@ -1594,6 +1594,7 @@ function loadMonPics() {
   const cut = (img, x, y, w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(img, x, y, w, h, 0, 0, w, h); return c.toDataURL(); };
   return Promise.all([loadImg(ASSET.monIcons), loadImg(ASSET.monBattle)]).then(([ic, bt]) => {
     MON_ORDER.forEach((sp, i) => { MONPIC[sp] = { icon: cut(ic, i * 48, 0, 48, 48), front: cut(bt, 0, i * 64, 64, 64), back: cut(bt, 64, i * 64, 64, 64) }; });
+    hdPics();   // high-detail art where it exists (hd.js)
   });
 }
 const monPic = (sp, k = 'icon') => (MONPIC[sp] || MONPIC[MON_ORDER[MON_ORDER.indexOf(sp) >= 0 ? MON_ORDER.indexOf(sp) : 0]] || {})[k] || '';
@@ -1735,9 +1736,9 @@ Object.assign(World.prototype, {
     const wid = walkId(this, m); monAnims(this, wid);
     const p = this.p, [dx, dy] = DV[p.dir];
     let x = p.x - dx, y = p.y - dy; if (!this.passable(x, y)) { x = p.x; y = p.y; }
-    const spr = this.add.sprite(0, 0, 'mon_' + wid, DIRS.indexOf(p.dir) * 4).setOrigin(.5, 1);
+    const spr = hdSpr(this.add.sprite(0, 0, 'mon_' + wid, DIRS.indexOf(p.dir) * 4).setOrigin(.5, 1), wid);
     this.fol = { m, wid, spr, x, y, px: x * T + 8, py: y * T + 8, dir: p.dir, moving: false, bob: 0, bt: 0 };
-    this.shadow(spr, Math.round(spr.width * .55), 5);
+    this.shadow(spr, Math.round(spr.displayWidth * .55), 5);
     this.drawFollower();
   },
   refreshFollower() { if (this.p) this.makeFollower(); },
@@ -1745,7 +1746,7 @@ Object.assign(World.prototype, {
     const f = this.fol; if (!f) return;
     // big Fablemon hang back an extra tile so they don't crowd you
     f.trail = f.trail || []; f.trail.push([ox, oy]);
-    const gap = f.spr.width > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    const gap = f.spr.displayWidth > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
     if (f.trail.length < gap) return;
     [ox, oy] = f.trail[0];
     if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
@@ -2824,8 +2825,8 @@ class Farm extends World {
       let x = d.x, y = d.y + 2;
       const [ax0, ay0, ax1, ay1] = m.job ? jobArea(m.job) : [d.x - 5, d.y + 1, d.x + 5, d.y + 6];
       for (let i = 0; i < 40; i++) { const tx = ax0 + Math.floor(Math.random() * (ax1 - ax0 + 1)), ty = ay0 + Math.floor(Math.random() * (ay1 - ay0 + 1)); if (this.passable(tx, ty) && !this.roamerAt(tx, ty) && !S.tilled[tx + ',' + ty]) { x = tx; y = ty; break; } }
-      const spr = this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1).setDepth(y * T + 15);
-      this.shadow(spr, Math.round(spr.width * .55), 5);
+      const spr = this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1).setDepth(y * T + 15); hdSpr(spr, wid);
+      this.shadow(spr, Math.round(spr.displayWidth * .55), 5);
       this.roamers.push({ m, wid, spr, x, y, px: x * T + 8, py: y * T + 8, dir: 'down', moving: false, steps: 0, wait: Math.random() * 2 });
     }
   }
@@ -4914,7 +4915,7 @@ async function bootGame() {
       this.load.atlas('houses', snow.houses || ASSET.houses, { frames: Object.fromEntries(Object.entries(ASSET.housesJson).map(([k, f]) => [k, { frame: { x: f.x, y: f.y, w: f.w, h: f.h } }])) });
       for (const n of Object.keys(TRAINER_TYPES)) if (ASSET['tr_' + n]) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
       const BIG = { cirrovale: 48, briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, craglet_2: 40, cindhop_2: 40, bristlecone_2: 40, clinkit_2: 40, ramruff_2: 40, nipshade_2: 40, riftshear_2: 40, inkwick_2: 40, kilnback_2: 40, foilfin_2: 40, floecalf_2: 44, kitlet: 32, kitlet_2: 40, flurrowl_2: 40, wishling_2: 36, heathfoal: 32, heathfoal_2: 44, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
-      for (const n of MON_ORDER) if (ASSET['mon_' + n]) { const fw = BIG[n] || (MON_STAGE[n] === 3 ? 44 : 28); this.load.spritesheet('mon_' + n, ASSET['mon_' + n], { frameWidth: fw, frameHeight: fw }); }
+      for (const n of MON_ORDER) if (ASSET['mon_' + n]) { const fw = BIG[n] || (MON_STAGE[n] === 3 ? 44 : 28); const [src, w] = hdWalk(n, fw); this.load.spritesheet('mon_' + n, src, { frameWidth: w, frameHeight: w }); }
       for (const n of ['bramble', 'marigold', ...VILL_IDS, 'shipwright']) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);
       this.load.atlas('bog', snow.bog || ASSET.bog, ASSET.bogJson);
