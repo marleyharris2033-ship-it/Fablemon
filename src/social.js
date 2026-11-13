@@ -496,15 +496,16 @@ function cutSeasonProp(sc, x, y) {
   sc.tweens.add({ targets: im, alpha: 0, scaleX: 1.3, scaleY: .5, duration: 220, onComplete: () => im.destroy() });
 }
 /* winter: a cap of snow on every upward-facing edge (just under the outline) */
-function snowCap(img) {
+function snowCap(img, k = 1) {   // k: how many pixels make one art pixel (3 for the high-detail town)
   const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
   const g = c.getContext('2d'); g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height), a = d.data, w = c.width, h = c.height, src = new Uint8ClampedArray(a);
   const op = (x, y) => y >= 0 && src[(y * w + x) * 4 + 3] > 100;
-  for (let y = 1; y < h; y++) for (let x = 0; x < w; x++) {
-    if (!op(x, y)) continue;
-    // depth below the top outline: 1 = first pixel under the outline
-    const dep = !op(x, y - 2) && op(x, y - 1) ? 1 : !op(x, y - 3) && op(x, y - 2) && op(x, y - 1) ? 2 : 0;
+  for (let x = 0; x < w; x++) for (let y = 1, run = op(x, 0) ? 1 : 0; y < h; y++) {
+    if (!op(x, y)) { run = 0; continue; }
+    run++;
+    // depth below the top outline: the first k pixels under the outline are snow, the next k its shadow
+    const dep = run > k && run <= 3 * k ? (run <= 2 * k ? 1 : 2) : 0;
     if (!dep) continue;
     const i = (y * w + x) * 4, l = (src[i] + src[i + 1] + src[i + 2]) / 3;
     if (l < 40) continue;   // keep inner outlines
@@ -516,6 +517,8 @@ function snowCap(img) {
 async function winterAtlases() {
   const out = {};
   for (const k of ['town', 'houses', 'bh', 'bog']) out[k] = snowCap(await loadImg(ASSET[k]));
+  const HW = ASSET.hdWorld || {};
+  for (const k of ['town', 'houses']) if (HW[k]) out[k + 'HD'] = snowCap(await loadImg(HW[k].img), 3);
   return out;
 }
 

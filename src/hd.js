@@ -28,10 +28,10 @@ document.addEventListener('load', e => {
    Each small texture keeps its frame names and sizes, but its pixels come from a 3x picture, drawn smoothly.
    Atlases: frames are matched by name. Sheets: by grid (frame i = column i % cols, row i / cols). */
 const HDW = ASSET.hdWorld || {};
-const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea' };
-const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail'];
-function hdWorldLoad(loader) {
-  for (const [key, n] of Object.entries(HDW_ATLAS)) if (HDW[n]) loader.image(key + '__hd', HDW[n].img);
+const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea', town: 'town', houses: 'houses' };
+const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', 'tools', 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble'];
+function hdWorldLoad(loader, snow = {}) {
+  for (const [key, n] of Object.entries(HDW_ATLAS)) if (HDW[n]) loader.image(key + '__hd', snow[n + 'HD'] || HDW[n].img);   // winter: snow-capped copies (social.js)
   for (const n of HDW_SHEET) if (HDW[n]) loader.image(n + '__hd', HDW[n].img);
 }
 function hdFrame(T, name, x, y, w, h, small) {
@@ -63,6 +63,6 @@ function hdWorldSwap(sc) {
 // portraits: use the 240px ones where they exist (ASSET.hd.port_<who>_<0|1>)
 function hdPortraits() {
   const P = (who, f) => HD['port_' + who] && HD['port_' + who][f];
-  for (const who of ['granger', 'orrin', 'tamsin']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
+  for (const who of ['granger', 'orrin', 'tamsin', 'rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
   for (const who of ['hal', 'monty']) for (const f of [0, 1]) { const u = P(who, f); if (u) { VPIC[who + f] = u; HD_SMOOTH.add(u); } }
 }

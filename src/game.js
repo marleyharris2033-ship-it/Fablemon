@@ -4928,7 +4928,7 @@ async function bootGame() {
       this.load.image('gym_br', ASSET.gymBr);
       this.load.image('gym_hm', ASSET.gymHm);
       this.load.spritesheet('boat_sail', ASSET.boatSail, { frameWidth: 48, frameHeight: 48 });
-      hdWorldLoad(this.load);   // high-detail town art (hd.js)
+      hdWorldLoad(this.load, snow);   // high-detail town art (hd.js)
     }
     create() {
       hdWorldSwap(this);   // high-detail town art (hd.js)
