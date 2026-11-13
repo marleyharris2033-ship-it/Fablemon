@@ -57,7 +57,15 @@ early(['craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff'], battle='battl
 early(['craglet'], walk='walk_craglet', cols=4, stand=0); early(['cindhop'], walk='walk_cindhop', cols=4, stand=0)
 early(['bristlecone', 'clinkit', 'ramruff'], walk='walk_bristlecone-clinkit-ramruff', cols=4, stand=0)
 early(['craglet_2', 'cindhop_2', 'bristlecone_2', 'clinkit_2', 'ramruff_2'], battle='battle_crag2')
-early(['bristlecone_2'], walk='walk_bristlecone_2', cols=4, stand=0); early(['cindhop_2'], walk='walk_cindhop_2', cols=4, stand=0)
+early(['bristlecone_2'], walk='walk_bristlecone_2', cols=4, stand=0)
+early(['fleecebolt', 'whirlwyn', 'cloverguard', 'flintburrow', 'staticwing', 'duskcloak'], battle='battle_fleecebolt-whirlwyn-cloverguard-flintburrow-staticwing-duskcloak')
+early(['rampartoad', 'pyrebrash'], battle='battle_rampartoad-pyrebrash'); early(['brookstride'], battle='battle_brookstride')
+early(['muddlebub', 'lotling', 'puffpiper_cotton', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom'], battle='battle_muddlebub-lotling-puffpiper_cotton-sundrowse-tipplecup-glimmerjel-logloom')
+for s_ in ['duskcloak', 'staticwing', 'brookstride', 'rampartoad', 'pyrebrash']: early([s_], walk='walk_' + s_)
+for s_ in ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']: early([s_], walk='walk_' + s_, cols=4, stand=0)
+# five crag second stages on one sheet, strips of different widths (x ranges measured from the gaps)
+for sid, x0, x1, c in [('craglet_2', 0, 418, 4), ('clinkit_2', 1129, 1604, 4), ('ramruff_2', 1604, 2172, 4)]:
+    MONS.setdefault(sid, {})['w'] = (E + 'walk_crag2_all.png', 1, 0, c, 0, (x0, x1)); early(['cindhop_2'], walk='walk_cindhop_2', cols=4, stand=0)
 
 
 def load_edge(path):
@@ -75,9 +83,22 @@ def sheet(path, edge=False):
     return _sheets[path]
 
 
+def clean(o):
+    """drop small bits of a neighbouring drawing that crept in at the cell's edge"""
+    m = o['mask']; lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=6)); lab = lab * m   # parts close to the body stay with it
+    if n < 2: return o
+    size = ndimage.sum(m, lab, range(1, n + 1)); big = size.max()
+    edge = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+    drop = [i + 1 for i in range(n) if i + 1 in edge and size[i] < big * .12]
+    if not drop: return o
+    m2 = m & ~np.isin(lab, drop); ys, xs = np.where(m2)
+    y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+    return dict(o, mask=m2[y0:y1, x0:x1], rgb=o['rgb'][y0:y1, x0:x1])
+
+
 def soft(o, k):
     """scale a cut-out by k, keeping a smooth edge (the game draws these sprites smoothly, not as hard pixels)"""
-    h, w = o['mask'].shape; W, Hh = max(1, round(w * k)), max(1, round(h * k))
+    o = clean(o); h, w = o['mask'].shape; W, Hh = max(1, round(w * k)), max(1, round(h * k))
     al = o['mask'].astype(np.float32); pre = np.dstack([o['rgb'].astype(np.float32) * al[..., None], al * 255])
     ch = [np.array(Image.fromarray(pre[..., i]).resize((W, Hh), Image.LANCZOS)) for i in range(4)]
     a = np.clip(ch[3], 0, 255); cov = np.maximum(a / 255, 1e-3)
@@ -99,8 +120,8 @@ def battle(d):
 
 
 def walk(d, F):
-    path, strips, idx, cols, stand = d['w']; a, m = sheet(path)
-    w = a.shape[1]; x0, x1 = w * idx // strips, w * (idx + 1) // strips
+    path, strips, idx, cols, stand = d['w'][:5]; a, m = sheet(path)
+    w = a.shape[1]; x0, x1 = d['w'][5] if len(d['w']) > 5 else (w * idx // strips, w * (idx + 1) // strips)   # an explicit strip when the strips differ in width
     cells = C.grid(a[:, x0:x1], m[:, x0:x1], 4, cols)
     if cols == 3: cells = [[r[1], r[0], r[1], r[2]] if stand == 1 else [r[0], r[1], r[0], r[2]] for r in cells]
     W = F * WS; k = (F - 2) * WS / max(max(o['mask'].shape) for row in cells for o in row)
@@ -108,6 +129,24 @@ def walk(d, F):
     for r in range(4):
         for c in range(4):
             im = soft(cells[r][c], k); out.paste(im, (c * W + (W - im.width) // 2, r * W + W - im.height), im)
+    return out
+
+
+def standin_walk(d, F):
+    """No walk sheet yet: build one from the battle art. Side views for left and right, the back view for up,
+    the front for down, with a little hop instead of leg steps. Replaced as soon as a real walk sheet arrives."""
+    path, row, rows = d['b']; a, m = sheet(path, d.get('edge'))
+    front, back = C.grid(a, m, rows, 2)[row]
+    W = F * WS; k = (F - 2) * WS / max(max(front['mask'].shape), max(back['mask'].shape))
+    fr, bk = soft(front, k), soft(back, k)
+    views = [fr, fr, fr.transpose(Image.FLIP_LEFT_RIGHT), bk]
+    lift = [0, round(1.5 * WS), 0, round(1.5 * WS)]          # hop on frames 1 and 3
+    squash = [1, .97, 1, .97]
+    out = Image.new('RGBA', (W * 4, W * 4))
+    for r, v in enumerate(views):
+        for c in range(4):
+            im = v.resize((v.width, max(1, round(v.height * squash[c]))), Image.LANCZOS) if squash[c] != 1 else v
+            out.paste(im, (c * W + (W - im.width) // 2, r * W + W - im.height - lift[c]), im)
     return out
 
 
@@ -126,6 +165,8 @@ def main():
         wp = G + f'mon_{sid}.png'
         if 'w' in d and os.path.exists(d['w'][0]) and os.path.exists(wp):
             F = Image.open(wp).width // 4; save(walk(d, F), sid + '_w'); got.append(f'walk {F}px x{WS}')
+        elif 'b' in d and os.path.exists(wp):
+            F = Image.open(wp).width // 4; save(standin_walk(d, F), sid + '_w'); got.append(f'stand-in walk from battle art {F}px')
         print(sid, ', '.join(got) or 'no art found')
     if '--preview' in sys.argv and pv:
         import json, re
