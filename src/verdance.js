@@ -35,7 +35,7 @@ const vdSiteOf = key => Object.keys(VD_SITES).find(s => VD_SITES[s].route === ke
 const vdFreedCount = () => Object.keys(VD_SITES).filter(vdShut).length;
 // which site each route's litter belongs to: it goes once that region recovers
 const VD_REGION = { route1: 'fen', route2: 'fen', route3: 'fen', route4: 'fen', brookholt: 'fen', crag1: 'mine', crag2: 'mine', crag3: 'mine', cragmine: 'mine', quarrydown: 'mine',
-  dunes: 'rig', driftwood: 'rig', stormwatch: 'rig', beaconreach: 'rig', windward: 'tower', heatherstep: 'tower', galeledges: 'tower', highmoor: 'tower', windcrown: 'tower' };
+  dunes: 'rig', driftwood: 'rig', glimmer: 'rig', shoals: 'rig', isles: 'rig', stormwatch: 'rig', beaconreach: 'rig', windward: 'tower', heatherstep: 'tower', galeledges: 'tower', highmoor: 'tower', windcrown: 'tower' };
 
 /* ---------- memos: read in the Files tab */
 const VD_MEMOS = {
@@ -107,16 +107,17 @@ The drill is being built in the city. Tell no one, least of all Gleam.
 – S.T.` },
 };
 const VD_MEMO_ORDER = ['survey', 'brief', 'collars', 'fenlog', 'quarry', 'brask', 'power', 'rig', 'cirro', 'taproot'];
+const vdLogo = () => ICONS.logo ? `<img class="vdlogo" src="${ICONS.logo}">` : '⚙';
 const vdFileCount = () => S && S.vd ? Object.keys(S.vd.memos).length : 0;
 function openFiles(sel) {
   const have = VD_MEMO_ORDER.filter(id => vd().memos[id]);
   const list = () => `<p class="hint">Verdance Energy's papers, picked up wherever they dropped them. ${have.length} of ${VD_MEMO_ORDER.length} found.</p><div class="mlist">${have.map(id => `<button class="proj" data-a="memo" data-id="${id}" style="text-align:left;width:100%;cursor:pointer">${vd().read[id] ? '' : '<b style="color:#6a9a2a">● </b>'}<b>${VD_MEMOS[id].title}</b><br><small>${VD_MEMOS[id].from}</small></button>`).join('')}</div>`;
-  const show = id => { vd().read[id] = 1; const M = VD_MEMOS[id]; return `<div class="letter vdmemo"><div class="vdhead"><span class="vdlogo">⚙</span> VERDANCE ENERGY <small>Clean power, naturally™</small></div><b>${M.title}</b><br><small><i>${M.from}</i></small>\n\n${M.body}</div><div class="row"><button class="btn" data-a="back">◀ All files</button></div>`; };
+  const show = id => { vd().read[id] = 1; const M = VD_MEMOS[id]; return `<div class="letter vdmemo"><div class="vdhead">${vdLogo()} VERDANCE ENERGY <small>Clean power, naturally™</small></div><b>${M.title}</b><br><small><i>${M.from}</i></small>\n\n${M.body}</div><div class="row"><button class="btn" data-a="back">◀ All files</button></div>`; };
   openModal('Files', sel ? show(sel) : list(), (a, d) => { if (a === 'memo') $('mBody').innerHTML = show(d.id); if (a === 'back') $('mBody').innerHTML = list(); });
 }
 (function () {
   const st = document.createElement('style');
-  st.textContent = `.vdmemo{white-space:pre-line;background:#f4f2ea;border-left:4px solid #8ccc3c}.vdhead{font:700 11px var(--pix);color:#3a424c;letter-spacing:.5px;border-bottom:2px solid #8ccc3c;margin-bottom:6px;padding-bottom:3px;white-space:normal}.vdhead small{font-weight:400;color:#6a7480;margin-left:4px}.vdlogo{color:#6ab02a}
+  st.textContent = `.vdmemo{white-space:pre-line;background:#f4f2ea;border-left:4px solid #8ccc3c}.vdhead{font:700 11px var(--pix);color:#3a424c;letter-spacing:.5px;border-bottom:2px solid #8ccc3c;margin-bottom:6px;padding-bottom:3px;white-space:normal}.vdhead small{font-weight:400;color:#6a7480;margin-left:4px}.vdlogo{width:18px;height:18px;vertical-align:-4px;margin-right:2px}
   .wmap svg.rootweave{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}`;
   document.head.appendChild(st);
 })();
@@ -138,7 +139,7 @@ const VD_PLACES = {
     { k: 'site', s: 'fen', at: [51, 17] }, { k: 'heart', s: 'fen', at: [48, 24] },
     { k: 'boss', id: 'vd_fen_boss', kind: 'vtech2', name: 'Pell', title: 'Site Supervisor', s: 'fen', at: [49, 18], team: vdTeam(['muddlebub', 22], ['fenfang', 23], ['logloom', 24]) },
     { k: 'pipe', at: [47, 21] }],
-  brookholt: [{ k: 'board', at: [27, 9], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Verdance is investing in Brookholt's future. Drainage improvements in progress. We apologise for any disruption to the fen." }],
+  brookholt: [{ k: 'office', at: [33, 12] }, { k: 'board', at: [27, 9], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Verdance is investing in Brookholt's future. Drainage improvements in progress. We apologise for any disruption to the fen." }],
   crag1: [{ k: 'board', at: [20, 3], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Cragside Pass: keeping the city's lights on since last spring." }, { k: 'pipe', at: [24, 20] }, { k: 'pipe', at: [24, 22] },
     { k: 'tech', id: 'vd_crag1', kind: 'vtech', name: 'Ferris', at: [22, 12], team: vdTeam(['craglet', 28], ['clinkit', 29]) }, { k: 'stake', at: [10, 36] }],
   crag3: [{ k: 'tech', id: 'vd_crag3', kind: 'vtech2', name: 'Lou', at: [24, 27], team: vdTeam(['cindhop_2', 32], ['staticwing', 33]) }, { k: 'pipe', at: [27, 30] }, { k: 'pipe', at: [12, 18] }],
@@ -147,9 +148,13 @@ const VD_PLACES = {
     { k: 'site', s: 'mine', at: [16, 5] }, { k: 'heart', s: 'mine', at: [8, 5] },
     { k: 'boss', id: 'vd_brask', kind: 'brask', name: 'Brask', title: 'Foreman', s: 'mine', at: [13, 7], team: vdTeam(['flintburrow', 36], ['rampartoad', 37], ['clinkit_2', 37], ['craglet_2', 38]) },
     { k: 'memo', id: 'brask', at: [5, 13] }],
-  quarrydown: [{ k: 'board', at: [30, 30], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Geological survey complete. Thank you, Quarrydown!" }, { k: 'memo', id: 'quarry', at: [40, 20] }],
+  quarrydown: [{ k: 'npc', id: 'vd_brask_qd', kind: 'brask', name: 'Brask', at: [14, 24], after: 'mine' }, { k: 'board', at: [30, 30], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Geological survey complete. Thank you, Quarrydown!" }, { k: 'memo', id: 'quarry', at: [40, 20] }],
   dunes: [{ k: 'board', at: [26, 14], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Coming soon: Verdance Coastal Energy Park. Powering the city with the strength of the sea." }, { k: 'stake', at: [18, 18] }, { k: 'stake', at: [34, 18] }, { k: 'memo', id: 'power', at: [44, 10] }],
-  stormwatch: [{ k: 'site', s: 'rig', at: [26, 33] }, { k: 'memo', id: 'rig', at: [44, 26] }],
+  stormwatch: [{ k: 'site', s: 'rig', at: [26, 33] }, { k: 'memo', id: 'rig', at: [44, 26] }, { k: 'slick', at: [30, 40] }, { k: 'slick', at: [20, 46] }],
+  glimmer: [{ k: 'barge', at: [30, 20] }, { k: 'slick', at: [22, 14] }, { k: 'slick', at: [38, 28] }, { k: 'slick', at: [16, 32] }],
+  shoals: [{ k: 'slick', at: [20, 20] }, { k: 'slick', at: [30, 34] }],
+  isles: [{ k: 'buoy', at: [36, 30] }],
+  windward: [{ k: 'barge', at: [22, 26], crew: { id: 'vd_barge', kind: 'vtech2', name: 'Skip', team: vdTeam(['reefarer', 50], ['kilnback', 51]) } }],
   beaconreach: [{ k: 'board', at: [16, 20], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Verdance Offshore: safe, quiet and nowhere near your fishing grounds." }],
   heatherstep: [{ k: 'tech', id: 'vd_heath', kind: 'vtech', name: 'Hollis', at: [18, 30], team: vdTeam(['kitlet_2', 52], ['heathfoal', 53]) }, { k: 'pipe', at: [20, 20] }, { k: 'pipe', at: [20, 24] }],
   galeledges: [{ k: 'tech', id: 'vd_gale', kind: 'vtech2', name: 'Bea', at: [20, 26], team: vdTeam(['flurrowl', 54], ['staticwing', 55]) }, { k: 'pipe', at: [14, 30] }],
@@ -160,14 +165,18 @@ const VD_PLACES = {
     { k: 'boss', id: 'vd_ash', kind: 'ash', name: 'Ash', title: 'Dr', s: 'tower', at: [20, 5], team: vdTeam(['duskcloak', 58], ['stormveil_3', 59], ['wishling_3', 59], ['flurrowl_2', 60], ['staticwing', 60]) },
     { k: 'memo', id: 'cirro', at: [26, 15] }, { k: 'memo', id: 'taproot', at: [26, 9], after: 'tower' }],
 };
-const VD_FOOT = { board: 3, site: 2, heart: 2, rig: 3 };   // tiles wide (blocked along the bottom row)
-const VD_ART = { stake: 'vd_stake', pipe: 'vd_pipe', memo: 'vd_memo' };
+const VD_FOOT = { board: 3, heart: 3, office: 4, barge: 4, buoy: 1, npc: 1 }, VD_SITE_FOOT = { fen: 2, mine: 3, tower: 2, rig: 4 };   // tiles wide (blocked along the bottom row)
+const VD_ART = { stake: 'vd_stake', pipe: 'vd_pipe', memo: 'vd_memo', barge: 'vd_barge', buoy: 'vd_buoy' };
+// pipes: a run down a column uses upright pieces; otherwise a mix of plain, half-buried and valve pieces
+const it_f = o => o.f || (o.k === 'slick' ? 'vd_slick' + (o.idx % 3 + 1) : o.k === 'office' ? (vdReveal() ? 'vd_office_x' : 'vd_office') : o.k === 'pipe' ? (o.vert ? 'vd_pipe_v' : ['vd_pipe', 'vd_pipe_grass', 'vd_pipe', 'vd_pipe_valve'][o.idx % 4]) : VD_ART[o.k]);
 
 // is it showing today?
 function vdShows(key, it) {
   const reg = VD_REGION[key], gone = reg && vdShut(reg);
   if (it.k === 'memo') return !vd().memos[it.id] && (!it.after || vdShut(it.after));
-  if (it.k === 'stake' || it.k === 'pipe' || it.k === 'tech') return !gone;
+  if (it.k === 'stake' || it.k === 'pipe' || it.k === 'tech' || it.k === 'slick' || it.k === 'barge') return !gone;
+  if (it.k === 'npc') return vdShut(it.after);
+  if (it.k === 'boss' && it.s === 'mine') return !vdShut('mine');   // Brask leaves the mine: he turns up in Quarrydown
   if (it.k === 'board') return !(gone && vdReveal());
   return true;   // sites, root-hearts and bosses stay (shut down, revived and beaten)
 }
@@ -222,7 +231,7 @@ function vdLayout(key) {
   };
   const out = [];
   (VD_PLACES[key] || []).forEach((it, idx) => {
-    const w = it.k === 'site' && it.s === 'rig' ? VD_FOOT.rig : VD_FOOT[it.k] || 1, blocks = !['stake', 'pipe', 'memo'].includes(it.k);
+    const w = it.k === 'site' ? VD_SITE_FOOT[it.s] : VD_FOOT[it.k] || 1, blocks = !['stake', 'pipe', 'memo', 'slick'].includes(it.k);
     let best = null, bs = 1e9; const [tx, ty] = it.at;
     for (let r = 0; r <= 12; r++) for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) {
       if (Math.max(Math.abs(x - tx), Math.abs(y - ty)) !== r || x < 0 || y < 0 || x >= RW || y >= RH) continue;
@@ -237,13 +246,14 @@ function vdLayout(key) {
     for (let k = 0; k < w; k++) { used[best.y * RW + best.x + k] = 2; if (blocks) blocked[best.y * RW + best.x + k] = 1; }
     // stand-alone litter only marks itself; everything else keeps a one-tile margin from the next thing
     const o = { ...it, idx, x: best.x, y: best.y, w };
-    if (it.k === 'tech' || it.k === 'boss') {   // face the most open way, so they watch the path
+    if (it.k === 'tech' || it.k === 'boss' || it.k === 'npc') {   // face the most open way, so they watch the path
       let bestDir = 'down', run = -1;
       for (const d of DIRS) { const [dx, dy] = DV[d]; let n = 0; for (let k = 1; k <= 4; k++) { const a = o.x + dx * k, b = o.y + dy * k; if (a < 0 || b < 0 || a >= RW || b >= RH || blocked[b * RW + a]) break; n++; } if (n > run) { run = n; bestDir = d; } }
       o.dir = it.dir || bestDir;
     }
     out.push(o);
   });
+  for (const o of out) if (o.k === 'pipe') o.vert = out.some(q => q !== o && q.k === 'pipe' && q.x === o.x && Math.abs(q.y - o.y) <= 4);
   return (VD_POS[key] = out);
 }
 
@@ -259,9 +269,11 @@ function vdInject(key) {
   const R0 = ROUTES[key], a = VD_ADDED[key] = { signs: [] };
   for (const o of vdLayout(key)) {
     if (!vdShows(key, o)) continue;
+    if (o.k === 'npc') { R0.trainers.push({ id: o.id, kind: o.kind, name: o.name, x: o.x, y: o.y, dir: o.dir || 'down', sight: 0, team: [], vd: 'npc' }); continue; }
+    if (o.k === 'barge' && o.crew) R0.trainers.push({ ...o.crew, x: o.x + 1, y: o.y, dir: 'down', sight: 3, vd: 'tech' });
     if (o.k === 'tech' || o.k === 'boss') { R0.trainers.push({ id: o.id, kind: o.kind, name: o.name, x: o.x, y: o.y, dir: o.dir, sight: o.k === 'boss' ? 0 : 3, team: o.team, vd: o.k, title: o.title, s: o.s }); continue; }
-    if (o.k === 'stake' || o.k === 'pipe' || o.k === 'memo') continue;
-    for (let k = 0; k < o.w; k++) { const sk = (o.x + k) + ',' + o.y; R0.signs[sk] = '__door:vd_' + o.idx; a.signs.push(sk); }
+    if (o.k === 'stake' || o.k === 'pipe' || o.k === 'memo' || o.k === 'slick') continue;
+    for (let k = 0; k < o.w; k++) { if (o.k === 'barge' && o.crew && k === 1) continue; const sk = (o.x + k) + ',' + o.y; R0.signs[sk] = '__door:vd_' + o.idx; a.signs.push(sk); }
   }
 }
 const _vdUseRoute = useRoute;
@@ -280,15 +292,17 @@ Route.prototype.create = function () {
   if (!VD_POS[key] || !this.textures.exists('vd')) return;
   const site = vdSiteOf(key);
   for (const o of VD_POS[key]) {
-    if (!vdShows(key, o) || o.k === 'tech' || o.k === 'boss') continue;
+    if (!vdShows(key, o) || o.k === 'tech' || o.k === 'boss' || o.k === 'npc') continue;
     const cx = o.x * T + o.w * 8, by = o.y * T + 16;
-    let f = VD_ART[o.k];
+    let f = it_f(o);
     if (o.k === 'board') f = vdReveal() ? 'vd_board_x' : 'vd_board';
     if (o.k === 'site') f = VD_SITES[o.s].art + (vdShut(o.s) ? '_off' : '');
     if (o.k === 'heart') f = vdShut(o.s) ? 'vd_root_on' : 'vd_root';
-    const flat = o.k === 'pipe' || o.k === 'memo';
+    const flat = o.k === 'pipe' || o.k === 'memo' || o.k === 'slick';
     const im = this.add.image(cx, flat ? o.y * T + 13 : by, 'vd', f).setOrigin(.5, flat ? .5 : 1).setDepth(flat ? 2 : o.y * T + 15);
-    if (o.k === 'board' || o.k === 'site') { im.noShadow = 1; this.tall.push(im); }
+    if (o.k === 'board' || o.k === 'site' || o.k === 'office') { im.noShadow = 1; this.tall.push(im); }
+    if (o.k === 'barge') { im.setDepth(o.y * T + 13); this.tweens.add({ targets: im, y: im.y + 1.2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' }); }
+    if (o.k === 'slick') im.setAlpha(.85).setDepth(1.7);
     if (o.k === 'memo') this.tweens.add({ targets: im, y: im.y - 1.5, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut' });
     if (o.k === 'site' && !vdShut(o.s)) vdHum(this, im, o);
     if (o.k === 'heart' && vdShut(o.s)) vdGlow(this, cx, by - 10);
@@ -350,6 +364,10 @@ function vdDoor(sc, idx) {
     return Talk.say([vdSys(vdShut(o.s) ? `A root as thick as a barrel breaks the surface here, warm and humming softly. This is ${S0.heart}, and life is flowing through it again, back along the Rootweave towards Smallroot.` : `A root as thick as a barrel breaks the surface here. It's grey, cold and cracked. A Verdance pipe is clamped onto it like a leech. This is ${S0.heart}.`)]);
   }
   if (o.k === 'site') return vdSiteTalk(sc, o);
+  if (o.k === 'office') return Talk.say([vdSys(vdReveal() ? "The Verdance Community Office is boarded up. Someone has chalked on the planks: 'Partnership ended.'" : "The Verdance Community Office. Through the glass: potted plants, a smiling receptionist, and a pile of leaflets titled 'Your Fen, Our Future'."),
+    ...(vdReveal() ? [] : [vdSys("A poster in the window reads: 'Drainage improvements in Sluice Fen. Thank you for your patience!'")])]);
+  if (o.k === 'barge') return Talk.say([vdSys("A Verdance supply barge, loaded with crates and pipe sections. A stencil on the crates: 'RIG SUPPLIES – HANDLE WITH CARE – DO NOT OPEN'.")]);
+  if (o.k === 'buoy') return Talk.say([vdSys("A survey buoy, washed up and tipped on its side. The plate reads: VERDANCE OFFSHORE · SEISMIC SURVEY BUOY 7 · DO NOT TAMPER."), vdSys("It's dented all over and scored with deep, icy scratches. The light is smashed. Something very big didn't like its pinging.")]);
 }
 const vdSys = t => ({ name: S.name, img: PLAYER_PIC ? PLAYER_PIC[0] : '', t });
 function vdIcon(f) {
@@ -414,6 +432,7 @@ Route.prototype.startTrainerBattle = function (t) { return t.vd ? vdBattle(this,
 const _vdTalkTB = Route.prototype.talkTrainer;
 Route.prototype.talkTrainer = function (t) {
   if (!t.vd) return _vdTalkTB.call(this, t);
+  if (t.vd === 'npc') { const p0 = this.p; t.spr.setFrame(DIRS.indexOf(p0.x > t.cx ? 'right' : p0.x < t.cx ? 'left' : p0.y > t.cy ? 'down' : 'up') * 4); const n = vd().braskN = (vd().braskN || 0) + 1; return Talk.say([{ who: 'trainer', name: 'Brask', img: trainerPic('brask', n % 2), t: VD_BRASK_QD[(n - 1) % VD_BRASK_QD.length] }]); }
   const p = this.p; t.dir = p.x > t.cx ? 'right' : p.x < t.cx ? 'left' : p.y > t.cy ? 'down' : 'up'; t.spr.setFrame(DIRS.indexOf(t.dir) * 4);
   if (!beatTrainer(t.id)) { if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400); return this.startTrainerBattle(t); }
   const who = t.vd === 'boss' ? vdBossName(t) : `${TRAINER_TYPES[t.kind].label} ${t.name}`;
@@ -524,7 +543,7 @@ Farm.prototype.readMail = function () {
   const k = S.mailRead && vdMailDue(); if (!k) return _vdReadMail.call(this);
   vd().mail[k] = S.day; this.mailFlag.setVisible(!!vdMailDue()); Sound.play('pop');
   const L = VD_LETTERS[k];
-  openModal(L.from === 'Tobias Gleam' ? 'A letter from Verdance' : 'An official notice', `<div class="letter vdmemo"><div class="vdhead"><span class="vdlogo">⚙</span> VERDANCE ENERGY <small>Clean power, naturally™</small></div>${L.body(S.name)}</div>${k === 'legal' ? '' : '<div class="row"><button class="btn" data-a="no">Write back: "Not for sale."</button></div>'}`, a => { if (a === 'no') { closeModal(); toast(k === 'offer' ? "You post your reply. Somehow you can already hear him saying 'the offer stands'." : 'You post your reply. Two words this time.', 3000); } });
+  openModal(L.from === 'Tobias Gleam' ? 'A letter from Verdance' : 'An official notice', `<div class="letter vdmemo"><div class="vdhead">${vdLogo()} VERDANCE ENERGY <small>Clean power, naturally™</small></div>${L.body(S.name)}</div>${k === 'legal' ? '' : '<div class="row"><button class="btn" data-a="no">Write back: "Not for sale."</button></div>'}`, a => { if (a === 'no') { closeModal(); toast(k === 'offer' ? "You post your reply. Somehow you can already hear him saying 'the offer stands'." : 'You post your reply. Two words this time.', 3000); } });
 };
 
 ITEMS.vgrow = { name: 'Verdance Grow', stack: 999, fert: true, vgrow: true, sell: 1, desc: "Crops on this soil grow twice as fast. The small print: the soil is spent afterwards, and nothing grows there again until the season turns." };
@@ -532,7 +551,7 @@ const VD_KIOSK = { at: [44, 23] };
 function vdKioskPos(tw) {
   if (VD_KIOSK.x) return VD_KIOSK;
   const blk = tw.blocked, doorsUp = new Set(Object.values(BUILDINGS).map(q => (q.cx + q.door) + ',' + (q.by + 1)));
-  const okAt = (x, y) => [0, 1, 2].every(k => !blk[y * TW + x + k] && !doorsUp.has((x + k) + ',' + y) && !doorsUp.has((x + k) + ',' + (y - 1)) && !tw.doors[(x + k) + ',' + (y - 1)]) && [0, 1, 2].every(k => !blk[(y + 1) * TW + x + k]) && !SQUARE.some(([a, b]) => Math.abs(a - x) <= 2 && Math.abs(b - y) <= 2);
+  const okAt = (x, y) => [0, 1, 2, 3].every(k => !blk[y * TW + x + k] && !doorsUp.has((x + k) + ',' + y) && !doorsUp.has((x + k) + ',' + (y - 1)) && !tw.doors[(x + k) + ',' + (y - 1)]) && [0, 1, 2, 3].every(k => !blk[(y + 1) * TW + x + k]) && !SQUARE.some(([a, b]) => Math.abs(a - x) <= 2 && Math.abs(b - y) <= 2);
   for (let r = 0; r < 12; r++) for (let y = VD_KIOSK.at[1] - r; y <= VD_KIOSK.at[1] + r; y++) for (let x = VD_KIOSK.at[0] - r; x <= VD_KIOSK.at[0] + r; x++) if (!VD_KIOSK.x && okAt(x, y)) Object.assign(VD_KIOSK, { x, y });
   return VD_KIOSK;
 }
@@ -541,13 +560,13 @@ Town.prototype.create = function () {
   _vdTownCreate.call(this);
   if (!this.textures.exists('vd') || S.day < 2) return;
   const k = vdKioskPos(this.town); if (!k.x) return;
-  for (const d of [0, 1, 2]) this.town.blocked[k.y * TW + k.x + d] = 1;
-  const im = this.add.image(k.x * T + 16, k.y * T + 16, 'vd', 'vd_kiosk').setOrigin(.5, 1).setDepth(k.y * T + 15); this.tall.push(im); this.shadow(im, 34, 7);
-  this.gleam = this.add.sprite(k.x * T + 40, k.y * T + 15, 'tr_gleam', 0).setOrigin(.5, 1).setDepth(k.y * T + 15); this.shadow(this.gleam, 12, 5);
+  for (const d of [0, 1, 2, 3]) this.town.blocked[k.y * TW + k.x + d] = 1;
+  const im = this.add.image(k.x * T + 24, k.y * T + 16, 'vd', 'vd_kiosk').setOrigin(.5, 1).setDepth(k.y * T + 15); this.tall.push(im); this.shadow(im, 40, 8);
+  this.gleam = this.add.sprite(k.x * T + 56, k.y * T + 15, 'tr_gleam', 0).setOrigin(.5, 1).setDepth(k.y * T + 15); this.shadow(this.gleam, 12, 5);
   if (vdReveal()) this.gleam.setVisible(false);
 };
 const _vdThing = Town.prototype.thing;
-Town.prototype.thing = function (x, y) { const k = VD_KIOSK; if (k.x && this.gleam && y === k.y && x >= k.x && x <= k.x + 2) return { type: 'vd_kiosk', x, y }; return _vdThing.call(this, x, y); };
+Town.prototype.thing = function (x, y) { const k = VD_KIOSK; if (k.x && this.gleam && y === k.y && x >= k.x && x <= k.x + 3) return { type: 'vd_kiosk', x, y }; return _vdThing.call(this, x, y); };
 const _vdTownAct = Town.prototype.act;
 Town.prototype.act = function (t) { if (t.type === 'vd_kiosk') { this.face(t.x, t.y); this.p.busy = .25; return vdKiosk(); } return _vdTownAct.call(this, t); };
 function vdKiosk() {
@@ -630,3 +649,180 @@ QUESTS.splice(QUESTS.findIndex(q => q.id === 'millwind'), 0,
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'vd_tower') + 1, 0,
   { id: 'vd_taproot', name: "Find Dr Ash's notes on the summit", hint: 'Ash said he left his notes on the summit of Windcrown Peak, near the tower.', done: () => !!vd().memos.taproot, reward: { gold: 2000 } });
 Object.assign(QUEST_PLACE, { vd_fen: 'route4', vd_mine: 'crag3', vd_rowan: 'town', vd_rig: 'stormwatch', vd_tower: 'windcrown', vd_taproot: 'windcrown' });
+
+/* ============================================================ Verdance across the rest of the valley
+   Reactions, side touches and small systems: Brask in Quarrydown, the Wardens and townsfolk, Hal, Stanley's
+   timetable, the shops, the journal, the Derby's Verdance Cup, festivals, the farm's surveyor, fishing, the
+   oil slicks at sea and the Verdance supply contract. */
+const VD_BRASK_QD = ["Oh. It's you. Sit down if you like. Seems nobody can stop you doing anything.", "I told head office the drill seized. Haven't been back since. Reckon that counts as quitting.",
+  "Twenty years. Twenty years I told myself it was just a job.", "Ash came looking for me. Wanted to know why the drill stopped. I told him to go and ask the rock.",
+  "The lads keep writing. Verdance has them on something new, back in the city. Something big. They won't say what.", "If you ever need someone who knows how Verdance digs... you know where to find me."];
+
+// the people who'd have something to say: one line each, the first time it applies, said before their usual chat
+const VD_REACT = [
+  { id: 'del_run', who: ['Warden Delphine'], when: () => !vdShut('fen') && (S.visited || {}).route4, t: "You came through the fen? It's never been this low. Forty years I've kept these locks. Someone's shut the sluices on purpose." },
+  { id: 'del_shut', who: ['Warden Delphine'], when: () => vdShut('fen'), t: "The water's back in the fen! And the old willow by the lock is putting out new leaves. Whatever you did out there, thank you." },
+  { id: 'gra_run', who: ['Warden Granger'], when: () => !vdShut('mine') && (S.visited || {}).cragmine, t: "You've been down the Old Mine? Then you've seen the drill. Verdance leased the quarry for a 'survey'. I signed the papers for the town myself. Should've asked more questions." },
+  { id: 'gra_shut', who: ['Warden Granger'], when: () => vdShut('mine'), t: "The rock's quiet at night for the first time in months. I signed that lease on Quarrydown's behalf. I won't make that mistake twice." },
+  { id: 'orr_run', who: ['Orrin', 'Warden Orrin'], when: () => !vdShut('rig') && (S.visited || {}).stormwatch, t: "There's a rig out in the strait, lit up like a fairground. Verdance. The whale only turned up after it went in. Bring me proof it's them, and every captain on this coast will hear it." },
+  { id: 'orr_shut', who: ['Orrin', 'Warden Orrin'], when: () => vdShut('rig'), t: "The rig's dark and the strait's calm. That's all the proof I need. I've told every captain from here to the Isles." },
+  { id: 'tam_run', who: ['Tamsin', 'Warden Tamsin'], when: () => !vdShut('tower') && (S.visited || {}).highmoor, t: "There are lights on the summit at night. Green ones. Whatever's jamming my mill, it isn't any weather I know." },
+  { id: 'tam_shut', who: ['Tamsin', 'Warden Tamsin'], when: () => vdShut('tower'), t: "The wind's gentle again and the sails are turning. Highmoor won't forget what you did up there." },
+  { id: 'hal', who: ['Hal the Shipwright'], when: () => true, t: "Before you ask: no, I don't build for Verdance. They came wanting supply barges for their rig. Paid well, too. I told 'em where to stick it." },
+  { id: 'hal_shut', who: ['Hal the Shipwright'], when: () => vdShut('rig'), t: "Saw the rig go dark from my workshop window last night. Best thing I've seen in years." },
+  { id: 'stan', who: ['Stanley'], when: () => S.town.done.station && !vdReveal(), t: "Funny thing. Somebody's pencilled a new line onto my timetable: 'Verdance Freight, City to Smallroot, nightly, from spring.' Nightly freight! What would they be hauling out of Smallroot?" },
+  { id: 'stan_rev', who: ['Stanley'], when: () => vdReveal(), t: "I rubbed that Verdance freight line off my timetable. Some things don't belong on a railway." },
+];
+let vdBattleEnd = 0;
+setInterval(() => { if (typeof Battle !== 'undefined' && Battle.active) vdBattleEnd = Date.now(); }, 400);
+const _vdSay = Talk.say;
+Talk.say = function (lines, cb) {
+  try {
+    const L0 = lines && lines[0];
+    if (L0 && S && S.vd && !Battle.active && Date.now() - vdBattleEnd > 3000) {
+      const r = VD_REACT.find(r => r.who.includes(L0.name) && !vd().react?.[r.id] && r.when());
+      if (r) { (vd().react = vd().react || {})[r.id] = S.day; lines = [{ ...L0, t: r.t }, ...lines]; }
+    }
+  } catch (e) { }
+  return _vdSay.call(this, lines, cb);
+};
+
+// townsfolk in the other towns: mixed feelings, said once each when they apply
+const VD_FOLK = {
+  quarrydown: { Dougie: [() => S.vd.metGleam || (S.visited || {}).cragmine, "Verdance paid good money for the quarry lease. Then they left the crane to rot. Typical."],
+    Bryn: [() => true, "My cousin works for Verdance in the city. Says they're the best employer she's ever had. Free lunches."],
+    Meg: [() => !vdShut('mine'), "Something in the Old Mine's been singing at night. Kept me up for weeks."], Nell: [() => vdShut('mine'), "Since the drilling stopped, the little rock Fablemon have come back down off the heights."] },
+  beaconreach: { 'Shanty Sam': [() => vdShut('rig'), "♪ The rig went dark, the sea went calm... ♪ Still working on the next line."], 'Old Tam': [() => true, "That ice whale only turned up after the rig went in. Mark my words."],
+    Marigold: [() => !vdShut('rig'), "Verdance offered to pay for every net the whale tore. Generous of them. Bit too generous, if you ask me."], 'Harbourmaster Quill': [() => true, "Their supply barges pay harbour fees on time. I'll give them that much."] },
+  driftwood: { Rosie: [() => true, "Hal turned down a fortune from Verdance. Stubborn old goat. Proud of him, mind."], 'Fiddler Jory': [() => vdReveal(), "I've written a song about Verdance. It's mostly rude words."],
+    Kit: [() => !vdShut('rig'), "There's a rainbow sheen on the water past the point. Pretty. Dad says it isn't meant to be there."] },
+  highmoor: { 'Gorse, the shepherd': [() => !vdShut('tower'), "My flock won't graze near the summit path. Sheep know when something's wrong."], 'Elspeth, the baker': [() => vdShut('tower'), "The mill's turning again! Fresh flour by Friday, love."],
+    'Old Windrow': [() => true, "Men in grey-green came through in spring with a cart full of steel. Said they were 'weather scientists'. Weather doesn't need a padlock."] },
+};
+const _vdFolk = folkTalk;
+folkTalk = function (sc, id) {
+  const i = +id.split('_').pop(), o = (sc.folk || []).find(f => f.i === i), F = o && VD_FOLK[sc.scene.key] && VD_FOLK[sc.scene.key][o.name];
+  const key = o && 'folk_' + sc.scene.key + '_' + o.name;
+  if (F && S.vd && !vd().react?.[key] && F[0]()) {
+    (vd().react = vd().react || {})[key] = S.day;
+    const p = sc.p; o.spr.setFrame(DIRS.indexOf(p.x < o.x ? 'left' : p.x > o.x ? 'right' : p.y < o.y ? 'up' : 'down') * 4); o.talking = 1;
+    return Talk.say([{ who: 'trainer', name: o.name, img: trainerPic(o.kind, 0), t: F[1] }], () => { o.talking = 0; });
+  }
+  return _vdFolk(sc, id);
+};
+
+// the shops: Marigold won't stock it, the mason won't either, the Chandlery does (and isn't happy about it)
+const _vdMarigold = marigoldLines;
+marigoldLines = function (open) {
+  if (S.town.met.marigold && S.vd && vd().metGleam && !vd().react?.marigold) { (vd().react = vd().react || {}).marigold = S.day;
+    return [{ who: 'marigold', f: 1, t: "I see Gleam's been handing out his free sacks. I won't stock that stuff. My mother used it on her field one summer, and it never grew right again." }]; }
+  return _vdMarigold(open);
+};
+BH_SHOP.push(['vgrow', 14]);
+const _vdBh = bhDoor;
+bhDoor = function (sc, id) { const r = _vdBh(sc, id); if (id === 'bh_shop' && S.vd && !vd().react?.chand) { (vd().react = vd().react || {}).chand = S.day; toast('"I only stock that Verdance Grow because folk ask for it," says the shopkeeper. "Read the small print, love."', 3600); } return r; };
+const _vdQd = qdDoor;
+qdDoor = function (sc, id) { const r = _vdQd(sc, id); if (id === 'qd_shop' && S.vd && vd().metGleam && !vd().react?.mason) { (vd().react = vd().react || {}).mason = S.day; toast('"Verdance Grow? Not in my shop," the mason grunts. "I\'ve seen what they did to the quarry."', 3400); } return r; };
+
+// the journal: where Verdance has been, the Fablemon remember
+const VD_FEN_MONS = ['muddlebub', 'lotling', 'puffpiper', 'glimmerjel', 'fenfang', 'logloom', 'tipplecup'];
+function vdHabNote(sp) {
+  if (!S || !S.vd) return '';
+  const b = baseOf(sp), out = [];
+  if (VD_FEN_MONS.includes(b)) out.push(vdShut('fen') ? 'Healthier since the Sluice Fen siphon was shut down.' : 'Often seen grey and sickly round Sluice Fen.');
+  const where = Object.entries(vd().freed).filter(([, l]) => l.some(s => baseOf(s) === b)).map(([k]) => ROUTES[k] ? ROUTES[k].name : k);
+  if (where.length) out.push(`Freed from Verdance drain collars on ${where.join(', ')}, and living wild there now.`);
+  return out.length ? '<br><i>' + out.join(' ') + '</i>' : '';
+}
+
+// the Derby: Verdance sponsors a cup, while it still can
+DERBY_CUPS.push({ id: 'verdance', name: 'Verdance Cup', icon: '⚙️', track: 'mudrun', cap: 40, fee: 0,
+  unlock: () => !!(S.vd && vd().metGleam && (S.crests || {}).brook && !vdReveal()),
+  get lockText() { return S.vd && vdReveal() ? 'Cancelled. The sponsor has "withdrawn from community events".' : 'Sponsored by Verdance Energy. Opens once you\'ve met their man in Smallroot and earned the Brook Crest.'; },
+  prize: [4000, [['vgrow', 10]]], replay: [900, []],
+  races: [
+    [R_('Kit', 'staticwing', 36, .92), R_('Alf', 'mirebellows', 37, .92), R_('Bea', 'whirlwyn', 37, .93)],
+    [R_('Ollie', 'brookstride', 38, .94), R_('Nell', 'cindhop_2', 38, .94), R_('Tess', 'reefarer', 38, .94)],
+    [R_('Gleam', 'staticwing', 40, 1.16, 10, 'swift_feather'), R_('Kit', 'whirlwyn', 40, .96), R_('Tess', 'cindhop_2', 40, .96)],
+  ], champ: 'Gleam', champLine: "Verdance are sponsoring this one, so their man Gleam's racing it himself. That Staticwing of his looks awfully grey. Something about that collar I don't like." });
+
+// festivals: Gleam works the crowd, until the town knows better
+const _vdKioskFn = vdKiosk;
+vdKiosk = function () {
+  if (festNow() && !vdReveal()) return Talk.say([{ who: 'trainer', name: 'Tobias Gleam', img: trainerPic('gleam', 1), t: "Happy festival! Verdance is proud to sponsor the bunting. And the lanterns. And, er, the napkins. Leaflet?" }]);
+  return _vdKioskFn();
+};
+const _vdTownCreate2 = Town.prototype.create;
+Town.prototype.create = function () {
+  _vdTownCreate2.call(this);
+  if (S.vd && vdReveal() && festNow() && !vd().react?.fest) { (vd().react = vd().react || {}).fest = S.day; setTimeout(() => toast('Gleam turned up at the festival with a box of leaflets. Barney chased him all the way to the station. Everyone cheered.', 4200), 1200); }
+};
+
+// the farm: a survey stake by the east road, and a surveyor who comes to measure your fence
+const _vdFarmCreate2 = Farm.prototype.create;
+Farm.prototype.create = function () {
+  _vdFarmCreate2.call(this);
+  if (!this.textures.exists('vd') || S.day < 3 || (S.vd && vdReveal())) return;
+  const okT = (x, y) => { const i = y * W + x, k = x + ',' + y; return x > 0 && y > 0 && x < W - 1 && y < H - 1 && farm && !farm.blocked[i] && farm.occ[i] < 0 && !S.tilled[k] && !S.objs[k] && !S.fences[k] && !(S.paths || {})[k] && !farm.waterish[i]; };
+  let st = null; for (let r = 0; r < 6 && !st; r++) for (let y = 23 - r; y <= 23 + r && !st; y++) for (let x = 74 - r; x <= 74 + r; x++) if (okT(x, y)) { st = { x, y }; break; }
+  if (st) this.add.image(st.x * T + 8, st.y * T + 15, 'vd', 'vd_stake').setOrigin(.5, 1).setDepth(st.y * T + 15);
+  if (S.day % 3 === 0 && S.time >= 480 && S.time < 1020) {   // pacing the east road, measuring
+    const g = this.add.sprite(77 * T + 8, 22 * T + 15, 'tr_vtech', 4).setOrigin(.5, 1).setDepth(22 * T + 15);
+    this.tweens.add({ targets: g, x: 69 * T + 8, duration: 7000, yoyo: true, repeat: -1, onYoyo: () => g.setFrame(8), onRepeat: () => g.setFrame(4) });
+    const ev = this.time.addEvent({ delay: 300, loop: true, callback: () => {
+      if (!g.active || Math.hypot(this.p.x * T - g.x, this.p.y * T - g.y) > 6 * T) return;
+      ev.remove(); this.tweens.killTweensOf(g); g.setFrame(8);
+      toast('A man in a grey-green Verdance jacket is measuring your fence with a tape. He sees you, scribbles something, and hurries off east.', 4000);
+      this.tweens.add({ targets: g, x: (W + 1) * T, duration: 2200, onComplete: () => g.destroy() });
+    } });
+  }
+};
+
+// at sea: oil slicks off the rig scare the wild Fablemon away, a little
+function vdEncOdds(sc) { return S.vd && ['glimmer', 'shoals', 'stormwatch'].includes(sc.scene.key) && !vdShut('rig') ? .75 : 1; }
+
+// the Verdance supply contract: more money for your harvest, and the Hearthroot pays for it
+VD_LETTERS.buyer = { when: () => vdReveal() && S.day >= vdReveal() + 2, from: 'Verdance Agri-Supply', body: n => `Dear ${n},
+
+Whatever our differences, Verdance believes in rewarding good farmers. Ship your produce through <b>Verdance Agri-Supply</b> and we'll pay <b>20% over market</b> for everything in your bin. Every night.
+
+All produce is processed at our Rootweave plant, using our patented clean-energy methods.
+
+Simply sign below.
+
+Verdance Agri-Supply
+<small>A Verdance Energy company</small>` };
+const _vdReadMail2 = Farm.prototype.readMail;
+Farm.prototype.readMail = function () {
+  if (S.mailRead && vdMailDue() === 'buyer') {
+    vd().mail.buyer = S.day; this.mailFlag.setVisible(!!vdMailDue()); Sound.play('pop');
+    return openModal('A letter from Verdance', `<div class="letter vdmemo"><div class="vdhead">${vdLogo()} VERDANCE ENERGY <small>Clean power, naturally™</small></div>${VD_LETTERS.buyer.body(S.name)}</div><div class="row"><button class="btn" data-a="sign">Sign it</button><button class="btn gold" data-a="no">Tear it up</button></div><p class="hint">You can cancel it later from Menu → Files.</p>`, a => {
+      closeModal(); if (a === 'sign') vdContract(true); else toast('You tear the letter into very small pieces.', 2400);
+    });
+  }
+  return _vdReadMail2.call(this);
+};
+function vdContract(on) {
+  vd().contract = on ? 1 : 0;
+  toast(on ? 'You sign. Your shipments will pay 20% more. Somewhere in the square, the Hearthroot\'s leaves droop a little.' : 'You tear up the Verdance contract. The Hearthroot seems to stand a little straighter.', 3600);
+}
+function vdShipBonus(earned) {
+  if (!S.vd || !vd().contract || !earned) return 0;
+  vd().sold = (vd().sold || 0) + 1; return Math.round(earned * .2);
+}
+// every night sold to Verdance costs the Hearthroot a little life, but never a stage it's reached
+const _vdLife2 = lifeParts;
+lifeParts = function () {
+  const p = _vdLife2(); if (!S.vd || !vd().sold) return p;
+  const L = p.reduce((a, [, , n, w]) => a + n * w, 0); let st = 0; LIFE_AT.forEach((v, i) => { if (L >= v) st = i; });
+  const pen = Math.min(vd().sold, L - LIFE_AT[st]); if (pen > 0) p.push(['⚙️', 'Sold to Verdance', -pen, 1]);
+  return p;
+};
+const _vdFiles = openFiles;
+openFiles = function (sel) {
+  _vdFiles(sel);
+  if (sel || !S.vd || !vd().contract) return;
+  const b = $('mBody'); if (!b) return;
+  b.insertAdjacentHTML('afterbegin', `<div class="proj" style="border-left:4px solid #8ccc3c"><b>📜 Verdance supply contract: signed</b><br><small>Your shipments pay 20% more. Each night you sell to them, the Hearthroot loses a little life.</small><div class="row"><button class="btn" id="vdCancel">Cancel the contract</button></div></div>`);
+  $('vdCancel').onclick = () => { vdContract(false); closeModal(); };
+};

@@ -104,7 +104,8 @@ const compostDays = o => o.lv ? 2 : 3;
 const compostOut = o => o.lv ? 4 : 3;
 const fedMul = m => m.fedPremium === S.day ? .7 : m.fedDeluxe === S.day ? .8 : m.fedDay === S.day ? .9 : 1;
 const nearWater = (x, y, w = 1) => { for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= w + 1; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W && Y < H && farm.waterish[Y * W + X]) return true; } return false; };
-const FISH_ROLL = () => { const r = Math.random(); return r < .6 ? 'minnow' : r < .9 ? 'brook_trout' : 'silver_perch'; };
+// silver perch were drained out of the brooks with the fen: they come back once its siphon is shut (verdance.js)
+const FISH_ROLL = () => { const r = Math.random(); return r < .6 ? 'minnow' : r < (S.vd && S.vd.shut.fen ? .85 : .9) ? 'brook_trout' : 'silver_perch'; };
 function fishNight() {
   for (const [k, o] of Object.entries(S.objs || {})) {
     if (o.t !== 'fishhut') continue;

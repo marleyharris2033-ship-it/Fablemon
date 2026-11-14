@@ -88,13 +88,16 @@ function hdShrinkTexture(T, k) {
   P.addCanvas = function (key, source, skipCache) { const T = add.call(this, key, source, skipCache); if (T && source && source._hdk) hdShrinkTexture(T, source._hdk); return T; };
 })();
 async function hdItems() {
-  const E = HDW.items; if (!E) return;
+  // the item atlas, plus the icons in the Verdance atlas (Verdance Grow, Files, letters...)
+  for (const E of [HDW.items, HDW.vd]) { if (!E) continue;
   const img = await loadImg(E.img);
   for (const [n, r] of Object.entries(E.frames)) {
+    if (E === HDW.vd && !n.startsWith('i_')) continue;
     const c = document.createElement('canvas'); c.width = r.w; c.height = r.h; c.getContext('2d').drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h); c._hdk = 3;
     const id = n.slice(2);
     if (n[0] === 'i') { const u = c.toDataURL(); ICONS[id] = u; ICON_CANVAS[id] = c; HD_SMOOTH.add(u); }
     else SAP_CANVAS[id] = c;
+  }
   }
 }
 

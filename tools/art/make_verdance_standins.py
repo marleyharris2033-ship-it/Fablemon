@@ -300,7 +300,8 @@ def props():
 
 
 if __name__ == '__main__':
-    chars(); out = props()
+    # the props are now the real art (tools/art/cut_verdance.py); --props rebuilds the old drawn stand-ins instead
+    chars(); out = props() if '--props' in sys.argv else Image.open(OUT + 'vd.webp')
     if '--preview' in sys.argv:
         p = sys.argv[sys.argv.index('--preview') + 1]
         rows = [Image.open(OUT + f'tr_{k}.webp') for k in CHARS]

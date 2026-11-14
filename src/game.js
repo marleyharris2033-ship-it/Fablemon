@@ -1042,7 +1042,7 @@ function openMenu() {
     ['map', '🗺️', 'Map'], ['tasks', '📜', 'Tasks'], ['journal', '📖', 'Journal'],
     ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
-    ...(vdFileCount() ? [['files', '🗂️', 'Files']] : []),
+    ...(vdFileCount() ? [['files', ICONS.files ? `<img src="${ICONS.files}" style="width:1.4em;height:1.4em;vertical-align:middle">` : '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
   openModal('Menu', `<div class="mtiles">${tiles.map(([a, i, l]) => `<button class="mtile" data-a="${a}"><span>${i}</span>${l}</button>`).join('')}</div>
@@ -1673,7 +1673,7 @@ function openJournal(focus) {
     const s0 = SPECIES[sp], has = caught.includes(sp), i = list.indexOf(sp);
     return `<div style="display:flex;gap:12px;align-items:center"><span class="showcase" style="--tc:${TYPES[s0.type]}"><img src="${monPic(sp, 'front')}"></span>${S.fab && S.fab[sp] ? `<span class="showcase" style="--tc:#e0a020" title="Fabled"><img src="${fabPic(sp, 'front')}"></span>` : ''}<div><div class="jn">#${String(i + 1).padStart(3, '0')}</div><b style="font-size:20px" class="pixt">${s0.name}</b>${s0.form ? ` <small>(${s0.form})</small>` : ''}<br>${typeChip(sp)}${has ? '<span class="tchip" style="background:#c0392b">Caught</span>' : '<span class="tchip" style="background:#8a7a5e">Seen</span>'}</div></div>
       <p>${has ? s0.desc : 'You have only glimpsed this Fablemon. Catch one to learn more about it.'}</p>
-      <p><small><b>Found:</b> ${HABITAT(sp)}</small></p>${has ? `<p><small><b>Role:</b> ${LINE_ROLE[baseOf(sp)] || 'Unknown'}</small></p>
+      <p><small><b>Found:</b> ${HABITAT(sp)}${vdHabNote(sp)}</small></p>${has ? `<p><small><b>Role:</b> ${LINE_ROLE[baseOf(sp)] || 'Unknown'}</small></p>
       <p><small><b>Evolution:</b> ${evoChain(sp)}</small></p>
       <p><small><b>Base stats:</b> HP ${s0.base.hp} · Attack ${s0.base.atk} · Defence ${s0.base.def} · Elem. Attack ${s0.base.eatk} · Elem. Defence ${s0.base.edef} · Speed ${s0.base.spd}</small></p>
       <p style="margin:8px 0 4px"><b>Moves it learns</b></p><div class="jmoves">${(LEARN[sp] || []).map(([l, id]) => `<div class="jmv" style="--tc:${TYPES[MOVES[id].type]}"><span class="jl">Lv ${l}</span><b>${MOVES[id].name}</b><span class="tchip" style="background:${TYPES[MOVES[id].type]}">${MOVES[id].type}</span><small>${moveTag(id)}</small></div>`).join('')}</div>` : ''}
@@ -4707,7 +4707,7 @@ class Route extends World {
     if (z >= 0) {
       const g = this.grassSpr[i]; if (g) { this.tweens.add({ targets: g, scaleY: .8, yoyo: true, duration: 90 }); this.tweens.add({ targets: g, scaleX: { from: 1.15, to: 1 }, duration: 260, ease: 'Back.out' }); for (let k = 0; k < 3; k++) { const leaf = this.add.rectangle(x * T + 4 + Math.random() * 8, y * T + 8, 2, 1, RC.bog ? 0x8a9a4a : 0x6bb24a).setDepth(y * T + 16); this.tweens.add({ targets: leaf, x: leaf.x + (Math.random() - .5) * 14, y: leaf.y - 4 - Math.random() * 6, alpha: 0, duration: 420 + Math.random() * 200, ease: 'Quad.out', onComplete: () => leaf.destroy() }); } }
       if (!this.boatSpr) Sound.play('grass');
-      if (--this.stepsSafe <= 0 && Math.random() < 1 / 9 && team().some(m => m.hp > 0)) {
+      if (--this.stepsSafe <= 0 && Math.random() < vdEncOdds(this) / 9 && team().some(m => m.hp > 0)) {
         this.stepsSafe = 3; this.p.path = []; this.p.pending = null;
         const [, , , , a, b, tag] = GRASS_ZONES[z]; Battle.start(rollWild(a, b, tag && RC[tag]));
       }
@@ -4787,7 +4787,7 @@ function nightly(passedOut) {
   for (const [k, o] of Object.entries(S.objs || {})) if (o.t === 'sprinkler') { const [x, y] = k.split(',').map(Number), r = 1 + (o.lv || 0); for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const t = S.tilled[(x + dx) + ',' + (y + dy)]; if (t) t.w = 1; } }
   const trained = ringNight();
   fishNight(); S.shippedKinds = S.shippedKinds || {}; for (const e of S.shipped) S.shippedKinds[e.id] = 1;
-  const earned = S.shipped.reduce((a, e) => a + ITEMS[e.id].sell * e.n, 0); S.gold += earned; S.shipped = [];
+  let earned = S.shipped.reduce((a, e) => a + ITEMS[e.id].sell * e.n, 0); earned += vdShipBonus(earned); S.gold += earned; S.shipped = [];   // vdShipBonus: the Verdance supply contract (verdance.js)
   // the wild creeps back a little each night
   if (farm) {
     let n = 0, tries = 0;
