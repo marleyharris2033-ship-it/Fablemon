@@ -1320,7 +1320,7 @@ class World extends Phaser.Scene {
   }
   makePlayer(sp) {
     // walk sheets: 4 columns (stand, step, stand, step) or a richer 6–8 frame cycle (column 0 is the standing pose)
-    const cols = Math.round(this.textures.get('walk').getSourceImage().width / 24); this.walkCols = cols;
+    const cols = (this.textures.get('walk').frameTotal - 1) / 4; this.walkCols = cols;   // frames per direction (the sheet may be high-detail)
     for (let r = 0; r < 4; r++) { const k = 'walk_' + DIRS[r]; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('walk', { frames: cols >= 6 ? Array.from({ length: cols }, (_, i) => r * cols + i) : [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: cols >= 6 ? 18 : 9, repeat: -1 }); }
     this.player = this.add.sprite(0, 0, 'walk', 0).setOrigin(.5, 1);
     this.toolSpr = this.add.sprite(0, 0, 'tools', 0).setOrigin(.5, 46 / 48).setVisible(false);
@@ -1390,9 +1390,15 @@ class World extends Phaser.Scene {
     p.busy = .36;
     const [fx, fy] = DV[p.dir], bx = this.player.x, by = this.player.y - 1;
     this.player.setVisible(false);
+    if (HD_FARMER) {   // four-frame swing: ready, raise, strike, follow-through (hd.js)
+      const base = (({ hoe: 0, can: 1, axe: 2, scythe: 2, pickaxe: 3 })[tool] * 4 + DIRS.indexOf(p.dir)) * 4;
+      this.toolSpr.setFrame(base).setPosition(bx, by + 1).setDepth(this.player.depth).setVisible(true);
+      [[60, 1], [140, 2], [250, 3]].forEach(([t, ph]) => this.time.delayedCall(t, () => this.toolSpr.setFrame(base + ph)));
+    } else {
     this.toolSpr.setFrame(row * 4 + DIRS.indexOf(p.dir)).setPosition(bx - fx * 2, by - 2 - (fy > 0 ? 1 : 0)).setDepth(this.player.depth).setVisible(true);
     this.tweens.add({ targets: this.toolSpr, x: bx + fx, y: by + 1, duration: 70, delay: 95, ease: 'Quad.easeIn' });
     this.tweens.add({ targets: this.toolSpr, x: bx, y: by, duration: 90, delay: 230 });
+    }
     this.time.delayedCall(170, cb);
     this.time.delayedCall(345, () => { this.toolSpr.setVisible(false); this.player.setVisible(true); });
     return true;
@@ -4908,8 +4914,10 @@ async function bootGame() {
       this.load.image('gym_bh', ASSET.gymBh);
       this.load.image('gym_qd', ASSET.gymQd);
       this.load.atlas('objects', art.objects, ASSET.objectsJson);
-      this.load.spritesheet('walk', ASSET.walk, { frameWidth: 24, frameHeight: 32 });
-      this.load.spritesheet('tools', ASSET.tools, { frameWidth: 40, frameHeight: 48 });
+      if (!hdFarmerLoad(this.load)) {   // the farmer at 6x (hd.js), else the old sheets
+        this.load.spritesheet('walk', ASSET.walk, { frameWidth: 24, frameHeight: 32 });
+        this.load.spritesheet('tools', ASSET.tools, { frameWidth: 40, frameHeight: 48 });
+      }
       this.load.atlas('town', snow.town || ASSET.town, ASSET.townJson);
       this.load.atlas('seasonal', ASSET.seasonal, ASSET.seasonalJson);
       this.load.atlas('houses', snow.houses || ASSET.houses, { frames: Object.fromEntries(Object.entries(ASSET.housesJson).map(([k, f]) => [k, { frame: { x: f.x, y: f.y, w: f.w, h: f.h } }])) });
@@ -4931,7 +4939,7 @@ async function bootGame() {
       hdWorldLoad(this.load, snow);   // high-detail town art (hd.js)
     }
     create() {
-      hdWorldSwap(this);   // high-detail town art (hd.js)
+      hdWorldSwap(this); hdFarmerSwap(this);   // high-detail art (hd.js)
       // copy each terrain tile's edge pixels outward by one so no seams show between tiles
       const src = this.textures.get('terrain').getSourceImage(), cols = Math.floor(src.width / T), rows = Math.floor(src.height / T);
       const c = document.createElement('canvas'); c.width = cols * (T + 2); c.height = rows * (T + 2);

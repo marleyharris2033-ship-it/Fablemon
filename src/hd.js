@@ -29,7 +29,7 @@ document.addEventListener('load', e => {
    Atlases: frames are matched by name. Sheets: by grid (frame i = column i % cols, row i / cols). */
 const HDW = ASSET.hdWorld || {};
 const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea', town: 'town', houses: 'houses', objects: 'objects', seasonal: 'seasonal', bog: 'bog' };
-const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', 'tools', 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble', 'tr_reedcutter', 'tr_wispwatcher', 'tr_delphine'];
+const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', ...(HDW.farmer_tools ? [] : ['tools']), 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble', 'tr_reedcutter', 'tr_wispwatcher', 'tr_delphine'];
 function hdWorldLoad(loader, snow = {}) {
   for (const [key, n] of Object.entries(HDW_ATLAS)) if (HDW[n]) loader.image(key + '__hd', snow[n + 'HD'] || HDW[n].img);   // winter: snow-capped copies (social.js)
   for (const n of HDW_SHEET) if (HDW[n]) loader.image(n + '__hd', HDW[n].img);
@@ -94,3 +94,15 @@ async function hdItems() {
     else SAP_CANVAS[id] = c;
   }
 }
+
+/* ---- the farmer at 6x (tools/art/cut_farmer.py): walk 4x4 of 24x32, tools 64 frames of 40x48 ---- */
+const HD_FARMER = !!(HDW.farmer_walk && HDW.farmer_tools);
+function hdFarmerLoad(loader) {
+  if (!HD_FARMER) return false;
+  loader.spritesheet('walk', HDW.farmer_walk.img, { frameWidth: 24 * 6, frameHeight: 32 * 6 });
+  loader.spritesheet('tools', HDW.farmer_tools.img, { frameWidth: 40 * 6, frameHeight: 48 * 6 });
+  return true;
+}
+function hdFarmerSwap(sc) { if (HD_FARMER) for (const k of ['walk', 'tools']) hdShrinkTexture(sc.textures.get(k), 6); }
+// player portrait (not used in dialogue yet)
+const PLAYER_PIC = HD.port_player ? [HD.port_player[0], HD.port_player[1]] : null;
