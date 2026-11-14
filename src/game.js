@@ -1042,6 +1042,7 @@ function openMenu() {
     ['map', '🗺️', 'Map'], ['tasks', '📜', 'Tasks'], ['journal', '📖', 'Journal'],
     ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
+    ...(vdFileCount() ? [['files', '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
   openModal('Menu', `<div class="mtiles">${tiles.map(([a, i, l]) => `<button class="mtile" data-a="${a}"><span>${i}</span>${l}</button>`).join('')}</div>
@@ -1057,6 +1058,7 @@ function openMenu() {
     if (a === 'friends') openFriends();
     if (a === 'cal') openCalendar();
     if (a === 'map') openMap();
+    if (a === 'files') openFiles();
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
@@ -1580,7 +1582,7 @@ const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.flo
 const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eatk' || k === 'edef')) m.iv[k] = 1 + Math.floor(Math.random() * 10); return m.iv[k] || 5; };
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
-const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '');   // ✦ marks a Fabled one (see fabled.js)
+const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '') + (m.collar ? ' ⛓' : '');   // ⛓ a Verdance drain collar (verdance.js)   // ✦ marks a Fabled one (see fabled.js)
 // Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
 const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
@@ -2013,7 +2015,7 @@ function chestPut(cs, id, n) {
   return n;
 }
 function canPlantAt(x, y, cropId) {
-  const C = CROPS[cropId], tl = S.tilled[x + ',' + y]; if (!C || !tl || tl.crop) return false;
+  const C = CROPS[cropId], tl = S.tilled[x + ',' + y]; if (!C || !tl || tl.crop || tl.barren) return false;
   if (!inGreenhouse(x, y) && !C.seasons.includes(seasonIdx(S.day))) return false;
   const edge = waterEdge(x, y), soggy = edge || tl.bog;
   if (tl.bog && !C.bog) return false; if (C.edge && !edge) return false; if (C.bog && !soggy) return false;
@@ -2350,9 +2352,9 @@ class Farm extends World {
     if (tl && tl.crop && (cropRipe(tl.crop) || tl.crop.dead)) return true;
     const h = held(); if (!h) return false;
     const it = ITEMS[h.id];
-    if (it.seed) return !!tl && !tl.crop;
+    if (it.seed) return !!tl && !tl.crop && !tl.barren;
     if (it.peat) return !!tl && !tl.bog;
-    if (it.fert) return !!tl && !tl.fert;
+    if (it.fert) return !!tl && !tl.fert && !tl.vgrow;
     if (it.place) return this.canPlace(t.x, t.y, it.place, objW(it));
     if (it.tool === 'hoe') return !farm.blocked[i] && !farm.dirtish[i] && !farm.waterish[i] && !tl && !S.paths[k] && this.passable(t.x, t.y) && !this.isHouseZone(t.x, t.y);
     if (it.tool === 'can') return !!tl || !!farm.waterish[i];
@@ -2479,12 +2481,13 @@ class Farm extends World {
     }
     if (it.fert) {
       if (!tl) { Sound.play('error'); return toast('Use fertiliser on tilled soil.'); }
-      if (tl.fert) return toast('This soil is already fertilised.', 1200);
-      tl.fert = 1; tl.fq = 1; inv.removeAt(S.sel, 1); renderHotbar(); this.drawTilled(x, y); Sound.play('plant'); this.chips(x * T + 8, y * T + 12, 0x5e3b20); return;
+      if (tl.fert || tl.vgrow) return toast('This soil is already fertilised.', 1200);
+      if (it.vgrow) { if (tl.barren) return toast('This soil is spent. Nothing will grow here until the season turns.', 2600); tl.vgrow = 1; } else { tl.fert = 1; tl.fq = 1; } inv.removeAt(S.sel, 1); renderHotbar(); this.drawTilled(x, y); Sound.play('plant'); this.chips(x * T + 8, y * T + 12, 0x5e3b20); return;
     }
     if (it.seed) {
       if (!tl) { Sound.play('error'); return toast('Seeds go in tilled soil. Use your hoe first.'); }
       if (tl.crop) return toast('Something is already growing there.');
+      if (tl.barren) { Sound.play('error'); return toast('This soil is grey and spent after the Verdance Grow. Nothing will take root here until the season turns.', 3200); }
       if (!inGreenhouse(x, y) && !CROPS[it.seed].seasons.includes(seasonIdx(S.day))) { Sound.play('error'); return toast(`${ITEMS[h.id].name} won't grow in ${seasonDay().season.toLowerCase()}.`); }
       const C = CROPS[it.seed], edge = waterEdge(x, y), soggy = edge || tl.bog;
       if (tl.bog && !C.bog) { Sound.play('error'); return toast(`This soil is waterlogged with Bog Peat. Only bog crops grow here: wild rice, cranberries and lotus.`, 3200); }
@@ -2532,6 +2535,8 @@ class Farm extends World {
     if (this.cropSprites[k]) { this.cropSprites[k].forEach(o => o.destroy()); delete this.cropSprites[k]; }
     const parts0 = [];
     if (tl && tl.fert) parts0.push(this.add.rectangle(x * T, y * T, T, T, 0x2a1a0a, .22).setOrigin(0).setDepth(1));
+    if (tl && tl.vgrow) parts0.push(this.add.rectangle(x * T + 1, y * T + 1, T - 2, T - 2, 0x9ae03a, .22).setOrigin(0).setDepth(1));
+    if (tl && tl.barren) parts0.push(this.add.rectangle(x * T, y * T, T, T, 0xa8a49a, .55).setOrigin(0).setDepth(1));
     if (tl && tl.heat) { // warmed by a fire Fablemon today: a soft glow and two little embers
       parts0.push(this.add.rectangle(x * T, y * T, T, T, 0xff6a1a, .3).setOrigin(0).setDepth(1));
       for (const [ex, ey] of [[2, 12], [12, 3]]) { parts0.push(this.add.rectangle(x * T + ex, y * T + ey, 2, 2, 0xffb24a, .9).setOrigin(0).setDepth(1)); parts0.push(this.add.rectangle(x * T + ex, y * T + ey + 2, 2, 1, 0xd0542a, .9).setOrigin(0).setDepth(1)); }
@@ -2612,7 +2617,7 @@ class Farm extends World {
   harvest(x, y) {
     const k = x + ',' + y, tl = S.tilled[k], c = tl.crop, C = CROPS[c.type];
     const n = Math.random() < .1 ? 2 : 1, q = C.geode ? Math.max(rollQuality(tl), Math.random() < .3 ? 1 : 0) : rollQuality(tl), id = q && QUAL[C.item] ? QUAL[C.item][q - 1] : C.item;
-    if (!regrowAfterPick(tl)) delete tl.crop; delete tl.fq; this.drawTilled(x, y);
+    if (!regrowAfterPick(tl)) { delete tl.crop; if (tl.vgrow) { delete tl.vgrow; tl.barren = 1; toast('The soil under it has gone grey and dry. Nothing will grow here until the season turns.', 3000); } } delete tl.fq; this.drawTilled(x, y);
     if (q) toast(`${q === 2 ? '🌟 Gold' : '⭐ Silver'} quality ${ITEMS[C.item].name}!`, 1400);
     this.giveDrops({ [id]: n }, x * T + 8, y * T + 4);
   }
@@ -4761,8 +4766,9 @@ function nightly(passedOut) {
   let withered = 0;
   for (const [tk, t] of Object.entries(S.tilled)) {
     if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop) && wasWet && CROPS[t.crop.type].rain) t.crop.g++;   // rain-loving crops (Sea Samphire) grow an extra day
+    if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop) && t.vgrow) t.crop.g++;   // Verdance Grow: twice as fast, but the soil is spent afterwards
     if (t.crop && !t.crop.dead && t.w && !cropRipe(t.crop)) { t.crop.g++; if (t.fert && !cropRipe(t.crop)) { t.crop.g++; t.fert = 0; } if (t.heat && !cropRipe(t.crop)) { t.crop.warm = (t.crop.warm || 0) + .5; if (t.crop.warm >= 1) { t.crop.warm -= 1; t.crop.g++; } } }
-    t.heat = 0;
+    t.heat = 0; if (newSeason) delete t.barren;
     if (t.crop && !t.crop.dead && newSeason && !CROPS[t.crop.type].hardy && !CROPS[t.crop.type].seasons.includes(si) && !inGreenhouse(...tk.split(',').map(Number))) { t.crop.dead = true; withered++; }
     t.w = isWet(S.weather) || t.bog ? 1 : 0;
   }

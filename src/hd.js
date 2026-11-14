@@ -29,10 +29,12 @@ document.addEventListener('load', e => {
    Atlases: frames are matched by name. Sheets: by grid (frame i = column i % cols, row i / cols). */
 const HDW = ASSET.hdWorld || {};
 const HDW_ATLAS = { cove: 'cove', qd: 'quarrydown', br: 'beaconreach', hm: 'highmoor', sea: 'sea', town: 'town', houses: 'houses', objects: 'objects', seasonal: 'seasonal', bog: 'bog' };
-const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', ...(HDW.farmer_tools ? [] : ['tools']), 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble', 'tr_reedcutter', 'tr_wispwatcher', 'tr_delphine'];
+const HDW_SHEET = ['tr_granger', 'tr_orrin', 'tr_tamsin', 'npc_shipwright', 'npc_monty', 'boat_sail', ...(HDW.farmer_tools ? [] : ['tools']), 'tr_rambler', 'tr_ponddipper', 'tr_birdwatcher', 'tr_forager', 'tr_busker', 'tr_allotment', 'npc_bramble', 'tr_reedcutter', 'tr_wispwatcher', 'tr_delphine', 'tr_vtech', 'tr_vtech2', 'tr_gleam', 'tr_brask', 'tr_ash'];
 function hdWorldLoad(loader, snow = {}) {
   for (const [key, n] of Object.entries(HDW_ATLAS)) if (HDW[n]) loader.image(key + '__hd', snow[n + 'HD'] || HDW[n].img);   // winter: snow-capped copies (social.js)
   for (const n of HDW_SHEET) if (HDW[n]) loader.image(n + '__hd', HDW[n].img);
+  // Verdance props (verdance.js): a 3x atlas with no small twin, shrunk to size once loaded
+  if (HDW.vd) loader.atlas('vd', HDW.vd.img, { frames: Object.fromEntries(Object.entries(HDW.vd.frames).map(([k, f]) => [k, { frame: f }])) });
 }
 function hdFrame(T, name, x, y, w, h, small) {
   const f = T.add(name, 0, x, y, w, h); if (!f) return;
@@ -51,6 +53,7 @@ function hdWorldSwap(sc) {
     T.setFilter(Phaser.Textures.FilterMode.LINEAR);
     tm.remove(key); tm.renameTexture(key + '__new', key);
   };
+  if (tm.exists('vd') && !tm.get('vd')._shrunk) { hdShrinkTexture(tm.get('vd'), 3); tm.get('vd')._shrunk = 1; }
   for (const [key, n] of Object.entries(HDW_ATLAS)) swap(key, (old, T) => {
     const fr = HDW[n].frames;
     for (const name of old.getFrameNames()) { const r = fr[name]; if (!r) throw name; hdFrame(T, name, r.x, r.y, r.w, r.h, old.get(name)); }
@@ -63,7 +66,7 @@ function hdWorldSwap(sc) {
 // portraits: use the 240px ones where they exist (ASSET.hd.port_<who>_<0|1>)
 function hdPortraits() {
   const P = (who, f) => HD['port_' + who] && HD['port_' + who][f];
-  for (const who of ['granger', 'orrin', 'tamsin', 'rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment', 'reedcutter', 'wispwatcher', 'delphine']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
+  for (const who of ['granger', 'orrin', 'tamsin', 'rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment', 'reedcutter', 'wispwatcher', 'delphine', 'vtech', 'vtech2', 'gleam', 'brask', 'ash']) for (const f of [0, 1]) { const u = P(who, f); if (u) { TRAINER_PIC[who + f] = u; HD_SMOOTH.add(u); } }
   for (const who of ['hal', 'monty']) for (const f of [0, 1]) { const u = P(who, f); if (u) { VPIC[who + f] = u; HD_SMOOTH.add(u); } }
 }
 
