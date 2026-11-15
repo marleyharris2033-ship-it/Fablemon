@@ -1042,6 +1042,7 @@ function openMenu() {
     ['map', '🗺️', 'Map'], ['tasks', '📜', 'Tasks'], ['journal', '📖', 'Journal'],
     ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
+    ['look', '👕', 'Wardrobe'],
     ...(vdFileCount() ? [['files', ICONS.files ? `<img src="${ICONS.files}" style="width:1.4em;height:1.4em;vertical-align:middle">` : '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
@@ -1059,6 +1060,7 @@ function openMenu() {
     if (a === 'cal') openCalendar();
     if (a === 'map') openMap();
     if (a === 'files') openFiles();
+    if (a === 'look') { closeModal(); openWardrobe(); }
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
@@ -5002,7 +5004,7 @@ function newGameDialog() {
     <div class="row"><button class="btn gold" data-a="go">Start farming</button></div>`;
   openModal('New game', render(), (a, d) => {
     if (a === 'slot') { const v = $('fname').value; chosen = +d.n; $('mBody').innerHTML = render(); $('fname').value = v; }
-    if (a === 'go') { const name = ($('fname').value || '').trim() || 'Farmer'; closeModal(); startFrom(chosen, true, name); }
+    if (a === 'go') { const name = ($('fname').value || '').trim() || 'Farmer'; closeModal(); openLook({ first: true, name, onDone: lk => { PENDING_LOOK = lk; startFrom(chosen, true, name); } }); }   // pick your farmer (look.js)
   });
   setTimeout(() => $('fname') && $('fname').focus(), 50);
 }

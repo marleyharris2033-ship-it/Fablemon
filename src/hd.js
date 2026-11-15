@@ -105,10 +105,11 @@ async function hdItems() {
 const HD_FARMER = !!(HDW.farmer_walk && HDW.farmer_tools);
 function hdFarmerLoad(loader) {
   if (!HD_FARMER) return false;
-  loader.spritesheet('walk', HDW.farmer_walk.img, { frameWidth: 24 * 6, frameHeight: 32 * 6 });
-  loader.spritesheet('tools', HDW.farmer_tools.img, { frameWidth: 40 * 6, frameHeight: 48 * 6 });
+  const src = typeof LOOK_SRC !== 'undefined' && LOOK_SRC ? LOOK_SRC : { walk: HDW.farmer_walk.img, tools: HDW.farmer_tools.img };   // the chosen farmer (look.js)
+  loader.spritesheet('walk', src.walk, { frameWidth: 24 * 6, frameHeight: 32 * 6 });
+  loader.spritesheet('tools', src.tools, { frameWidth: 40 * 6, frameHeight: 48 * 6 });
   return true;
 }
 function hdFarmerSwap(sc) { if (HD_FARMER) for (const k of ['walk', 'tools']) hdShrinkTexture(sc.textures.get(k), 6); }
 // player portrait (not used in dialogue yet)
-const PLAYER_PIC = HD.port_player ? [HD.port_player[0], HD.port_player[1]] : null;
+let PLAYER_PIC = HD.port_player ? [HD.port_player[0], HD.port_player[1]] : null;   // the chosen farmer's (look.js)
