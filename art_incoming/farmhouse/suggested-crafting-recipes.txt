@@ -1,0 +1,20 @@
+Fablemon Wild Roots | Suggested crafting recipes
+
+patchwork bed — 18 wood + 6 cloth
+bedside cabinet — 8 wood + 1 iron
+sage armchair — 12 wood + 5 cloth + 3 fibre
+braided rug — 10 fibre + 3 cloth
+acorn chest — 16 wood + 2 iron
+flower stool — 4 wood + 1 cloth
+trestle table — 16 wood
+ladderback chair — 6 wood + 1 cloth
+stone cookstove — 20 stone + 5 iron + 2 copper
+farmhouse sink — 10 wood + 8 clay + 2 copper
+crockery dresser — 22 wood + 6 clay
+oak bench — 10 wood
+carpenter workbench — 20 wood + 4 iron
+bookcase — 18 wood + 3 fibre
+field journal desk — 14 wood + 2 iron + 2 fibre
+potted fern — 3 clay + 2 fibre + 1 fern cutting
+fablemon basket — 8 fibre + 2 cloth
+brass lantern — 4 copper + 2 glass + 1 iron
