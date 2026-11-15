@@ -41,7 +41,7 @@ const VD_REGION = { route1: 'fen', route2: 'fen', route3: 'fen', route4: 'fen', 
 const VD_MEMOS = {
   survey: { title: 'Survey notice: Smallroot corridor', from: 'Verdance Land & Acquisitions', body: `Parcels 1–41 acquired via Greenline Holdings Ltd. Locals unaware of the parent company. Keep it that way.
 
-One holdout: <b>Wild Roots Farm</b>. The old owner refused every offer and has now passed away. A new tenant is moving in from the city. Mr Gleam to make contact.
+One holdout: <b>Wild Roots Farm</b>. The owner, an old woman living in the city, has refused every offer for twenty years. Her grandchild is now moving in. Mr Gleam to make contact.
 
 Pipeline to run beneath the Meadow Trail. Surface works to be described as "drainage improvements".` },
   brief: { title: 'Community relations brief', from: 'T. Gleam, Head of Community Relations', body: `Team, a reminder of our language guidelines for rural areas:
@@ -506,7 +506,7 @@ const VD_LETTERS = {
 
 Welcome to the countryside! I'm Tobias Gleam, Head of Community Relations at <b>Verdance Energy</b>. Clean power, naturally™.
 
-Wild Roots Farm sits on land that's very important to our plans for a brighter, greener valley. We'd like to offer you <b>20,000g</b> for it, today, no questions asked. Imagine! A lovely flat back in the city.
+Wild Roots Farm sits on land that's very important to our plans for a brighter, greener valley. We made your grandmother a great many generous offers over the years. Perhaps you'll be more sensible. We'd like to offer you <b>20,000g</b> for it, today, no questions asked. Imagine! A lovely flat back in the city.
 
 Do pop by our kiosk in Smallroot. Free Verdance Grow for all our neighbours!
 

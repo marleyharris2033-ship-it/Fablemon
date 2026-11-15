@@ -1066,7 +1066,7 @@ $('quest').onclick = () => openQuests(); $('clock').style.cursor = 'pointer'; $(
 
 const letterText = () => `Dear ${S.name},
 
-It was lovely to meet you yesterday. Welcome to Wild Roots Farm! It has been empty for years, so the weeds, rocks and saplings have had their way with it. I'm afraid you'll have some clearing to do.
+It was lovely to meet you yesterday. Welcome to Wild Roots Farm! Nobody has lived here since your great-grandfather, so the weeds, rocks and saplings have had their way with it. Your gran would be glad to see it lived in again. I'm afraid you'll have some clearing to do.
 
 Your scythe cuts weeds for fiber. Your axe fells trees and stumps for wood, and your pickaxe breaks stones. Wood makes good fences, which you can put together on your crafting bench.
 
@@ -4847,16 +4847,20 @@ function goToBed(passedOut) {
 
 /* ------------------------------------------------------------- opening
    Nine stills with typed captions. Tap to continue, Skip to jump ahead. */
+// the opening: 12 panels (src/intro/s1-12.jpg, cut by tools/art/cut_intro.py from the user's art)
 const INTRO = [
-  { lines: [{ t: 'Another Monday. Another 6:12 train.' }, { t: 'Machines did all the real work now. We just kept them running.' }] },
-  { lines: [{ t: 'Twelve hours later, the same city lights. The same tiny flat. The same question: is this it?' }, { t: "I couldn't remember the last time I'd seen a real Fablemon." }] },
-  { lines: [{ t: '"Wild Roots Farm, Smallroot. Needs work. Make an offer."' }, { t: 'It was the cheapest place for a hundred miles. There was probably a reason.' }] },
-  { lines: [{ t: "Every penny I'd ever saved. One signature." }] },
-  { lines: [{ t: "I took the first train out of the city and didn't look back." }] },
-  { lines: [{ t: 'Smallroot. Or what was left of it.' }, { who: 'Elder Bramble', t: "You must be {name}! Welcome, welcome. Don't mind the mess." }] },
-  { lines: [{ who: 'Elder Bramble', t: 'This town used to be full of life. People and Fablemon, side by side.' }, { who: 'Elder Bramble', t: 'When the great Hearthroot began to wither, the Fablemon went back to the wilds. Then, one by one, so did everyone else.' }] },
-  { lines: [{ t: 'And this was mine. All of it.' }] },
-  { lines: [{ t: "That night, I wasn't the only one who'd come home." }] },
+  { lines: [{ t: 'The city ran on Verdance power. Everything did.' }, { t: 'Robots swept the streets and drove the trains. People mostly kept out of their way.' }] },
+  { lines: [{ t: 'Every month the bill went up. "Clean power, naturally™." Naturally expensive.' }, { t: 'The only living thing in my flat was a seedling on the windowsill. Gran grew it.' }] },
+  { lines: [{ t: "At work, the machines had finally taken over my whole shift. Machines don't need breaks." }, { t: "On the last screen I ever checked, Verdance's newest plan glowed back at me: every greenhouse in the city, plugged into the grid." }] },
+  { lines: [{ t: "Gran's greenhouse was the last green place left in the city." }, { t: 'Then Verdance came for that too. "Compulsory energy partnership," the letter said.' }] },
+  { lines: [{ t: 'The seedling kept growing anyway. Every morning, it turned towards the light.' }] },
+  { lines: [{ who: 'Gran', t: "They can lock my door, love. They can't lock up a seed." }, { who: 'Gran', t: 'Take these. Find somewhere they can grow.' }] },
+  { lines: [{ t: 'Gran gave me one more thing: an old photo, and a letter.' }, { who: "Gran's letter", t: '"Wild Roots Farm, Smallroot. My father\'s farm. Verdance have tried to buy it for years. I never sold. It\'s yours, if you want it."' }] },
+  { lines: [{ t: 'Everything I owned fitted in one suitcase. It didn\'t take long to pack.' }, { t: "The 6:12. I'd caught it every morning for years. This time I was going the other way." }] },
+  { lines: [{ t: 'Somewhere past the last tower block, the grey ran out.' }, { t: "And there, asleep on a fence post, was a real wild Fablemon. I hadn't seen one in years." }] },
+  { lines: [{ t: 'Smallroot. Or what was left of it.' }, { who: 'Elder Bramble', t: "You must be {name}! Welcome, welcome. Don't mind the mess." }, { who: 'Elder Bramble', t: "That's the Hearthroot. When she began to wither, the Fablemon went back to the wilds. Then, one by one, so did everyone else. Nobody knows why." }] },
+  { lines: [{ who: 'Elder Bramble', t: "And here she is. Wild Roots Farm. Your gran's old place." }, { who: 'Elder Bramble', t: "Men in grey-green jackets have bought up every field for miles. This is the one they never got." }] },
+  { lines: [{ t: "I put Gran's seedling on the windowsill. It turned towards the light, just like always." }, { t: "That night, I wasn't the only one who'd come home." }] },
 ];
 function playIntro(name, done) {
   const el = $('intro'), img = $('iimg'), bg = el.querySelector('.ibg'), who = el.querySelector('.who'), txt = el.querySelector('.txt'), hint = el.querySelector('.hint');
@@ -4884,7 +4888,7 @@ function playIntro(name, done) {
     img.classList.remove('kb'); img.style.opacity = 0;
     setTimeout(() => {
       img.src = ASSET.intro[si]; bg.style.backgroundImage = `url(${ASSET.intro[si]})`;
-      img.style.transformOrigin = ['30% 40%', '70% 50%', '50% 40%', '40% 60%', '60% 40%', '45% 50%', '55% 45%', '50% 60%', '50% 50%'][si];
+      img.style.transformOrigin = ['55% 40%', '60% 55%', '45% 55%', '40% 45%', '55% 50%', '45% 50%', '40% 60%', '50% 55%', '55% 45%', '70% 40%', '30% 45%', '70% 50%'][si];
       void img.offsetWidth; img.classList.add('kb'); img.style.opacity = 1;
       li = 0; type();
     }, si ? 380 : 0);
