@@ -188,7 +188,7 @@ const DERBY_IMG = {};
 async function derbyImages(sps) {
   if (!DERBY_IMG.gravel && ASSET.crag) { DERBY_IMG.gravel = rgbaCanvas(ASSET.crag.ground.dirt_pebble); DERBY_IMG.slab = rgbaCanvas(ASSET.crag.ground.slab); }
   const need = { objects: ASSET.objects, terrain: ASSET.terrain, peat: ASSET.g_peat, moss: ASSET.g_moss, bogwater: ASSET.g_bogwater };
-  for (const sp of sps) need['mon_' + walkSp(sp)] = ASSET['mon_' + walkSp(sp)];
+  for (const sp of sps) need['mon_' + walkSp(sp)] = ASSET['mon_' + walkSp(sp)];   // the high-detail sheet when there is one (see hd.js)
   await Promise.all(Object.entries(need).filter(([k, v]) => v && !DERBY_IMG[k]).map(async ([k, v]) => { DERBY_IMG[k] = await loadImg(v); }));
 }
 const OBJ = n => (ASSET.objectsJson.frames || ASSET.objectsJson)[n].frame;
@@ -272,9 +272,9 @@ function drawTrackBG(tr) {
 
 function racerFrom(m, st, track, i, who, sk) {
   const p = track.at(-24 - Math.floor(i / 2) * 22), side = i % 2 ? 1 : -1;
-  const img = DERBY_IMG['mon_' + walkSp(m.sp)], fw = img.width / 4;
+  const img = DERBY_IMG['mon_' + walkSp(m.sp)], fw = img.width / 4, k = WALK_HD[walkSp(m.sp)] || (HD[walkSp(m.sp)] && HD[walkSp(m.sp)].w ? HD_WALK : 1);
   return {
-    who, m, sp: m.sp, img, fw, fh: img.height / 4, st, sk, you: who === 'You',
+    who, m, sp: m.sp, img, fw, fh: img.height / 4, dw: fw / k, dh: img.height / 4 / k, hd: k > 1, st, sk, you: who === 'You',
     x: p.x + p.nx * side * track.half * .45, y: p.y + p.ny * side * track.half * .45, vx: 0, vy: 0, dir: 'up',
     vmax: 50 + 2.2 * st.spd, stam: 100, dash: 0, boost: 0, stun: 0, anim: 0,
     prog: -24 - Math.floor(i / 2) * 22, ni: null, lap: 0, lapStart: 0, laps: [], done: 0, lane: 0, laneT: 0,
@@ -434,10 +434,10 @@ function derbyRace(cup, mine, rivals, raceNo) {
       for (const q of things) {
         if (q.o) { const f = OBJ(q.o.kind); g.drawImage(ob, f.x, f.y, f.w, f.h, Math.round(q.o.x - f.w / 2), Math.round(q.o.y + 4 - f.h), f.w, f.h); continue; }
         const r = q.r, row = DIRS.indexOf(r.dir), moving = Math.hypot(r.vx, r.vy) > 8, col = moving ? [1, 0, 3, 0][Math.floor(r.anim) % 4] : 0;
-        g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(r.x, r.y + 1, r.fw * .28, 3, 0, 0, 7); g.fill();
+        g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(r.x, r.y + 1, r.dw * .28, 3, 0, 0, 7); g.fill();
         if (r.dash > 0 || r.boost > 0) { g.fillStyle = r.boost > 0 ? 'rgba(255,210,80,.5)' : 'rgba(255,255,255,.45)'; for (let k = 1; k <= 3; k++) g.fillRect(Math.round(r.x - r.vx * .02 * k) - 1, Math.round(r.y - r.vy * .02 * k) - 2, 2, 2); }
         if (r.stun > 0 && Math.floor(t * 20) % 2) g.globalAlpha = .5;
-        g.drawImage(r.img, col * r.fw, row * r.fh, r.fw, r.fh, Math.round(r.x - r.fw / 2), Math.round(r.y + 2 - r.fh), r.fw, r.fh);
+        g.imageSmoothingEnabled = r.hd; g.drawImage(r.img, col * r.fw, row * r.fh, r.fw, r.fh, Math.round(r.x - r.dw / 2), Math.round(r.y + 2 - r.dh), r.dw, r.dh); g.imageSmoothingEnabled = false;
         g.globalAlpha = 1;
         // name tags
         g.font = 'bold 6px system-ui, sans-serif'; g.textAlign = 'center';

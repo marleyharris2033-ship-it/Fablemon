@@ -29,6 +29,7 @@ for (const [old, [id, name, desc]] of Object.entries(STARTER_SWAP)) {
 MON_ORDER.push('samarrow', 'samaslice', 'samarazor', 'wickid', 'wickveil', 'solwick', 'rillcurl', 'riptwake', 'maelstromaw');
 STARTERS.splice(0, STARTERS.length, 'samarrow', 'wickid', 'rillcurl');
 // the old three, now wild on the Meadow Trail (rare)
+for (const sp of ['hedglet', 'cindimple', 'rillip']) SPECIES[sp].rate = 120;   // as easy to befriend as the trail's other Fablemon (they were 45, a starter's rate)
 for (const [sp, d, n] of [['hedglet', 4, 2], ['cindimple', 4, 2], ['rillip', 4, 3]]) { ROUTES.route1.enc.day.push([sp, d]); ROUTES.route1.enc.night.push([sp, n]); EXTRA_HABITAT[sp] = 'Meadow Trail long grass (rare)'; }
 
 // second types (all three stages) and attacks to go with them. LEARN rows are [level, move]; `swap` replaces a move.

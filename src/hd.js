@@ -4,6 +4,8 @@
    The game uses them wherever they exist and falls back to the old small sprites (mon_battle.png, mon_icons.png,
    mon_<id>.png) for any Fablemon without them. Big pictures are drawn smoothly, small ones stay pixel-sharp. */
 const HD = ASSET.hd || {}, WALK_HD = {};
+// the old small walk sheets aren't bundled when a high-detail one exists; point at the big sheet so every check still finds a walk sheet
+for (const [n, h] of Object.entries(HD)) if (h && h.w && !ASSET['mon_' + n]) ASSET['mon_' + n] = h.w;
 const HD_WALK = 3;
 // battle pictures and icons: swap in the big ones after the small ones are cut
 function hdPics() { for (const sp in HD) if (HD[sp].f && MONPIC[sp]) MONPIC[sp] = { icon: HD[sp].i || HD[sp].f, front: HD[sp].f, back: HD[sp].b || HD[sp].f }; }

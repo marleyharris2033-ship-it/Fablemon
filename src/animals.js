@@ -9,11 +9,11 @@
      S.coop / S.barn = { cx, by, lv, open, trough, floor: [{ x, y, id }] }
    Loaded after pets.js. */
 const LV_KIND = {
-  hen: { name: 'Hen', baby: 'chick', bname: 'Chick', home: 'coop', price: 600, grow: 3, every: 1, out: 'egg', about: 'Lays an egg most mornings. A happy hen sometimes lays a golden one.' },
-  duck: { name: 'Duck', baby: 'duckling', bname: 'Duckling', home: 'coop', price: 900, grow: 4, every: 2, out: 'duck_egg', about: 'Lays a duck egg every other day, and drops a feather when she loves you.' },
-  goat: { name: 'Goat', baby: 'kid', bname: 'Kid', home: 'barn', price: 2000, grow: 5, every: 2, out: 'goat_milk', tool: 'milk_pail', about: 'Gives goat milk every other day. Bring a milk pail.' },
-  sheep: { name: 'Sheep', baby: 'lamb', bname: 'Lamb', home: 'barn', price: 2500, grow: 5, every: 3, out: 'wool', tool: 'shears', about: 'Grows a fleece every three days. Bring shears.' },
-  cow: { name: 'Cow', baby: 'calf', bname: 'Calf', home: 'barn', price: 2800, grow: 5, every: 1, out: 'milk', big: 'large_milk', tool: 'milk_pail', about: 'Gives milk every day. A cow who loves you gives large milk.' },
+  hen: { name: 'Hen', baby: 'chick', bname: 'Chick', home: 'coop', price: 1200, grow: 3, every: 1, out: 'egg', about: 'Lays an egg most mornings. A happy hen sometimes lays a golden one.' },
+  duck: { name: 'Duck', baby: 'duckling', bname: 'Duckling', home: 'coop', price: 1400, grow: 4, every: 2, out: 'duck_egg', about: 'Lays a duck egg every other day, and drops a feather when she loves you.' },
+  goat: { name: 'Goat', baby: 'kid', bname: 'Kid', home: 'barn', price: 1600, grow: 5, every: 2, out: 'goat_milk', tool: 'milk_pail', about: 'Gives goat milk every other day. Bring a milk pail.' },
+  sheep: { name: 'Sheep', baby: 'lamb', bname: 'Lamb', home: 'barn', price: 1800, grow: 5, every: 3, out: 'wool', tool: 'shears', about: 'Grows a fleece every three days. Bring shears.' },
+  cow: { name: 'Cow', baby: 'calf', bname: 'Calf', home: 'barn', price: 2400, grow: 5, every: 1, out: 'milk', big: 'large_milk', tool: 'milk_pail', about: 'Gives milk every day. A cow who loves you gives large milk.' },
 };
 const LV_HOUSE = {
   coop: { name: 'Coop', cap: [4, 8], build: { gold: 2000, cost: { wood: 120, stone: 50 } }, up: { gold: 6000, cost: { wood: 150, stone: 80 } }, foot: [-1, 2, 2], off: [9, 19], troughAt: [[1, 4], [1, 5], [1, 6], [1, 7], [1, 8]] },
