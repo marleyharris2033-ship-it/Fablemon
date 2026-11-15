@@ -1,5 +1,5 @@
 /* ============================================================ Character creator
-   Choose which farmer you are (five drawn farmers: tools/art/cut_farmer.py and cut_presets.py) and the colour of
+   Choose which farmer you are (six drawn farmers: tools/art/cut_farmer.py and cut_presets.py) and the colour of
    their outfit, at the start of a new game and later from Menu → Wardrobe (at home). S.look = { p, c }.
    The outfit colour is a recolour of one band of hues (the farmer's main garment), done on a canvas before the game
    boots, with the head of every frame left alone so faces and hair keep their colours. Old saves are the straw-hat
@@ -12,6 +12,7 @@ const LOOKS = {
   teal: { name: 'Teal', walk: 'farmer_teal_walk', tools: 'farmer_teal_tools', port: 'teal', band: [[.38, .62, .07, 0, 1]], head: 74 },
   rust: { name: 'Rust', walk: 'farmer_rust_walk', tools: 'farmer_rust_tools', port: 'rust', band: [[.96, 1.045, .55, 0, .85]], head: 74 },
   jacket: { name: 'Green Jacket', walk: 'farmer_jacket_walk', tools: 'farmer_jacket_tools', port: 'jacket', band: [[.075, .24, .25, 0, .8]], head: 44 },
+  cap: { name: 'Cap', walk: 'farmer_cap_walk', tools: 'farmer_cap_tools', port: 'cap', band: [[.45, .8, .02, .12, 1]], head: 74 },
 };
 const LOOK_COLOURS = [{ n: 'Original' }, { n: 'Navy', sw: '#2f437e' }, { n: 'Forest', sw: '#3c7a35' }, { n: 'Plum', sw: '#7b3c7a' }, { n: 'Brick', sw: '#a33d27' },
   { n: 'Mustard', sw: '#c9982a' }, { n: 'Sky', sw: '#4b9ed2' }, { n: 'Charcoal', sw: '#45474e' }, { n: 'Rose', sw: '#cf6f8c' }, { n: 'Cream', sw: '#d9cba8' }];
