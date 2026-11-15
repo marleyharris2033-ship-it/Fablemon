@@ -785,7 +785,7 @@ function updateHUD() {
   $('date').textContent = `${WX[S.weather].icon} ${sd.wd}. ${sd.dom} ${sd.season}`;
   $('time').textContent = fmtTime(S.time);
   $('gold').innerHTML = `<img src="${ICONS.coin}"> ${(S.gold || 0).toLocaleString()}g`;
-  $('energy').querySelector('.fill').style.height = (100 * S.energy / S.maxEnergy) + '%';
+  $('energy').querySelector('.fill').style.height = Math.min(100, 100 * S.energy / S.maxEnergy) + '%';
   const t = S.time; let d = 0;
   if (t >= 1080) d = Math.min(.55, (t - 1080) / 180 * .55);
   if (isWet(S.weather)) d = Math.max(d, .22);
@@ -3500,7 +3500,7 @@ class Town extends World {
     if (t.type === 'stall') return storeOpen() ? openShop() : toast('The stall is packed up for the day. Marigold opens at 9am.');
     if (t.type === 'hearth') {
       const msg = ['The Hearthroot. Its bark is cold and grey, but you feel something faint stir inside.', 'Tiny buds are breaking out along the branches.', 'Fresh leaves rustle overhead. The bark feels warm.', 'The Hearthroot is in full leaf. Something in the roots seems to be watching, curious.', 'Lanterns glow among the leaves. The whole square feels alive again.'][hearthStage()];
-      return openModal('The Hearthroot', `<p><i>${msg}</i></p>${hearthInfoHTML()}`);
+      return typeof openHearthroot === 'function' ? openHearthroot(msg) : openModal('The Hearthroot', `<p><i>${msg}</i></p>${hearthInfoHTML()}`);
     }
     if (t.type === 'fountain') return toast(S.town.done.fountain ? 'The fountain splashes happily.' : 'The fountain is dry and full of leaves. It could be repaired from the notice board.', 2600);
   }
@@ -4080,7 +4080,7 @@ const Battle = (() => {
     await say(`You threw a ${ITEMS[cid].name}!`, 700);
     const c = q('bcharm'); c.src = iconFor(cid); c.className = 'throw'; await sleep(650);
     Sound.play('pop'); q('bfoe').classList.add('absorb'); await sleep(450);
-    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : cid === 'skyward_charm' ? 2 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1);
+    const M = monStat(B.foe, 'hp'), rate = (SPECIES[B.foe.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : cid === 'skyward_charm' ? 2 : 1) * (B.foe.status === 'slp' ? 2 : B.foe.status ? 1.5 : 1) * (typeof blessed === 'function' && blessed('wild') ? 1.15 : 1);
     const a = Math.max(1, ((3 * M - 2 * B.foe.hp) * rate) / (3 * M));
     const b = a >= 255 ? 65536 : 1048560 / Math.sqrt(Math.sqrt(16711680 / a));
     let shakes = 0; while (shakes < 4 && Math.random() * 65536 < b) shakes++;
