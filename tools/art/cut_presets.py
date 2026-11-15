@@ -106,7 +106,7 @@ def main():
         for i, f in enumerate(frames): sheet_out.paste(f, ((i % COLS) * TW, (i // COLS) * TH))
         sheet_out.save(OUT + f'farmer_{p}_tools.webp', 'WEBP', quality=88, method=6)
         # portraits: the two faces on the right of the turnaround
-        a, m = C.load(A + p + '_turnaround.png'); x0 = int(a.shape[1] * .62)
+        a, m = C.load(A + p + '_turnaround.png'); x0 = int(a.shape[1] * {'jacket': .69}.get(p, .62))   # Green Jacket's back view reaches further right
         faces = C.grid(a[:, x0:], m[:, x0:], 2, 1); S2 = 240
         for j, row in enumerate(faces):
             o = row[0]; k = S2 / max(o['mask'].shape); im = H.soft(o, k * .98); bg = Image.new('RGBA', (S2, S2), (0xcf, 0xe3, 0xb2, 255))
