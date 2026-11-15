@@ -1,5 +1,5 @@
 /* ============================================================ Character creator
-   Choose which farmer you are (four drawn farmers: tools/art/cut_farmer.py and cut_presets.py) and the colour of
+   Choose which farmer you are (five drawn farmers: tools/art/cut_farmer.py and cut_presets.py) and the colour of
    their outfit, at the start of a new game and later from Menu → Wardrobe (at home). S.look = { p, c }.
    The outfit colour is a recolour of one band of hues (the farmer's main garment), done on a canvas before the game
    boots, with the head of every frame left alone so faces and hair keep their colours. Old saves are the straw-hat
@@ -9,6 +9,7 @@ const LOOKS = {
   olive: { name: 'Olive Vest', walk: 'farmer_olive_walk', tools: 'farmer_olive_tools', port: 'olive', band: [.13, .23, .25] },
   teal: { name: 'Teal Dungarees', walk: 'farmer_teal_walk', tools: 'farmer_teal_tools', port: 'teal', band: [.42, .58, .2] },
   rust: { name: 'Rust Dungarees', walk: 'farmer_rust_walk', tools: 'farmer_rust_tools', port: 'rust', band: [.955, 1.035, .5] },
+  jacket: { name: 'Green Jacket', walk: 'farmer_jacket_walk', tools: 'farmer_jacket_tools', port: 'jacket', band: [.14, .27, .3] },
 };
 const LOOK_COLOURS = [{ n: 'Original' }, { n: 'Navy', h: .61, sw: '#3b4f86' }, { n: 'Forest', h: .32, sw: '#3f7a3c' }, { n: 'Plum', h: .82, sw: '#7a3f78' },
   { n: 'Brick', h: .015, sw: '#a8452e' }, { n: 'Mustard', h: .115, sw: '#c79a2a' }, { n: 'Sky', h: .55, sw: '#4f9cc8' }, { n: 'Charcoal', h: .6, s: .12, v: .72, sw: '#4a4c52' }];
@@ -72,7 +73,7 @@ function openLook({ first, name, onDone }) {
       <div id="lkPrev" style="width:96px;height:128px;background-repeat:no-repeat;background-size:400% 400%;image-rendering:auto;background-color:#cfe3b2;border:3px solid var(--green);border-radius:8px"></div>
       <img src="${(HD['port_' + LOOKS[cur.p].port] || [''])[0]}" style="width:128px;height:128px;border:3px solid var(--green);border-radius:8px">
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${presets.map(p => `<button class="mtile${p === cur.p ? ' on' : ''}" data-a="p" data-p="${p}" style="padding:4px;aspect-ratio:auto;${p === cur.p ? 'background:#e9f5d0;border-color:var(--gold2)' : ''}"><img src="${(HD['port_' + LOOKS[p].port] || [''])[0]}" style="width:100%;border-radius:6px"><small>${LOOKS[p].name}</small></button>`).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px">${presets.map(p => `<button class="mtile${p === cur.p ? ' on' : ''}" data-a="p" data-p="${p}" style="padding:4px;aspect-ratio:auto;${p === cur.p ? 'background:#e9f5d0;border-color:var(--gold2)' : ''}"><img src="${(HD['port_' + LOOKS[p].port] || [''])[0]}" style="width:100%;border-radius:6px"><small>${LOOKS[p].name}</small></button>`).join('')}</div>
     <p style="margin:10px 0 4px"><b>Outfit colour</b> <small>${LOOK_COLOURS[cur.c].n}</small></p>
     <div style="display:flex;flex-wrap:wrap;gap:8px">${LOOK_COLOURS.map((c, i) => `<button data-a="c" data-c="${i}" title="${c.n}" style="width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid ${i === cur.c ? 'var(--gold2)' : '#fff'};box-shadow:0 0 0 2px var(--green);background:${c.sw || 'conic-gradient(#3b4f86,#3f7a3c,#c79a2a,#a8452e,#7a3f78,#3b4f86)'}"></button>`).join('')}</div>
     <div class="row" style="margin-top:12px"><button class="btn gold" data-a="ok">${first ? 'Start farming' : 'Done'}</button></div>`;

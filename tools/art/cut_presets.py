@@ -21,7 +21,7 @@ import cut_farmer as F
 K = 6
 A = 'art_incoming/farmers/'
 OUT = 'src/hd_world/'
-PRESETS = ['olive', 'teal', 'rust']
+PRESETS = ['olive', 'teal', 'rust', 'jacket']
 OUTL, WOOD, WOOD_D, WOOD_L = (40, 32, 40, 255), (150, 102, 58, 255), (104, 68, 38, 255), (192, 142, 88, 255)
 MET, MET_D, MET_L = (150, 160, 172, 255), (100, 108, 122, 255), (214, 222, 232, 255)
 
