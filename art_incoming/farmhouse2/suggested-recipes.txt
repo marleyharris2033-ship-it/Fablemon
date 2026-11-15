@@ -1,0 +1,24 @@
+sage sofa — 22 wood + 9 cloth + 4 fibre
+oak coffee table — 9 wood
+leaf wardrobe — 24 wood + 3 iron
+oval mirror — 9 wood + 4 glass
+rocking chair — 12 wood + 2 cloth
+harvest runner — 12 fibre + 3 cloth
+cottage fireplace — 18 stone + 8 clay + 6 wood
+tea trolley — 10 wood + 2 iron + 2 clay
+blue icebox — 10 iron + 3 copper
+kitchen island — 18 wood + 2 iron
+bakers rack — 6 iron + 5 wood + 3 fibre
+butter churn — 5 clay + 3 wood
+weaving loom — 14 wood + 8 fibre
+pottery wheel — 8 wood + 6 clay
+sewing table — 12 wood + 6 iron + 2 copper
+spinning wheel — 12 wood + 4 fibre
+herb drying rack — 6 wood + 3 fibre
+potting station — 15 wood + 3 clay
+cat tree — 12 wood + 8 fibre + 3 cloth
+indoor kennel — 12 wood + 2 cloth
+feeding bowls — 4 clay + 3 wood
+mushroom scratcher — 4 wood + 8 fibre + 1 cloth
+moss terrarium — 5 glass + 3 copper + 2 moss
+window seat — 18 wood + 5 cloth

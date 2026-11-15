@@ -25,16 +25,49 @@ const FURN = {
   f_fern: { name: 'Potted Fern', w: 1, h: 1, desc: 'A fern in a painted pot.' },
   f_basket: { name: 'Cushioned Fablemon Basket', w: 1, h: 1, desc: 'A cosy woven bed for a small Fablemon.' },
   f_lamp: { name: 'Brass Standing Lantern', w: 1, h: 1, glow: true, desc: 'A tall brass lantern that lights the room.' },
+  // the second collection
+  f_sofa: { name: 'Sage Sofa', w: 2, h: 1, desc: 'A deep green sofa with leaf cushions and a checked throw.' },
+  f_coffeetable: { name: 'Oak Coffee Table', w: 1, h: 1, desc: 'A low round table with painted leaves.' },
+  f_wardrobe: { name: 'Carved Wardrobe', w: 2, h: 1, use: 'look', desc: 'A tall wardrobe carved with leaves. Change your look at it.' },
+  f_mirror: { name: 'Oval Dressing Mirror', w: 1, h: 1, use: 'look', desc: 'A standing mirror. Change your look in it.' },
+  f_rocker: { name: 'Rocking Chair', w: 1, h: 1, desc: 'A rocking chair with a green cushion.' },
+  f_runner: { name: 'Woven Runner', w: 2, h: 2, flat: true, desc: 'A long woven runner with a leaf pattern. Furniture can stand on it.' },
+  f_fireplace: { name: 'Cottage Fireplace', w: 2, h: 1, glow: true, warm: true, desc: 'A brick hearth with a crackling fire.' },
+  f_trolley: { name: 'Tea Trolley', w: 1, h: 1, desc: 'A little trolley with a teapot and cups.' },
+  f_icebox: { name: 'Blue Enamel Icebox', w: 1, h: 1, use: 'chest', desc: 'A cold store for food. Holds 18 stacks.' },
+  f_island: { name: 'Kitchen Island', w: 2, h: 1, desc: 'A butcher-block worktop with cupboards.' },
+  f_bakersrack: { name: "Baker's Rack", w: 1, h: 1, desc: 'Iron shelves of bread, buns and jars.' },
+  f_churn: { name: 'Butter Churn', w: 1, h: 1, desc: 'A painted crock with a wooden dasher.' },
+  f_loom: { name: 'Weaving Loom', w: 1, h: 1, desc: 'A loom with a half-woven green cloth.' },
+  f_potwheel: { name: "Potter's Wheel", w: 1, h: 1, desc: 'A kick wheel with a pot on it.' },
+  f_sewing: { name: 'Sewing Table', w: 2, h: 1, desc: 'A treadle sewing machine on a carved table.' },
+  f_spinning: { name: 'Spinning Wheel', w: 1, h: 1, desc: 'A wooden spinning wheel.' },
+  f_herbrack: { name: 'Herb-Drying Rack', w: 1, h: 1, desc: 'Bunches of sage, lavender and chamomile hung to dry.' },
+  f_potting: { name: 'Potting Station', w: 2, h: 1, desc: 'A bench of seed trays, baskets and tools.' },
+  f_cattree: { name: 'Cat Tree', w: 1, h: 1, desc: 'Platforms, a den and a dangling pompom.' },
+  f_kennel: { name: 'Indoor Kennel', w: 1, h: 1, desc: 'A little house with a soft cushion inside.' },
+  f_bowls: { name: 'Double Feeding Bowls', w: 1, h: 1, desc: 'Two bowls in a wooden stand.' },
+  f_scratcher: { name: 'Mushroom Scratching Post', w: 1, h: 1, desc: 'A scratching post with a toadstool top.' },
+  f_terrarium: { name: 'Moss Terrarium', w: 1, h: 1, desc: 'A glass case of moss, ferns and tiny stones.' },
+  f_windowseat: { name: 'Cushioned Window Seat', w: 2, h: 1, desc: 'A seat under a curtained window, full of cushions.' },
 };
 // game materials only (wood, stone, fibre): the suggested cloth, iron, clay, copper and glass don't exist yet
 const FURN_RECIPES = { f_bed: { wood: 18, fiber: 12 }, f_bedside: { wood: 8, stone: 3 }, f_armchair: { wood: 12, fiber: 13 }, f_rug: { fiber: 16 }, f_chest: { wood: 16, stone: 6 },
   f_stool: { wood: 4, fiber: 2 }, f_table: { wood: 16 }, f_chair: { wood: 6, fiber: 2 }, f_stove: { stone: 40 }, f_sink: { wood: 10, stone: 12 }, f_dresser: { wood: 22, stone: 6 },
   f_bench: { wood: 10 }, f_workbench: { wood: 20, stone: 12 }, f_bookcase: { wood: 18, fiber: 3 }, f_desk: { wood: 14, stone: 6, fiber: 2 }, f_fern: { stone: 3, fiber: 4 },
-  f_basket: { fiber: 12 }, f_lamp: { stone: 12, wood: 2 } };
+  f_basket: { fiber: 12 }, f_lamp: { stone: 12, wood: 2 },
+  f_sofa: { wood: 22, fiber: 22 }, f_coffeetable: { wood: 9 }, f_wardrobe: { wood: 24, stone: 9 }, f_mirror: { wood: 9, stone: 8 }, f_rocker: { wood: 12, fiber: 4 }, f_runner: { fiber: 18 },
+  f_fireplace: { stone: 26, wood: 6 }, f_trolley: { wood: 10, stone: 8 }, f_icebox: { stone: 36 }, f_island: { wood: 18, stone: 6 }, f_bakersrack: { stone: 18, wood: 5, fiber: 3 }, f_churn: { stone: 5, wood: 3 },
+  f_loom: { wood: 14, fiber: 8 }, f_potwheel: { wood: 8, stone: 6 }, f_sewing: { wood: 12, stone: 22 }, f_spinning: { wood: 12, fiber: 4 }, f_herbrack: { wood: 6, fiber: 3 }, f_potting: { wood: 15, stone: 3 },
+  f_cattree: { wood: 12, fiber: 14 }, f_kennel: { wood: 12, fiber: 4 }, f_bowls: { stone: 4, wood: 3 }, f_scratcher: { wood: 4, fiber: 10 }, f_terrarium: { stone: 16, fiber: 2 }, f_windowseat: { wood: 18, fiber: 10 } };
 for (const [id, F] of Object.entries(FURN)) { ITEMS[id] = { name: F.name, stack: 99, furn: true, sell: 1, desc: F.desc + ' Place it in your farmhouse.' }; RECIPES.push({ out: id, n: 1, need: FURN_RECIPES[id] }); }
 CRAFT_TABS.push(['Bedroom & living', ['f_bed', 'f_bedside', 'f_armchair', 'f_rug', 'f_chest', 'f_stool']],
   ['Kitchen & dining', ['f_table', 'f_chair', 'f_stove', 'f_sink', 'f_dresser', 'f_bench']],
-  ['Workshop & touches', ['f_workbench', 'f_bookcase', 'f_desk', 'f_fern', 'f_basket', 'f_lamp']]);
+  ['Workshop & touches', ['f_workbench', 'f_bookcase', 'f_desk', 'f_fern', 'f_basket', 'f_lamp']],
+  ['Sitting room & bedroom', ['f_sofa', 'f_coffeetable', 'f_wardrobe', 'f_mirror', 'f_rocker', 'f_runner']],
+  ['Hearth & kitchen', ['f_fireplace', 'f_trolley', 'f_icebox', 'f_island', 'f_bakersrack', 'f_churn']],
+  ['Workshop & garden', ['f_loom', 'f_potwheel', 'f_sewing', 'f_spinning', 'f_herbrack', 'f_potting']],
+  ['Pet corner & conservatory', ['f_cattree', 'f_kennel', 'f_bowls', 'f_scratcher', 'f_terrarium', 'f_windowseat']]);
 
 // art: the rooms and the furniture atlas load with the other high-detail art
 const _hfLoad = hdWorldLoad;
@@ -121,7 +154,7 @@ House.prototype.drawFurn = function () {
     if (F.flat) { this.furnSpr.push(this.add.image(cx, (f.y + F.h / 2) * T, 'furn', f.id).setOrigin(.5).setDepth(-4)); continue; }
     const im = this.add.image(cx, by - 1, 'furn', f.id).setOrigin(.5, 1).setDepth(by - 1); this.furnSpr.push(im);
     for (const [a, b] of furnTiles(f)) HOUSE_BLOCK.add(a + ',' + b);
-    if (F.glow) { const g = this.add.circle(cx, by - im.displayHeight + 3, 11, 0xffd27a, .2).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 10); this.furnSpr.push(g); this.tweens.add({ targets: g, alpha: .14, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' }); }
+    if (F.glow) { const g = F.warm ? this.add.circle(cx, by - 8, 20, 0xff9a4a, .18) : this.add.circle(cx, by - im.displayHeight + 3, 11, 0xffd27a, .2).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 10); this.furnSpr.push(g); this.tweens.add({ targets: g, alpha: .14, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' }); }
   }
 };
 House.prototype.passable = function (x, y) { return x >= 0 && y >= 2 && x < HW && y < HH && !HOUSE_BLOCK.has(x + ',' + y); };
@@ -144,7 +177,7 @@ House.prototype.updateGhost = function () {
 House.prototype.placeFurn = function (id, x, y) {
   const s = this.placeSpot(id, x, y); if (!s) { Sound.play('error'); return toast("It won't fit there.", 1400); }
   if (!inv.remove(id, 1)) return;
-  const f = { id, x: s.x, y: s.y }; if (id === 'f_chest') f.items = Array(18).fill(null);
+  const f = { id, x: s.x, y: s.y }; if (FURN[id].use === 'chest') f.items = Array(18).fill(null);
   furnList().push(f); Sound.play('plant'); this.drawFurn(); renderHotbar(); this.ghostAt = null;
 };
 House.prototype.pickUp = function (f) {
@@ -161,8 +194,8 @@ House.prototype.thingAt = function (x, y) {
 House.prototype.useFurn = function (f) {
   const F = FURN[f.id], name = F.name;
   if (F.use === 'sleep') return this.askSleep(f);
-  const verbs = { chest: 'Open', cook: 'Cook', craft: 'Craft', journal: 'Read the journal', weather: "Tomorrow's weather" };
-  const go = () => { if (F.use === 'chest') openChest(f); if (F.use === 'cook') openCooking(); if (F.use === 'craft') openCraft(); if (F.use === 'journal') openJournal(); if (F.use === 'weather') this.watchTV(); };
+  const verbs = { look: 'Change your look', chest: 'Open', cook: 'Cook', craft: 'Craft', journal: 'Read the journal', weather: "Tomorrow's weather" };
+  const go = () => { if (F.use === 'chest') { f.items = f.items || Array(18).fill(null); openChest(f); } if (F.use === 'cook') openCooking(); if (F.use === 'craft') openCraft(); if (F.use === 'journal') openJournal(); if (F.use === 'weather') this.watchTV(); if (F.use === 'look') openWardrobe(); };
   if (F.use && !this.furnMenu) return go();
   openModal(name, `<p>${F.desc}</p><div class="row" style="display:flex;gap:6px;flex-wrap:wrap">${F.use ? `<button class="btn gold" data-a="use">${verbs[F.use]}</button>` : ''}<button class="btn" data-a="pick">Pick up</button></div>`, a => {
     closeModal(); if (a === 'use') go(); if (a === 'pick') this.pickUp(f);

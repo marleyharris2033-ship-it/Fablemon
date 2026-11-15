@@ -16,6 +16,11 @@ ROOMS = [(10, 8), (13, 9), (16, 10), (18, 11)]
 FURN = {'bed': 'patchwork-bed', 'bedside': 'bedside-cabinet', 'armchair': 'sage-armchair', 'rug': 'braided-rug', 'chest': 'acorn-chest', 'stool': 'flower-stool',
         'table': 'trestle-table', 'chair': 'ladderback-chair', 'stove': 'stone-cookstove', 'sink': 'farmhouse-sink', 'dresser': 'crockery-dresser', 'bench': 'oak-bench',
         'workbench': 'carpenter-workbench', 'bookcase': 'bookcase', 'desk': 'field-journal-desk', 'fern': 'potted-fern', 'basket': 'fablemon-basket', 'lamp': 'brass-lantern'}
+# the second collection (art_incoming/farmhouse2)
+FURN2 = {'sofa': 'sage-sofa', 'coffeetable': 'oak-coffee-table', 'wardrobe': 'leaf-wardrobe', 'mirror': 'oval-mirror', 'rocker': 'rocking-chair', 'runner': 'harvest-runner',
+         'fireplace': 'cottage-fireplace', 'trolley': 'tea-trolley', 'icebox': 'blue-icebox', 'island': 'kitchen-island', 'bakersrack': 'bakers-rack', 'churn': 'butter-churn',
+         'loom': 'weaving-loom', 'potwheel': 'pottery-wheel', 'sewing': 'sewing-table', 'spinning': 'spinning-wheel', 'herbrack': 'herb-drying-rack', 'potting': 'potting-station',
+         'cattree': 'cat-tree', 'kennel': 'indoor-kennel', 'bowls': 'feeding-bowls', 'scratcher': 'mushroom-scratcher', 'terrarium': 'moss-terrarium', 'windowseat': 'window-seat'}
 
 src = Image.open(A + 'farmhouse-empty.png').convert('RGB'); a = np.asarray(src).astype(int)
 WALL_H, BEAM_H, FLOOR_Y, BOT_Y = 332, 52, 331, 1078
@@ -83,8 +88,8 @@ def main():
     for n, (W, H) in enumerate(ROOMS):
         room(W, H).save(OUT + f'room_{n}.webp', 'WEBP', quality=88, method=6); print('room', n, W, H)
     ims = {}
-    for k, f in FURN.items():
-        im = Image.open(A + 'furniture/' + f + '.png').convert('RGBA')
+    for k, f in [*((k, A + 'furniture/' + f) for k, f in FURN.items()), *((k, 'art_incoming/farmhouse2/furniture/' + f) for k, f in FURN2.items())]:
+        im = Image.open(f + '.png').convert('RGBA')
         im = im.crop(im.getbbox())
         ims['f_' + k] = im.resize((max(1, round(im.width * K / TP)), max(1, round(im.height * K / TP))), Image.LANCZOS)
         ic = im.copy(); ic.thumbnail((68, 68), Image.LANCZOS); sq = Image.new('RGBA', (72, 72)); sq.paste(ic, ((72 - ic.width) // 2, (72 - ic.height) // 2), ic)
