@@ -287,7 +287,7 @@ const OBJ_ART = {
 };
 const mineHits = () => [4, 3, 2, 1][(S.tools && S.tools.pickaxe) || 0];   // pickaxe swings per stone; Gideon's upgrades lower it
 const MINE_TIME = [0, 40, 20, 10];   // seconds per stone from the mine, by evolution stage
-const objReady = o => (o.t === 'compost' && o.n && S.day >= o.doneDay) || (o.t === 'beehive' && o.honey > 0) || (o.t === 'fishhut' && Object.values(o.fish || {}).some(Boolean));
+let objReady = o => (o.t === 'compost' && o.n && S.day >= o.doneDay) || (o.t === 'beehive' && o.honey > 0) || (o.t === 'fishhut' && Object.values(o.fish || {}).some(Boolean));
 const objW = it => it && it.place === 'obj' ? (OBJ_ART[it.obj][2] || 1) : 1;
 const SAPLING_TREE = { sap_oak: 'oak', sap_pine: 'pine', sap_apple: 'apple' };
 // little sapling sprites drawn in code
@@ -349,7 +349,7 @@ function loadExtraIcons() {
     makeSaplings();
     for (const [id, it] of Object.entries(ITEMS)) {
       if (it.place !== 'obj' || ICONS[id]) continue;
-      const [tex, fr] = OBJ_ART[it.obj];
+      const [tex, fr] = OBJ_ART[it.obj]; if (!['cv', 'town', 'objects'].includes(tex)) continue;   // art from other atlases brings its own icon
       let img, f;
       if (tex === 'cv') { img = SAP_CANVAS[fr]; f = { x: 0, y: 0, w: img.width, h: img.height }; }
       else { img = tex === 'town' ? tw : ob; f = (tex === 'town' ? ASSET.townJson : ASSET.objectsJson).frames[fr].frame; }
@@ -1822,7 +1822,7 @@ function openRanch() {
     const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
     const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
     const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44, m)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
-        <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
+        <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}${typeof jobLvTxt === 'function' ? jobLvTxt(m) : ''}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
         <div class="rbtns">${m.loc === 'team'
           ? `${team()[0] !== m ? '<button class="btn sm" data-a="lead">Make lead</button>' : ''}<button class="btn sm" data-a="toRanch">Leave at ranch</button>`
           : `${team().length < TEAM_MAX ? '<button class="btn gold sm" data-a="toTeam">Take along</button>' : ''}${J ? `<button class="btn sm ${m.job ? 'gold' : ''}" data-a="job">${m.job ? 'Change job' : 'Give job'}</button>` : ''}${m.job ? '<button class="btn sm" data-a="stopjob">Stop job</button>' : ''}<button class="btn sm" data-a="roam">${m.out ? 'Bring in' : 'Let roam'}</button>`}
@@ -4964,12 +4964,12 @@ async function bootGame() {
       }
       if (this.textures.exists('terrain_x')) this.textures.remove('terrain_x');
       this.textures.addCanvas('terrain_x', c);
-      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles', 'windward', 'heatherstep', 'galeledges', 'highmoor', 'hmmill'].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
+      this.scene.start(S.spawn && ['farm', 'town', 'route1', 'route2', 'route3', 'route4', 'brookholt', 'bhgym', 'crag1', 'crag2', 'crag3', 'cragmine', 'quarrydown', 'qdpit', 'dunes', 'driftwood', 'glimmer', 'shoals', 'stormwatch', 'beaconreach', 'brlight', 'isles', 'windward', 'heatherstep', 'galeledges', 'highmoor', 'hmmill', ...(typeof EXTRA_SCENES !== 'undefined' ? EXTRA_SCENES.map(c => c.KEY) : [])].includes(S.spawn.scene) ? S.spawn.scene : 'house'); }
   }
   game = new Phaser.Game({
     type: Phaser.AUTO, parent: 'game', backgroundColor: '#22361f', pixelArt: true, roundPixels: true,
     scale: { mode: Phaser.Scale.NONE, width: Math.round(innerWidth * DPR()), height: Math.round(innerHeight * DPR()), zoom: 1 / DPR() },
-    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES, ...HM_SCENES, ...HMTOWN_SCENES],
+    input: { activePointers: 2 }, scene: [Boot, Farm, House, Town, Route, class extends Route { constructor() { super('route2'); } }, class extends Route { constructor() { super('route3'); } }, class extends Route { constructor() { super('route4'); } }, class extends Route { constructor() { super('brookholt'); } }, BhGym, ...CRAG_SCENES, ...QD_SCENES, ...COVE_SCENES, ...SEA_SCENES, ...BEACON_SCENES, ...ISLES_SCENES, ...HM_SCENES, ...HMTOWN_SCENES, ...(typeof EXTRA_SCENES !== 'undefined' ? EXTRA_SCENES : [])],
   });
   Sound.music(true);
 }
