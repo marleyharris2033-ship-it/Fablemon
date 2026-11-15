@@ -17,7 +17,7 @@ from PIL import Image
 from scipy import ndimage
 sys.path.insert(0, 'tools/art')
 import cut_thirds as C
-import cut_seamons, cut_hmmons, cut_tidemons
+import cut_seamons, cut_hmmons, cut_tidemons, cut_starters
 
 G = 'src/'; OUT = 'src/hd/'
 BS, IS, WS = 4, 2, 3          # battle, icon and walk scale over the old sprites
@@ -34,6 +34,8 @@ for sid, bs, br, bn, F in cut_seamons.MONS:
     MONS[sid] = dict(b=(S + bs + '.png', br, bn), w=(S + f'walk_{sid}.png', 1, 0, 4, 0))
 for sid, bs, br, bn, walk, F in cut_hmmons.MONS:
     MONS[sid] = dict(b=(H + bs + '.png', br, bn), w=(H + f'walk_{walk}.png', 1, 0, 4, 0))
+for sid, base, F in cut_starters.MONS:      # the new starters (15 Nov 2026)
+    MONS[sid] = dict(b=(cut_starters.A + base + '-Battle.png', 0, 1), w=(cut_starters.A + base + '-Movement.png', 1, 0, 4, 0))
 MONS['cirrovale'] = dict(b=('art_incoming/cirrovale/cirrovale.png', 0, 1), w=('art_incoming/cirrovale/walk_cirrovale.png', 1, 0, 4, 0))
 
 # the earlier Fablemon, from originals re-sent in Nov 2026. Three-frame walk rows are step, stand, step.
