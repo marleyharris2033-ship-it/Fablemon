@@ -4,7 +4,7 @@
    The outfit colour is a recolour of one band of hues (the farmer's main garment), done on a canvas before the game
    boots, with the head of every frame left alone so faces and hair keep their colours. Old saves are the straw-hat
    farmer in his own colours. Loaded last. */
-// band: the garment the outfit colour changes, as [hue from, hue to, min saturation, min value, max value] ranges
+// band: the garment the outfit colour changes, as [hue from, hue to, min saturation, min value, max value, max saturation?, not on the boots?] ranges
 // (hues wrap past 1); head: how far down each frame the head reaches (6x pixels), so faces and hair are never touched
 const LOOKS = {
   straw: { name: 'Straw Hat', walk: 'farmer_walk', tools: 'farmer_tools', port: 'player', band: [[.58, .86, .18, 0, 1]], head: 74 },
@@ -12,7 +12,7 @@ const LOOKS = {
   teal: { name: 'Teal', walk: 'farmer_teal_walk', tools: 'farmer_teal_tools', port: 'teal', band: [[.38, .62, .07, 0, 1]], head: 74 },
   rust: { name: 'Rust', walk: 'farmer_rust_walk', tools: 'farmer_rust_tools', port: 'rust', band: [[.96, 1.045, .55, 0, .85]], head: 74 },
   jacket: { name: 'Green Jacket', walk: 'farmer_jacket_walk', tools: 'farmer_jacket_tools', port: 'jacket', band: [[.075, .24, .25, 0, .8]], head: 44 },
-  cap: { name: 'Cap', walk: 'farmer_cap_walk', tools: 'farmer_cap_tools', port: 'cap', band: [[.45, .8, .02, .12, 1]], head: 74 },
+  cap: { name: 'Cap', walk: 'farmer_cap_walk', tools: 'farmer_cap_tools', port: 'cap', band: [[.16, .85, 0, .14, 1], [0, .16, 0, .15, .62, .5, 1]], head: 74 }   // the second band: the worn brown patches on the denim, not the boots,
 };
 const LOOK_COLOURS = [{ n: 'Original' }, { n: 'Navy', sw: '#2f437e' }, { n: 'Forest', sw: '#3c7a35' }, { n: 'Plum', sw: '#7b3c7a' }, { n: 'Brick', sw: '#a33d27' },
   { n: 'Mustard', sw: '#c9982a' }, { n: 'Sky', sw: '#4b9ed2' }, { n: 'Charcoal', sw: '#45474e' }, { n: 'Rose', sw: '#cf6f8c' }, { n: 'Cream', sw: '#d9cba8' }];
@@ -33,11 +33,13 @@ async function lookRecolour(url, L, col, cw, ch) {
   for (let cy = 0; cy < c.height; cy += ch) for (let cx = 0; cx < W; cx += cw) {
     let top = -1; for (let y = cy; y < cy + ch && top < 0; y++) for (let x = cx; x < cx + cw; x += 2) if (d[(y * W + x) * 4 + 3] > 40) { top = y; break; }
     if (top < 0) continue;
+    let bot = cy + ch - 1; while (bot > top) { let any = 0; for (let x = cx; x < cx + cw; x += 2) if (d[(bot * W + x) * 4 + 3] > 40) { any = 1; break; } if (any) break; bot--; }
+    const feet = bot - 32;
     for (let y = top + L.head; y < cy + ch; y++) for (let x = cx; x < cx + cw; x++) {
       const p = y * W + x, i = p * 4; if (d[i + 3] < 26) continue;
       const r = d[i] / 255, gg = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), dd = mx - mn, s = mx ? dd / mx : 0;
       let h = !dd ? 0 : mx === r ? ((gg - b) / dd) % 6 : mx === gg ? (b - r) / dd + 2 : (r - gg) / dd + 4; h /= 6; if (h < 0) h += 1;
-      if (!L.band.some(([lo, hi, smin, vmin, vmax]) => { const hh = h < lo ? h + 1 : h; return hh >= lo && hh < hi && s >= smin && mx >= vmin && mx <= vmax; })) continue;
+      if (!L.band.some(([lo, hi, smin, vmin, vmax, smax = 1, noFeet]) => { const hh = h < lo ? h + 1 : h; return hh >= lo && hh < hi && s >= smin && s <= smax && mx >= vmin && mx <= vmax && !(noFeet && y > feet); })) continue;
       sel[p] = 1; hsv[p * 3] = h; hsv[p * 3 + 1] = s; hsv[p * 3 + 2] = mx; sS += s; sV += mx; n++;
     }
   }
