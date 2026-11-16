@@ -119,9 +119,11 @@ if __name__ == '__main__':
     pv = []
     for kind, n in CHARS.items():
         pv.append(walk(A + f'vd_{n}_walk.png', kind)); portraits(A + f'vd_{n}_portraits.png', kind); print(kind)
-    # Ms Vale has no art yet: a figure in shadow
-    vale_standin()
-    walk(A + 'vd_thorne_walk.png', 'vale')   # never shown walking yet; keeps the loader happy
+    # Ms Vale: her own art (sent 16 Nov), else a figure in shadow
+    import os
+    if os.path.exists(A + 'vd_vale_walk.png'): walk(A + 'vd_vale_walk.png', 'vale'); portraits(A + 'vd_vale_portraits.png', 'vale')
+    else: vale_standin()
+    if not os.path.exists(A + 'vd_vale_walk.png'): walk(A + 'vd_thorne_walk.png', 'vale')   # keeps the loader happy until hers arrives
     atlas(); backgrounds(); print('atlas, backgrounds')
     if '--preview' in sys.argv:
         out = Image.new('RGBA', (sum(p.width for p in pv[:4]), pv[0].height * 2), (120, 160, 110, 255)); x = 0
