@@ -60,10 +60,23 @@ function settleIn(id) {
   });
   return true;
 }
+// where each needed item comes from, so nobody is stuck wondering how to get cheese
+function itemSource(id) {
+  const nm = k => (ITEMS[k] || {}).name || k;
+  const r = COOKING.find(c => c.out === id); if (r) return 'Cook: ' + Object.entries(r.need).map(([k, n]) => (n > 1 ? n + ' ' : '') + nm(k)).join(', ');
+  if (typeof MACH !== 'undefined') for (const M of Object.values(MACH)) for (const [inp, o] of Object.entries(M.ins || {})) if (o[0] === id) { const K = typeof LV_KIND !== 'undefined' && Object.values(LV_KIND).find(K => K.out === inp || K.big === inp); return `${M.name}, from ${nm(inp)}${K ? ` (a ${K.name})` : ''}`; }
+  if (typeof LV_KIND !== 'undefined') for (const K of Object.values(LV_KIND)) if (K.out === id || K.big === id) return `From a ${K.name} (${K.home === 'coop' ? 'Coop' : 'Barn'}, Hattie sells them)`;
+  if (CROPS[id]) return "Grow it: seeds at Marigold's store";
+  if (id === 'honey') return 'A Beehive on your farm';
+  if (id === 'berry') return 'Hearthberry bushes, or Willa sells them';
+  return '';
+}
+const sourceText = need => { const rows = Object.keys(need).filter(id => reqCount(id) < need[id]).map(id => [id, itemSource(id)]).filter(r => r[1]);
+  return rows.length ? `<div class="hint" style="text-align:left;margin:4px 0">${rows.map(([id, t]) => `<b>${ITEMS[id].name}</b>: ${t}`).join('<br>')}</div>` : ''; };
 function openSettle(id) {
   const Z = SETTLE[id], v = VILL[Z.who[0]];
   const render = () => `<p><b>${v.name}</b>: "${Z.ask}"</p><div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${needText(Z.need)}</div>
-    <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div><p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
+    <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div>${sourceText(Z.need)}<p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
   openModal(`Moving in: ${PROJECTS[id].name}`, render(), a => { if (a === 'give') { closeModal(); settleIn(id); } });
 }
 const _t2Chat = villChat;

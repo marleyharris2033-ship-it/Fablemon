@@ -340,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261116-200716">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261116-200716">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261116-200716">
+<link rel="manifest" href="manifest.webmanifest?v=20261116-201616">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261116-201616">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261116-201616">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261116-200716').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261116-201616').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -571,7 +571,7 @@ function svcHall() {
     const R = (t, f = 0) => ({ who: 'rowan', name: VILL.rowan.name, img: VPIC['rowan' + f], t });
     const cr = otherCrests(), rd = smallrootDone(), all = Object.keys(PROJECTS).length;
     return Talk.say([R(S.crests && S.crests.root ? "Mabel's Crest, eh? A fine start. But I'm the last Warden you'll face, not the second." : "A challenger? Not yet, friend. Not for a long while."),
-      R(`Earn the Crests of the other seven Wardens across the valley. You have ${cr} of 7.`),
+      R(`Earn the Crests of the other ${['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'][crestsNeeded()] || crestsNeeded()} Wardens across the valley. You have ${Math.min(cr, crestsNeeded())} of ${crestsNeeded()}.`),
       R(`And a Warden of Smallroot answers to Smallroot. Bring the whole town back to life: every repair on the notice board. ${rd} of ${all} done.`),
       R("Do both, and I'll be waiting right here with everything I've got.", 1)]);
   }
@@ -2522,7 +2522,7 @@ const QUESTS = [
   { id: 'cove', name: 'Explore west of your farm', hint: 'A way has opened through the trees at the west edge of your farm. Follow it through Saltgrass Dunes to Driftwood Cove.', done: () => !!(S.visited && S.visited.driftwood), reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'boat', name: 'Build a boat with Hal the shipwright', get hint() { return `Hal at Driftwood Cove builds it in four stages, one a night (${(S.cove || {}).stage || 0}/4 done). Quarrydown's Stone & Supply sells wood, stone and fiber.`; }, done: () => ((S.cove || {}).stage || 0) >= 4, reward: { gold: 3000, items: { mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
-  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
+  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other ${crestsNeeded()} Crests (${Math.min(otherCrests(), crestsNeeded())}/${crestsNeeded()}) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
 const questDone = q => !!S.quests[q.id];
 let activeQuest = () => QUESTS.find(q => !questDone(q));
@@ -5694,8 +5694,10 @@ const hearthLife = () => lifeParts().reduce((a, [, , n, w]) => a + n * w, 0);
 const buildingsDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k] && k !== 'fountain').length;
 const smallrootDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k]).length;
 const otherCrests = () => Object.keys(S.crests || {}).filter(k => k !== 'hearth').length;
-// Rowan is the eighth and last Warden: he needs the other 7 Crests and every Smallroot repair
-const rowanReady = () => otherCrests() >= 7 && smallrootDone() >= Object.keys(PROJECTS).length;
+// Rowan is the last Warden: he needs every other Warden's Crest in the game (5 so far: Mabel, Delphine, Granger, Orrin, Tamsin)
+// and every Smallroot repair. The count follows CREST_INFO, so a new Warden raises it automatically.
+const crestsNeeded = () => Object.keys(CREST_INFO).filter(k => k !== 'hearth').length;
+const rowanReady = () => otherCrests() >= crestsNeeded() && smallrootDone() >= Object.keys(PROJECTS).length;
 
 /* ---------- new things to make, unlocked by stage (stage index: 1 = stage 2) */
 Object.assign(ITEMS, {
@@ -13965,10 +13967,23 @@ function settleIn(id) {
   });
   return true;
 }
+// where each needed item comes from, so nobody is stuck wondering how to get cheese
+function itemSource(id) {
+  const nm = k => (ITEMS[k] || {}).name || k;
+  const r = COOKING.find(c => c.out === id); if (r) return 'Cook: ' + Object.entries(r.need).map(([k, n]) => (n > 1 ? n + ' ' : '') + nm(k)).join(', ');
+  if (typeof MACH !== 'undefined') for (const M of Object.values(MACH)) for (const [inp, o] of Object.entries(M.ins || {})) if (o[0] === id) { const K = typeof LV_KIND !== 'undefined' && Object.values(LV_KIND).find(K => K.out === inp || K.big === inp); return `${M.name}, from ${nm(inp)}${K ? ` (a ${K.name})` : ''}`; }
+  if (typeof LV_KIND !== 'undefined') for (const K of Object.values(LV_KIND)) if (K.out === id || K.big === id) return `From a ${K.name} (${K.home === 'coop' ? 'Coop' : 'Barn'}, Hattie sells them)`;
+  if (CROPS[id]) return "Grow it: seeds at Marigold's store";
+  if (id === 'honey') return 'A Beehive on your farm';
+  if (id === 'berry') return 'Hearthberry bushes, or Willa sells them';
+  return '';
+}
+const sourceText = need => { const rows = Object.keys(need).filter(id => reqCount(id) < need[id]).map(id => [id, itemSource(id)]).filter(r => r[1]);
+  return rows.length ? `<div class="hint" style="text-align:left;margin:4px 0">${rows.map(([id, t]) => `<b>${ITEMS[id].name}</b>: ${t}`).join('<br>')}</div>` : ''; };
 function openSettle(id) {
   const Z = SETTLE[id], v = VILL[Z.who[0]];
   const render = () => `<p><b>${v.name}</b>: "${Z.ask}"</p><div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">${needText(Z.need)}</div>
-    <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div><p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
+    <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div>${sourceText(Z.need)}<p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
   openModal(`Moving in: ${PROJECTS[id].name}`, render(), a => { if (a === 'give') { closeModal(); settleIn(id); } });
 }
 const _t2Chat = villChat;

@@ -184,7 +184,7 @@ function svcHall() {
     const R = (t, f = 0) => ({ who: 'rowan', name: VILL.rowan.name, img: VPIC['rowan' + f], t });
     const cr = otherCrests(), rd = smallrootDone(), all = Object.keys(PROJECTS).length;
     return Talk.say([R(S.crests && S.crests.root ? "Mabel's Crest, eh? A fine start. But I'm the last Warden you'll face, not the second." : "A challenger? Not yet, friend. Not for a long while."),
-      R(`Earn the Crests of the other seven Wardens across the valley. You have ${cr} of 7.`),
+      R(`Earn the Crests of the other ${['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'][crestsNeeded()] || crestsNeeded()} Wardens across the valley. You have ${Math.min(cr, crestsNeeded())} of ${crestsNeeded()}.`),
       R(`And a Warden of Smallroot answers to Smallroot. Bring the whole town back to life: every repair on the notice board. ${rd} of ${all} done.`),
       R("Do both, and I'll be waiting right here with everything I've got.", 1)]);
   }

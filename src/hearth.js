@@ -17,8 +17,10 @@ const hearthLife = () => lifeParts().reduce((a, [, , n, w]) => a + n * w, 0);
 const buildingsDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k] && k !== 'fountain').length;
 const smallrootDone = () => Object.keys(S.town.done).filter(k => PROJECTS[k]).length;
 const otherCrests = () => Object.keys(S.crests || {}).filter(k => k !== 'hearth').length;
-// Rowan is the eighth and last Warden: he needs the other 7 Crests and every Smallroot repair
-const rowanReady = () => otherCrests() >= 7 && smallrootDone() >= Object.keys(PROJECTS).length;
+// Rowan is the last Warden: he needs every other Warden's Crest in the game (5 so far: Mabel, Delphine, Granger, Orrin, Tamsin)
+// and every Smallroot repair. The count follows CREST_INFO, so a new Warden raises it automatically.
+const crestsNeeded = () => Object.keys(CREST_INFO).filter(k => k !== 'hearth').length;
+const rowanReady = () => otherCrests() >= crestsNeeded() && smallrootDone() >= Object.keys(PROJECTS).length;
 
 /* ---------- new things to make, unlocked by stage (stage index: 1 = stage 2) */
 Object.assign(ITEMS, {
