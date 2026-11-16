@@ -48,6 +48,18 @@ buildRoute = function () {
   for (const [a, bb, c, d] of RC.walls || []) for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; if (R.blocked[i] && !R.waterish[i]) continue; R.blocked[i] = 1; R.grass[i] = -1; if (!R.waterish[i] && (x + y) % 2 === 0) R.deco.push({ x, y, f: hash(x, y) < .5 ? 'tree_pine' : 'tree_oak', tall: true }); }
   for (const b of RC.blocks || []) if (!b.ok()) { const [a, bb, c, d] = b.area; for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; R.blocked[i] = 1; R.grass[i] = -1; R.deco.push({ x, y, f: b.f || 'bush_round', gate: 1 }); } }
   for (const [, , x, y, w] of RC.ewdecor || []) for (let k = 0; k < (w || 1); k++) { R.blocked[y * RW + x + k] = 1; R.grass[y * RW + x + k] = -1; }
+  // story actors: snapped to the nearest open tile; people and things you can talk to block their tile
+  R.actors = [];
+  if (RC.actors) {
+    if (ROUTE_SIGNS === RC.signs) ROUTE_SIGNS = { ...ROUTE_SIGNS };
+    for (const a of RC.actors()) {
+      let best = null, bd = 1e9;
+      for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const x = a.x + dx, y = a.y + dy; if (x < 2 || y < 2 || x >= RW - 2 || y >= RH - 2) continue; const i = y * RW + x; if (R.blocked[i] || ROUTE_SIGNS[x + ',' + y]) continue; const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = [x, y]; } }
+      if (!best) continue; a.x = best[0]; a.y = best[1]; R.actors.push(a);
+      if (a.walk) continue;   // things you walk onto (hoofprints)
+      const i = a.y * RW + a.x; R.blocked[i] = 1; R.grass[i] = -1; ROUTE_SIGNS[a.x + ',' + a.y] = '__door:' + a.id;
+    }
+  }
   return R;
 };
 // decor from any atlas (stand-ins until Elderwood's own art), drawn like the town's buildings
@@ -56,6 +68,15 @@ Route.prototype.create = function () {
   _ewDeco.call(this);
   if (!RC.ew) return;
   for (const [at, f, x, y, w] of RC.ewdecor || []) { const im = this.add.image(x * T + (w || 1) * 8, y * T + 16, at, f).setOrigin(.5, 1).setDepth(y * T + 15); this.tall.push(im); }
+  this.ewSpr = {};
+  for (const a of this.R.actors || []) {
+    const X = a.x * T + 8, Y = a.y * T + 16; let im;
+    if (a.print) { im = this.add.graphics().setDepth(Y - 14); im.fillStyle(0x3a2814, .75); im.fillEllipse(X - 3, Y - 9, 3, 5); im.fillEllipse(X + 3, Y - 6, 3, 5); this.tweens.add({ targets: im, alpha: .45, duration: 900, yoyo: true, repeat: -1 }); }
+    else if (a.mon) { im = hdSpr(this.add.sprite(X, Y, 'mon_' + a.mon, 0).setOrigin(.5, 1).setDepth(Y - 1), a.mon); if (a.scale) im.setScale(im.scaleX * a.scale, im.scaleY * a.scale); this.tweens.add({ targets: im, y: Y - 2, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); }
+    else if (a.lamp) { im = this.add.image(X, Y, 'objects', 'lantern_post').setOrigin(.5, 1).setDepth(Y - 1); if (a.lit) { const gl = this.add.circle(X, Y - 20, 14, 0xffd070, .35).setDepth(9e6 - 28); this.tweens.add({ targets: gl, alpha: .18, duration: 800, yoyo: true, repeat: -1 }); } else im.setTint(0x6a6a7a); }
+    else if (a.tex) { im = this.add.sprite(X, Y - 1, a.tex, DIRS.indexOf(a.dir || 'down') * 4).setOrigin(.5, 1).setDepth(Y - 1); this.shadow(im, 12, 5); }
+    if (im) { this.ewSpr[a.id] = im; if (!a.print) this.tall.push(im); }
+  }
   if (RC.tint) this.add.rectangle(0, 0, RW * T, RH * T, RC.tint[0], RC.tint[1]).setOrigin(0).setDepth(9e6 - 31);
 };
 
@@ -182,6 +203,7 @@ function ewBoard() {
 
 /* ---------- doors and people */
 function ewDoor(sc, id) {
+  if (ewDoorHook && ewDoorHook(sc, id)) return;
   if (id === 'ew_board') return ewBoard();
   const B = (ROUTES.elderwood.buildings || []).find(b => b.id === id);
   const shut = {
@@ -194,8 +216,16 @@ function ewDoor(sc, id) {
   };
   return toast(shut[id] || (B ? B.name : ''), 3600);
 }
+const _ewArrive = Route.prototype.arriveHook;
+Route.prototype.arriveHook = function (x, y) {
+  if (RC.ew && this.R.actors) { const a = this.R.actors.find(a => a.walk && a.x === x && a.y === y); if (a && a.onStep) { a.onStep(this, a); } }
+  if (RC.ew && RC.onWalk) RC.onWalk(this, x, y);
+  return _ewArrive.call(this, x, y);
+};
+const ewRefresh = sc => { const p = sc.p; sc.time.delayedCall(250, () => travel(sc, sc.scene.key, { x: p.x, y: p.y, dir: p.dir })); };
 const _ewBh = bhDoor;
 bhDoor = function (sc, id) { return id && id.startsWith('ew_') ? ewDoor(sc, id) : _ewBh(sc, id); };
+let ewDoorHook = null;   // ewquests.js handles the story's doors and people first
 
 /* ---------- Verdance in the forest: techs on the deer path and round the camp (they leave when the camp shuts) */
 Object.assign(VD_REGION, { fernwalk: 'camp', eldglade: 'camp', ewcamp: 'camp' });
