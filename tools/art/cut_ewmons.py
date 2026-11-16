@@ -18,7 +18,7 @@ BASE = 113      # rows before this batch (after the new starters)
 # (id, walk frame size, edge keying)
 MONS = [
     ('sprigfawn', 32, 0), ('stumpstag', 40, 0), ('elderhart', 48, 0),
-    ('hollowcub', 28, 1), ('tanglebruin', 44, 1), ('ursylvane', 48, 1),
+    ('hollowcub', 28, 1), ('tanglebruin', 44, 1), ('ursylvane', 48, 2),
     ('snarlwisp', 32, 1), ('murkhowl', 40, 1), ('gloamfang', 44, 1),
     ('tappit', 32, 0), ('drummajor', 40, 0),
     ('pebblouse', 28, 0), ('cobblerollie', 40, 0), ('mortarmour', 44, 0),
@@ -29,7 +29,7 @@ MONS = [
 def pair(sid, edge):
     if edge:
         import cut_hd as H
-        a, m = H.load_edge(A + sid + '.png')
+        a, m = (H.load_tight if edge == 2 else H.load_edge)(A + sid + '.png')
     else:
         a, m = C.load(A + sid + '.png')
     return C.grid(a, m, 1, 2)[0]
@@ -54,6 +54,17 @@ def main():
         sheet = Image.new('RGBA', (F * 4, F * 4))
         for r, im in enumerate((fr, fr, ImageOps.mirror(fr), bk)):
             for c in range(4): sheet.paste(im, (c * F + (F - im.width) // 2, r * F + F - im.height - (c % 2)), im)
+        import os
+        wp = A + f'walk_{sid}.png'
+        if os.path.exists(wp):     # the real walk sheet (sent 16 Nov): step, stand, step, stand -> stand first
+            if edge:
+                import cut_hd as H; wa, wm = (H.load_tight if edge == 2 else H.load_edge)(wp)
+            else: wa, wm = C.load(wp)
+            cells = [[r[i] for i in (1, 0, 3, 2)] for r in C.grid(wa, wm, 4, 4)]
+            kk = (F - 2) / max(max(o['mask'].shape) for row in cells for o in row)
+            sheet = Image.new('RGBA', (F * 4, F * 4))
+            for r in range(4):
+                for c in range(4): im = C.shrink(cells[r][c], kk); sheet.paste(im, (c * F + (F - im.width) // 2, r * F + F - im.height), im)
         sheet.save(G + f'mon_{sid}.png')
         nb.paste(cell, (0, 64 * (BASE + j))); ni.paste(icon, (48 * (BASE + j), 0))
         y = j * 200; pv.paste(sheet, (0, y), sheet); pv.paste(cell, (208, y), cell); pv.paste(icon, (344, y), icon)

@@ -37,8 +37,8 @@ for sid, bs, br, bn, walk, F in cut_hmmons.MONS:
 for sid, base, F in cut_starters.MONS:      # the new starters (15 Nov 2026)
     MONS[sid] = dict(b=(cut_starters.A + base + '-Battle.png', 0, 1), w=(cut_starters.A + base + '-Movement.png', 1, 0, 4, 0))
 import cut_ewmons
-for sid, F, edge in cut_ewmons.MONS:      # Elderwood (16 Nov 2026): battle pairs only, stand-in walk sheets from them
-    MONS[sid] = dict(b=(cut_ewmons.A + sid + '.png', 0, 1), edge=bool(edge))
+for sid, F, edge in cut_ewmons.MONS:      # Elderwood (16 Nov 2026): battle pairs, then walk sheets (step, stand, step, stand)
+    MONS[sid] = dict(b=(cut_ewmons.A + sid + '.png', 0, 1), w=(cut_ewmons.A + f'walk_{sid}.png', 1, 0, 4, 0), order=[1, 0, 3, 2], edge=edge)
 MONS['cirrovale'] = dict(b=('art_incoming/cirrovale/cirrovale.png', 0, 1), w=('art_incoming/cirrovale/walk_cirrovale.png', 1, 0, 4, 0))
 
 # the earlier Fablemon, from originals re-sent in Nov 2026. Three-frame walk rows are step, stand, step.
@@ -84,9 +84,16 @@ def load_edge(path):
     return a.astype(np.uint8), ndimage.binary_opening(ndimage.binary_erosion(~bg, iterations=2), iterations=1)
 
 
+def load_tight(path):
+    """only near-pure magenta is background: for art with see-through purple in it (Ursylvane's spirit bear)"""
+    a = np.array(Image.open(path).convert('RGB')).astype(np.int16); r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    bg = (g < 30) & (r > 200) & (b > 200) & (np.abs(r - b) < 40)
+    return a.astype(np.uint8), ndimage.binary_opening(ndimage.binary_erosion(~bg, iterations=2), iterations=1)
+
+
 _sheets = {}
 def sheet(path, edge=False):
-    if path not in _sheets: _sheets[path] = load_edge(path) if edge else C.load(path)
+    if path not in _sheets: _sheets[path] = load_tight(path) if edge == 2 else load_edge(path) if edge else C.load(path)
     return _sheets[path]
 
 
@@ -127,10 +134,11 @@ def battle(d):
 
 
 def walk(d, F):
-    path, strips, idx, cols, stand = d['w'][:5]; a, m = sheet(path)
+    path, strips, idx, cols, stand = d['w'][:5]; a, m = sheet(path, d.get('edge'))
     w = a.shape[1]; x0, x1 = d['w'][5] if len(d['w']) > 5 else (w * idx // strips, w * (idx + 1) // strips)   # an explicit strip when the strips differ in width
     cells = C.grid(a[:, x0:x1], m[:, x0:x1], 4, cols)
     if cols == 3: cells = [[r[1], r[0], r[1], r[2]] if stand == 1 else [r[0], r[1], r[0], r[2]] for r in cells]
+    if d.get('order'): cells = [[r[i] for i in d['order']] for r in cells]   # sheets that start on a step: standing frame first
     W = F * WS; k = (F - 2) * WS / max(max(o['mask'].shape) for row in cells for o in row)
     out = Image.new('RGBA', (W * 4, W * 4))
     for r in range(4):
