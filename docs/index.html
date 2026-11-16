@@ -340,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261116-201616">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261116-201616">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261116-201616">
+<link rel="manifest" href="manifest.webmanifest?v=20261116-202404">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261116-202404">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261116-202404">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261116-201616').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261116-202404').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -565,6 +565,7 @@ function svcRanch() {
     <p class="hint">"One day I'll have proper farm animals here again," Hattie says. "You'll be the first to know."</p>`;
   openModal("Hattie's Ranch", render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
 }
+const ROWAN_TEAM = [['plumevix', 76], ['cindhop_3', 77], ['kilnback_3', 78], ['pyrebrash', 79], ['hearthrusk', 80]];   // Ember finals
 function svcHall() {
   if (!S.crests || !S.crests.root) return Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan0, t: "Not yet. Earn Mabel's Root Crest first, down at the end of Brookside Lane. Then come and face me." }]);
   if (!S.crests.hearth && !rowanReady()) {
@@ -576,13 +577,13 @@ function svcHall() {
       R("Do both, and I'll be waiting right here with everything I've got.", 1)]);
   }
   if (S.crests.hearth) return Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan1, t: "The Hearth Crest suits you. Smallroot is in good hands." }]);
-  openModal("Warden's Hall", `<p>This is the last Warden battle. Rowan's Ember Fablemon are around <b>level 68–72</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Rowan</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
+  openModal("Warden's Hall", `<p>This is the last Warden battle. Rowan's Ember Fablemon are around <b>level 76–80</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Rowan</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
     closeModal(); if (a !== 'go') return;
     S.mons.forEach(restMon);
     const R = (t, f = 0) => ({ who: 'rowan', name: VILL.rowan.name, img: VPIC['rowan' + f], t });
     Talk.say([R("Good. Mabel taught me that a Warden's battle is a conversation. Let's hear what yours has to say."), R("I won't hold back. Show me the bond that woke the Hearthroot!")], () => {
-      // placeholder Ember team until the later Ember Fablemon exist
-      const team0 = [['kilnook', 68], ['brashlet', 69], ['pyrebrash', 70], ['kilnook', 70], ['pyrebrash', 72]].map(([sp, lv]) => wildMon(sp, lv));
+      // the last Warden: level 76-80, after Tamsin (60), Elderwood (~67) and Gloamhollow (~74)
+      const team0 = ROWAN_TEAM.map(wardenMon);
       Battle.start(team0[0], { label: 'Warden', name: 'Rowan', team: team0, prize: 30000, boss: true, smart: true, heals: 2, lose: "Magnificent. The Hearthroot chose well.", onWin: () => {
         S.crests.hearth = 1;
         setTimeout(() => { Sound.play('gotcha'); Talk.say([R('Take this: the Hearth Crest. It means Smallroot trusts you with its heart.', 1), R('Eight Crests. The road to Crownroot Peak and the League is open to you now.', 1)], () => toast('You received the Hearth Crest! 🔥', 3200)); }, 400);
@@ -2522,7 +2523,7 @@ const QUESTS = [
   { id: 'cove', name: 'Explore west of your farm', hint: 'A way has opened through the trees at the west edge of your farm. Follow it through Saltgrass Dunes to Driftwood Cove.', done: () => !!(S.visited && S.visited.driftwood), reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'boat', name: 'Build a boat with Hal the shipwright', get hint() { return `Hal at Driftwood Cove builds it in four stages, one a night (${(S.cove || {}).stage || 0}/4 done). Quarrydown's Stone & Supply sells wood, stone and fiber.`; }, done: () => ((S.cove || {}).stage || 0) >= 4, reward: { gold: 3000, items: { mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
-  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other ${crestsNeeded()} Crests (${Math.min(otherCrests(), crestsNeeded())}/${crestsNeeded()}) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
+  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other ${crestsNeeded()} Crests (${Math.min(otherCrests(), crestsNeeded())}/${crestsNeeded()}) and all of Smallroot is restored. His team is level 76–80.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
 const questDone = q => !!S.quests[q.id];
 let activeQuest = () => QUESTS.find(q => !questDone(q));
@@ -5117,7 +5118,7 @@ function useRoute(key) {
 const beatTrainer = id => !!(S.trainers && S.trainers[id]);
 // Rematches: any trainer you've beaten will battle again, once a day. Their team is raised to the level of the ace
 // of the strongest Warden you've beaten (keeping its spread) and evolves where it can.
-const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 72 };
+const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 80 };
 const rematchLevel = () => Math.max(0, ...Object.keys(S.crests || {}).filter(k => S.crests[k]).map(k => WARDEN_ACE[k] || 0));
 const rematchReady = t => !t.boss && beatTrainer(t.id) && ((S.rematchDay || {})[t.id] || 0) !== S.day;
 function rematchTeam(t) {

@@ -1910,7 +1910,7 @@ const QUESTS = [
   { id: 'cove', name: 'Explore west of your farm', hint: 'A way has opened through the trees at the west edge of your farm. Follow it through Saltgrass Dunes to Driftwood Cove.', done: () => !!(S.visited && S.visited.driftwood), reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'boat', name: 'Build a boat with Hal the shipwright', get hint() { return `Hal at Driftwood Cove builds it in four stages, one a night (${(S.cove || {}).stage || 0}/4 done). Quarrydown's Stone & Supply sells wood, stone and fiber.`; }, done: () => ((S.cove || {}).stage || 0) >= 4, reward: { gold: 3000, items: { mon_treat: 3 } } },
   { id: 'restore', name: 'Restore all of Smallroot', get hint() { return `Fund every repair on the notice board (${smallrootDone()}/${Object.keys(PROJECTS).length} so far). Warden Rowan won't battle until the whole town is back on its feet.`; }, done: () => smallrootDone() >= Object.keys(PROJECTS).length, reward: { gold: 3000 } },
-  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other ${crestsNeeded()} Crests (${Math.min(otherCrests(), crestsNeeded())}/${crestsNeeded()}) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
+  { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other ${crestsNeeded()} Crests (${Math.min(otherCrests(), crestsNeeded())}/${crestsNeeded()}) and all of Smallroot is restored. His team is level 76–80.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
 const questDone = q => !!S.quests[q.id];
 let activeQuest = () => QUESTS.find(q => !questDone(q));
@@ -4505,7 +4505,7 @@ function useRoute(key) {
 const beatTrainer = id => !!(S.trainers && S.trainers[id]);
 // Rematches: any trainer you've beaten will battle again, once a day. Their team is raised to the level of the ace
 // of the strongest Warden you've beaten (keeping its spread) and evolves where it can.
-const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 72 };
+const WARDEN_ACE = { root: 15, brook: 25, stone: 36, spark: 49, gale: 60, hearth: 80 };
 const rematchLevel = () => Math.max(0, ...Object.keys(S.crests || {}).filter(k => S.crests[k]).map(k => WARDEN_ACE[k] || 0));
 const rematchReady = t => !t.boss && beatTrainer(t.id) && ((S.rematchDay || {})[t.id] || 0) !== S.day;
 function rematchTeam(t) {

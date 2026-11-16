@@ -178,6 +178,7 @@ function svcRanch() {
     <p class="hint">"One day I'll have proper farm animals here again," Hattie says. "You'll be the first to know."</p>`;
   openModal("Hattie's Ranch", render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
 }
+const ROWAN_TEAM = [['plumevix', 76], ['cindhop_3', 77], ['kilnback_3', 78], ['pyrebrash', 79], ['hearthrusk', 80]];   // Ember finals
 function svcHall() {
   if (!S.crests || !S.crests.root) return Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan0, t: "Not yet. Earn Mabel's Root Crest first, down at the end of Brookside Lane. Then come and face me." }]);
   if (!S.crests.hearth && !rowanReady()) {
@@ -189,13 +190,13 @@ function svcHall() {
       R("Do both, and I'll be waiting right here with everything I've got.", 1)]);
   }
   if (S.crests.hearth) return Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan1, t: "The Hearth Crest suits you. Smallroot is in good hands." }]);
-  openModal("Warden's Hall", `<p>This is the last Warden battle. Rowan's Ember Fablemon are around <b>level 68–72</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Rowan</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
+  openModal("Warden's Hall", `<p>This is the last Warden battle. Rowan's Ember Fablemon are around <b>level 76–80</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Rowan</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
     closeModal(); if (a !== 'go') return;
     S.mons.forEach(restMon);
     const R = (t, f = 0) => ({ who: 'rowan', name: VILL.rowan.name, img: VPIC['rowan' + f], t });
     Talk.say([R("Good. Mabel taught me that a Warden's battle is a conversation. Let's hear what yours has to say."), R("I won't hold back. Show me the bond that woke the Hearthroot!")], () => {
-      // placeholder Ember team until the later Ember Fablemon exist
-      const team0 = [['kilnook', 68], ['brashlet', 69], ['pyrebrash', 70], ['kilnook', 70], ['pyrebrash', 72]].map(([sp, lv]) => wildMon(sp, lv));
+      // the last Warden: level 76-80, after Tamsin (60), Elderwood (~67) and Gloamhollow (~74)
+      const team0 = ROWAN_TEAM.map(wardenMon);
       Battle.start(team0[0], { label: 'Warden', name: 'Rowan', team: team0, prize: 30000, boss: true, smart: true, heals: 2, lose: "Magnificent. The Hearthroot chose well.", onWin: () => {
         S.crests.hearth = 1;
         setTimeout(() => { Sound.play('gotcha'); Talk.say([R('Take this: the Hearth Crest. It means Smallroot trusts you with its heart.', 1), R('Eight Crests. The road to Crownroot Peak and the League is open to you now.', 1)], () => toast('You received the Hearth Crest! 🔥', 3200)); }, 400);
