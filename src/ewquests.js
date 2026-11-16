@@ -4,14 +4,14 @@
    2. A town split       Alder won't battle while the saws run → Mayor Pruett and the timber lease → fund the footbridge.
    3. The Scattered Herds  Alder asks you to bring home three herd leaders:
                          the stag (follow its hoofprints through the Glade; lose the trail and start again; a salt lick calms it),
-                         the boar matriarch (stuck in a logging pit: a Stone or Wild Fablemon clears the rubble and a Gale one
-                         lifts the logs; then three truffles, rooted up by her piglets round the Glade),
-                         the owl elder (at night, light the five lanterns round the Eldest Tree in the carvings' order).
+                         the bear matriarch (stuck in a logging pit: a Stone or Wild Fablemon clears the rubble and a Gale one
+                         lifts the logs; then three truffles, rooted up by her cubs round the Glade),
+                         the night wolf (at night, light the five lanterns round the Eldest Tree in the carvings' order).
    State: S.ew = { deer, alder, mayor, herdAsk, trail, stagFound, pitClear, pig: {}, lamps: [], owlFound, herds: {}, herdsHome }
-   The herd leaders, piglets and story people use stand-in art until the user's Elderwood Fablemon and characters arrive. */
+   The herd leaders, cubs and story people use stand-in art until the user's Elderwood Fablemon and characters arrive. */
 Object.assign(ITEMS, {
   salt_lick: { name: 'Salt Lick', stack: 99, sell: 50, desc: 'A block of mineral salt. Wild herd Fablemon find it hard to resist.' },
-  truffle: { name: 'Forest Truffle', stack: 99, sell: 420, desc: 'A knobbly black truffle that smells wonderful. Boar Fablemon root them up in old woods.' },
+  truffle: { name: 'Forest Truffle', stack: 99, sell: 420, desc: 'A knobbly black truffle that smells wonderful. Hollowcub cubs dig them up in old woods.' },
 });
 const _ewItems = hdItems;
 hdItems = async function () { await _ewItems(); for (const [id, f] of [['salt_lick', 'stone'], ['truffle', 'potato']]) if (!ICONS[id] || ICONS[id] === ICONS.wood) { ICONS[id] = ICONS[f]; ICON_CANVAS[id] = ICON_CANVAS[f]; } };
@@ -30,7 +30,7 @@ const EW = {
   alder: EWS('alder', 'Warden Alder'), tansy: EWS('tansy', 'Tansy'), pruett: EWS('pruett', 'Mayor Pruett'),
   dunn: EWS('dunn', 'Gaffer Dunn'), stroud: EWS('stroud', 'Haulmaster Stroud'), ellis: EWS('ellis', 'Ellis the carver'),
 };
-const EW_MON = { stag: 'heathfoal_2', boar: 'ramruff_2', piglet: 'tusskip', owl: 'flurrowl_2' };   // stand-ins
+const EW_MON = { stag: 'elderhart', boar: 'ursylvane', cub: 'hollowcub', owl: 'gloamfang' };   // the herd leaders (keys kept from the first draft: boar = the bear, owl = the wolf)
 const ewNight = () => S.time >= 1140 || S.time < 360;
 const ewHerds = () => ['stag', 'boar', 'owl'].filter(k => ew().herds[k]).length;
 const ewHasType = t => team().some(m => m.hp > 0 && (SPECIES[m.sp].type === t || SPECIES[m.sp].type2 === t));
@@ -51,8 +51,8 @@ const EW_Q = [
   ewTask('ew_ask', 'Talk to Alder about the herds', "Now the footbridge is up, Alder wants a word at his Lodge.", () => ew().herdAsk, {}, 'elderwood'),
   ewTask('ew_herds', () => `Bring the herd leaders home (${ewHerds()}/3)`, () => [
     ew().herds.stag ? '✔ the stag' : "The stag: in the Elder Glade's west woods. Follow its hoofprints, and don't stray from them. It loves a salt lick.",
-    ew().herds.boar ? '✔ the boar matriarch' : 'The boar matriarch: trapped in a logging pit in the clear-cut, east of the Glade. You\'ll need strong Fablemon, and something tasty.',
-    ew().herds.owl ? '✔ the owl elder' : 'The owl elder: only at night, at the Eldest Tree, west of the Glade.'].join('<br>'), () => ewHerds() >= 3, { gold: 4000, items: { mon_treat: 3 } }, 'eldglade'),
+    ew().herds.boar ? '✔ the bear matriarch' : 'The bear matriarch: trapped in a logging pit in the clear-cut, east of the Glade. You\'ll need strong Fablemon, and something tasty.',
+    ew().herds.owl ? '✔ the night wolf' : 'The night wolf: only at night, at the Eldest Tree, west of the Glade.'].join('<br>'), () => ewHerds() >= 3, { gold: 4000, items: { mon_treat: 3 } }, 'eldglade'),
   ewTask('ew_home', 'Tell Alder the herds are home', 'Alder is at his Lodge in Elderwood.', () => ew().herdsHome, { gold: 3000 }, 'elderwood'),
 ];
 {
@@ -80,9 +80,9 @@ brambleLines = function () {
 /* ---------- who stands where */
 const STAG_TRAIL = [[22, 37], [19, 39], [15, 41], [11, 41], [7, 38], [6, 34], [6, 28], [9, 26], [13, 25], [17, 24], [20, 26]];
 const PIGLETS = [[9, 7], [40, 6], [16, 44]];
-const LAMPS = [['moon', 9, 12], ['stag', 21, 12], ['root', 7, 19], ['owl', 23, 19], ['boar', 15, 23]];
-const LAMP_ORDER = ['root', 'stag', 'boar', 'owl', 'moon'];
-const LAMP_TEXT = { moon: 'a crescent moon', stag: 'a running stag', root: 'a tangle of roots', owl: 'an owl with spread wings', boar: 'a boar with her piglets' };
+const LAMPS = [['moon', 9, 12], ['stag', 21, 12], ['root', 7, 19], ['wolf', 23, 19], ['bear', 15, 23]];
+const LAMP_ORDER = ['root', 'stag', 'bear', 'wolf', 'moon'];
+const LAMP_TEXT = { moon: 'a crescent moon', stag: 'a running stag', root: 'a tangle of roots', wolf: 'a wolf with a shadow for a tail', bear: 'a mother bear with her cubs' };
 
 ROUTES.fernwalk.actors = () => ew().deer ? [] : [{ id: 'ew_tansy', x: 15, y: 37, tex: 'tr_' + trArt('tansy'), dir: 'right' }];
 ROUTES.elderwood.actors = () => {
@@ -101,7 +101,7 @@ ROUTES.eldglade.actors = () => {
   }
   if (!W.herds.boar) {
     out.push({ id: 'ew_boar', x: 47, y: 41, mon: EW_MON.boar, scale: 1.2 });
-    PIGLETS.forEach(([x, y], k) => { if (!(W.pig || {})[k]) out.push({ id: 'ew_pig' + k, x, y, mon: EW_MON.piglet }); });
+    PIGLETS.forEach(([x, y], k) => { if (!(W.pig || {})[k]) out.push({ id: 'ew_pig' + k, x, y, mon: EW_MON.cub }); });
   }
   return out;
 };
@@ -112,7 +112,7 @@ ROUTES.eldest.actors = () => {
   if (W.owlFound && ewNight()) out.push({ id: 'ew_owl', x: 15, y: 15, mon: EW_MON.owl, scale: 1.2 });
   return out;
 };
-ROUTES.eldest.signs['12,18'] = "Carvings run round the roots. Read from the ground up: first the roots, then the stag that runs above them, the boar beneath the stag's hooves, the owl in the branches, and last of all the moon.";
+ROUTES.eldest.signs['12,18'] = "Carvings run round the roots. Read from the ground up: first the roots, then the stag that runs above them, the bear beneath the stag's hooves, the wolf in the shadows of the branches, and last of all the moon.";
 
 /* ---------- the stag's trail */
 function ewPrint(sc, a) {
@@ -137,7 +137,7 @@ ewDoorHook = (sc, id) => {
       EW.tansy("Verdance shut the road for their timber trucks. But the forest's older than their road.", 0),
       EW.tansy("There's an old deer path round the checkpoint, through the west woods. I'll clear the brush for you. Mind the techs on it: they patrol the path.", 0)],
       () => { W.deer = 1; Sound.play('pick'); toast('Tansy pulls the brush aside: the old deer path is open!', 3000); ewRefresh(sc); });
-    if (W.herdAsk && !W.herdsHome) return say([EW.tansy(ewHerds() >= 3 ? "All three home! Go and tell Alder, quick!" : "The stag likes salt. The boar likes truffles. The owl likes... nobody, really. But she likes the old lanterns.", 1)]);
+    if (W.herdAsk && !W.herdsHome) return say([EW.tansy(ewHerds() >= 3 ? "All three home! Go and tell Alder, quick!" : "The stag likes salt. The bear likes truffles. The wolf likes... nobody, really. But it likes the old lanterns.", 1)]);
     return say([EW.tansy(W.alder ? "Alder's been like a thundercloud since the lease was signed. Don't take it personally." : "That's Alder's Lodge, east side of the square. Knock loud. He pretends not to hear.", 0)]);
   }
   if (id === 'ew_lodge') {
@@ -147,15 +147,15 @@ ewDoorHook = (sc, id) => {
       EW.alder("Go and ask Pruett what he signed. Then you'll understand.", 0)], () => { W.alder = 1; checkQuests(); });
     if (W.mayor && ewRepaired('ew_bridge') && !W.herdAsk) return say([EW.alder("You built the footbridge. Hm.", 0),
       EW.alder("Then I'll ask you something I can't do myself. The herds have scattered. When the big trees come down, the herds lose their way.", 0),
-      EW.alder("Three of them lead the rest: the silver stag, the old boar matriarch, and the owl elder. Bring those three home and the herds will follow.", 0),
+      EW.alder("Three of them lead the rest: the silver stag, the old bear matriarch, and the night wolf. Bring those three home and the herds will follow.", 0),
       EW.alder("The stag is somewhere in the west woods of the Glade. Find its prints and don't lose them. It won't come near you without this.", 0),
-      EW.alder("The boar's down by the clear-cut. She'll be angry. The owl only flies at night, round the Eldest Tree. Tansy knows the lanterns.", 0)],
+      EW.alder("The bear's down by the clear-cut. She'll be angry. The wolf only comes out at night, round the Eldest Tree. Tansy knows the lanterns.", 0)],
       () => { W.herdAsk = 1; inv.add('salt_lick', 1); renderHotbar(); toast('Alder gave you a Salt Lick.', 2400); checkQuests(); });
     if (W.herdAsk && ewHerds() >= 3 && !W.herdsHome) return say([EW.alder("I heard them coming down the north track at dawn. All of them. The whole herd.", 1),
       EW.alder("I stood at the paddock gate like a fool and cried into my beard.", 1),
       EW.alder("Thank you. Your gran would have done the same, and she'd have been smug about it for a month.", 1),
       EW.alder("Now. Those saws. I've a feeling you're about to ask what Verdance actually wants with my trees. So am I.", 0)], () => { W.herdsHome = 1; checkQuests(); });
-    if (W.herdAsk && !W.herdsHome) return say([EW.alder(`${ewHerds()} of 3. ${ew().herds.stag ? '' : "The stag's prints are in the west woods. "}${ew().herds.boar ? '' : "The boar's in the clear-cut. "}${ew().herds.owl ? '' : 'The owl comes out at night, at the Eldest Tree.'}`, 0)]);
+    if (W.herdAsk && !W.herdsHome) return say([EW.alder(`${ewHerds()} of 3. ${ew().herds.stag ? '' : "The stag's prints are in the west woods. "}${ew().herds.boar ? '' : "The bear's in the clear-cut. "}${ew().herds.owl ? '' : 'The wolf comes out at night, at the Eldest Tree.'}`, 0)]);
     if (W.mayor && !ewRepaired('ew_bridge')) return say([EW.alder("The paddock's across the river, and the footbridge is in the river. Nobody's had the money to fix it. Greenline offered. I said no.", 0)]);
     if (!W.mayor) return say([EW.alder('Pruett. Go on.', 0)]);
   }
@@ -177,40 +177,40 @@ ewDoorHook = (sc, id) => {
   if (id.startsWith('ew_pig')) {
     const k = +id.slice(6); W.pig = W.pig || {}; if (W.pig[k]) return true;
     W.pig[k] = 1; inv.add('truffle', 1); renderHotbar(); Sound.play('coin');
-    toast(['A piglet snuffles at the roots and roots up a truffle! It drops it at your feet and trots off.', "This piglet's found a truffle too. It looks very pleased with itself.", 'The last piglet squeals, digs, and presents a truffle. Then it runs off towards the clear-cut.'][Object.keys(W.pig).length - 1] || 'Another truffle!', 3200);
+    toast(['A cub snuffles at the roots and roots up a truffle! It drops it at your feet and trots off.', "This cub's found a truffle too. It looks very pleased with itself.", 'The last cub squeals, digs, and presents a truffle. Then it runs off towards the clear-cut.'][Object.keys(W.pig).length - 1] || 'Another truffle!', 3200);
     ewRefresh(sc); return true;
   }
   if (id === 'ew_boar') {
     if (!W.pitClear) {
       const stone = ewHasType('Stone') || ewHasType('Wild'), gale = ewHasType('Gale');
-      if (!stone || !gale) return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: "A huge old boar is stuck in a pit where a tree's been dragged out, pinned under fallen logs and rubble. She snorts and thrashes." },
+      if (!stone || !gale) return say([{ who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: "A huge old mother bear is stuck in a pit where a tree's been dragged out, pinned under fallen logs and rubble. She snorts and thrashes." },
         { ...vdSys(''), t: `To get her out you'll need ${stone ? '' : 'a Stone or Wild Fablemon to clear the rubble'}${!stone && !gale ? ', and ' : ''}${gale ? '' : 'a Gale Fablemon to lift the logs'} on your team.` }]);
       W.pitClear = 1;
       return say([{ ...vdSys(''), t: 'Your Fablemon get to work: rubble is shoved aside, and with a great gust the logs lift and roll clear of the pit.' },
-        { who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: "The boar scrambles out... and squares up to you, furious and starving. She sniffs the air. Truffles might change her mind. Her piglets are scattered round the Glade." }], () => ewRefresh(sc));
+        { who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: "The bear scrambles out... and squares up to you, furious and starving. She sniffs the air. Truffles might change her mind. Her cubs are scattered round the Glade." }], () => ewRefresh(sc));
     }
-    if (inv.count('truffle') < 3) return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: `She snorts at you. You have ${inv.count('truffle')} truffle${inv.count('truffle') === 1 ? '' : 's'}. She looks like she'd want three. Her piglets are rooting about somewhere in the Glade.` }]);
+    if (inv.count('truffle') < 3) return say([{ who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: `She snorts at you. You have ${inv.count('truffle')} truffle${inv.count('truffle') === 1 ? '' : 's'}. She looks like she'd want three. Her cubs are rooting about somewhere in the Glade.` }]);
     inv.remove('truffle', 3); renderHotbar();
-    return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: 'You set down three truffles. The boar eats them in about a second, then leans her whole enormous weight against your legs, grunting happily.' },
-      { who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: 'She trots off north, and her piglets come running from every direction to follow her home.' }],
-      () => { W.herds.boar = 1; Sound.play('levelup'); toast('The boar matriarch is heading home! (' + ewHerds() + '/3)', 3000); checkQuests(); ewRefresh(sc); });
+    return say([{ who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: 'You set down three truffles. The bear eats them in about a second, then leans her whole enormous weight against your legs, grunting happily.' },
+      { who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: 'She lumbers off north, and her cubs come running from every direction to follow her home.' }],
+      () => { W.herds.boar = 1; Sound.play('levelup'); toast('The bear matriarch is heading home! (' + ewHerds() + '/3)', 3000); checkQuests(); ewRefresh(sc); });
   }
   if (id.startsWith('ew_lamp_')) {
     const sym = id.slice(8); W.lamps = W.lamps || [];
     if (W.lamps.includes(sym)) return say([{ ...vdSys(''), t: `This lantern is carved with ${LAMP_TEXT[sym]}. It's burning softly.` }]);
-    if (!ewNight()) return say([{ ...vdSys(''), t: `An old roost lantern, carved with ${LAMP_TEXT[sym]}. Tansy said the owls only come at night. It'd be no use lighting it now.` }]);
+    if (!ewNight()) return say([{ ...vdSys(''), t: `An old roost lantern, carved with ${LAMP_TEXT[sym]}. Tansy said the wolf only comes at night. It'd be no use lighting it now.` }]);
     if (LAMP_ORDER[W.lamps.length] !== sym) { const had = W.lamps.length; W.lamps = []; Sound.play('error'); toast(had ? 'A cold gust puts every lantern out. That must be the wrong order...' : `You light the lantern carved with ${LAMP_TEXT[sym]}... and it gutters out at once.`, 3000); ewRefresh(sc); return true; }
     W.lamps.push(sym); Sound.play('pick');
     if (W.lamps.length === LAMP_ORDER.length) { W.owlFound = 1; toast('The last lantern catches. High in the Eldest Tree, two great round eyes open...', 3600); }
     else toast(`The lantern carved with ${LAMP_TEXT[sym]} flickers into light.`, 2000);
     ewRefresh(sc); return true;
   }
-  if (id === 'ew_owl') return say([{ who: 'trainer', name: 'The owl elder', img: monPic(EW_MON.owl, 'front'), t: 'A huge, ancient owl drops silently from the branches and lands on the lantern pole beside you. It looks at you for a very long time.' },
-    { who: 'trainer', name: 'The owl elder', img: monPic(EW_MON.owl, 'front'), t: 'Then it hoots, once, low and soft, and glides away north towards Elderwood. All around the tree, smaller wings follow.' }],
-    () => { W.herds.owl = 1; Sound.play('levelup'); toast('The owl elder is heading home! (' + ewHerds() + '/3)', 3000); checkQuests(); ewRefresh(sc); });
+  if (id === 'ew_owl') return say([{ who: 'trainer', name: 'The night wolf', img: monPic(EW_MON.owl, 'front'), t: 'A great dark wolf pads out from between the roots, its shadow-maw tail swaying behind it. It looks at you for a very long time.' },
+    { who: 'trainer', name: 'The night wolf', img: monPic(EW_MON.owl, 'front'), t: 'Then it howls, once, low and soft, and lopes away north towards Elderwood. All around the tree, smaller shapes slip out of the dark to follow.' }],
+    () => { W.herds.owl = 1; Sound.play('levelup'); toast('The night wolf is heading home! (' + ewHerds() + '/3)', 3000); checkQuests(); ewRefresh(sc); });
   if (id === 'ew_pstag') return say([{ who: 'trainer', name: 'The silver stag', img: monPic(EW_MON.stag, 'front'), t: 'The stag grazes by the paddock fence. It ignores you magnificently.' }]);
-  if (id === 'ew_pboar') return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: 'The boar matriarch grunts and pushes her snout into your pocket, looking for truffles.' }]);
-  if (id === 'ew_powl') return say([{ who: 'trainer', name: 'The owl elder', img: monPic(EW_MON.owl, 'front'), t: ewNight() ? 'The owl elder watches the paddock, wide awake.' : 'The owl elder is asleep on the fence post, one eye very slightly open.' }]);
+  if (id === 'ew_pboar') return say([{ who: 'trainer', name: 'The bear matriarch', img: monPic(EW_MON.boar, 'front'), t: 'The bear matriarch sniffs your pockets for truffles while her cubs climb all over you.' }]);
+  if (id === 'ew_powl') return say([{ who: 'trainer', name: 'The night wolf', img: monPic(EW_MON.owl, 'front'), t: ewNight() ? 'The night wolf prowls the paddock fence, wide awake.' : 'The night wolf is curled up asleep by the fence, one eye very slightly open.' }]);
   return false;
 };
 
@@ -291,8 +291,8 @@ const EW_Q2 = [
 CREST_INFO.wild = ['🦌 Wild Crest', '#7a5a2a'];
 { const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
 WARDEN_ORDER.splice(WARDEN_ORDER.indexOf('hearth'), 0, 'wild'); WARDEN_ACE.wild = 67;
-const ALDER_TEAM = [['ramruff_2', 63], ['plumevix', 64], ['hollowbark_3', 65], ['cloverguard', 65], ['hedgerholt', 66], ['heathfoal_2', 67]];   // stand-ins until Elderwood's own Fablemon
-const STROUD_TEAM = [['bristlecone_2', 64], ['craglet_3', 64], ['flintburrow', 65], ['hedgerholt', 65], ['ramruff_2', 66]];
+const ALDER_TEAM = [['ramruff_2', 63], ['cobblerollie', 64], ['drummajor', 65], ['tanglebruin', 65], ['plumevix', 66], ['elderhart', 67]];
+const STROUD_TEAM = [['cobblerollie', 64], ['tanglebruin', 64], ['simmerkit', 65], ['stumpstag', 65], ['mortarmour', 66]];   // collared haulers, and the sawmill's own Mortarmour
 
 /* ---------- the camp: guarded by day */
 ROUTES.eldglade.blocks = [{ area: [50, 30, 51, 33], ok: () => ewNight() || !!ew().campShut, f: 'crate' }];
@@ -418,7 +418,7 @@ async function ewHarvester(sc) {
       sc.tweens.add({ targets: m, x: (H ? H.x : sc.player.x) + dx / 4, duration: 900, ease: 'Quad.out' });
       Sound.play('thud'); sc.cameras.main.shake(250, .004); await csWait(500);
     }
-    await csSay([{ ...vdSys(''), t: 'Hooves thunder through the forest. The silver stag, the boar matriarch and the owl elder burst into the clearing, and behind them, the whole herd.' },
+    await csSay([{ ...vdSys(''), t: 'Hooves thunder through the forest. The silver stag, the bear matriarch and the night wolf burst into the clearing, and behind them, the whole herd.' },
       EW.stroud("What in the... Get those animals out of my way!", 0),
       EW.stroud("Fine. FINE. You want to play Warden? Let's see your team against my haulers.", 0)]);
   });
@@ -429,7 +429,7 @@ async function ewHarvester(sc) {
       await csMoment(sc, async () => {
         if (H) await csPan(sc, H.x, H.y - 30, 600);
         await csSay([{ ...vdSys(''), t: "The drain collars on Stroud's team crack and fall away. His Fablemon shake themselves, and trot over to stand with the herd." },
-          { ...vdSys(''), t: 'The herd charges. The stag drives its antlers into the Harvester\'s leg, the boar shoulders the other, and the owl dives screeching at the cab.' }]);
+          { ...vdSys(''), t: 'The herd charges. The stag drives its antlers into the Harvester\'s leg, the bear shoulders the other, and the wolf\'s shadow-maw clamps onto the cab.' }]);
         if (H) { sc.cameras.main.shake(900, .01); Sound.play('thud'); sc.tweens.add({ targets: H, angle: 18, x: H.x + 40, alpha: 0, duration: 1600, ease: 'Quad.in' }); await csWait(1700); }
         await csSay([{ ...vdSys(''), t: "The Harvester staggers, tips, and goes crashing back down the haul road, all the way into the camp's log pond with an enormous splash." },
           EW.stroud("...", 0),
@@ -501,7 +501,7 @@ ewDoorHook = (sc, id) => {
   if (id.startsWith('ew_forage_')) {
     const [, , key, k] = id.split('_'), [item] = EW_FORAGE[key][+k], n = item === 'truffle' ? 1 : 2 + (Math.random() < .35 ? 1 : 0);
     (ew().forage = ew().forage || {})[key + k] = S.day; inv.add(item, n); renderHotbar(); Sound.play('pick');
-    toast(item === 'truffle' ? 'A piglet from the herd is snuffling here... and it digs you up a truffle!' : `You gather ${n} ${ITEMS[item].name}.`, 2200); ewRefresh(sc); return true;
+    toast(item === 'truffle' ? 'A Hollowcub is snuffling here... and it digs you up a truffle!' : `You gather ${n} ${ITEMS[item].name}.`, 2200); ewRefresh(sc); return true;
   }
   if (id === 'ew_store') {
     if (!ewRepaired('ew_mill')) return false;

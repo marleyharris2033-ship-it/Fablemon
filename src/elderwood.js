@@ -84,10 +84,10 @@ Route.prototype.create = function () {
 
 /* ---------- wild Fablemon: existing woodland species until Elderwood's own arrive */
 const ewEnc = (day, night) => ({ day: day.filter(([s]) => SPECIES[s]), night: night.filter(([s]) => SPECIES[s]) });
-const FERN_ENC = ewEnc([['ramruff', 16], ['hollowbark', 14], ['bristlecone_2', 14], ['cloverguard', 12], ['heathfoal', 10], ['briamble', 10], ['yawnox', 8]],
-  [['duskcloak', 16], ['hollowbark', 16], ['inkwick', 12], ['ramruff', 10], ['flurrowl', 8]]);
-const GLADE_ENC = ewEnc([['ramruff_2', 14], ['hollowbark', 14], ['heathfoal', 12], ['bristlecone_2', 12], ['hedgerholt', 10], ['cloverguard', 10], ['plumevix', 6]],
-  [['duskcloak', 16], ['hollowbark_3', 10], ['inkwick', 14], ['ramruff_2', 10], ['brimbramble', 8]]);
+const FERN_ENC = ewEnc([['sprigfawn', 16], ['pebblouse', 14], ['tappit', 14], ['hollowcub', 12], ['simmerkit', 10], ['ramruff', 6], ['hollowbark', 6], ['heathfoal', 4]],
+  [['snarlwisp', 20], ['hollowcub', 14], ['pebblouse', 10], ['duskcloak', 6], ['inkwick', 6]]);
+const GLADE_ENC = ewEnc([['sprigfawn', 12], ['stumpstag', 6], ['tappit', 12], ['drummajor', 3], ['hollowcub', 10], ['tanglebruin', 5], ['pebblouse', 10], ['cobblerollie', 6], ['simmerkit', 8], ['ramruff_2', 4], ['hollowbark', 4]],
+  [['snarlwisp', 16], ['murkhowl', 6], ['hollowcub', 10], ['tanglebruin', 5], ['cobblerollie', 8], ['hollowbark_3', 4], ['inkwick', 6]]);
 const NO_ENC = { day: [['ramruff', 1]], night: [['ramruff', 1]] };
 
 // trainer kinds for the forest; they borrow other trainers' art until their own arrives
@@ -107,10 +107,10 @@ Object.assign(ROUTES, {
     pickups: [{ id: 'fw1', x: 2, y: 28, item: 'tonic', n: 3 }, { id: 'fw2', x: 29, y: 2, gold: 6000 }, { id: 'fw3', x: 10, y: 60, item: 'mon_treat', n: 2 }],
     signs: { '16,58': 'Fernwalk. Elderwood lies north, through the ferns. Mind the timber trucks!', '22,44': "A tree with a ribbon tied round it, and a note: 'THIS TREE IS 600 YEARS OLD. LEAVE IT BE.'" },
     trainers: [
-      { id: 'fw_t1', kind: 'ranger', name: 'Moss', x: 16, y: 52, dir: 'right', sight: 4, team: [['ramruff', 60], ['heathfoal', 60], ['hollowbark', 61]] },
-      { id: 'fw_t2', kind: 'logger', name: 'Dougie', x: 22, y: 47, dir: 'left', sight: 4, team: [['craglet_2', 60], ['ramruff', 61], ['bristlecone_2', 61]] },
-      { id: 'fw_t3', kind: 'herder', name: 'Elspeth', x: 16, y: 9, dir: 'right', sight: 4, team: [['heathfoal', 61], ['cloverguard', 62], ['ramruff_2', 62]] },
-      { id: 'fw_t4', kind: 'logger', name: 'Big Ned', x: 22, y: 5, dir: 'left', sight: 4, team: [['flintburrow', 62], ['craglet_3', 62], ['hedgerholt', 63]] },
+      { id: 'fw_t1', kind: 'ranger', name: 'Moss', x: 16, y: 52, dir: 'right', sight: 4, team: [['sprigfawn', 60], ['tappit', 60], ['hollowcub', 61]] },
+      { id: 'fw_t2', kind: 'logger', name: 'Dougie', x: 22, y: 47, dir: 'left', sight: 4, team: [['pebblouse', 60], ['simmerkit', 61], ['ramruff', 61]] },
+      { id: 'fw_t3', kind: 'herder', name: 'Elspeth', x: 16, y: 9, dir: 'right', sight: 4, team: [['sprigfawn', 61], ['hollowcub', 62], ['stumpstag', 62]] },
+      { id: 'fw_t4', kind: 'logger', name: 'Big Ned', x: 22, y: 5, dir: 'left', sight: 4, team: [['cobblerollie', 62], ['simmerkit', 62], ['tanglebruin', 63]] },
     ],
     gate: { area: [17, 26, 21, 28], sign: [16, 29], ok: () => !!ew().campShut, openMsg: 'The checkpoint has been abandoned. The haul road is open.',
       get text() { return "A Verdance checkpoint across the road. 'GREENLINE TIMBER. NO PUBLIC ACCESS. HAULAGE ONLY.' A guard hut, a barrier, and a tech watching the road."; } },
@@ -129,10 +129,10 @@ Object.assign(ROUTES, {
     pickups: [{ id: 'eg1', x: 50, y: 6, item: 'tonic', n: 4 }, { id: 'eg2', x: 5, y: 45, gold: 7000 }, { id: 'eg3', x: 20, y: 6, item: 'mon_treat', n: 3 }],
     signs: { '25,45': 'The Elder Glade. The oldest wood in the valley. Elderwood is north; the Eldest Tree, west.', '31,29': "Fresh tyre ruts and a stencilled post: 'GREENLINE TIMBER. HAUL ROAD. CAMP EAST.'" },
     trainers: [
-      { id: 'eg_t1', kind: 'ranger', name: 'Rowanne', x: 25, y: 38, dir: 'right', sight: 4, team: [['hollowbark', 63], ['ramruff_2', 63], ['heathfoal', 64]] },
-      { id: 'eg_t2', kind: 'herder', name: 'Corrie', x: 26, y: 12, dir: 'right', sight: 4, team: [['cloverguard', 63], ['hedgerholt', 64], ['plumevix', 64]] },
-      { id: 'eg_t3', kind: 'forager', name: 'Bramwell', x: 14, y: 21, dir: 'up', sight: 3, team: [['bristlecone_2', 63], ['yawnox', 64], ['hollowbark_3', 64]] },
-      { id: 'eg_t4', kind: 'logger', name: 'Kerr', x: 40, y: 34, dir: 'up', sight: 3, team: [['craglet_3', 64], ['flintburrow', 64], ['ramruff_2', 65]] },
+      { id: 'eg_t1', kind: 'ranger', name: 'Rowanne', x: 25, y: 38, dir: 'right', sight: 4, team: [['stumpstag', 63], ['tappit', 63], ['snarlwisp', 64]] },
+      { id: 'eg_t2', kind: 'herder', name: 'Corrie', x: 26, y: 12, dir: 'right', sight: 4, team: [['tanglebruin', 63], ['stumpstag', 64], ['drummajor', 64]] },
+      { id: 'eg_t3', kind: 'forager', name: 'Bramwell', x: 14, y: 21, dir: 'up', sight: 3, team: [['simmerkit', 63], ['hollowcub', 64], ['murkhowl', 64]] },
+      { id: 'eg_t4', kind: 'logger', name: 'Kerr', x: 40, y: 34, dir: 'up', sight: 3, team: [['cobblerollie', 64], ['pebblouse', 64], ['tanglebruin', 65]] },
     ],
     down: x => ['fernwalk', { x: Math.max(17, Math.min(21, x - 9)), y: 1, dir: 'down' }],
     up: x => ['elderwood', { x: 21, y: 31, dir: 'up' }],
@@ -232,15 +232,15 @@ let ewDoorHook = null;   // ewquests.js handles the story's doors and people fir
 /* ---------- Verdance in the forest: techs on the deer path and round the camp (they leave when the camp shuts) */
 Object.assign(VD_REGION, { fernwalk: 'camp', eldglade: 'camp', ewcamp: 'camp' });
 Object.assign(VD_PLACES, {
-  fernwalk: [{ k: 'tech', id: 'vd_fw1', kind: 'vtech', name: 'Hart', at: [5, 30], team: vdTeam(['ramruff', 61], ['heathfoal', 62]) },
-    { k: 'tech', id: 'vd_fw2', kind: 'vtech2', name: 'Pim', at: [11, 15], team: vdTeam(['bristlecone_2', 62], ['ramruff_2', 62]) },
+  fernwalk: [{ k: 'tech', id: 'vd_fw1', kind: 'vtech', name: 'Hart', at: [5, 30], team: vdTeam(['pebblouse', 61], ['hollowcub', 62]) },
+    { k: 'tech', id: 'vd_fw2', kind: 'vtech2', name: 'Pim', at: [11, 15], team: vdTeam(['sprigfawn', 62], ['simmerkit', 62]) },
     { k: 'stake', at: [23, 24] }, { k: 'stake', at: [15, 34] }],
-  eldglade: [{ k: 'tech', id: 'vd_eg1', kind: 'vtech', name: 'Greaves', at: [42, 31], team: vdTeam(['ramruff_2', 63], ['heathfoal', 64]) },
+  eldglade: [{ k: 'tech', id: 'vd_eg1', kind: 'vtech', name: 'Greaves', at: [42, 31], team: vdTeam(['cobblerollie', 63], ['stumpstag', 64]) },
     { k: 'board', at: [33, 28], text: "<b>GREENLINE TIMBER</b><br><i>a Verdance company</i><br><br>Sustainable forestry for a greener tomorrow. Every tree felled is a tree replanted.*<br><small>*in principle</small>" },
     { k: 'stake', at: [38, 22] }, { k: 'stake', at: [46, 40] }],
-  ewcamp: [{ k: 'tech', id: 'vd_cp1', kind: 'vtech', name: 'Norris', at: [8, 15], team: vdTeam(['craglet_3', 63], ['ramruff_2', 64], ['flintburrow', 64]) },
-    { k: 'tech', id: 'vd_cp2', kind: 'vtech2', name: 'Lacey', at: [20, 8], team: vdTeam(['hedgerholt', 64], ['heathfoal', 64]) },
-    { k: 'tech', id: 'vd_cp3', kind: 'vtech', name: 'Fitch', at: [28, 22], team: vdTeam(['bristlecone_2', 64], ['craglet_3', 65], ['ramruff_2', 65]) }],
+  ewcamp: [{ k: 'tech', id: 'vd_cp1', kind: 'vtech', name: 'Norris', at: [8, 15], team: vdTeam(['cobblerollie', 63], ['tanglebruin', 64], ['pebblouse', 64]) },
+    { k: 'tech', id: 'vd_cp2', kind: 'vtech2', name: 'Lacey', at: [20, 8], team: vdTeam(['simmerkit', 64], ['tappit', 64]) },
+    { k: 'tech', id: 'vd_cp3', kind: 'vtech', name: 'Fitch', at: [28, 22], team: vdTeam(['stumpstag', 64], ['cobblerollie', 65], ['tanglebruin', 65]) }],
 });
 
 /* ---------- scenes */
