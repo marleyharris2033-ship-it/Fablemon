@@ -74,9 +74,11 @@ Route.prototype.create = function () {
     if (a.print) { im = this.add.graphics().setDepth(Y - 14); im.fillStyle(0x3a2814, .75); im.fillEllipse(X - 3, Y - 9, 3, 5); im.fillEllipse(X + 3, Y - 6, 3, 5); this.tweens.add({ targets: im, alpha: .45, duration: 900, yoyo: true, repeat: -1 }); }
     else if (a.mon) { im = hdSpr(this.add.sprite(X, Y, 'mon_' + a.mon, 0).setOrigin(.5, 1).setDepth(Y - 1), a.mon); if (a.scale) im.setScale(im.scaleX * a.scale, im.scaleY * a.scale); this.tweens.add({ targets: im, y: Y - 2, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); }
     else if (a.lamp) { im = this.add.image(X, Y, 'objects', 'lantern_post').setOrigin(.5, 1).setDepth(Y - 1); if (a.lit) { const gl = this.add.circle(X, Y - 20, 14, 0xffd070, .35).setDepth(9e6 - 28); this.tweens.add({ targets: gl, alpha: .18, duration: 800, yoyo: true, repeat: -1 }); } else im.setTint(0x6a6a7a); }
+    else if (a.img) { im = this.add.image(X, Y, a.img[0], a.img[1]).setOrigin(.5, 1).setDepth(Y - 1); if (a.scale) im.setScale(a.scale); if (a.glow) { const gl = this.add.circle(X, Y - 6, 7, 0xb8ffb0, .35).setDepth(Y); this.tweens.add({ targets: gl, alpha: .1, scale: 1.4, duration: 900, yoyo: true, repeat: -1 }); } }
     else if (a.tex) { im = this.add.sprite(X, Y - 1, a.tex, DIRS.indexOf(a.dir || 'down') * 4).setOrigin(.5, 1).setDepth(Y - 1); this.shadow(im, 12, 5); }
     if (im) { this.ewSpr[a.id] = im; if (!a.print) this.tall.push(im); }
   }
+  if (RC.onEnter) RC.onEnter(this);
   if (RC.tint) this.add.rectangle(0, 0, RW * T, RH * T, RC.tint[0], RC.tint[1]).setOrigin(0).setDepth(9e6 - 31);
 };
 

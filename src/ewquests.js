@@ -184,9 +184,9 @@ ewDoorHook = (sc, id) => {
     if (!W.pitClear) {
       const stone = ewHasType('Stone') || ewHasType('Wild'), gale = ewHasType('Gale');
       if (!stone || !gale) return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: "A huge old boar is stuck in a pit where a tree's been dragged out, pinned under fallen logs and rubble. She snorts and thrashes." },
-        { who: 'trainer', name: 'The Elder Glade', img: monPic(EW_MON.boar, 'front'), t: `To get her out you'll need ${stone ? '' : 'a Stone or Wild Fablemon to clear the rubble'}${!stone && !gale ? ', and ' : ''}${gale ? '' : 'a Gale Fablemon to lift the logs'} on your team.` }]);
+        { ...vdSys(''), t: `To get her out you'll need ${stone ? '' : 'a Stone or Wild Fablemon to clear the rubble'}${!stone && !gale ? ', and ' : ''}${gale ? '' : 'a Gale Fablemon to lift the logs'} on your team.` }]);
       W.pitClear = 1;
-      return say([{ who: 'trainer', name: 'The Elder Glade', img: monPic(EW_MON.boar, 'front'), t: 'Your Fablemon get to work: rubble is shoved aside, and with a great gust the logs lift and roll clear of the pit.' },
+      return say([{ ...vdSys(''), t: 'Your Fablemon get to work: rubble is shoved aside, and with a great gust the logs lift and roll clear of the pit.' },
         { who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: "The boar scrambles out... and squares up to you, furious and starving. She sniffs the air. Truffles might change her mind. Her piglets are scattered round the Glade." }], () => ewRefresh(sc));
     }
     if (inv.count('truffle') < 3) return say([{ who: 'trainer', name: 'The boar matriarch', img: monPic(EW_MON.boar, 'front'), t: `She snorts at you. You have ${inv.count('truffle')} truffle${inv.count('truffle') === 1 ? '' : 's'}. She looks like she'd want three. Her piglets are rooting about somewhere in the Glade.` }]);
@@ -197,8 +197,8 @@ ewDoorHook = (sc, id) => {
   }
   if (id.startsWith('ew_lamp_')) {
     const sym = id.slice(8); W.lamps = W.lamps || [];
-    if (W.lamps.includes(sym)) return say([{ who: 'trainer', name: 'The Eldest Tree', img: monPic(EW_MON.owl, 'front'), t: `This lantern is carved with ${LAMP_TEXT[sym]}. It's burning softly.` }]);
-    if (!ewNight()) return say([{ who: 'trainer', name: 'The Eldest Tree', img: monPic(EW_MON.owl, 'front'), t: `An old roost lantern, carved with ${LAMP_TEXT[sym]}. Tansy said the owls only come at night. It'd be no use lighting it now.` }]);
+    if (W.lamps.includes(sym)) return say([{ ...vdSys(''), t: `This lantern is carved with ${LAMP_TEXT[sym]}. It's burning softly.` }]);
+    if (!ewNight()) return say([{ ...vdSys(''), t: `An old roost lantern, carved with ${LAMP_TEXT[sym]}. Tansy said the owls only come at night. It'd be no use lighting it now.` }]);
     if (LAMP_ORDER[W.lamps.length] !== sym) { const had = W.lamps.length; W.lamps = []; Sound.play('error'); toast(had ? 'A cold gust puts every lantern out. That must be the wrong order...' : `You light the lantern carved with ${LAMP_TEXT[sym]}... and it gutters out at once.`, 3000); ewRefresh(sc); return true; }
     W.lamps.push(sym); Sound.play('pick');
     if (W.lamps.length === LAMP_ORDER.length) { W.owlFound = 1; toast('The last lantern catches. High in the Eldest Tree, two great round eyes open...', 3600); }
@@ -213,3 +213,255 @@ ewDoorHook = (sc, id) => {
   if (id === 'ew_powl') return say([{ who: 'trainer', name: 'The owl elder', img: monPic(EW_MON.owl, 'front'), t: ewNight() ? 'The owl elder watches the paddock, wide awake.' : 'The owl elder is asleep on the fence post, one eye very slightly open.' }]);
   return false;
 };
+
+/* ============================================================ chapters 4–7
+   4. Rootwood        Sneak into the camp after dark (guarded by day) → three Greenline papers → show Alder →
+                      fund the town mill → Gaffer Dunn quits Greenline.
+   5. Replant         Elder seeds from the felled stumps (2 a stump a day) → grow them on the farm (a 5-day crop that
+                      gives an Elder Sapling) → plant 12 in the clear-cut with Dunn's crew. The first clear-cut is a
+                      young wood at once; the second follows three nights later.
+   6. The Harvester   Tansy brings word: Vale has ordered the Eldest Tree felled. At the tree: Haulmaster Stroud and the
+                      Harvester. The herd leaders charge in; beat Stroud (64–66); the Harvester ends up in the log pond.
+                      The camp shuts: the techs leave and the Fernwalk checkpoint opens.
+   7. The Wild Crest  Alder battles you (63–67) and gives you his horn: blow it on any route to ride the silver stag
+                      (faster, and no wild Fablemon while you ride). Tansy finds where the haul road really goes. */
+Object.assign(ITEMS, {
+  elder_seed: { name: 'Elder Seed', stack: 999, seed: 'elder', sell: 0, desc: 'A winged seed from a felled elder tree. Plant it on your farm and water it: in 5 days it grows into an Elder Sapling.' },
+  elder_sapling: { name: 'Elder Sapling', stack: 999, sell: 0, desc: "A young elder tree, ready to be planted back in the Elder Glade. Gaffer Dunn's crew will plant it with you." },
+  alders_horn: { name: "Alder's Horn", stack: 1, sell: 0, desc: "A carved herder's horn. Hold it and press use on any route to call the silver stag and ride it: faster, and no wild Fablemon bother you. Blow it again to get down." },
+});
+CROPS.elder = { days: 5, item: 'elder_sapling', seasons: [0, 1, 2, 3], home: [0, 1, 2, 3], frames: ['cv:sap_pine', 'cv:sap_pine', 'cv:sap_oak', 'cv:sap_oak'] };
+const _ewItems2 = hdItems;
+hdItems = async function () { await _ewItems2(); for (const [id, f] of [['elder_seed', 'pine_sapling'], ['elder_sapling', 'oak_sapling'], ['alders_horn', 'lantern']]) if (!ICONS[id] || ICONS[id] === ICONS.wood) { ICONS[id] = ICONS[f]; ICON_CANVAS[id] = ICON_CANVAS[f]; } };
+
+Object.assign(VD_MEMOS, {
+  ew_fell: { title: 'Felling order: the Elder Glade', from: 'M. Vale, Director of Acquisitions', body: `To: E. Stroud, Haulmaster, Elderwood
+
+Fell every elder in the Glade over 200 years old. The young ones are no use to us: only the old trees carry enough of the root.
+
+Do not discuss the purpose of the timber with local staff.
+
+<small>Handwritten underneath: "All of it, Ewan. – M."</small>` },
+  ew_rootwood: { title: 'Specification: bore lining', from: 'Dr C. Ash, Head of Research', body: `PROJECT TAPROOT. Bore lining, sections 1–400.
+
+Steel fails within hours of contact with the Rootweave. Every alloy tested has withered.
+
+Only one material survives: elder heartwood ("rootwood"), grown from the Rootweave itself. It does not burn, and it does not drain.
+
+We need 12,000 beams. There is one forest in the world old enough.` },
+  ew_haul: { title: 'Haul schedule', from: 'Greenline Timber, Elderwood camp', body: `All rootwood to SITE G by the old miners' tunnel.
+
+Night convoys only. No lights past the quarry.
+
+Site G assembly begins when the beam count reaches 12,000.
+
+Current count: 9,450.` },
+});
+VD_MEMO_ORDER.push('ew_fell', 'ew_rootwood', 'ew_haul');
+VD_PLACES.ewcamp.push({ k: 'memo', id: 'ew_fell', at: [14, 24] }, { k: 'memo', id: 'ew_rootwood', at: [29, 9] }, { k: 'memo', id: 'ew_haul', at: [33, 16] });
+const ewPapers = () => ['ew_fell', 'ew_rootwood', 'ew_haul'].filter(id => vd().memos[id]).length;
+const ewHaveSaplings = () => inv.count('elder_sapling') + (ew().planted || 0);
+const EW_SEED_STUMPS = [[36, 22], [44, 24], [51, 21], [35, 38], [43, 42], [50, 37]];
+
+const EW_Q2 = [
+  // 4. Rootwood
+  ewTask('ew_night', 'Sneak into the timber camp after dark', "The camp is at the east end of the haul road through the Elder Glade. Greenline guards it in the day. Tansy says the night shift is lazy.", () => ew().inCamp, {}, 'eldglade'),
+  ewTask('ew_papers', () => `Find Greenline's papers in the camp (${ewPapers()}/3)`, 'Look round the camp for dropped papers. Mind the Field Techs.', () => ewPapers() >= 3, { gold: 3000 }, 'ewcamp'),
+  ewTask('ew_alder2', 'Show Alder the papers', 'Alder is at his Lodge in Elderwood.', () => ew().papers, {}, 'elderwood'),
+  ewTask('ew_mill', 'Fund the Old Town Mill', () => `On Elderwood's notice board. With the mill working, locals won't need Greenline's wages. (${EW_PROJECTS.ew_mill.gold}g, ${Object.entries(EW_PROJECTS.ew_mill.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_mill'), { gold: 4000 }, 'elderwood'),
+  ewTask('ew_dunn', 'Talk to Gaffer Dunn at the mill', 'An old logger in Greenline hi-vis is standing outside the mill, staring at it.', () => ew().dunn, {}, 'elderwood'),
+  // 5. Replant the Glade
+  ewTask('ew_seeds', () => `Gather elder seeds from the felled stumps (${Math.min(12, ew().seeds || 0)}/12)`, 'The great stumps in the clear-cut still drop seeds. Each gives two a day. Look for the green glow.', () => (ew().seeds || 0) >= 12, {}, 'eldglade'),
+  ewTask('ew_grow', () => `Grow 12 Elder Saplings on your farm (${Math.min(12, ewHaveSaplings())}/12)`, 'Plant the elder seeds in tilled soil on your farm and water them. They grow in any season and take 5 days.', () => ewHaveSaplings() >= 12, {}, 'farm'),
+  ewTask('ew_plant', () => `Replant the clear-cut with Dunn's crew (${Math.min(12, ew().planted || 0)}/12)`, "Dunn's crew are waiting by the clear-cut in the Elder Glade.", () => (ew().planted || 0) >= 12, { gold: 6000, items: { mon_treat: 3 } }, 'eldglade'),
+  // 6. The Harvester
+  ewTask('ew_alarm', 'Tansy has news', 'Tansy is in Elderwood, and she looks frantic.', () => ew().alarm, {}, 'elderwood'),
+  ewTask('ew_harv', 'Stop the Harvester at the Eldest Tree', 'Run! The Eldest Tree is west of the Elder Glade.', () => ew().stroud, { gold: 8000, items: { sturdy_charm: 5 } }, 'eldest'),
+  // 7. The Wild Crest
+  ewTask('ew_crest', 'Earn the Wild Crest from Warden Alder', "Alder is waiting at his Lodge. His team is level 63–67.", () => S.crests && S.crests.wild, { gold: 6000, items: { mon_treat: 3 } }, 'elderwood'),
+];
+{
+  const i = QUESTS.findIndex(q => q.id === 'ew_home');
+  QUESTS.splice(i + 1, 0, ...EW_Q2);
+  const all = [...EW_Q, ...EW_Q2];
+  EW_Q2.forEach(q => { const k = all.indexOf(q); QUEST_PLACE[q.id] = q._place; q.ready = () => all[k - 1].done(); });
+}
+
+/* ---------- the Wild Crest */
+CREST_INFO.wild = ['🦌 Wild Crest', '#7a5a2a'];
+{ const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
+WARDEN_ORDER.splice(WARDEN_ORDER.indexOf('hearth'), 0, 'wild'); WARDEN_ACE.wild = 67;
+const ALDER_TEAM = [['ramruff_2', 63], ['plumevix', 64], ['hollowbark_3', 65], ['cloverguard', 65], ['hedgerholt', 66], ['heathfoal_2', 67]];   // stand-ins until Elderwood's own Fablemon
+const STROUD_TEAM = [['bristlecone_2', 64], ['craglet_3', 64], ['flintburrow', 65], ['hedgerholt', 65], ['ramruff_2', 66]];
+
+/* ---------- the camp: guarded by day */
+ROUTES.eldglade.blocks = [{ area: [50, 30, 51, 33], ok: () => ewNight() || !!ew().campShut, f: 'crate' }];
+const _ewGladeActors = ROUTES.eldglade.actors;
+ROUTES.eldglade.actors = () => {
+  const W = ew(), out = _ewGladeActors();
+  if (!ewNight() && !W.campShut) out.push({ id: 'ew_guard', x: 49, y: 29, tex: 'tr_vtech', dir: 'left' });
+  if (W.dunn && !W.campShut) EW_SEED_STUMPS.forEach(([x, y], k) => { if (((W.seedDay || {})[k] || -1) !== S.day && (W.seeds || 0) < 30) out.push({ id: 'ew_seed' + k, x, y, img: ['objects', 'stump'], glow: true }); });
+  if (W.dunn && (W.planted || 0) < 12) out.push({ id: 'ew_dunn', x: 33, y: 30, tex: 'tr_' + trArt('dunn'), dir: 'right' });
+  return out;
+};
+ROUTES.ewcamp.onEnter = sc => { if (ewNight() && !ew().inCamp) { ew().inCamp = 1; toast('You slip past the dozing guard and into the camp. Quietly now...', 3000); setTimeout(checkQuests, 400); } };
+const _ewTownActors = ROUTES.elderwood.actors;
+ROUTES.elderwood.actors = () => {
+  const W = ew(), out = _ewTownActors();
+  if (W.dunn && (W.planted || 0) >= 12) out.push({ id: 'ew_dunn', x: 27, y: 31, tex: 'tr_' + trArt('dunn'), dir: 'down' });
+  else if (ewRepaired('ew_mill') && !W.dunn) out.push({ id: 'ew_dunn', x: 27, y: 31, tex: 'tr_' + trArt('dunn'), dir: 'up' });
+  return out;
+};
+const _ewTreeActors = ROUTES.eldest.actors;
+ROUTES.eldest.actors = () => {
+  const W = ew(), out = _ewTreeActors();
+  if (W.alarm && !W.stroud) out.push({ id: 'ew_harvester', x: 21, y: 15, img: ['qd', 'qd_crane'], scale: .9 }, { id: 'ew_stroud', x: 18, y: 17, tex: 'tr_' + trArt('stroud'), dir: 'left' });
+  return out;
+};
+
+/* ---------- riding the stag */
+const ewRiding = sc => !!(S.ewRide && sc && sc.scene && S.ewRide === sc.scene.key && !RC.town);
+const _ewFast = Route.prototype.fastAt;
+Route.prototype.fastAt = function (x, y) { return ewRiding(this) || (_ewFast ? _ewFast.call(this, x, y) : false); };
+const _ewOdds = vdEncOdds;
+vdEncOdds = function (sc) { return ewRiding(sc) ? 0 : _ewOdds(sc); };
+const _ewEat = eatHeld;
+eatHeld = function (slotIdx = S.sel) {
+  const s = inv.slots[slotIdx];
+  if (s && s.id === 'alders_horn') {
+    const sc = scene; if (!sc || !(sc instanceof Route) || RC.town || RC.sail) { toast('You can only call the stag on a route.', 1800); return true; }
+    if (S.ewRide === sc.scene.key) { S.ewRide = null; sc.player.clearTint(); toast('You slide off the stag. It trots back into the trees.', 2000); return true; }
+    S.ewRide = sc.scene.key; Sound.play('gust'); sc.player.setTint(0xe8f0ff);
+    toast("You blow Alder's horn. The silver stag bounds out of the trees and lets you climb on!", 2600); return true;
+  }
+  return _ewEat(slotIdx);
+};
+
+/* ---------- the story's doors and people (chapters 4–7) */
+const _ewDoor1 = ewDoorHook;
+ewDoorHook = (sc, id) => {
+  const W = ew(), say = (lines, cb) => { Talk.say(lines, cb); return true; };
+  if (id === 'ew_guard') return say([{ who: 'trainer', name: 'Field Tech', img: trainerPic('vtech', 0), t: "Woah, woah. Greenline Timber property. No visitors. Not today, not ever." },
+    { who: 'trainer', name: 'Field Tech', img: trainerPic('vtech', 0), t: "Night shift's someone else's problem, mind. Bloke on nights sleeps in the hut with the radio on. Not that I'm telling you anything." }]);
+  if (id === 'ew_lodge') {
+    if (W.herdsHome && ewPapers() >= 3 && !W.papers) return say([EW.alder("Give them here.", 0), EW.alder("...", 0),
+      EW.alder("Rootwood. They're not cutting my trees for timber. They're cutting them because the trees grew from the root.", 0),
+      EW.alder("A bore lined with my forest, straight down to the mother tree. Under Smallroot. Under your gran's Hearthroot.", 0),
+      EW.alder("Nine thousand beams already gone down that tunnel to this 'Site G'.", 0),
+      EW.alder("Then we stop the felling. Today. And half the men doing it are my neighbours, so we do it carefully.", 0),
+      EW.alder("Pruett's notice board. The mill. If the mill runs, the town doesn't need Greenline's money. Fund it, and I'll talk to Dunn.", 0)],
+      () => { W.papers = 1; checkQuests(); });
+    if (W.stroud && !(S.crests && S.crests.wild)) {
+      openModal("Warden's Lodge", `<p>Warden Alder sets down his staff by the fire and picks up a carved horn instead. His Wild team is around <b>level 63–67</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Alder</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
+        closeModal(); if (a !== 'go') return;
+        S.mons.forEach(restMon); refreshTeamBtn && refreshTeamBtn();
+        Talk.say([EW.alder("The saws have stopped. The herds are home. Elderwood has a Warden again.", 0), EW.alder("So. Let's see what the forest thinks of you.", 0)], () => {
+          const tm = ALDER_TEAM.map(wardenMon);
+          Battle.start(tm[0], { label: 'Warden', name: 'Alder', team: tm, prize: 12000, boss: true, smart: true, heals: 2, lose: 'The forest is patient. Come back when you are.', onWin: () => {
+            S.crests.wild = 1; inv.add('alders_horn', 1); renderHotbar();
+            setTimeout(() => { Sound.play('gotcha'); Talk.say([EW.alder("Ha! The herds would follow you. That's the highest thing I can say about anyone.", 1),
+              EW.alder("The Wild Crest. And take my horn. Blow it on any road and the silver stag will come and carry you. He likes you. Don't tell him I said.", 1),
+              EW.tansy("Alder! Alder, I followed the haul road past the camp. It doesn't stop. It goes into the mountain, into an old miners' tunnel.", 0),
+              EW.alder("The miners' tunnel. That comes out on the far side of the mountain, in the hollow. Gloamhollow.", 0),
+              EW.alder("If anyone knows those tunnels, it's a miner. Your friend from the Old Mine. Brask. Find him.", 0)], () => toast('You received the Wild Crest! 🦌', 3200)); }, 400);
+          } });
+        });
+      });
+      return true;
+    }
+    if (S.crests && S.crests.wild) return say([EW.alder("The Glade's growing back. Slowly. Trees are patient. I'm learning to be.", 1)]);
+  }
+  if (id === 'ew_dunn') {
+    if (!W.dunn) return say([EW.dunn("Forty years I worked that mill. Forty years. Then it shut, and the only work going was Greenline's.", 0),
+      EW.dunn("And now it's open again. Saws running. Local wood, local hands.", 0),
+      EW.dunn("Alder came to see me. Showed me the papers. Said I could choose.", 0),
+      EW.dunn("Well. I've cut down enough of those trees.", 0),
+      EW.dunn("I'm done with Greenline. Me and four of the lads. And if we're done cutting, we might as well start planting.", 1),
+      EW.dunn("Them old stumps still drop seeds. Gather what you can, grow them up on that farm of yours, and bring them to the clear-cut. We'll be waiting.", 1)],
+      () => { W.dunn = 1; Sound.play('levelup'); checkQuests(); ewRefresh(sc); });
+    if (sc.scene.key === 'eldglade') {
+      const have = inv.count('elder_sapling'), need = 12 - (W.planted || 0);
+      if (!have) return say([EW.dunn(`${W.planted || 0} of 12 planted. Bring us saplings. Seeds from the stumps, grown on your farm in five days.`, 0)]);
+      const n = Math.min(have, need); inv.remove('elder_sapling', n); renderHotbar(); W.planted = (W.planted || 0) + n;
+      if (W.planted >= 12) { W.regrow = 1; W.regrowDay = S.day; }
+      return say(W.planted >= 12 ? [EW.dunn("That's the twelfth. Look at that. A wood, again. Give it a few days and you won't know it was ever cut.", 1), EW.dunn("Go and see Alder's lass, Tansy. She came running through here looking for you a minute ago. White as a sheet.", 0)]
+        : [EW.dunn(`${n} more in the ground. ${W.planted} of 12.`, 1)], () => { Sound.play('plant'); checkQuests(); ewRefresh(sc); });
+    }
+    return say([EW.dunn(W.planted >= 12 ? "Folk who wouldn't speak to each other a month ago were planting side by side. That's a good day's work." : "Seeds from the stumps, saplings on your farm, then to the clear-cut. Off you go.", 1)]);
+  }
+  if (id.startsWith('ew_seed')) {
+    const k = +id.slice(7); W.seedDay = W.seedDay || {}; W.seedDay[k] = S.day; W.seeds = (W.seeds || 0) + 2;
+    inv.add('elder_seed', 2); renderHotbar(); Sound.play('pick');
+    toast(`You gather 2 Elder Seeds from the old stump. (${Math.min(12, W.seeds)}/12)`, 2200); checkQuests(); ewRefresh(sc); return true;
+  }
+  if (id === 'ew_tansy' && (W.planted || 0) >= 12 && !W.alarm) return say([EW.tansy("There you are! I ran all the way from the camp!", 0),
+    EW.tansy("A woman came in a black car. All grey and green and quiet. Everyone stopped talking when she got out.", 0),
+    EW.tansy("She told Stroud, the Haulmaster, to take the Eldest Tree. Today. And they've started up the Harvester!", 0),
+    EW.tansy("It's a machine as big as a house. On legs. It walks to a tree and just... eats it.", 0),
+    EW.tansy("It's heading for the Eldest Tree right now. West of the Glade. Please hurry!", 0)], () => { W.alarm = 1; checkQuests(); });
+  if (id === 'ew_harvester') return say([{ ...vdSys(''), t: "The Harvester towers over the clearing: steel legs, a cab full of levers, and a great toothed saw arm reaching for the Eldest Tree's roots." }]);
+  if (id === 'ew_stroud') { ewHarvester(sc); return true; }
+  return _ewDoor1(sc, id);
+};
+
+async function ewHarvester(sc) {
+  const W = ew(), H = (sc.ewSpr || {}).ew_harvester, St = (sc.ewSpr || {}).ew_stroud;
+  await csMoment(sc, async () => {
+    if (H) await csPan(sc, H.x, H.y - 30, 800);
+    await csSay([EW.stroud("Stand aside, farmer. This is a work site, and that is a tree.", 0),
+      EW.stroud("I've been felling trees for thirty years. They grow back. That's the beauty of it. Verdance has a replanting scheme.", 0),
+      EW.stroud("Orders are orders. Ms Vale wants this one, and Ms Vale gets what she wants.", 0)]);
+    // the herds come
+    const sp = [[EW_MON.stag, -150], [EW_MON.boar, 150], [EW_MON.owl, -40]];
+    for (const [mon, dx] of sp) {
+      const m = hdSpr(sc.add.sprite((H ? H.x : sc.player.x) + dx, (H ? H.y : sc.player.y) + 30, 'mon_' + mon, 0).setOrigin(.5, 1).setDepth(9e6 - 40), mon);
+      sc.tweens.add({ targets: m, x: (H ? H.x : sc.player.x) + dx / 4, duration: 900, ease: 'Quad.out' });
+      Sound.play('thud'); sc.cameras.main.shake(250, .004); await csWait(500);
+    }
+    await csSay([{ ...vdSys(''), t: 'Hooves thunder through the forest. The silver stag, the boar matriarch and the owl elder burst into the clearing, and behind them, the whole herd.' },
+      EW.stroud("What in the... Get those animals out of my way!", 0),
+      EW.stroud("Fine. FINE. You want to play Warden? Let's see your team against my haulers.", 0)]);
+  });
+  const tm = STROUD_TEAM.map(([s, l]) => { const m = trainerMon(s, l); m.collar = 1; return m; });
+  await vdCollarPics(tm);
+  Battle.start(tm[0], { label: 'Haulmaster', name: 'Stroud', team: tm, prize: 6000, boss: true, smart: true, heals: 2, intro: ['Haulmaster Stroud wants to battle!', `${SPECIES[tm[0].sp].name} is hooked up to a Verdance drain! Its colour has faded...`], lose: 'Thirty years...',
+    onWin: () => setTimeout(async () => {
+      await csMoment(sc, async () => {
+        if (H) await csPan(sc, H.x, H.y - 30, 600);
+        await csSay([{ ...vdSys(''), t: "The drain collars on Stroud's team crack and fall away. His Fablemon shake themselves, and trot over to stand with the herd." },
+          { ...vdSys(''), t: 'The herd charges. The stag drives its antlers into the Harvester\'s leg, the boar shoulders the other, and the owl dives screeching at the cab.' }]);
+        if (H) { sc.cameras.main.shake(900, .01); Sound.play('thud'); sc.tweens.add({ targets: H, angle: 18, x: H.x + 40, alpha: 0, duration: 1600, ease: 'Quad.in' }); await csWait(1700); }
+        await csSay([{ ...vdSys(''), t: "The Harvester staggers, tips, and goes crashing back down the haul road, all the way into the camp's log pond with an enormous splash." },
+          EW.stroud("...", 0),
+          EW.stroud("Thirty years. I told every one of my crews the trees grow back.", 0),
+          EW.stroud("I never asked what Verdance wanted the old ones for. I didn't want to know.", 0),
+          EW.stroud("Tell Alder the camp's shut. I'll send the lads home. And I'll be telling Ms Vale myself.", 1)]);
+      });
+      W.stroud = 1; W.campShut = 1; vd().shut.camp = S.day; S.trainers = S.trainers || {}; S.trainers.ew_stroud = 1;
+      Sound.play('levelup'); toast('Greenline Timber has shut its Elderwood camp! The Fernwalk checkpoint is open.', 3600); checkQuests(); ewRefresh(sc);
+    }, 400) });
+}
+
+/* ---------- nights: the second clear-cut grows back three nights after planting */
+const _ewNightly = nightly;
+nightly = function (passedOut) {
+  const r = _ewNightly(passedOut);
+  try { const W = S.ew; if (W && W.regrow === 1 && S.day >= (W.regrowDay || 0) + 3) W.regrow = 2; if (S.ewRide) S.ewRide = null; } catch (e) { }
+  return r;
+};
+
+/* ---------- Meanwhile, at the Spire */
+CUTAWAYS.push(
+  { id: 'ew_felling', when: () => !!(S.ew && S.ew.papers), lines: () => [
+    VS.vale("Mr Stroud. You're behind schedule.", 0),
+    { who: 'trainer', name: 'Haulmaster Stroud', img: trainerPic('stroud', 0), t: "The herds are back, Ms Vale. And the locals are funny about the old trees. If we just stuck to the—" },
+    VS.vale("The old trees are the point, Mr Stroud.", 0),
+    VS.vale("Start the Harvester. Fell the Eldest Tree. All of it, Ewan.", 1)] },
+  { id: 'ew_timber', when: () => !!(S.ew && S.ew.campShut), lines: () => [
+    VS.thorne("Elderwood is closed. The farmer, again. And a herd of deer."),
+    VS.ash("It doesn't matter. We have nine thousand beams. Enough to line the top of the bore, and the rest can follow.", 0),
+    VS.vale("Then stop waiting for it to be perfect, Corvin.", 0),
+    VS.vale("Move everything to Site G. The hollow under the mountain. Begin assembly.", 1),
+    VS.thorne("And the farmer?"),
+    VS.vale("The farmer will come to us. They always do.", 1)] },
+);
