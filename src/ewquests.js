@@ -465,3 +465,68 @@ CUTAWAYS.push(
     VS.thorne("And the farmer?"),
     VS.vale("The farmer will come to us. They always do.", 1)] },
 );
+
+/* ============================================================ things to do in Elderwood besides the story
+   The Forest Stores (open once the mill runs), a rest at the Antler Inn (heals your team), daily foraging in the
+   Glade and on Fernwalk (wild mushrooms, elderberries, the odd truffle), and three new recipes. */
+Object.assign(ITEMS, {
+  wild_mushroom: { name: 'Wild Mushrooms', stack: 999, sell: 160, desc: 'Plump brown woodland mushrooms. Sells for 160g.' },
+  elderberry: { name: 'Elderberries', stack: 999, sell: 120, desc: 'Clusters of tiny dark berries from the elder trees. Sells for 120g.' },
+  mushroom_stew: { name: 'Forest Mushroom Stew', stack: 99, eat: 180, sell: 640, desc: 'A rich, dark stew of wild mushrooms and potato. Restores 180 energy.' },
+  elderberry_cordial: { name: 'Elderberry Cordial', stack: 99, eat: 120, sell: 520, desc: 'Sweet, deep purple and very slightly fizzy. Restores 120 energy.' },
+  truffle_omelette: { name: 'Truffle Omelette', stack: 99, eat: 240, sell: 1300, desc: "Alder's favourite: eggs, cheese and shaved forest truffle. Restores 240 energy." },
+});
+COOKING.push({ out: 'mushroom_stew', need: { wild_mushroom: 2, potato: 1 } }, { out: 'elderberry_cordial', need: { elderberry: 3, honey: 1 } }, { out: 'truffle_omelette', need: { truffle: 1, egg: 2, cheese: 1 } });
+const _ewItems3 = hdItems;
+hdItems = async function () { await _ewItems3(); for (const [id, f] of [['wild_mushroom', 'potato'], ['elderberry', 'berry'], ['mushroom_stew', 'veg_soup'], ['elderberry_cordial', 'berry_crumble'], ['truffle_omelette', 'omelette']]) if (!ICONS[id] || ICONS[id] === ICONS.wood) { ICONS[id] = ICONS[f]; ICON_CANVAS[id] = ICON_CANVAS[f]; } };
+const EW_SHOP = [['salt_lick', 400], ['elder_seed', 200], ['tonic', 110], ['mon_treat', 250], ['sturdy_charm', 130], ['skyward_charm', 300]];
+
+// forage spots: each gives its find once a day
+const EW_FORAGE = {
+  fernwalk: [['wild_mushroom', 9, 24], ['elderberry', 27, 14], ['wild_mushroom', 26, 52], ['elderberry', 11, 50]],
+  eldglade: [['wild_mushroom', 12, 10], ['elderberry', 22, 30], ['wild_mushroom', 40, 12], ['elderberry', 8, 44], ['truffle', 18, 34]],
+  eldest: [['wild_mushroom', 9, 22], ['elderberry', 23, 8]],
+};
+for (const [key, spots] of Object.entries(EW_FORAGE)) {
+  const prev = ROUTES[key].actors || (() => []);
+  ROUTES[key].actors = () => {
+    const out = prev(), F = (ew().forage = ew().forage || {});
+    spots.forEach(([item, x, y], k) => { if (F[key + k] !== S.day && (item !== 'truffle' || ew().herds.boar)) out.push({ id: `ew_forage_${key}_${k}`, x, y, img: ['objects', item === 'elderberry' ? 'bush_round' : 'wildflowers'], glow: item === 'truffle' }); });
+    return out;
+  };
+}
+
+const _ewDoor2 = ewDoorHook;
+ewDoorHook = (sc, id) => {
+  if (id.startsWith('ew_forage_')) {
+    const [, , key, k] = id.split('_'), [item] = EW_FORAGE[key][+k], n = item === 'truffle' ? 1 : 2 + (Math.random() < .35 ? 1 : 0);
+    (ew().forage = ew().forage || {})[key + k] = S.day; inv.add(item, n); renderHotbar(); Sound.play('pick');
+    toast(item === 'truffle' ? 'A piglet from the herd is snuffling here... and it digs you up a truffle!' : `You gather ${n} ${ITEMS[item].name}.`, 2200); ewRefresh(sc); return true;
+  }
+  if (id === 'ew_store') {
+    if (!ewRepaired('ew_mill')) return false;
+    const render = () => `<p>Forest Stores. Now the mill's running, the shelves are filling up again. "Salt licks, seeds, the usual. And anything you forage, I'll take off your hands."</p><div class="mlist">${EW_SHOP.map(([i, p]) => shopRow(i, p, 0, 1)).join('')}</div>`;
+    openModal('Forest Stores', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
+    return true;
+  }
+  if (id === 'ew_inn') {
+    openModal('The Antler Inn', '<p>A fire roars under a great rack of antlers. "Sit down, love. You look like you\'ve walked through the whole forest. Your Fablemon can curl up by the hearth."</p><div class="row"><button class="btn gold" data-a="heal">Rest by the fire (heal my team)</button></div>', a => {
+      if (a === 'heal') { S.mons.forEach(restMon); refreshTeamBtn(); Sound.play('fill'); toast('Your Fablemon are fully healed and their moves are restored!', 2400); closeModal(); }
+    });
+    return true;
+  }
+  if (id === 'ew_carver') return Talk.say([EW.ellis(ewRepaired('ew_bridge') ? "Ellis. I carve. Birds, mostly. Sometimes stags, when the stag holds still, which is never." : "...", 1),
+    EW.ellis(ew().regrow ? "You helped plant the clear-cut. I'll carve something for your house one day. When I've the wood to spare. From fallen branches only." : "Every offcut Greenline leaves behind, I collect. Seems a shame to waste a six-hundred-year-old tree twice.", 0)]), true;
+  return _ewDoor2(sc, id);
+};
+
+/* ---------- the map */
+{
+  const P = MAP_PLACES.find(p => p.k === 'elderwood');
+  if (P) {
+    Object.assign(P, { soon: 0, route: 1, warden: ['Alder', 'wild', 6], notes: () => [ew().campShut ? '✔ The saws have stopped' : '🪓 Greenline Timber is felling the Glade', '🍄 Forage in the woods'] });
+    MAP_PLACES.splice(MAP_PLACES.indexOf(P), 0,
+      { k: 'fernwalk', name: 'Fernwalk', al: 'l', x: .875, y: .42, route: 1, notes: () => [ew().campShut ? '✔ Checkpoint gone' : ew().deer ? '🦌 Old deer path round the checkpoint' : '🚧 Verdance checkpoint'] },
+      { k: 'eldglade', name: 'The Elder Glade', al: 'b', x: .88, y: .32, route: 1, notes: () => [ew().regrow ? '🌱 Replanted' : '🪵 Clear-cut zones', ew().campShut ? '✔ Timber camp shut' : '🏭 Greenline Timber camp to the east'] });
+  }
+}
