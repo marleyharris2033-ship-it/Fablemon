@@ -19,11 +19,11 @@ const VQ = {
   willa: (t, f = 0) => ({ who: 'willa', name: VILL.willa.name, img: VPIC['willa' + f], t }),
   gleam: (t, f = 0) => ({ who: 'trainer', name: 'Tobias Gleam', img: trainerPic('gleam', f), t }),
   delphine: (t, f = 0) => ({ who: 'trainer', name: 'Warden Delphine', img: trainerPic('delphine', f), t }),
-  pell: (t, f = 0) => ({ who: 'trainer', name: 'Site Supervisor Pell', img: trainerPic('vtech2', f), t }),
+  pell: (t, f = 0) => ({ who: 'trainer', name: 'Site Supervisor Pell', img: trainerPic('pell', f), t }),
   brask: (t, f = 0) => ({ who: 'trainer', name: 'Foreman Brask', img: trainerPic('brask', f), t }),
   orrin: (t, f = 0) => ({ who: 'trainer', name: 'Warden Orrin', img: trainerPic('orrin', f), t }),
   hal: (t, f = 0) => ({ who: 'hal', name: 'Hal the Shipwright', img: VPIC['hal' + f], t }),
-  dunmore: (t, f = 0) => ({ who: 'trainer', name: 'Rig Chief Dunmore', img: trainerPic('vtech2', f), t }),
+  dunmore: (t, f = 0) => ({ who: 'trainer', name: 'Rig Chief Dunmore', img: trainerPic('dunmore', f), t }),
   tamsin: (t, f = 0) => ({ who: 'trainer', name: 'Warden Tamsin', img: trainerPic('tamsin', f), t }),
   ash: (t, f = 0) => ({ who: 'trainer', name: 'Dr Ash', img: trainerPic('ash', f), t }),
 };
@@ -37,10 +37,12 @@ const vqSigCount = () => Object.keys(vq().sig || {}).length + vqWardens();
 
 /* ---------- the papers you pick up along the way (they show in Files) */
 Object.assign(VD_MEMOS, {
-  glcard: { title: 'Business card', from: 'Dropped by Tobias Gleam', body: `<b>GREENLINE HOLDINGS LTD</b>
+  glcard: { title: 'Business card', from: 'Dropped by Tobias Gleam', get body() { return vqImg('i_card', 96) + this.text; }, text: `<b>GREENLINE HOLDINGS LTD</b>
 Land · Leases · Long-term partnerships
 
 Registered office: Level 40, The Spire, City
+
+M. Vale, Director of Acquisitions
 
 <small>On the back, in pencil: "Parcels 1–41 done. Wild Roots still holding out. – T."</small>` },
   bpage1: { title: "Brask's notebook, page 1", from: 'R. Brask', body: `Day 12. Drill's in. Lads are glad of the work. Overtime till spring, Ash says.
@@ -135,6 +137,7 @@ brambleLines = function () {
     vq().gl = 3;
     return [VQ.bramble("A card from Gleam's pocket? Let me see... Greenline Holdings. Level 40, The Spire.", 0), VQ.bramble("The Spire. That's Verdance's headquarters, in the city. Their name's on the top of it in letters taller than a house.", 2),
       VQ.bramble("So it was them all along. Every field around your farm, bought through a company with a nice green name so nobody would ask questions.", 1),
+      VQ.bramble("And look who signed it. M. Vale, Director of Acquisitions. Whoever she is, she's the one who bought this valley out from under us.", 1),
       VQ.bramble("Your gran knew, I think. That's why she never sold, no matter what they offered.", 0),
       VQ.bramble("Keep that card safe, {name}. And keep your eyes open. A company doesn't buy a whole valley for the view.", 2)];
   }
@@ -173,10 +176,7 @@ function vqDoor(sc, o) {
   q.wheels.push(o.lock);
   if (q.wheels.length < 3) return toast(`💧 The ${o.lock} Lock opens with a groan. Water starts to move in the old channel. (${q.wheels.length}/3)`, 2600);
   q.flooded = S.day;
-  sc.cameras.main.shake(500, .008);
-  const site = (VD_POS[sc.scene.key] || []).find(q2 => q2.k === 'site'), im = site && sc.vdSpr[site.idx];
-  if (im) for (let i = 0; i < 26; i++) { const p = sc.add.circle(im.x + (Math.random() - .5) * 50, im.y - Math.random() * 30, 2.5, 0x8fd0ff, .9).setDepth(9e6); sc.tweens.add({ targets: p, y: p.y + 12, x: p.x + (Math.random() - .5) * 20, alpha: 0, duration: 900 + Math.random() * 700, onComplete: () => p.destroy() }); }
-  Talk.say([vdSys('The Eel Lock opens. With a roar, the old channels fill, and water floods down into the siphon\'s intake!'), vdSys('The pump chokes, coughs and sputters. Somewhere a siren starts to wail...')], () => {
+  csFlood(sc).then(() => {
     const t = (sc.trainers || []).find(x => x.id === 'vd_fen_boss');
     if (!t || beatTrainer(t.id)) return;
     t.meetLines = ["WHAT?! Who opened the locks? My intake's full of water! The pumps are drowning!", "You! The kid with the jam jar! You've cost me a week's output!", "Right. Site Supervisor Pell. Verdance Energy. Nobody floods my siphon and walks away."];
@@ -223,14 +223,14 @@ function vqBrask(sc) {
     VQ.brask("...Look. I've lost my notebook. Pages all over the tunnels. There's things in it head office can't see. Find them for me and we'll talk.", 1)]);
   Talk.say([VQ.brask("Those are my pages. You found all three?", 0), VQ.brask("Then you've read them. You know what I am. A man who kept drilling after the Clinkits died.", 1),
     VQ.brask("So. What happens now? You give them back, or you keep them. Rowan in Smallroot would find them very interesting, I'd think.", 0)], () => {
-    openModal("Brask's notebook", `<p>Brask holds out his hand for the pages. His other hand is on the override key.</p>
+    openModal("Brask's notebook", `${vqImg('i_notebook', 72)}<p>Brask holds out his hand for the pages. His other hand is on the override key.</p>
       <div class="row" style="display:flex;flex-direction:column;gap:6px"><button class="btn gold" data-a="trust">Give him his notebook back</button><button class="btn" data-a="keep">Keep the pages as evidence</button></div>`, a => {
       if (a !== 'trust' && a !== 'keep') return; closeModal();
       vq().mineKey = S.day; vd().brask = a;
-      if (a === 'trust') Talk.say([VQ.brask("...You didn't have to do that.", 1), VQ.brask("Here. The override key. Turn it in the slot on the side, then pull the red lever.", 0),
-        VQ.brask("And this. My old lucky charm. Kept me safe down here for twenty years. Reckon you need it more than me now.", 1)], () => { inv.add('heartwood_charm', 1); renderHotbar(); toast('Got the drill override key, and a Heartwood Charm from Brask.', 3000); });
-      else Talk.say([VQ.brask("Fair enough. I'd have done the same.", 0), VQ.brask("Here. The override key. Turn it in the slot on the side, then pull the red lever.", 0),
-        VQ.brask("Tell Rowan I'm sorry. Tell him I mean it.", 1)], () => toast('Got the drill override key. The pages are yours to keep.', 2800));
+      if (a === 'trust') csBrask(sc, [VQ.brask("...You didn't have to do that.", 1), VQ.brask("Twenty years I've listened to that drill. Here. The override key. Turn it in the slot on the side, then pull the red lever.", 0),
+        VQ.brask("And this. My old lucky charm. Kept me safe down here for twenty years. Reckon you need it more than me now.", 1)]).then(() => { inv.add('heartwood_charm', 1); renderHotbar(); toast('Got the drill override key, and a Heartwood Charm from Brask.', 3000); });
+      else csBrask(sc, [VQ.brask("Fair enough. I'd have done the same.", 0), VQ.brask("Twenty years I've listened to that drill. Here. The override key. Turn it in the slot on the side, then pull the red lever.", 0),
+        VQ.brask("Tell Rowan I'm sorry. Tell him I mean it.", 1)]).then(() => toast('Got the drill override key. The pages are yours to keep.', 2800));
     });
   });
 }
@@ -257,7 +257,7 @@ hal = function (sc) {
   const have = () => Object.entries(VQ_LADDER).every(([id, n]) => inv.count(id) >= n);
   Talk.say([VQ.hal("A boarding ladder? For the Verdance rig?! Ha! Now that's a job I'll do for free!", 1),
     VQ.hal(`Bring me ${VQ_LADDER.wood} wood for the rungs, ${VQ_LADDER.fiber} fiber for rope and ${VQ_LADDER.stone} stone for the grapple weights, and I'll have it done before the kettle boils.`, 0)], () => {
-    openModal('A boarding ladder', `<p>Hal needs: ${Object.entries(VQ_LADDER).map(([id, n]) => `${n} ${ITEMS[id].name} <small>(you have ${inv.count(id)})</small>`).join(', ')}.</p><div class="row"><button class="btn gold" data-a="go" ${have() ? '' : 'disabled'}>Give Hal the materials</button><button class="btn" data-a="no">Later</button></div>`, a => {
+    openModal('A boarding ladder', `${vqImg('vq_ladder', 90)}<p>Hal needs: ${Object.entries(VQ_LADDER).map(([id, n]) => `${n} ${ITEMS[id].name} <small>(you have ${inv.count(id)})</small>`).join(', ')}.</p><div class="row"><button class="btn gold" data-a="go" ${have() ? '' : 'disabled'}>Give Hal the materials</button><button class="btn" data-a="no">Later</button></div>`, a => {
       closeModal(); if (a !== 'go' || !have()) return;
       for (const [id, n] of Object.entries(VQ_LADDER)) inv.remove(id, n);
       vq().ladder = S.day; renderHotbar(); Sound.play('levelup');
@@ -270,7 +270,7 @@ function vqValves(sc, o, then) {
   const fresh = () => { const v = new Set(); while (v.size < 3) v.add(30 + Math.floor(Math.random() * 14) * 5); gauges = [...v].map((psi, i) => ({ i, psi, col: ['red', 'blue', 'yellow'][i] })); cut = []; };
   fresh();
   const steps = () => '👣'.repeat(strikes) + '·'.repeat(2 - strikes);
-  const render = () => `<p>Three valve lines run into the drill, each with a pressure gauge. A chart by the ladder: <b>cut the highest pressure first</b>. Dunmore's footsteps echo somewhere below...</p>
+  const render = () => `${vqImg('vq_valves', 130)}<p>Three valve lines run into the drill, each with a pressure gauge. A chart by the ladder: <b>cut the highest pressure first</b>. Dunmore's footsteps echo somewhere below...</p>
     <p style="font-size:18px;letter-spacing:4px">${steps()}</p>
     <div style="display:flex;gap:6px">${gauges.map(g => `<button class="btn ${cut.includes(g.i) ? '' : 'gold'}" data-a="cut" data-i="${g.i}" ${cut.includes(g.i) ? 'disabled' : ''} style="flex:1;padding:8px 4px"><b style="color:${{ red: '#c0392b', blue: '#2d6fb0', yellow: '#b8860b' }[g.col]}">● ${g.col}</b><br>${g.psi} psi${cut.includes(g.i) ? '<br>✂ cut' : ''}</button>`).join('')}</div>`;
   vd().memos.valves = 1;
@@ -284,8 +284,8 @@ function vqValves(sc, o, then) {
     }
     cut.push(top.i); Sound.play('pop');
     if (cut.length < 3) { $('mBody').innerHTML = render(); return; }
-    closeModal(); vq().valves = S.day; sc.cameras.main.shake(500, .008);
-    Talk.say([vdSys('The last line parts with a hiss of steam. Deep in the rig, the drill grinds, shudders, and stops.'), VQ.dunmore("WHAT have you done to my drill?! Get off my rig!", 0)], then);
+    closeModal(); vq().valves = S.day;
+    csRig(sc).then(() => csSay([VQ.dunmore("WHAT have you done to my drill?! Get off my rig!", 1)])).then(then);
   });
 }
 function vqSiteTalk(sc, o) {
@@ -311,10 +311,13 @@ tamsin = function (sc) {
     VQ.tamsin("Their permit comes up before the valley council this season. If enough people across the valley sign a petition against it, the council can revoke it.", 0),
     VQ.tamsin("I'll put my name first. You've friends in every town from here to Smallroot, haven't you? Get me twelve names, and I'll take it to the council myself.", 1)], () => { vq().tow = 1; vq().sig = vq().sig || {}; toast('Got the petition. Talk to friends and townsfolk to collect names.', 3000); });
   if (vqStep('vdq_tow2')) return Talk.say([VQ.tamsin(`${Math.min(VQ_SIGS, vqSigCount())} names so far! Keep going. Friends in Smallroot, the folk in every town, the Wardens. ${VQ_SIGS} and we've got them.`, 0)]);
-  if (vqStep('vdq_tow3')) return Talk.say([VQ.tamsin("Twelve names? From all over the valley? Let me see!", 1), VQ.tamsin("I'll run it down to the council in the morning... no. I'll run it down right now.", 1),
-    vdSys('Tamsin is gone for an hour. When she comes back, she is waving a sheet of paper with a red wax seal.'),
-    VQ.tamsin("REVOKED! The council's revoked their permit! The tower has to come down!", 1),
-    VQ.tamsin("Ash won't care, mind. People like him never do. But now he has no right to be up there, and you do. Take this up to him.", 0)], () => { vq().tow = 3; S.time = Math.min(S.time + 60, 25 * 60); updateHUD(); });
+  if (vqStep('vdq_tow3')) return Talk.say([VQ.tamsin("Twelve names? From all over the valley? Let me see!", 1), VQ.tamsin("I'll run it down to the council in the morning... no. I'll run it down right now.", 1)], async () => {
+    await csCaption('An hour later...', 1500);
+    S.time = Math.min(S.time + 60, 25 * 60); updateHUD();
+    await csSay([vdSys('Tamsin comes racing back up the hill, waving a sheet of paper with a red wax seal.'), VQ.tamsin("REVOKED! The council's revoked their permit! The tower has to come down!", 1),
+      VQ.tamsin("Ash won't care, mind. People like him never do. But now he has no right to be up there, and you do. Take this up to him.", 0)]);
+    vq().tow = 3;
+  });
   return _vqTamsin(sc);
 };
 function vqSign(name, key, img, line) {

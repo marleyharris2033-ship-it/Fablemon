@@ -23,6 +23,10 @@ TRAINER_TYPES.vtech2 = { label: 'Field Tech', challenge: TRAINER_TYPES.vtech.cha
 TRAINER_TYPES.gleam = { label: 'Head of Community Relations', challenge: ['Ah! Our favourite neighbour!'], lose: ['Most irregular.'], after: ['The offer stands.'] };
 TRAINER_TYPES.brask = { label: 'Foreman', challenge: ['Right then.'], lose: ['Fair enough.'], after: ['Go on, then.'] };
 TRAINER_TYPES.ash = { label: 'Dr', challenge: ['Fascinating.'], lose: ['Noted.'], after: ['Remarkable.'] };
+TRAINER_TYPES.pell = { label: 'Site Supervisor', challenge: ['Clear off!'], lose: ['My bonus...'], after: ['Go away.'] };
+TRAINER_TYPES.dunmore = { label: 'Rig Chief', challenge: ['Ahoy!'], lose: ['Blast it!'], after: ['Hmph.'] };
+TRAINER_TYPES.thorne = { label: 'CEO', challenge: ['Shall we?'], lose: ['Interesting.'], after: ['Someone has to keep the lights on.'] };
+TRAINER_TYPES.vale = { label: 'Director', challenge: ['Hello, little farmer.'], lose: ['Mm.'], after: ['We will talk again.'] };
 
 /* ---------- the sites, and what freeing each one means */
 const VD_SITES = {
@@ -137,7 +141,7 @@ const VD_PLACES = {
     { k: 'tech', id: 'vd_fen2', kind: 'vtech2', name: 'Dean', at: [40, 4], team: vdTeam(['glimmerjel', 21], ['muddlebub', 22]) },
     { k: 'memo', id: 'fenlog', at: [28, 34] },
     { k: 'site', s: 'fen', at: [51, 17] }, { k: 'heart', s: 'fen', at: [48, 24] },
-    { k: 'boss', id: 'vd_fen_boss', kind: 'vtech2', name: 'Pell', title: 'Site Supervisor', s: 'fen', at: [49, 18], team: vdTeam(['muddlebub', 22], ['fenfang', 23], ['logloom', 24]) },
+    { k: 'boss', id: 'vd_fen_boss', kind: 'pell', name: 'Pell', title: 'Site Supervisor', s: 'fen', at: [49, 18], team: vdTeam(['muddlebub', 22], ['fenfang', 23], ['logloom', 24]) },
     { k: 'pipe', at: [47, 21] },
     { k: 'pool', at: [45, 23] }, { k: 'wheel', lock: 'Heron', at: [44, 15] }, { k: 'wheel', lock: 'Eel', at: [54, 13] }, { k: 'wheel', lock: 'Otter', at: [43, 20] }],
   brookholt: [{ k: 'office', at: [33, 12] }, { k: 'board', at: [27, 9], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Verdance is investing in Brookholt's future. Drainage improvements in progress. We apologise for any disruption to the fen." }],
@@ -302,11 +306,14 @@ Route.prototype.create = function () {
     if (o.k === 'site') f = VD_SITES[o.s].art + (vdShut(o.s) ? '_off' : '');
     if (o.k === 'heart') f = vdShut(o.s) ? 'vd_root_on' : 'vd_root';
     const flat = o.k === 'pipe' || o.k === 'memo' || o.k === 'slick' || o.k === 'pool';
-    const im = this.add.image(cx, flat ? o.y * T + 13 : by, 'vd', f).setOrigin(.5, flat ? .5 : 1).setDepth(flat ? 2 : o.y * T + 15);
+    // the quest props have their own art (the vq atlas, tools/art/cut_vdpack.py)
+    let tex = 'vd';
+    if (this.textures.exists('vq')) { const qf = o.k === 'wheel' ? 'vq_wheel_' + o.lock.toLowerCase() : o.k === 'pool' ? 'vq_pool' : o.k === 'memo' && o.id.startsWith('bpage') ? 'vq_page' : null; if (qf) { tex = 'vq'; f = qf; } }
+    const im = this.add.image(cx, flat ? o.y * T + 13 : by, tex, f).setOrigin(.5, flat ? .5 : 1).setDepth(flat ? 2 : o.y * T + 15);
     if (o.k === 'board' || o.k === 'site' || o.k === 'office') { im.noShadow = 1; this.tall.push(im); }
     if (o.k === 'barge') { im.setDepth(o.y * T + 13); this.tweens.add({ targets: im, y: im.y + 1.2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' }); }
     if (o.k === 'slick') im.setAlpha(.85).setDepth(1.7);
-    if (o.k === 'pool') im.setAlpha(.9).setTint(0x9aa890).setDepth(1.7);
+    if (o.k === 'pool') { im.setDepth(1.7); if (tex === 'vd') im.setAlpha(.9).setTint(0x9aa890); }
     if (o.k === 'memo') this.tweens.add({ targets: im, y: im.y - 1.5, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut' });
     if (o.k === 'site' && !vdShut(o.s)) vdHum(this, im, o);
     if (o.k === 'heart' && vdShut(o.s)) vdGlow(this, cx, by - 10);
@@ -465,7 +472,7 @@ function vdSiteTalk(sc, o) {
 // the rig has no deck to stand on, so its Chief shouts down from it and battles from there
 function vdRigChief(sc, o) {
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
-  const t = { id: 'vd_rigchief', kind: 'vtech2', name: 'Dunmore', title: 'Rig Chief', s: 'rig', vd: 'boss', team: vdTeam(['stormveil', 43], ['riftshear', 43], ['kilnback', 44], ['mirebellows', 44]) };
+  const t = { id: 'vd_rigchief', kind: 'dunmore', name: 'Dunmore', title: 'Rig Chief', s: 'rig', vd: 'boss', team: vdTeam(['stormveil', 43], ['riftshear', 43], ['kilnback', 44], ['mirebellows', 44]) };
   vdBattle(sc, t);
 }
 function vdShutDown(sc, o) {
