@@ -392,7 +392,7 @@ class Crag extends Route {
     for (const [dx, dy] of [[-2, 0], [2, 0], [-3, 1], [3, 1], [-1, -1], [1, -1]]) { const g = this.add.circle((x + dx) * T + 8, (y + dy) * T + 6, 10, 0x8a6aff, .14).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 28); this.tweens.add({ targets: g, alpha: .04, yoyo: true, repeat: -1, duration: 900 + Math.random() * 900 }); }
     if (gone) { this.R.blocked[y * RW + x] = 1; return; }
     for (let r = 0; r < 4; r++) { const k = `fulgarok_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('mon_fulgarok', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 3, repeat: -1 }); }
-    this.legend = this.add.sprite(x * T + 8, y * T + 16, 'mon_fulgarok', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    this.legend = hdSpr(this.add.sprite(x * T + 8, y * T + 16, 'mon_fulgarok', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15), 'fulgarok');   // hdSpr: the walk sheet is the 3x one
     this.legend.play('fulgarok_down');
     this.tweens.add({ targets: this.legend, y: this.legend.y - 2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' });
     const aura = this.add.circle(x * T + 8, y * T + 2, 28, 0x9a7aff, .18).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 27);
@@ -406,7 +406,7 @@ class Crag extends Route {
     S.seen.fulgarok = 1;
     Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('Thunder rolls through the mine. Fulgarok, the Geode Storm Fablemon, rises from its sleep!')], () => {
       const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
-      this.legendFight = m; this.cameras.main.shake(400, .008); Battle.start(m);
+      this.legendFight = m; this.legendAt = Date.now(); this.cameras.main.shake(400, .008); Battle.start(m);
     });
   }
   frameHook(dt) {
@@ -415,9 +415,8 @@ class Crag extends Route {
     super.frameHook(dt);
     if (this.halo) this.halo.setPosition(this.player.x, this.player.y - 6);
     // after the legend battle: caught, knocked out (back tomorrow) or fled from (still there)
-    if (this.legendFight && Battle.active) this.legendSeen = true;
-    if (this.legendFight && this.legendSeen && !Battle.active && !this.paused) {
-      this.legendSeen = false;
+    // (this scene doesn't update during the battle, so wait until a battle has had time to start and is over)
+    if (this.legendFight && !Battle.active && !this.paused && Date.now() - (this.legendAt || 0) > 1500) {
       const m = this.legendFight, st = crag(); this.legendFight = null;
       if (S.mons.some(q => q.sp === 'fulgarok')) { st.legendCaught = 1; this.legend.destroy(); this.legend = null; toast('The mine falls quiet. The crystals glow softly, as if saying goodbye.', 3200); }
       else if (m.hp <= 0) { st.legendDay = S.day; this.tweens.add({ targets: this.legend, alpha: 0, duration: 900, onComplete: () => { this.legend.destroy(); this.legend = null; } }); toast('Fulgarok sank back into the rock! The crystals dim... It may return tomorrow.', 3500); }

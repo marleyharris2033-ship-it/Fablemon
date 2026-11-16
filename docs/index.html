@@ -144,6 +144,12 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 #bstage{position:relative;background-repeat:no-repeat;image-rendering:pixelated;overflow:hidden;flex:0 0 auto;border-radius:4px}
 .bmon{position:absolute;image-rendering:pixelated;transform-origin:50% 100%}
 #bfoe{width:calc(var(--w) * .2);left:calc(var(--fx) - var(--w) * .1);top:calc(52% - var(--w) * .2)}
+#bdrain{position:absolute;pointer-events:none;width:calc(var(--w) * .2);height:calc(var(--w) * .2);left:calc(var(--fx) - var(--w) * .1);top:calc(52% - var(--w) * .2)}
+#bdrain i{position:absolute;width:6px;height:6px;border-radius:50%;background:#b8e0a0;box-shadow:0 0 6px 2px rgba(120,190,110,.8);opacity:0;animation:drainup var(--d) linear infinite;animation-delay:var(--t)}
+@keyframes drainup{0%{opacity:0;transform:translate(0,0) scale(1)}15%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),calc(var(--w) * -.11)) scale(.3)}}
+.bmon.drained{animation:drainglow 1.6s ease-in-out infinite}
+@keyframes drainglow{0%,100%{filter:drop-shadow(0 0 2px rgba(130,190,110,.55))}50%{filter:drop-shadow(0 0 7px rgba(130,190,110,.95)) brightness(.85)}}
+.tchip.drained{background:#6f7d68;border:1px solid #b8e0a0}
 #bme{width:calc(var(--w) * .27);left:calc(var(--mx) - var(--w) * .135);top:calc(80% - var(--w) * .27)}
 .bbox{position:absolute;padding:4px 8px;font-size:clamp(11px,calc(var(--w) * .024),15px);min-width:min(42%,calc(var(--w) * .3))}
 #bfoebox{left:2%;top:4%}#bmebox{right:2%;bottom:5%}
@@ -334,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261115-235058">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261115-235058">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261115-235058">
+<link rel="manifest" href="manifest.webmanifest?v=20261116-023315">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261116-023315">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261116-023315">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261115-235058').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261116-023315').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -365,7 +371,7 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 </div>
 <div id="talk" class="panel"><div id="tface"></div><div id="tbody"><div id="tname"></div><div id="ttext"></div></div><div id="tmore">▼</div></div>
 <div id="buildbar" class="panel"></div>
-<div id="battle"><div id="bstage"><img id="bfoe" class="bmon" alt=""><img id="bme" class="bmon" alt=""><img id="bcharm" class="hidden" alt=""><div id="bfoebox" class="bbox panel"></div><div id="bmebox" class="bbox panel"></div></div><div id="bui" class="panel"><div id="bmsg"></div><div id="bmenu"></div></div></div>
+<div id="battle"><div id="bstage"><img id="bfoe" class="bmon" alt=""><div id="bdrain" class="hidden"></div><img id="bme" class="bmon" alt=""><img id="bcharm" class="hidden" alt=""><div id="bfoebox" class="bbox panel"></div><div id="bmebox" class="bbox panel"></div></div><div id="bui" class="panel"><div id="bmsg"></div><div id="bmenu"></div></div></div>
 <div id="toast" class="panel"></div>
 <div id="qty"><div class="panel"></div></div>
 <div id="ctlbar" class="panel"><b style="font-family:var(--pix)">Move and resize the HUD</b><div style="font-size:12px;opacity:.8">Drag the joystick and the action button to where you want them. Use the sliders to size each part of the screen.</div><label><span>Joystick</span> <input type="range" id="ctlJs" min=".6" max="1.8" step=".05"></label><label><span>Action button</span> <input type="range" id="ctlAs" min=".6" max="1.8" step=".05"></label><div id="hudSizes"></div><div class="row"><button class="btn" id="ctlReset">Reset</button><button class="btn gold" id="ctlDone">Done</button></div></div>
@@ -2190,7 +2196,7 @@ const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.flo
 const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eatk' || k === 'edef')) m.iv[k] = 1 + Math.floor(Math.random() * 10); return m.iv[k] || 5; };
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
-const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '') + (m.collar ? ' ⛓' : '');   // ⛓ a Verdance drain collar (verdance.js)   // ✦ marks a Fabled one (see fabled.js)
+const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '');   // ✦ marks a Fabled one (see fabled.js); Verdance-drained ones get a DRAINED chip in battle (verdance.js)
 // Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
 const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
@@ -2224,6 +2230,13 @@ function refreshTeamBtn() {
 }
 
 /* ---------- team screen */
+// a Fablemon on a Verdance drain: motes of its energy drifting up and away (verdance.js sets m.collar)
+function drainFx(m) {
+  const d = document.getElementById('bdrain'); if (!d) return;
+  if (!m || !m.collar) { d.classList.add('hidden'); d.innerHTML = ''; return; }
+  d.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="left:${20 + Math.random() * 60}%;top:${35 + Math.random() * 50}%;--d:${1.6 + Math.random() * 1.4}s;--t:${-Math.random() * 3}s;--dx:${(Math.random() * 30 - 5).toFixed(0)}px"></i>`).join('');
+  d.classList.remove('hidden');
+}
 function typeChip(t) { if (SPECIES[t]) return typesOf(t).map(typeChip).join(''); return `<span class="tchip" style="background:${TYPES[t]}">${t}</span>`; }
 function hpBar(m) { const mx = monStat(m, 'hp'), v = Math.max(0, Math.min(m.hp ?? mx, mx)), pc = v / mx; return `<span class="hpwrap"><span class="hpl">HP</span><span class="hpb"><i style="width:${100 * pc}%;background:${pc > .5 ? '#5cc85a' : pc > .2 ? '#f0b02a' : '#e0503a'}"></i></span></span><span class="hpn">${v}/${mx}</span>`; }
 const badge = (sp, size = 52, m) => `<span class="mbadge" style="--tc:${TYPES[SPECIES[sp].type]};width:${size}px;height:${size}px"><img src="${m ? monPicOf(m) : monPic(sp)}"></span>`;
@@ -2727,8 +2740,9 @@ class Farm extends World {
   create() {
     this.initWorld(W, H);
     const tex = this.textures.get('objects');
-    const fr = tex.get('fence_h'); if (!tex.has('rail_h')) tex.add('rail_h', 0, fr.cutX + 7, fr.cutY, 18, fr.cutHeight);
-    const gr = tex.get('gate'); if (!tex.has('gate_mid')) tex.add('gate_mid', 0, gr.cutX + 8, gr.cutY, 16, gr.cutHeight);
+    // slices of the fence and gate art (the atlas may be the 3x one, so scale the offsets by its resolution)
+    const fr = tex.get('fence_h'), k = (fr.source && fr.source.resolution) || 1; if (!tex.has('rail_h')) { const f = tex.add('rail_h', 0, fr.cutX + 7 * k, fr.cutY, 18 * k, fr.cutHeight); if (k > 1) hdShrinkFrame(f, k); }
+    const gr = tex.get('gate'); if (!tex.has('gate_mid')) { const f = tex.add('gate_mid', 0, gr.cutX + 8 * k, gr.cutY, 16 * k, gr.cutHeight); if (k > 1) hdShrinkFrame(f, k); }
     this.makeCanvasTextures();
 
     farm = buildFarm();
@@ -4383,11 +4397,11 @@ const Battle = (() => {
     const caught = side === 'foe' && S.caught[m.sp] ? '<span title="Befriended before" style="color:#c0392b">♥</span> ' : '';
     const stc = (m.status ? `<span class="tchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '')
       + Object.entries((B.st || {})[side] || {}).filter(([, n]) => n).map(([k, n]) => `<span class="tchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k] || k}${n > 0 ? '▲' : '▼'}${Math.abs(n) > 1 ? Math.abs(n) : ''}</span>`).join('');
-    q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
+    q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${m.collar ? '<span class="tchip drained">DRAINED</span>' : ''}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
   }
   function sprites() {
     q('bfoe').src = monPicOf(B.foe, 'front'); q('bme').src = monPicOf(B.me, 'back');
-    q('bfoe').className = 'bmon'; q('bme').className = 'bmon';
+    q('bfoe').className = 'bmon' + (B.foe.collar ? ' drained' : ''); q('bme').className = 'bmon'; drainFx(B.foe);
   }
   const anim = (id, cls, ms) => { const e = q(id); e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); return sleep(ms); };
   function menu(buttons) {
@@ -4584,7 +4598,7 @@ const Battle = (() => {
   async function foeSwitch(m, msg) {
     if (msg) await say(msg, 1100);
     B.foe = m; B.st.foe = {}; B.v.foe = {}; S.seen[m.sp] = 1;
-    q('bfoe').src = monPicOf(m, 'front'); q('bfoe').className = 'bmon'; box('foe');
+    q('bfoe').src = monPicOf(m, 'front'); q('bfoe').className = 'bmon' + (m.collar ? ' drained' : ''); drainFx(m); box('foe');
     await anim('bfoe', 'enter-foe', 500);
     if (B.T.phase2) {   // a boss's second phase: same foe back on its feet, and angrier
       for (const line of B.T.phase2) await say(line, 1700);
@@ -7448,7 +7462,7 @@ class Crag extends Route {
     for (const [dx, dy] of [[-2, 0], [2, 0], [-3, 1], [3, 1], [-1, -1], [1, -1]]) { const g = this.add.circle((x + dx) * T + 8, (y + dy) * T + 6, 10, 0x8a6aff, .14).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 28); this.tweens.add({ targets: g, alpha: .04, yoyo: true, repeat: -1, duration: 900 + Math.random() * 900 }); }
     if (gone) { this.R.blocked[y * RW + x] = 1; return; }
     for (let r = 0; r < 4; r++) { const k = `fulgarok_${DIRS[r]}`; if (!this.anims.exists(k)) this.anims.create({ key: k, frames: this.anims.generateFrameNumbers('mon_fulgarok', { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 3, repeat: -1 }); }
-    this.legend = this.add.sprite(x * T + 8, y * T + 16, 'mon_fulgarok', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15);
+    this.legend = hdSpr(this.add.sprite(x * T + 8, y * T + 16, 'mon_fulgarok', 0).setOrigin(.5, 1).setScale(1.5).setDepth(y * T + 15), 'fulgarok');   // hdSpr: the walk sheet is the 3x one
     this.legend.play('fulgarok_down');
     this.tweens.add({ targets: this.legend, y: this.legend.y - 2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' });
     const aura = this.add.circle(x * T + 8, y * T + 2, 28, 0x9a7aff, .18).setBlendMode(Phaser.BlendModes.ADD).setDepth(9e6 - 27);
@@ -7462,7 +7476,7 @@ class Crag extends Route {
     S.seen.fulgarok = 1;
     Talk.say([L('The crystals along the walls pulse, brighter and brighter...'), L('The ground shudders. Something vast uncurls from the rock!'), L('Thunder rolls through the mine. Fulgarok, the Geode Storm Fablemon, rises from its sleep!')], () => {
       const m = wildMon(LEGEND.sp, LEGEND.lv); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
-      this.legendFight = m; this.cameras.main.shake(400, .008); Battle.start(m);
+      this.legendFight = m; this.legendAt = Date.now(); this.cameras.main.shake(400, .008); Battle.start(m);
     });
   }
   frameHook(dt) {
@@ -7471,9 +7485,8 @@ class Crag extends Route {
     super.frameHook(dt);
     if (this.halo) this.halo.setPosition(this.player.x, this.player.y - 6);
     // after the legend battle: caught, knocked out (back tomorrow) or fled from (still there)
-    if (this.legendFight && Battle.active) this.legendSeen = true;
-    if (this.legendFight && this.legendSeen && !Battle.active && !this.paused) {
-      this.legendSeen = false;
+    // (this scene doesn't update during the battle, so wait until a battle has had time to start and is over)
+    if (this.legendFight && !Battle.active && !this.paused && Date.now() - (this.legendAt || 0) > 1500) {
       const m = this.legendFight, st = crag(); this.legendFight = null;
       if (S.mons.some(q => q.sp === 'fulgarok')) { st.legendCaught = 1; this.legend.destroy(); this.legend = null; toast('The mine falls quiet. The crystals glow softly, as if saying goodbye.', 3200); }
       else if (m.hp <= 0) { st.legendDay = S.day; this.tweens.add({ targets: this.legend, alpha: 0, duration: 900, onComplete: () => { this.legend.destroy(); this.legend = null; } }); toast('Fulgarok sank back into the rock! The crystals dim... It may return tomorrow.', 3500); }
@@ -8507,7 +8520,7 @@ function whaleSetup(sc) {
   if (!on) { if (ROUTE_SIGNS[k] === '__door:cv_whale') delete ROUTE_SIGNS[k]; return; }
   ROUTE_SIGNS[k] = '__door:cv_whale'; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 1;
   monAnims(sc, 'floecalf_2');
-  const w = sc.whale = sc.add.sprite(WHALE_AT.x * T + 8, WHALE_AT.y * T + 18, 'mon_floecalf_2', 4).setOrigin(.5, 1).setScale(1.6).setDepth(WHALE_AT.y * T + 15);
+  const w = sc.whale = hdSpr(sc.add.sprite(WHALE_AT.x * T + 8, WHALE_AT.y * T + 18, 'mon_floecalf_2', 4).setOrigin(.5, 1).setScale(1.6).setDepth(WHALE_AT.y * T + 15), 'floecalf_2');
   w.play('floecalf_2_left');
   sc.tweens.add({ targets: w, y: w.y + 3, yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.inOut' });
   const ring = sc.add.ellipse(w.x, w.y - 2, 70, 16, 0xe8f8ff, .35).setDepth(1.8);
@@ -9749,9 +9762,9 @@ function wcSetup(sc) {
   // after the dragon battle: caught, knocked out (back tomorrow) or fled (still there, still blowing)
   sc.time.addEvent({ delay: 200, loop: true, callback: () => {
     if (!sc.wcFight) return;
-    if (Battle.active) { sc.wcSeen = 1; return; }
-    if (!sc.wcSeen || sc.paused) return;
-    const m = sc.wcFight; sc.wcFight = null; sc.wcSeen = 0;
+    if (Battle.active) return;
+    if (sc.paused || Date.now() - (sc.wcAt || 0) < 1500) return;   // this scene's clock stops during the battle, so time it by the wall clock
+    const m = sc.wcFight; sc.wcFight = null;
     const caught = S.mons.some(q => q.sp === WC_DRAGON.sp), name = SPECIES[WC_DRAGON.sp].name;
     if (!caught && m.hp > 0) return toast(`${name} is still circling the summit. The wind howls on.`, 2600);
     if (caught) st.wcCaught = 1; else st.wcDay = S.day;
@@ -9775,7 +9788,7 @@ function wcStorm(sc) {
     return Talk.say(windCalm() ? [L('The clouds on the summit stir. A long, pale shape uncoils from them...'), L(`${nm} has come back to its roost! It lowers its head and watches you.`)]
       : [L('The storm cloud spins faster and faster. The snow whips sideways.'), L('Two pale eyes open in the heart of the cloud...'), L(`With a roar like a gale through a canyon, ${nm} bursts out of the storm!`)], () => {
       const m = wildMon(sp, WC_DRAGON.lv); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
-      sc.wcFight = m; sc.wcSeen = 0; sc.cameras.main.shake(400, .008); Battle.start(m);
+      sc.wcFight = m; sc.wcAt = Date.now(); sc.cameras.main.shake(400, .008); Battle.start(m);
     });
   }
   if (windCalm()) return;
@@ -10677,14 +10690,15 @@ function hdPortraits() {
 /* ---- bag icons and placed farm objects (hd_world/items: i_<item> 72px icons, o_<obj> 3x pictures) ----
    Each becomes a canvas marked _hdk = 3. Canvases go into the game through textures.addCanvas, which is
    wrapped below so a marked canvas shows at a third of its size, drawn smoothly. */
+function hdShrinkFrame(f, k) {
+  const w = f.cutWidth / k, h = f.cutHeight / k;
+  f.width = f.realWidth = w; f.height = f.realHeight = h; f.halfWidth = Math.floor(w / 2); f.halfHeight = Math.floor(h / 2); f.centerX = Math.floor(w / 2); f.centerY = Math.floor(h / 2);
+  if (f.data) { f.data.sourceSize.w = f.data.spriteSourceSize.w = w; f.data.sourceSize.h = f.data.spriteSourceSize.h = h; }
+  f.updateUVs();
+}
 function hdShrinkTexture(T, k) {
   T.source[0].resolution = k;
-  for (const n of T.getFrameNames(true)) {
-    const f = T.get(n), w = f.cutWidth / k, h = f.cutHeight / k;
-    f.width = f.realWidth = w; f.height = f.realHeight = h; f.halfWidth = Math.floor(w / 2); f.halfHeight = Math.floor(h / 2); f.centerX = Math.floor(w / 2); f.centerY = Math.floor(h / 2);
-    if (f.data) { f.data.sourceSize.w = f.data.spriteSourceSize.w = w; f.data.sourceSize.h = f.data.spriteSourceSize.h = h; }
-    f.updateUVs();
-  }
+  for (const n of T.getFrameNames(true)) hdShrinkFrame(T.get(n), k);
   T.setFilter(Phaser.Textures.FilterMode.LINEAR);
 }
 (function () {
@@ -11182,7 +11196,7 @@ function vdBattle(sc, t) {
   Talk.say(lines, async () => {
     const teamMons = t.team.map(([sp, lv]) => { const m = trainerMon(sp, lv); m.collar = 1; return m; });
     await vdCollarPics(teamMons);
-    const intro = [`${boss ? vdBossName(t) : TT.label + ' ' + t.name} wants to battle!`, `${SPECIES[teamMons[0].sp].name} is wearing a drain collar! A green light blinks on its belt pack...`];
+    const intro = [`${boss ? vdBossName(t) : TT.label + ' ' + t.name} wants to battle!`, `${SPECIES[teamMons[0].sp].name} is hooked up to a Verdance drain! Its colour has faded, and its energy is drifting away...`];
     Battle.start(teamMons[0], { label: boss ? (t.title || TT.label) : TT.label, name: t.name, team: teamMons, intro, boss, smart: boss && t.s !== 'fen', heals: boss ? (t.s === 'tower' ? 2 : 1) : 0,
       prize: Math.max(...t.team.map(([, l]) => l)) * (boss ? 60 : 30), lose: boss ? 'Tch.' : pick(TT.lose),
       onWin: () => {
@@ -11196,16 +11210,15 @@ function vdBattle(sc, t) {
       } });
   });
 }
-// a collared Fablemon in battle: drained grey, with the collar's belt pack blinking at its side
+// a drained Fablemon in battle: its colour faded towards Verdance grey-green (the motes and glow are drainFx in game.js)
 const VD_COLLAR_PIC = {};
 async function vdCollarPics(mons) {
   for (const m of mons) {
     const src = monPicOf({ ...m, collar: 0 }, 'front'); if (VD_COLLAR_PIC[src]) continue;
     try {
       const im = await loadImg(src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d');
-      g.filter = 'saturate(.35) brightness(.92)'; g.drawImage(im, 0, 0); g.filter = 'none';
-      const tx = scene.textures.get('vd'), fr = tx.get('vd_collar'), w = c.width * .42, h = w * fr.cutHeight / fr.cutWidth;
-      g.drawImage(tx.getSourceImage(), fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, c.width * .5 - w / 2, c.height * .78 - h, w, h);
+      g.filter = 'saturate(.3) brightness(.9) contrast(.95)'; g.drawImage(im, 0, 0); g.filter = 'none';
+      g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(110,140,100,.28)'; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over';
       const u = c.toDataURL(); VD_COLLAR_PIC[src] = u; HD_SMOOTH.add(u);
     } catch (e) { }
   }

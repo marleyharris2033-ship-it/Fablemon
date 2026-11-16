@@ -144,6 +144,12 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 #bstage{position:relative;background-repeat:no-repeat;image-rendering:pixelated;overflow:hidden;flex:0 0 auto;border-radius:4px}
 .bmon{position:absolute;image-rendering:pixelated;transform-origin:50% 100%}
 #bfoe{width:calc(var(--w) * .2);left:calc(var(--fx) - var(--w) * .1);top:calc(52% - var(--w) * .2)}
+#bdrain{position:absolute;pointer-events:none;width:calc(var(--w) * .2);height:calc(var(--w) * .2);left:calc(var(--fx) - var(--w) * .1);top:calc(52% - var(--w) * .2)}
+#bdrain i{position:absolute;width:6px;height:6px;border-radius:50%;background:#b8e0a0;box-shadow:0 0 6px 2px rgba(120,190,110,.8);opacity:0;animation:drainup var(--d) linear infinite;animation-delay:var(--t)}
+@keyframes drainup{0%{opacity:0;transform:translate(0,0) scale(1)}15%{opacity:.95}100%{opacity:0;transform:translate(var(--dx),calc(var(--w) * -.11)) scale(.3)}}
+.bmon.drained{animation:drainglow 1.6s ease-in-out infinite}
+@keyframes drainglow{0%,100%{filter:drop-shadow(0 0 2px rgba(130,190,110,.55))}50%{filter:drop-shadow(0 0 7px rgba(130,190,110,.95)) brightness(.85)}}
+.tchip.drained{background:#6f7d68;border:1px solid #b8e0a0}
 #bme{width:calc(var(--w) * .27);left:calc(var(--mx) - var(--w) * .135);top:calc(80% - var(--w) * .27)}
 .bbox{position:absolute;padding:4px 8px;font-size:clamp(11px,calc(var(--w) * .024),15px);min-width:min(42%,calc(var(--w) * .3))}
 #bfoebox{left:2%;top:4%}#bmebox{right:2%;bottom:5%}
@@ -356,7 +362,7 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 </div>
 <div id="talk" class="panel"><div id="tface"></div><div id="tbody"><div id="tname"></div><div id="ttext"></div></div><div id="tmore">▼</div></div>
 <div id="buildbar" class="panel"></div>
-<div id="battle"><div id="bstage"><img id="bfoe" class="bmon" alt=""><img id="bme" class="bmon" alt=""><img id="bcharm" class="hidden" alt=""><div id="bfoebox" class="bbox panel"></div><div id="bmebox" class="bbox panel"></div></div><div id="bui" class="panel"><div id="bmsg"></div><div id="bmenu"></div></div></div>
+<div id="battle"><div id="bstage"><img id="bfoe" class="bmon" alt=""><div id="bdrain" class="hidden"></div><img id="bme" class="bmon" alt=""><img id="bcharm" class="hidden" alt=""><div id="bfoebox" class="bbox panel"></div><div id="bmebox" class="bbox panel"></div></div><div id="bui" class="panel"><div id="bmsg"></div><div id="bmenu"></div></div></div>
 <div id="toast" class="panel"></div>
 <div id="qty"><div class="panel"></div></div>
 <div id="ctlbar" class="panel"><b style="font-family:var(--pix)">Move and resize the HUD</b><div style="font-size:12px;opacity:.8">Drag the joystick and the action button to where you want them. Use the sliders to size each part of the screen.</div><label><span>Joystick</span> <input type="range" id="ctlJs" min=".6" max="1.8" step=".05"></label><label><span>Action button</span> <input type="range" id="ctlAs" min=".6" max="1.8" step=".05"></label><div id="hudSizes"></div><div class="row"><button class="btn" id="ctlReset">Reset</button><button class="btn gold" id="ctlDone">Done</button></div></div>

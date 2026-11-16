@@ -321,9 +321,9 @@ function wcSetup(sc) {
   // after the dragon battle: caught, knocked out (back tomorrow) or fled (still there, still blowing)
   sc.time.addEvent({ delay: 200, loop: true, callback: () => {
     if (!sc.wcFight) return;
-    if (Battle.active) { sc.wcSeen = 1; return; }
-    if (!sc.wcSeen || sc.paused) return;
-    const m = sc.wcFight; sc.wcFight = null; sc.wcSeen = 0;
+    if (Battle.active) return;
+    if (sc.paused || Date.now() - (sc.wcAt || 0) < 1500) return;   // this scene's clock stops during the battle, so time it by the wall clock
+    const m = sc.wcFight; sc.wcFight = null;
     const caught = S.mons.some(q => q.sp === WC_DRAGON.sp), name = SPECIES[WC_DRAGON.sp].name;
     if (!caught && m.hp > 0) return toast(`${name} is still circling the summit. The wind howls on.`, 2600);
     if (caught) st.wcCaught = 1; else st.wcDay = S.day;
@@ -347,7 +347,7 @@ function wcStorm(sc) {
     return Talk.say(windCalm() ? [L('The clouds on the summit stir. A long, pale shape uncoils from them...'), L(`${nm} has come back to its roost! It lowers its head and watches you.`)]
       : [L('The storm cloud spins faster and faster. The snow whips sideways.'), L('Two pale eyes open in the heart of the cloud...'), L(`With a roar like a gale through a canyon, ${nm} bursts out of the storm!`)], () => {
       const m = wildMon(sp, WC_DRAGON.lv); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
-      sc.wcFight = m; sc.wcSeen = 0; sc.cameras.main.shake(400, .008); Battle.start(m);
+      sc.wcFight = m; sc.wcAt = Date.now(); sc.cameras.main.shake(400, .008); Battle.start(m);
     });
   }
   if (windCalm()) return;

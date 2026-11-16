@@ -1584,7 +1584,7 @@ const rollIV = (lo = 1) => Object.fromEntries(IV_KEYS.map(k => [k, lo + Math.flo
 const ivOf = (m, k) => { if (!m.iv) return 5; if (m.iv[k] == null && (k === 'eatk' || k === 'edef')) m.iv[k] = 1 + Math.floor(Math.random() * 10); return m.iv[k] || 5; };
 const ivMul = (m, k) => 1 + ivOf(m, k) * .01;   // each point of potential adds 1%: 1 = +1%, 10 = +10%
 const monStat = (m, k) => { const b = SPECIES[m.sp].base[k]; return Math.floor((k === 'hp' ? Math.floor(b * 2 * m.lv / 100) + m.lv + 10 : Math.floor(b * 2 * m.lv / 100) + 5) * ivMul(m, k)); };
-const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '') + (m.collar ? ' ⛓' : '');   // ⛓ a Verdance drain collar (verdance.js)   // ✦ marks a Fabled one (see fabled.js)
+const monName = m => (m.nick || SPECIES[m.sp].name) + (m.fab ? ' ✦' : '');   // ✦ marks a Fabled one (see fabled.js); Verdance-drained ones get a DRAINED chip in battle (verdance.js)
 // Puffpiper, Reefarer and Deepfarer come in two forms that share a name: a short tag tells them apart
 const formTag = sp => SPECIES[sp] && SPECIES[sp].form ? SPECIES[sp].form.replace(' Form', '') : '';
 const healAmt = (id, m) => ITEMS[id].heal ? Math.max(1, Math.ceil(monStat(m, 'hp') * ITEMS[id].heal / 100)) : 0;   // healing items restore a share of max HP
@@ -1618,6 +1618,13 @@ function refreshTeamBtn() {
 }
 
 /* ---------- team screen */
+// a Fablemon on a Verdance drain: motes of its energy drifting up and away (verdance.js sets m.collar)
+function drainFx(m) {
+  const d = document.getElementById('bdrain'); if (!d) return;
+  if (!m || !m.collar) { d.classList.add('hidden'); d.innerHTML = ''; return; }
+  d.innerHTML = Array.from({ length: 18 }, (_, i) => `<i style="left:${20 + Math.random() * 60}%;top:${35 + Math.random() * 50}%;--d:${1.6 + Math.random() * 1.4}s;--t:${-Math.random() * 3}s;--dx:${(Math.random() * 30 - 5).toFixed(0)}px"></i>`).join('');
+  d.classList.remove('hidden');
+}
 function typeChip(t) { if (SPECIES[t]) return typesOf(t).map(typeChip).join(''); return `<span class="tchip" style="background:${TYPES[t]}">${t}</span>`; }
 function hpBar(m) { const mx = monStat(m, 'hp'), v = Math.max(0, Math.min(m.hp ?? mx, mx)), pc = v / mx; return `<span class="hpwrap"><span class="hpl">HP</span><span class="hpb"><i style="width:${100 * pc}%;background:${pc > .5 ? '#5cc85a' : pc > .2 ? '#f0b02a' : '#e0503a'}"></i></span></span><span class="hpn">${v}/${mx}</span>`; }
 const badge = (sp, size = 52, m) => `<span class="mbadge" style="--tc:${TYPES[SPECIES[sp].type]};width:${size}px;height:${size}px"><img src="${m ? monPicOf(m) : monPic(sp)}"></span>`;
@@ -2121,8 +2128,9 @@ class Farm extends World {
   create() {
     this.initWorld(W, H);
     const tex = this.textures.get('objects');
-    const fr = tex.get('fence_h'); if (!tex.has('rail_h')) tex.add('rail_h', 0, fr.cutX + 7, fr.cutY, 18, fr.cutHeight);
-    const gr = tex.get('gate'); if (!tex.has('gate_mid')) tex.add('gate_mid', 0, gr.cutX + 8, gr.cutY, 16, gr.cutHeight);
+    // slices of the fence and gate art (the atlas may be the 3x one, so scale the offsets by its resolution)
+    const fr = tex.get('fence_h'), k = (fr.source && fr.source.resolution) || 1; if (!tex.has('rail_h')) { const f = tex.add('rail_h', 0, fr.cutX + 7 * k, fr.cutY, 18 * k, fr.cutHeight); if (k > 1) hdShrinkFrame(f, k); }
+    const gr = tex.get('gate'); if (!tex.has('gate_mid')) { const f = tex.add('gate_mid', 0, gr.cutX + 8 * k, gr.cutY, 16 * k, gr.cutHeight); if (k > 1) hdShrinkFrame(f, k); }
     this.makeCanvasTextures();
 
     farm = buildFarm();
@@ -3777,11 +3785,11 @@ const Battle = (() => {
     const caught = side === 'foe' && S.caught[m.sp] ? '<span title="Befriended before" style="color:#c0392b">♥</span> ' : '';
     const stc = (m.status ? `<span class="tchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '')
       + Object.entries((B.st || {})[side] || {}).filter(([, n]) => n).map(([k, n]) => `<span class="tchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k] || k}${n > 0 ? '▲' : '▼'}${Math.abs(n) > 1 ? Math.abs(n) : ''}</span>`).join('');
-    q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
+    q(side === 'me' ? 'bmebox' : 'bfoebox').innerHTML = `<div class="bn">${caught}${monName(m)} <small>Lv ${m.lv}</small></div>${typeChip(m.sp)}${m.collar ? '<span class="tchip drained">DRAINED</span>' : ''}${stc}<div class="bhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d04030'}"></i></div>${side === 'me' ? `<div class="bhpn">${v}/${mx}</div>` : ''}${xp}`;
   }
   function sprites() {
     q('bfoe').src = monPicOf(B.foe, 'front'); q('bme').src = monPicOf(B.me, 'back');
-    q('bfoe').className = 'bmon'; q('bme').className = 'bmon';
+    q('bfoe').className = 'bmon' + (B.foe.collar ? ' drained' : ''); q('bme').className = 'bmon'; drainFx(B.foe);
   }
   const anim = (id, cls, ms) => { const e = q(id); e.classList.remove(cls); void e.offsetWidth; e.classList.add(cls); return sleep(ms); };
   function menu(buttons) {
@@ -3978,7 +3986,7 @@ const Battle = (() => {
   async function foeSwitch(m, msg) {
     if (msg) await say(msg, 1100);
     B.foe = m; B.st.foe = {}; B.v.foe = {}; S.seen[m.sp] = 1;
-    q('bfoe').src = monPicOf(m, 'front'); q('bfoe').className = 'bmon'; box('foe');
+    q('bfoe').src = monPicOf(m, 'front'); q('bfoe').className = 'bmon' + (m.collar ? ' drained' : ''); drainFx(m); box('foe');
     await anim('bfoe', 'enter-foe', 500);
     if (B.T.phase2) {   // a boss's second phase: same foe back on its feet, and angrier
       for (const line of B.T.phase2) await say(line, 1700);

@@ -397,7 +397,7 @@ function vdBattle(sc, t) {
   Talk.say(lines, async () => {
     const teamMons = t.team.map(([sp, lv]) => { const m = trainerMon(sp, lv); m.collar = 1; return m; });
     await vdCollarPics(teamMons);
-    const intro = [`${boss ? vdBossName(t) : TT.label + ' ' + t.name} wants to battle!`, `${SPECIES[teamMons[0].sp].name} is wearing a drain collar! A green light blinks on its belt pack...`];
+    const intro = [`${boss ? vdBossName(t) : TT.label + ' ' + t.name} wants to battle!`, `${SPECIES[teamMons[0].sp].name} is hooked up to a Verdance drain! Its colour has faded, and its energy is drifting away...`];
     Battle.start(teamMons[0], { label: boss ? (t.title || TT.label) : TT.label, name: t.name, team: teamMons, intro, boss, smart: boss && t.s !== 'fen', heals: boss ? (t.s === 'tower' ? 2 : 1) : 0,
       prize: Math.max(...t.team.map(([, l]) => l)) * (boss ? 60 : 30), lose: boss ? 'Tch.' : pick(TT.lose),
       onWin: () => {
@@ -411,16 +411,15 @@ function vdBattle(sc, t) {
       } });
   });
 }
-// a collared Fablemon in battle: drained grey, with the collar's belt pack blinking at its side
+// a drained Fablemon in battle: its colour faded towards Verdance grey-green (the motes and glow are drainFx in game.js)
 const VD_COLLAR_PIC = {};
 async function vdCollarPics(mons) {
   for (const m of mons) {
     const src = monPicOf({ ...m, collar: 0 }, 'front'); if (VD_COLLAR_PIC[src]) continue;
     try {
       const im = await loadImg(src), c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d');
-      g.filter = 'saturate(.35) brightness(.92)'; g.drawImage(im, 0, 0); g.filter = 'none';
-      const tx = scene.textures.get('vd'), fr = tx.get('vd_collar'), w = c.width * .42, h = w * fr.cutHeight / fr.cutWidth;
-      g.drawImage(tx.getSourceImage(), fr.cutX, fr.cutY, fr.cutWidth, fr.cutHeight, c.width * .5 - w / 2, c.height * .78 - h, w, h);
+      g.filter = 'saturate(.3) brightness(.9) contrast(.95)'; g.drawImage(im, 0, 0); g.filter = 'none';
+      g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(110,140,100,.28)'; g.fillRect(0, 0, c.width, c.height); g.globalCompositeOperation = 'source-over';
       const u = c.toDataURL(); VD_COLLAR_PIC[src] = u; HD_SMOOTH.add(u);
     } catch (e) { }
   }

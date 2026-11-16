@@ -75,14 +75,15 @@ function hdPortraits() {
 /* ---- bag icons and placed farm objects (hd_world/items: i_<item> 72px icons, o_<obj> 3x pictures) ----
    Each becomes a canvas marked _hdk = 3. Canvases go into the game through textures.addCanvas, which is
    wrapped below so a marked canvas shows at a third of its size, drawn smoothly. */
+function hdShrinkFrame(f, k) {
+  const w = f.cutWidth / k, h = f.cutHeight / k;
+  f.width = f.realWidth = w; f.height = f.realHeight = h; f.halfWidth = Math.floor(w / 2); f.halfHeight = Math.floor(h / 2); f.centerX = Math.floor(w / 2); f.centerY = Math.floor(h / 2);
+  if (f.data) { f.data.sourceSize.w = f.data.spriteSourceSize.w = w; f.data.sourceSize.h = f.data.spriteSourceSize.h = h; }
+  f.updateUVs();
+}
 function hdShrinkTexture(T, k) {
   T.source[0].resolution = k;
-  for (const n of T.getFrameNames(true)) {
-    const f = T.get(n), w = f.cutWidth / k, h = f.cutHeight / k;
-    f.width = f.realWidth = w; f.height = f.realHeight = h; f.halfWidth = Math.floor(w / 2); f.halfHeight = Math.floor(h / 2); f.centerX = Math.floor(w / 2); f.centerY = Math.floor(h / 2);
-    if (f.data) { f.data.sourceSize.w = f.data.spriteSourceSize.w = w; f.data.sourceSize.h = f.data.spriteSourceSize.h = h; }
-    f.updateUVs();
-  }
+  for (const n of T.getFrameNames(true)) hdShrinkFrame(T.get(n), k);
   T.setFilter(Phaser.Textures.FilterMode.LINEAR);
 }
 (function () {

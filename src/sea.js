@@ -326,7 +326,7 @@ function whaleSetup(sc) {
   if (!on) { if (ROUTE_SIGNS[k] === '__door:cv_whale') delete ROUTE_SIGNS[k]; return; }
   ROUTE_SIGNS[k] = '__door:cv_whale'; sc.R.blocked[WHALE_AT.y * RW + WHALE_AT.x] = 1;
   monAnims(sc, 'floecalf_2');
-  const w = sc.whale = sc.add.sprite(WHALE_AT.x * T + 8, WHALE_AT.y * T + 18, 'mon_floecalf_2', 4).setOrigin(.5, 1).setScale(1.6).setDepth(WHALE_AT.y * T + 15);
+  const w = sc.whale = hdSpr(sc.add.sprite(WHALE_AT.x * T + 8, WHALE_AT.y * T + 18, 'mon_floecalf_2', 4).setOrigin(.5, 1).setScale(1.6).setDepth(WHALE_AT.y * T + 15), 'floecalf_2');
   w.play('floecalf_2_left');
   sc.tweens.add({ targets: w, y: w.y + 3, yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.inOut' });
   const ring = sc.add.ellipse(w.x, w.y - 2, 70, 16, 0xe8f8ff, .35).setDepth(1.8);
