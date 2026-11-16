@@ -92,7 +92,7 @@ function hdShrinkTexture(T, k) {
 })();
 async function hdItems() {
   // the item atlas, plus the icons in the Verdance atlas (Verdance Grow, Files, letters...)
-  for (const E of [HDW.items, HDW.vd]) { if (!E) continue;
+  for (const E of [HDW.items, HDW.vd, HDW.dishes]) { if (!E) continue;
   const img = await loadImg(E.img);
   for (const [n, r] of Object.entries(E.frames)) {
     if (E === HDW.vd && !n.startsWith('i_')) continue;
