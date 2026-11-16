@@ -1913,7 +1913,7 @@ const QUESTS = [
   { id: 'rowan', name: 'Earn the Hearth Crest from Warden Rowan', get hint() { return `Rowan is the last Warden. He'll battle once you hold the other 7 Crests (${otherCrests()}/7) and all of Smallroot is restored. His team is level 68–72.`; }, done: () => S.crests && S.crests.hearth, reward: { gold: 5000, items: { sturdy_charm: 5 } } },
 ];
 const questDone = q => !!S.quests[q.id];
-const activeQuest = () => QUESTS.find(q => !questDone(q));
+let activeQuest = () => QUESTS.find(q => !questDone(q));
 function rewardText(r) { return [r.gold ? `${r.gold}g` : '', ...Object.entries(r.items || {}).map(([id, n]) => `${n} ${ITEMS[id].name}`)].filter(Boolean).join(', '); }
 function checkQuests() {
   if (!S || !S.quests || !inv || Battle.active || $('hud').style.display !== 'block') return;

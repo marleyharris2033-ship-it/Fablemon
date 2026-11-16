@@ -106,7 +106,7 @@ The drill is being built in the city. Tell no one, least of all Gleam.
 
 – S.T.` },
 };
-const VD_MEMO_ORDER = ['survey', 'brief', 'collars', 'fenlog', 'quarry', 'brask', 'power', 'rig', 'cirro', 'taproot'];
+const VD_MEMO_ORDER = ['survey', 'glcard', 'brief', 'collars', 'fenlog', 'quarry', 'bpage1', 'bpage2', 'bpage3', 'brask', 'power', 'rig', 'valves', 'cirro', 'taproot'];
 const vdLogo = () => ICONS.logo ? `<img class="vdlogo" src="${ICONS.logo}">` : '⚙';
 const vdFileCount = () => S && S.vd ? Object.keys(S.vd.memos).length : 0;
 function openFiles(sel) {
@@ -138,7 +138,8 @@ const VD_PLACES = {
     { k: 'memo', id: 'fenlog', at: [28, 34] },
     { k: 'site', s: 'fen', at: [51, 17] }, { k: 'heart', s: 'fen', at: [48, 24] },
     { k: 'boss', id: 'vd_fen_boss', kind: 'vtech2', name: 'Pell', title: 'Site Supervisor', s: 'fen', at: [49, 18], team: vdTeam(['muddlebub', 22], ['fenfang', 23], ['logloom', 24]) },
-    { k: 'pipe', at: [47, 21] }],
+    { k: 'pipe', at: [47, 21] },
+    { k: 'pool', at: [45, 23] }, { k: 'wheel', lock: 'Heron', at: [44, 15] }, { k: 'wheel', lock: 'Eel', at: [54, 13] }, { k: 'wheel', lock: 'Otter', at: [43, 20] }],
   brookholt: [{ k: 'office', at: [33, 12] }, { k: 'board', at: [27, 9], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Verdance is investing in Brookholt's future. Drainage improvements in progress. We apologise for any disruption to the fen." }],
   crag1: [{ k: 'board', at: [20, 3], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Cragside Pass: keeping the city's lights on since last spring." }, { k: 'pipe', at: [24, 20] }, { k: 'pipe', at: [24, 22] },
     { k: 'tech', id: 'vd_crag1', kind: 'vtech', name: 'Ferris', at: [22, 12], team: vdTeam(['craglet', 28], ['clinkit', 29]) }, { k: 'stake', at: [10, 36] }],
@@ -147,7 +148,8 @@ const VD_PLACES = {
     { k: 'tech', id: 'vd_mine2', kind: 'vtech2', name: 'Petra', at: [12, 12], team: vdTeam(['rampartoad', 35], ['cindhop_2', 35]) },
     { k: 'site', s: 'mine', at: [16, 5] }, { k: 'heart', s: 'mine', at: [8, 5] },
     { k: 'boss', id: 'vd_brask', kind: 'brask', name: 'Brask', title: 'Foreman', s: 'mine', at: [13, 7], team: vdTeam(['flintburrow', 36], ['rampartoad', 37], ['clinkit_2', 37], ['craglet_2', 38]) },
-    { k: 'memo', id: 'brask', at: [5, 13] }],
+    { k: 'memo', id: 'brask', at: [5, 13] },
+    { k: 'memo', id: 'bpage1', at: [3, 24] }, { k: 'memo', id: 'bpage2', at: [18, 17] }, { k: 'memo', id: 'bpage3', at: [10, 9] }],
   quarrydown: [{ k: 'npc', id: 'vd_brask_qd', kind: 'brask', name: 'Brask', at: [14, 24], after: 'mine' }, { k: 'board', at: [30, 30], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Geological survey complete. Thank you, Quarrydown!" }, { k: 'memo', id: 'quarry', at: [40, 20] }],
   dunes: [{ k: 'board', at: [26, 14], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Coming soon: Verdance Coastal Energy Park. Powering the city with the strength of the sea." }, { k: 'stake', at: [18, 18] }, { k: 'stake', at: [34, 18] }, { k: 'memo', id: 'power', at: [44, 10] }],
   stormwatch: [{ k: 'site', s: 'rig', at: [26, 33] }, { k: 'memo', id: 'rig', at: [44, 26] }, { k: 'slick', at: [30, 40] }, { k: 'slick', at: [20, 46] }],
@@ -168,12 +170,13 @@ const VD_PLACES = {
 const VD_FOOT = { board: 3, heart: 3, office: 4, barge: 4, buoy: 1, npc: 1 }, VD_SITE_FOOT = { fen: 2, mine: 3, tower: 2, rig: 4 };   // tiles wide (blocked along the bottom row)
 const VD_ART = { stake: 'vd_stake', pipe: 'vd_pipe', memo: 'vd_memo', barge: 'vd_barge', buoy: 'vd_buoy' };
 // pipes: a run down a column uses upright pieces; otherwise a mix of plain, half-buried and valve pieces
-const it_f = o => o.f || (o.k === 'slick' ? 'vd_slick' + (o.idx % 3 + 1) : o.k === 'office' ? (vdReveal() ? 'vd_office_x' : 'vd_office') : o.k === 'pipe' ? (o.vert ? 'vd_pipe_v' : ['vd_pipe', 'vd_pipe_grass', 'vd_pipe', 'vd_pipe_valve'][o.idx % 4]) : VD_ART[o.k]);
+const it_f = o => o.f || (o.k === 'wheel' ? 'vd_pipe_valve' : o.k === 'pool' ? 'vd_slick2' : o.k === 'slick' ? 'vd_slick' + (o.idx % 3 + 1) : o.k === 'office' ? (vdReveal() ? 'vd_office_x' : 'vd_office') : o.k === 'pipe' ? (o.vert ? 'vd_pipe_v' : ['vd_pipe', 'vd_pipe_grass', 'vd_pipe', 'vd_pipe_valve'][o.idx % 4]) : VD_ART[o.k]);
 
 // is it showing today?
 function vdShows(key, it) {
   const reg = VD_REGION[key], gone = reg && vdShut(reg);
   if (it.k === 'memo') return !vd().memos[it.id] && (!it.after || vdShut(it.after));
+  if (it.k === 'pool' || it.k === 'wheel') return !vdShut('fen');   // the grey pool and the old lock wheels (vdquests.js)
   if (it.k === 'stake' || it.k === 'pipe' || it.k === 'tech' || it.k === 'slick' || it.k === 'barge') return !gone;
   if (it.k === 'npc') return vdShut(it.after);
   if (it.k === 'boss' && it.s === 'mine') return !vdShut('mine');   // Brask leaves the mine: he turns up in Quarrydown
@@ -298,11 +301,12 @@ Route.prototype.create = function () {
     if (o.k === 'board') f = vdReveal() ? 'vd_board_x' : 'vd_board';
     if (o.k === 'site') f = VD_SITES[o.s].art + (vdShut(o.s) ? '_off' : '');
     if (o.k === 'heart') f = vdShut(o.s) ? 'vd_root_on' : 'vd_root';
-    const flat = o.k === 'pipe' || o.k === 'memo' || o.k === 'slick';
+    const flat = o.k === 'pipe' || o.k === 'memo' || o.k === 'slick' || o.k === 'pool';
     const im = this.add.image(cx, flat ? o.y * T + 13 : by, 'vd', f).setOrigin(.5, flat ? .5 : 1).setDepth(flat ? 2 : o.y * T + 15);
     if (o.k === 'board' || o.k === 'site' || o.k === 'office') { im.noShadow = 1; this.tall.push(im); }
     if (o.k === 'barge') { im.setDepth(o.y * T + 13); this.tweens.add({ targets: im, y: im.y + 1.2, yoyo: true, repeat: -1, duration: 1400, ease: 'Sine.inOut' }); }
     if (o.k === 'slick') im.setAlpha(.85).setDepth(1.7);
+    if (o.k === 'pool') im.setAlpha(.9).setTint(0x9aa890).setDepth(1.7);
     if (o.k === 'memo') this.tweens.add({ targets: im, y: im.y - 1.5, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.inOut' });
     if (o.k === 'site' && !vdShut(o.s)) vdHum(this, im, o);
     if (o.k === 'heart' && vdShut(o.s)) vdGlow(this, cx, by - 10);
@@ -363,6 +367,7 @@ function vdDoor(sc, idx) {
     const S0 = VD_SITES[o.s];
     return Talk.say([vdSys(vdShut(o.s) ? `A root as thick as a barrel breaks the surface here, warm and humming softly. This is ${S0.heart}, and life is flowing through it again, back along the Rootweave towards Smallroot.` : `A root as thick as a barrel breaks the surface here. It's grey, cold and cracked. A Verdance pipe is clamped onto it like a leech. This is ${S0.heart}.`)]);
   }
+  if ((o.k === 'pool' || o.k === 'wheel') && typeof vqDoor === 'function') return vqDoor(sc, o);
   if (o.k === 'site') return vdSiteTalk(sc, o);
   if (o.k === 'office') return Talk.say([vdSys(vdReveal() ? "The Verdance Community Office is boarded up. Someone has chalked on the planks: 'Partnership ended.'" : "The Verdance Community Office. Through the glass: potted plants, a smiling receptionist, and a pile of leaflets titled 'Your Fen, Our Future'."),
     ...(vdReveal() ? [] : [vdSys("A poster in the window reads: 'Drainage improvements in Sluice Fen. Thank you for your patience!'")])]);
@@ -393,7 +398,8 @@ function vdBattle(sc, t) {
   const TT = TRAINER_TYPES[t.kind], boss = t.vd === 'boss', L = VD_BOSS_LINES[t.s] || {};
   const who = boss ? vdBossName(t) : `${TT.label} ${t.name}`, pic = f => trainerPic(t.kind, f);
   sc.paused = true;
-  const lines = boss ? L.meet.map(x => ({ who: 'trainer', name: who, img: pic(0), t: x })) : [{ who: 'trainer', name: who, img: pic(0), t: pick(TT.challenge) }];
+  const lines = boss ? (t.meetLines || L.meet).map(x => ({ who: 'trainer', name: who, img: pic(0), t: x })) : [{ who: 'trainer', name: who, img: pic(0), t: pick(TT.challenge) }];
+  t.meetLines = null;
   Talk.say(lines, async () => {
     const teamMons = t.team.map(([sp, lv]) => { const m = trainerMon(sp, lv); m.collar = 1; return m; });
     await vdCollarPics(teamMons);
@@ -433,6 +439,7 @@ Route.prototype.talkTrainer = function (t) {
   if (!t.vd) return _vdTalkTB.call(this, t);
   if (t.vd === 'npc') { const p0 = this.p; t.spr.setFrame(DIRS.indexOf(p0.x > t.cx ? 'right' : p0.x < t.cx ? 'left' : p0.y > t.cy ? 'down' : 'up') * 4); const n = vd().braskN = (vd().braskN || 0) + 1; return Talk.say([{ who: 'trainer', name: 'Brask', img: trainerPic('brask', n % 2), t: VD_BRASK_QD[(n - 1) % VD_BRASK_QD.length] }]); }
   const p = this.p; t.dir = p.x > t.cx ? 'right' : p.x < t.cx ? 'left' : p.y > t.cy ? 'down' : 'up'; t.spr.setFrame(DIRS.indexOf(t.dir) * 4);
+  if (t.vd === 'boss' && typeof vqBossTalk === 'function' && vqBossTalk(this, t)) return;   // the quest lines (vdquests.js) can hold a boss back, or have more to say
   if (!beatTrainer(t.id)) { if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400); return this.startTrainerBattle(t); }
   const who = t.vd === 'boss' ? vdBossName(t) : `${TRAINER_TYPES[t.kind].label} ${t.name}`;
   Talk.say([{ who: 'trainer', name: who, img: trainerPic(t.kind, 1), t: t.vd === 'boss' ? (vdShut(t.s) ? VD_BOSS_LINES[t.s].after : VD_BOSS_LINES[t.s].win[1]) : pick(TRAINER_TYPES[t.kind].after) }]);
@@ -449,6 +456,7 @@ function vdSiteTalk(sc, o) {
     const desc = { fen: "A Verdance siphon, hammered into the fen. Its pipe runs down into the black water towards a great grey root. A sign: AUTHORISED PERSONNEL ONLY.", mine: "A drill as tall as a house, screaming into the rock. The crystals on the walls flicker with every turn of its bit.", rig: "An offshore rig, all steel legs and floodlights, its drill thrumming down into the sea. Somewhere below, something vast groans.", tower: "A steel tower bristling with vanes, pulling the storm cloud round and round the summit like water down a plughole." }[o.s];
     return Talk.say([vdSys(desc), vdSys(`${vdBossName(boss)} is standing guard. You'll have to get past them first.`)]);
   }
+  if (typeof vqSiteTalk === 'function' && vqSiteTalk(sc, o)) return;   // ladders, valves and override keys (vdquests.js)
   if (o.s === 'rig' && !beatTrainer('vd_rigchief')) return vdRigChief(sc, o);
   openModal(S0.name, `<p>Shut down the ${S0.name}? The pipe into ${S0.heart} will close for good.</p><div class="row"><button class="btn gold" data-a="yes">Shut it down</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
     closeModal(); if (a === 'yes') vdShutDown(sc, o);
