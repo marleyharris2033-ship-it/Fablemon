@@ -26,6 +26,8 @@ TRAINER_TYPES.ash = { label: 'Dr', challenge: ['Fascinating.'], lose: ['Noted.']
 TRAINER_TYPES.pell = { label: 'Site Supervisor', challenge: ['Clear off!'], lose: ['My bonus...'], after: ['Go away.'] };
 TRAINER_TYPES.dunmore = { label: 'Rig Chief', challenge: ['Ahoy!'], lose: ['Blast it!'], after: ['Hmph.'] };
 TRAINER_TYPES.thorne = { label: 'CEO', challenge: ['Shall we?'], lose: ['Interesting.'], after: ['Someone has to keep the lights on.'] };
+TRAINER_TYPES.alder = { label: 'Warden', challenge: ['The forest is watching. Show it what you are.'], lose: ['Hm. The herds would follow you.'], after: ['Walk softly in my wood.'] };
+TRAINER_TYPES.isolde = { label: 'Warden', challenge: ['Let us see what your light shows in the dark.'], lose: ['There. Your lantern burns true.'], after: ['Mind the shadows on the way home. They are friendly, mostly.'] };
 TRAINER_TYPES.vale = { label: 'Director', challenge: ['Hello, little farmer.'], lose: ['Mm.'], after: ['We will talk again.'] };
 
 /* ---------- the sites, and what freeing each one means */
