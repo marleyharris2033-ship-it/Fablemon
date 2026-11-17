@@ -9,6 +9,12 @@
 const roamOn = () => opts.roam !== false;
 // personality: some species are shy, some bold; the night hunters are bold after dark
 const ROAM_BOLD = new Set(['snarlwisp', 'murkhowl', 'gloamfang', 'tanglebruin', 'ursylvane', 'stumpstag', 'ramruff', 'ramruff_2', 'craglet_2', 'flintuck', 'duskwick', 'inkwick', 'hollowcub']);
+// a rare species: under 8% of this route's table right now
+function roamRare(sp, extra) {
+  const night = S.time >= 1140 || S.time < 360, tab = [...(RC ? RC.enc : ENCOUNTERS)[night ? 'night' : 'day'], ...(extra || [])];
+  const tot = tab.reduce((a, [, w]) => a + w, 0), w = tab.filter(([s]) => s === sp).reduce((a, [, w]) => a + w, 0);
+  return tot > 0 && w / tot < .08;
+}
 const ROAM_SHY = new Set(['sprigfawn', 'tappit', 'heathfoal', 'simmerkit', 'pebblouse']);
 function roamMood(m) {
   if (m.fab) return 'shy';   // Fabled ones are skittish: you have to sneak up on them
@@ -25,7 +31,7 @@ Route.prototype.create = function () {
   if (!this.roamOn) return;
   const tiles = []; for (let i = 0; i < RW * RH; i++) if (this.R.grass[i] >= 0 && !this.R.blocked[i]) tiles.push(i);
   if (tiles.length < 6) { this.roamOn = false; return; }
-  this.roamTiles = tiles; this.roamMax = Math.max(2, Math.min(9, Math.round(tiles.length / 28)));
+  this.roamTiles = tiles; this.roamMax = Math.max(4, Math.min(16, Math.round(tiles.length / 13)));   // 18 Nov: busier grass
   for (let k = 0; k < this.roamMax; k++) this.roamSpawn(true);
 };
 Object.assign(Route.prototype, {
@@ -35,7 +41,9 @@ Object.assign(Route.prototype, {
     for (let tries = 0; tries < 20; tries++) {
       const i = this.roamTiles[Math.floor(Math.random() * this.roamTiles.length)], x = i % RW, y = (i / RW) | 0;
       if (!this.roamFree(x, y) || (this.p && Math.abs(this.p.x - x) + Math.abs(this.p.y - y) < 6)) continue;
-      const z = this.R.grass[i], [, , , , a, b, tag] = GRASS_ZONES[z], m = rollWild(a, b, tag && RC[tag]);
+      const z = this.R.grass[i], [, , , , a, b, tag] = GRASS_ZONES[z]; let m = rollWild(a, b, tag && RC[tag]);
+      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => roamRare(q.m.sp, tag && RC[tag]))) m = rollWild(a, b, tag && RC[tag]);   // one rare one out at a time keeps them special
+      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => roamRare(q.m.sp, tag && RC[tag]))) continue;
       const wid = walkId(this, m); if (!this.textures.exists('mon_' + wid)) continue;
       monAnims(this, wid);
       const spr = hdSpr(this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1), wid);
@@ -47,7 +55,7 @@ Object.assign(Route.prototype, {
     }
   },
   roamDraw(r) {
-    r.spr.setDepth(r.spr.y - 1); if (r.spr.shadowImg) r.spr.shadowImg.setPosition(r.spr.x, r.spr.y - 1);
+    r.spr.setDepth(r.spr.y + 1.2); if (r.spr.shadowImg) r.spr.shadowImg.setPosition(r.spr.x, r.spr.y - 1);
     if (r.glint) r.glint.setPosition(r.spr.x, r.spr.y - r.spr.displayHeight * .75);
   },
   roamRemove(r) { this.roam = this.roam.filter(q => q !== r); if (r.glint) r.glint.destroy(); if (r.spr.shadowImg) r.spr.shadowImg.destroy(); r.spr.destroy(); },
@@ -95,11 +103,15 @@ Route.prototype.frameHook = function (dt) {
       if (team().some(m => m.hp > 0)) { this.roamEngage(r); return out; }
     }
     if (r.moving) continue;
+    if (!r.born) r.born = this.time.now;
+    if (this.time.now - r.born > 45000 + (r.x * 7919 + r.y * 104729) % 30000 && !r.alert && Math.abs(r.x - this.p.x) + Math.abs(r.y - this.p.y) > 7) {   // it wanders off; another turns up
+      r.moving = true; this.tweens.add({ targets: r.spr, alpha: 0, duration: 700, onComplete: () => this.roamRemove(r) }); continue;
+    }
     r.t -= sec * (r.alert ? 2.2 : 1); if (r.t > 0) continue;
     r.t = r.mood === 'bold' && r.alert ? .35 : .8 + Math.random() * 1.6;
     this.roamThink(r);
   }
-  if (this.roam.length < this.roamMax && this.time.now > (this.roamNext || 0)) { this.roamSpawn(false); this.roamNext = this.time.now + 6000 + Math.random() * 8000; }
+  if (this.roam.length < this.roamMax && this.time.now > (this.roamNext || 0)) { this.roamSpawn(false); this.roamNext = this.time.now + 2000 + Math.random() * 3000; }
   return out;
 };
 // no random jump-outs while the Fablemon are out where you can see them (the sea routes keep theirs)
