@@ -340,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261117-193420">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261117-193420">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261117-193420">
+<link rel="manifest" href="manifest.webmanifest?v=20261117-194224">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261117-194224">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261117-194224">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-193420').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-194224').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -3852,21 +3852,20 @@ function buildTown() {
   const pave = new Uint8Array(TW * TH), blocked = new Uint8Array(TW * TH);
   const rect = (x0, y0, x1, y1, v) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 0 && y >= 0 && x < TW && y < TH) pave[y * TW + x] = v; };
   const block = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 0 && y >= 0 && x < TW && y < TH) blocked[y * TW + x] = 1; };
-  rect(16, 13, 56, 36, 1);                       // the square
+  // all small cobbles (17 Nov), and every street, the edges of the square and every doorstep path 3 tiles wide
+  rect(14, 13, 58, 38, 1);                       // the square, with a 3-wide street all the way round its lawns
   const ell = (cx, cy, rx, ry, v) => { for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1) pave[y * TW + x] = v; };
   ell(36, 22.5, 5.6, 4.2, 0);                     // grass around the Hearthroot
-  ell(36, 32, 4.4, 3, 3);                         // river stones round the fountain
-  for (const [x0, y0, x1, y1] of [[17, 17, 25, 21], [47, 17, 55, 21], [17, 29, 25, 35], [47, 29, 55, 35]]) rect(x0, y0, x1, y1, 0);   // lawns
-  // every street and doorstep path is 3 tiles wide
-  rect(0, 23, 15, 25, 2);                        // road to the farm
-  rect(8, 12, 16, 14, 2); rect(8, 15, 10, 15, 0);  // old cottage
-  rect(8, 21, 10, 22, 2);                        // Bramble's doorstep
-  rect(57, 13, 63, 15, 2);                       // timber house
-  rect(42, 10, 44, 12, 2);                       // up to the Derby arch
-  rect(57, 25, 69, 27, 2);                       // station
-  rect(57, 34, 67, 36, 2);                       // long cottage
-  rect(4, 43, 66, 45, 2);                        // south street
-  for (const x of [15, 31, 48]) rect(x, 37, x + 2, 42, 2);
+  for (const [x0, y0, x1, y1] of [[17, 16, 25, 21], [47, 16, 55, 21], [17, 29, 25, 35], [47, 29, 55, 35]]) rect(x0, y0, x1, y1, 0);   // lawns
+  rect(0, 23, 13, 25, 1);                        // road to the farm
+  rect(8, 13, 13, 15, 1); rect(8, 12, 10, 12, 1);   // old cottage, lined up with the top of the square
+  rect(8, 21, 10, 22, 1);                        // Bramble's doorstep
+  rect(59, 13, 63, 15, 1);                       // timber house
+  rect(42, 10, 44, 12, 1);                       // up to the Derby arch
+  rect(59, 25, 69, 27, 1);                       // station
+  rect(59, 34, 67, 36, 1);                       // long cottage
+  rect(4, 43, 66, 45, 1);                        // south street
+  for (const x of [15, 31, 48]) rect(x, 39, x + 2, 42, 1);
   // border woods
   const border = [];
   for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) {
@@ -3899,8 +3898,8 @@ function buildTown() {
     ['bush_round', 68, 16], ['tree_oak', 65, 40], ['tree_pine', 68, 38], ['bush_round', 64, 37], ['tree_pine', 19, 40],
     ['tree_apple', 10, 47], ['tree_oak', 36, 47], ['tree_pine', 64, 47], ['bush_wide', 47, 47],
   ];
-  const lamps = [[25, 21], [47, 21], [25, 29], [47, 29], [32, 24], [40, 24], [5, 22], [5, 26], [13, 22], [13, 26], [58, 24], [61, 28], [68, 28],
-    [30, 12], [45, 12], [57, 16], [20, 46], [44, 46], [52, 46]];
+  const lamps = [[25, 21], [47, 21], [25, 29], [47, 29], [32, 24], [40, 24], [5, 22], [5, 26], [12, 22], [12, 26], [59, 21], [61, 28], [68, 28],
+    [30, 12], [45, 12], [60, 16], [20, 46], [44, 46], [52, 46]];
   const approach = new Set(Object.values(BUILDINGS).map(b => (b.cx + b.door) + ',' + (b.by + 1)));
   const claim = (x, y, what) => {
     const i = y * TW + x;
@@ -11917,8 +11916,11 @@ class GroundPainter {
       if (li === 0) uni = k0; else if (k0 != null) uni = k0;
     }
     if (simple) {
-      const src = this.texOf(uni), P = src.P, pt = P / GTS, sx = ((wx % pt) + pt) % pt * GTS, sy = ((wy % pt) + pt) % pt * GTS;
-      for (let r = 0; r < GTS; r++) { const so = ((sy + r) * P + sx) * 4; d.set(src.subarray(so, so + GTS * 4), ((oy + r) * W + ox) * 4); }
+      const src = this.texOf(uni), P = src.P, sx = (wx * GTS) % P, sy = (wy * GTS) % P;
+      if (sx + GTS <= P && sy + GTS <= P) for (let r = 0; r < GTS; r++) { const so = ((sy + r) * P + sx) * 4; d.set(src.subarray(so, so + GTS * 4), ((oy + r) * W + ox) * 4); }
+      else for (let r = 0; r < GTS; r++) for (let c = 0; c < GTS; c++) {   // the tile straddles the texture's edge: wrap (a period that isn't a whole number of tiles left black strips)
+        const so = (((sy + r) % P) * P + (sx + c) % P) * 4, o = ((oy + r) * W + ox + c) * 4; d[o] = src[so]; d[o + 1] = src[so + 1]; d[o + 2] = src[so + 2]; d[o + 3] = 255;
+      }
       if (wat && GROUND_KINDS[uni] && GROUND_KINDS[uni].bank) { this.waterTile(wx, wy, wat, W, ox, oy, null); return true; }
       return false;
     }

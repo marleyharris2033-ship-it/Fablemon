@@ -140,8 +140,11 @@ class GroundPainter {
       if (li === 0) uni = k0; else if (k0 != null) uni = k0;
     }
     if (simple) {
-      const src = this.texOf(uni), P = src.P, pt = P / GTS, sx = ((wx % pt) + pt) % pt * GTS, sy = ((wy % pt) + pt) % pt * GTS;
-      for (let r = 0; r < GTS; r++) { const so = ((sy + r) * P + sx) * 4; d.set(src.subarray(so, so + GTS * 4), ((oy + r) * W + ox) * 4); }
+      const src = this.texOf(uni), P = src.P, sx = (wx * GTS) % P, sy = (wy * GTS) % P;
+      if (sx + GTS <= P && sy + GTS <= P) for (let r = 0; r < GTS; r++) { const so = ((sy + r) * P + sx) * 4; d.set(src.subarray(so, so + GTS * 4), ((oy + r) * W + ox) * 4); }
+      else for (let r = 0; r < GTS; r++) for (let c = 0; c < GTS; c++) {   // the tile straddles the texture's edge: wrap (a period that isn't a whole number of tiles left black strips)
+        const so = (((sy + r) % P) * P + (sx + c) % P) * 4, o = ((oy + r) * W + ox + c) * 4; d[o] = src[so]; d[o + 1] = src[so + 1]; d[o + 2] = src[so + 2]; d[o + 3] = 255;
+      }
       if (wat && GROUND_KINDS[uni] && GROUND_KINDS[uni].bank) { this.waterTile(wx, wy, wat, W, ox, oy, null); return true; }
       return false;
     }
