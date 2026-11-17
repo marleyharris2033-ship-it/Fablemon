@@ -1004,7 +1004,7 @@ function openSettings(back) {
     if (a === 'ctledit') { closeModal(); return ctlEdit(true); }
     if (a === 'intro') { closeModal(); return playIntro('Farmer', () => { $('title').style.display = 'flex'; }); }
     handleSetting(a, d, el);
-    if (['ctl', 'auto', 'bspeed'].includes(a)) $('mBody').innerHTML = render();
+    if (['ctl', 'auto', 'bspeed', 'roam', 'action'].includes(a)) $('mBody').innerHTML = render();
   });
 }
 function handleSetting(a, d, el) {
@@ -4093,8 +4093,13 @@ const Battle = (() => {
     const b = a >= 255 ? 65536 : 1048560 / Math.sqrt(Math.sqrt(16711680 / a));
     let shakes = 0; while (shakes < 4 && Math.random() * 65536 < b) shakes++;
     for (let i = 0; i < Math.min(3, shakes); i++) { c.className = 'throw sit'; void c.offsetWidth; c.className = 'throw sit wobble'; Sound.play('wobble'); await sleep(750); }
-    if (shakes >= 4) {
-      Sound.play('gotcha'); c.className = 'throw sit glow';
+    if (shakes >= 4) { Sound.play('gotcha'); c.className = 'throw sit glow'; return keepCaught(); }
+    c.className = 'hidden'; q('bfoe').classList.remove('absorb'); Sound.play('error');
+    await say(['Oh no! It broke free!', 'Aww! It almost chose you!', 'So close! It wriggled out!', 'Argh! Nearly had it!'][Math.min(3, shakes)], 1300);
+    return false;
+  }
+  // a caught wild Fablemon joins the team, or goes home if the team is full (also used by the action battles)
+  async function keepCaught() {
       await say(`Gotcha! ${B.foe.fab ? 'The Fabled ' : ''}${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
       const m = newMon(B.foe.sp, B.foe.lv); m.iv = { ...B.foe.iv }; m.hp = Math.min(B.foe.hp, monStat(m, 'hp')); m.moves = B.foe.moves.slice(); m.xp = B.foe.xp; if (B.foe.fab) { m.fab = 1; fabNote(m.sp); }
       S.caught[m.sp] = 1; S.flags.catches = (S.flags.catches || 0) + 1;
@@ -4110,11 +4115,7 @@ const Battle = (() => {
       S.mons.splice(pos, 0, m); refreshTeamBtn();
       await say(`${monName(out)} went to ${home}, and ${nm} joined your team!`, 2000);
       return true;
-    }
-    c.className = 'hidden'; q('bfoe').classList.remove('absorb'); Sound.play('error');
-    await say(['Oh no! It broke free!', 'Aww! It almost chose you!', 'So close! It wriggled out!', 'Argh! Nearly had it!'][Math.min(3, shakes)], 1300);
-    return false;
-  }
+      }
   async function blackout() {
     await say(`You have no Fablemon left that can battle...`, 1600);
     await say('You hurry home with your team to rest.', 1600);
@@ -4140,6 +4141,7 @@ const Battle = (() => {
     }
   }
   function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); if (scene.p) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; } refreshTeamBtn(); updateHUD(); Sound.music(true); setTimeout(autoSave, 50); }
+  const battleBg = () => scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges|highmoor|windcrown)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow;
   const foeLabel = () => B.wild ? 'The wild ' : 'The opposing ';
   async function run(foe, T) {
     const first = team().find(m => m.hp > 0);
@@ -4147,7 +4149,7 @@ const Battle = (() => {
     Sound.hushRain(true); Sound.theme('battle');
     S.seen[foe.sp] = 1;
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges|highmoor|windcrown)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow})`;
+    q('bstage').style.backgroundImage = `url(${battleBg()})`;
     q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
     q('bfoe').classList.add('enter-foe'); q('bme').classList.add('enter-me');
@@ -4215,7 +4217,20 @@ const Battle = (() => {
     await evolveAll();
     finish();
   }
-  return { start(foe, T) { Sound.play('encounter'); const f = $('flash'); f.style.opacity = .9; setTimeout(() => f.style.opacity = 0, 140); setTimeout(() => run(foe, T), 220); }, get active() { return !!B; } };
+  async function resolveRT(foe, out, used) {
+    const alive = used.map(u => S.mons.find(m => m.uid === u)).filter(m => m && m.hp > 0);
+    const me = alive[alive.length - 1] || team().find(m => m.hp > 0) || team()[0];
+    B = { foe, me, wild: true, T: null, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
+    if (scene) scene.paused = true;
+    q('bstage').style.backgroundImage = `url(${battleBg()})`; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
+    sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
+    if (out === 'lose') return blackout();
+    if (out === 'caught') { q('bfoe').style.visibility = 'hidden'; q('bcharm').src = iconFor('root_charm'); q('bcharm').className = 'throw sit glow'; await keepCaught(); q('bfoe').style.visibility = ''; return finish(); }
+    q('bfoe').classList.add('faint'); Sound.theme('none'); Sound.victory();
+    await say(`The wild ${SPECIES[foe.sp].name} fainted!`, 1100);
+    await gainXP(); await evolveAll(); q('bfoe').classList.remove('faint'); finish();
+  }
+  return { resolveRT, start(foe, T) { Sound.play('encounter'); const f = $('flash'); f.style.opacity = .9; setTimeout(() => f.style.opacity = 0, 140); setTimeout(() => run(foe, T), 220); }, get active() { return !!B; } };
 })();
 
 /* ---------- the route's encounter tables */
@@ -4715,7 +4730,7 @@ class Route extends World {
     }
     const i = y * RW + x, z = this.R.grass[i];
     if (z >= 0) {
-      const g = this.grassSpr[i]; if (g) { this.tweens.add({ targets: g, scaleY: .8, yoyo: true, duration: 90 }); this.tweens.add({ targets: g, scaleX: { from: 1.15, to: 1 }, duration: 260, ease: 'Back.out' }); for (let k = 0; k < 3; k++) { const leaf = this.add.rectangle(x * T + 4 + Math.random() * 8, y * T + 8, 2, 1, RC.bog ? 0x8a9a4a : 0x6bb24a).setDepth(y * T + 16); this.tweens.add({ targets: leaf, x: leaf.x + (Math.random() - .5) * 14, y: leaf.y - 4 - Math.random() * 6, alpha: 0, duration: 420 + Math.random() * 200, ease: 'Quad.out', onComplete: () => leaf.destroy() }); } }
+      const g = this.grassSpr[i]; if (g) { const gx0 = g.baseSX || (g.baseSX = g.scaleX), gy0 = g.baseSY || (g.baseSY = g.scaleY); this.tweens.add({ targets: g, scaleY: gy0 * .8, yoyo: true, duration: 90 }); this.tweens.add({ targets: g, scaleX: { from: gx0 * 1.15, to: gx0 }, duration: 260, ease: 'Back.out' }); for (let k = 0; k < 3; k++) { const leaf = this.add.rectangle(x * T + 4 + Math.random() * 8, y * T + 8, 2, 1, RC.bog ? 0x8a9a4a : 0x6bb24a).setDepth(y * T + 16); this.tweens.add({ targets: leaf, x: leaf.x + (Math.random() - .5) * 14, y: leaf.y - 4 - Math.random() * 6, alpha: 0, duration: 420 + Math.random() * 200, ease: 'Quad.out', onComplete: () => leaf.destroy() }); } }
       if (!this.boatSpr) Sound.play('grass');
       if (--this.stepsSafe <= 0 && Math.random() < vdEncOdds(this) / 9 && team().some(m => m.hp > 0)) {
         this.stepsSafe = 3; this.p.path = []; this.p.pending = null;
