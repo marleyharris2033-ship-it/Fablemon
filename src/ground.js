@@ -298,7 +298,8 @@ function asciiKind(mode, k) {
   if (mode === 'moor') { if (k === '#' || k === 'C') return 'rock'; if (RC.snow) return 'snow'; return k === ',' || k === 'H' ? 'dirt' : 'heather'; }
   return k === '#' ? 'rock' : k === ',' ? 'slab' : zone ? 'grass' : 'dirt';
 }
-for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['moorGround', 'moor']]) {
+// the crags and Quarrydown keep their own ground: the user preferred it (17 Nov), until crag-specific painted textures arrive
+for (const [name, mode] of [['beachGround', 'beach'], ['moorGround', 'moor']]) {
   const orig = window[name] || eval(name);
   const wrapped = function (sc, R) {
     let P = null;
