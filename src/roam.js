@@ -64,7 +64,7 @@ Object.assign(Route.prototype, {
     r.x = nx; r.y = ny; r.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up'; r.moving = true;
     r.spr.anims.play(`${r.wid}_${r.dir}`, true);
     const dur = r.mood === 'bold' && r.alert ? 260 : 420;
-    this.tweens.add({ targets: r.spr, x: nx * T + 8, y: ny * T + 15, duration: dur, onUpdate: () => this.roamDraw(r), onComplete: () => { r.moving = false; r.spr.anims.stop(); r.spr.setFrame(DIRS.indexOf(r.dir) * 4); } });
+    this.tweens.add({ targets: r.spr, x: nx * T + 8, y: ny * T + 15, duration: dur, onUpdate: () => { if (r.spr.active) this.roamDraw(r); }, onComplete: () => { if (!r.spr.active) return; r.moving = false; r.spr.anims.stop(); r.spr.setFrame(DIRS.indexOf(r.dir) * 4); } });
     return true;
   },
   roamThink(r) {
@@ -85,9 +85,9 @@ Object.assign(Route.prototype, {
   },
   roamEngage(r) {
     if (this.paused || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) return;
-    this.p.path = []; this.p.pending = null; this.roamRemove(r);
+    this.p.path = []; this.p.pending = null; const at = { x: r.spr.x, y: r.spr.y }; this.roamRemove(r);
     this.roamNext = this.time.now + 9000 + Math.random() * 9000;
-    if (opts.action !== false && typeof RTB !== 'undefined') RTB.start(this, r.m); else Battle.start(r.m);
+    if (opts.action !== false && typeof RTB !== 'undefined') RTB.start(this, r.m, at); else Battle.start(r.m);
   },
 });
 // the roamers think each frame; touching one starts the battle
@@ -95,8 +95,12 @@ const _roamFrame = Route.prototype.frameHook;
 Route.prototype.frameHook = function (dt) {
   const out = _roamFrame ? _roamFrame.call(this, dt) : undefined;
   if (!this.roamOn) return out;
-  if (this.paused || this.sleeping || !this.p || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) { this.roamCalm = this.time.now + 2500; this.roamSettle = this.time.now + 9000; for (const r of this.roam || []) r.alert = 0; return out; }   // a breather after every battle
+  if (this.paused || this.sleeping || !this.p || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) { this.roamCalm = this.time.now + 2500; this.roamSettle = this.time.now + 9000; this.roamBusy = 1; for (const r of this.roam || []) r.alert = 0; return out; }   // a breather after every battle
   const sec = dt || .016;   // frameHook gets seconds
+  if (this.roamBusy) {   // the fight's over: anything close by scatters from the commotion
+    this.roamBusy = 0;
+    for (const r of this.roam.slice()) if (Math.abs(r.x - this.p.x) + Math.abs(r.y - this.p.y) <= 3) { r.moving = true; this.tweens.add({ targets: r.spr, alpha: 0, duration: 400, onComplete: () => this.roamRemove(r) }); }
+  }
   if (this.time.now < (this.roamCalm || 0)) return out;
   for (const r of this.roam.slice()) {
     if (Math.abs(r.x - this.p.x) + Math.abs(r.y - this.p.y) <= (r.moving ? 0 : 1) && Math.abs(r.spr.x - (this.p.x * T + 8)) + Math.abs(r.spr.y - (this.p.y * T + 15)) < 20) {

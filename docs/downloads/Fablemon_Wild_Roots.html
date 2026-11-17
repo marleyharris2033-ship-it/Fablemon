@@ -15206,7 +15206,7 @@ Object.assign(Route.prototype, {
     r.x = nx; r.y = ny; r.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up'; r.moving = true;
     r.spr.anims.play(`${r.wid}_${r.dir}`, true);
     const dur = r.mood === 'bold' && r.alert ? 260 : 420;
-    this.tweens.add({ targets: r.spr, x: nx * T + 8, y: ny * T + 15, duration: dur, onUpdate: () => this.roamDraw(r), onComplete: () => { r.moving = false; r.spr.anims.stop(); r.spr.setFrame(DIRS.indexOf(r.dir) * 4); } });
+    this.tweens.add({ targets: r.spr, x: nx * T + 8, y: ny * T + 15, duration: dur, onUpdate: () => { if (r.spr.active) this.roamDraw(r); }, onComplete: () => { if (!r.spr.active) return; r.moving = false; r.spr.anims.stop(); r.spr.setFrame(DIRS.indexOf(r.dir) * 4); } });
     return true;
   },
   roamThink(r) {
@@ -15227,9 +15227,9 @@ Object.assign(Route.prototype, {
   },
   roamEngage(r) {
     if (this.paused || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) return;
-    this.p.path = []; this.p.pending = null; this.roamRemove(r);
+    this.p.path = []; this.p.pending = null; const at = { x: r.spr.x, y: r.spr.y }; this.roamRemove(r);
     this.roamNext = this.time.now + 9000 + Math.random() * 9000;
-    if (opts.action !== false && typeof RTB !== 'undefined') RTB.start(this, r.m); else Battle.start(r.m);
+    if (opts.action !== false && typeof RTB !== 'undefined') RTB.start(this, r.m, at); else Battle.start(r.m);
   },
 });
 // the roamers think each frame; touching one starts the battle
@@ -15237,8 +15237,12 @@ const _roamFrame = Route.prototype.frameHook;
 Route.prototype.frameHook = function (dt) {
   const out = _roamFrame ? _roamFrame.call(this, dt) : undefined;
   if (!this.roamOn) return out;
-  if (this.paused || this.sleeping || !this.p || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) { this.roamCalm = this.time.now + 2500; this.roamSettle = this.time.now + 9000; for (const r of this.roam || []) r.alert = 0; return out; }   // a breather after every battle
+  if (this.paused || this.sleeping || !this.p || Battle.active || (typeof RTB !== 'undefined' && RTB.active)) { this.roamCalm = this.time.now + 2500; this.roamSettle = this.time.now + 9000; this.roamBusy = 1; for (const r of this.roam || []) r.alert = 0; return out; }   // a breather after every battle
   const sec = dt || .016;   // frameHook gets seconds
+  if (this.roamBusy) {   // the fight's over: anything close by scatters from the commotion
+    this.roamBusy = 0;
+    for (const r of this.roam.slice()) if (Math.abs(r.x - this.p.x) + Math.abs(r.y - this.p.y) <= 3) { r.moving = true; this.tweens.add({ targets: r.spr, alpha: 0, duration: 400, onComplete: () => this.roamRemove(r) }); }
+  }
   if (this.time.now < (this.roamCalm || 0)) return out;
   for (const r of this.roam.slice()) {
     if (Math.abs(r.x - this.p.x) + Math.abs(r.y - this.p.y) <= (r.moving ? 0 : 1) && Math.abs(r.spr.x - (this.p.x * T + 8)) + Math.abs(r.spr.y - (this.p.y * T + 15)) < 20) {
@@ -15366,7 +15370,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     return { m, side, wid, spr, sh, x, y, dir: side === 'me' ? 'up' : 'down', cd: {}, stg: {}, dodgeT: 0, iframe: 0, stun: 0, protect: 0, dotT: 2, lunge: null, ai: { strafe: Math.random() < .5 ? 1 : -1, t: 0, dodgeT: 0, think: 0 }, r: Math.max(7, spr.displayWidth * .32) };
   }
   function place(f) {
-    f.spr.setPosition(Math.round(f.x), Math.round(f.y)); f.spr.setDepth(f.y); f.sh.setPosition(f.x, f.y - 1);
+    f.spr.setPosition(Math.round(f.x), Math.round(f.y)); f.spr.setDepth(f.y + 24);   // in a fight they stand clear of the long grass in front, so you can always see them f.sh.setPosition(f.x, f.y - 1);
     if (f.ring) f.ring.setPosition(f.x, f.y - f.spr.displayHeight * .45);
   }
   function face(f, dx, dy, moving) {
@@ -15561,34 +15565,71 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     return [mx, my];
   }
 
-  // ---------- the arena scene
-  class Arena extends Phaser.Scene {
-    constructor() { super(ARENA_KEY); }
-    create(data) {
-      const from = data.from, zoom = from.cameras.main.zoom, cw = this.scale.width / zoom, ch = this.scale.height / zoom;
-      const AW = Math.ceil(cw / T) + 2, AH = Math.ceil(ch / T) + 2;
-      st.sc = this; st.W = AW * T; st.H = AH * T;
-      this.cameras.main.setZoom(zoom).setBackgroundColor('#1d2b1d').centerOn(st.W / 2, st.H / 2);
-      const px = (typeof DPR === 'function' ? DPR() : 1) / zoom, L = st.W / 2 - cw / 2, Tp = st.H / 2 - ch / 2;   // CSS px -> world px
-      st.B = { x0: L + 14, x1: L + cw - 14, y0: Tp + (76 + 24) * px, y1: Tp + ch - (196 + 8) * px };
-      if (st.B.y1 - st.B.y0 < 120) st.B.y1 = st.B.y0 + 120;
-      // the ground: this route's own painted ground, ringed with its long grass
-      const region = egrassRegion(from), pal = { meadow: { floor: 'grass', wild: 'grass' }, forest: { floor: 'forest_floor', wild: 'forest_floor_grass' }, crag: { floor: 'crag_dirt', wild: 'crag_dirt_grass' }, quarry: { floor: 'quarry_dust@soft', wild: 'quarry_dust_grass@soft' }, beach: { floor: 'sand', wild: 'grass' }, moor: { floor: 'heather', wild: 'heather' }, snow: { floor: 'snow', wild: 'snow' } }[region] || { floor: 'grass', wild: 'grass' };
-      const bog = RC.bog;
-      try { groundFromCells(this, AW, AH, (x, y) => { const cx = x * T + 8, cy = y * T + 8; return cx < st.B.x0 - 6 || cx > st.B.x1 + 6 || cy < st.B.y0 - 20 || cy > st.B.y1 + 10 ? 'wild' : 'floor'; }, bog ? { floor: 'moss@dull', wild: 'moss@dull' } : pal); } catch (e) { this.add.rectangle(0, 0, st.W, st.H, 0x5a8a3a).setOrigin(0); }
-      if (EGRASS_IMG) { const key = egrassTex(this, region), sz = 32 / EGRASS_IMG.width; for (let x = 0; x < AW; x++) for (let y = 0; y < AH; y++) { const cx = x * T + 8, cy = y * T + 8; if (cx < st.B.x0 - 10 || cx > st.B.x1 + 10 || cy < st.B.y0 - 26 || cy > st.B.y1 + 14) this.add.image(x * T + 8, y * T + 18, key).setOrigin(.5, 1).setScale(sz, sz * .8).setDepth(y * T + 16).setFlipX(hash(x, y) > .5); } }
-      if (from.cameras.main.postFX === undefined) { }
-      const night = S.time >= 1140 || S.time < 360; if (night) this.add.rectangle(0, 0, st.W, st.H, 0x101838, .32).setOrigin(0).setDepth(9e6);
-      st.me = fighter(this, st.first, 'me', st.W / 2, st.B.y1 - 6); st.foe = fighter(this, st.foeMon, 'foe', st.W / 2, st.B.y0 + 34);
-      place(st.me); place(st.foe);
-      if (st.foeMon.fab) { st.foe.ring = this.add.star(st.foe.x, st.foe.y, 4, 2, 6, 0xfff6c8).setDepth(9e5 + 1); this.tweens.add({ targets: st.foe.ring, angle: 180, alpha: .3, duration: 900, yoyo: true, repeat: -1 }); }
-      buildMoves(); refresh();
-      say(st.foeMon.fab ? `✦ A Fabled ${SPECIES[st.foeMon.sp].name}! ✦` : `A wild ${SPECIES[st.foeMon.sp].name}!`, 1600);
-      if (!S.flags.rtHelp || S.flags.rtHelp < 3) { S.flags.rtHelp = (S.flags.rtHelp || 0) + 1; const h = $r('rtbHelp'); h.style.display = ''; h.textContent = 'Steer with the stick. Tap a move when it has recharged: they aim themselves. Dodge to dash out of the way. Weaken it, then tap Catch.'; setTimeout(() => h.style.display = 'none', 6500); } else $r('rtbHelp').style.display = 'none';
-      st.ready = 0.9;   // a moment before the wild one acts
-    }
-    update(time, delta) {
-      if (!st || st.sc !== this) return;
+  // ---------- the battleground: wherever you are (17 Nov). Everyone else steps out of sight for the fight.
+  const tileAt = px => Math.floor(px / T);
+  function solid(x, y) {   // world px; trees, rocks, water, cliffs and buildings are in the way
+    const sc = st.sc, tx = tileAt(x), ty = tileAt(y - 3);
+    if (sc.R && sc.R.blocked) return tx < 0 || ty < 0 || tx >= RW || ty >= RH || !!sc.R.blocked[ty * RW + tx];
+    return sc.passable ? !sc.passable(tx, ty) : false;
+  }
+  function clearStage(sc, hide) {
+    if (hide) {
+      st.hidden = [];
+      for (const o of sc.children.list) {
+        if (o === sc.player || !o.visible || o.type !== 'Sprite' || !o.texture) continue;
+        if (/^(mon_|tr_|npc_|ppl_|ew_)/.test(o.texture.key)) { st.hidden.push(o); o.setVisible(false); }
+      }
+      for (const r of sc.roam || []) if (r.glint && r.glint.visible) { st.hidden.push(r.glint); r.glint.setVisible(false); }
+      if (sc.follower && sc.follower.visible) { st.hidden.push(sc.follower); sc.follower.setVisible(false); }
+    } else for (const o of st.hidden || []) if (o.active) o.setVisible(true);
+    if (sc.syncShadows) sc.syncShadows();
+  }
+  function stageUp(sc, at) {
+    st.sc = sc; const cam = sc.cameras.main, zoom = cam.zoom, cw = cam.width / zoom, ch = cam.height / zoom;
+    const pl = sc.player, px = pl ? pl.x : at.x, py = pl ? pl.y : at.y;
+    // the view: centred between you and it, kept on the map
+    const bx = cam._bounds || { x: 0, y: 0, width: 1e5, height: 1e5 };
+    let cx = (px + at.x) / 2, cy = (py + at.y) / 2 - 10;
+    const L = Math.max(bx.x, Math.min(bx.x + bx.width - cw, cx - cw / 2)), Tp = Math.max(bx.y, Math.min(bx.y + bx.height - ch, cy - ch / 2));
+    st.camWas = { follow: cam._follow, lx: cam.lerp.x, ly: cam.lerp.y };
+    cam.stopFollow(); cam.pan(L + cw / 2, Tp + ch / 2, 350, 'Sine.easeInOut');
+    const k = (typeof DPR === 'function' ? DPR() : 1) / zoom;   // CSS px -> world px
+    st.B = { x0: L + 12, x1: L + cw - 12, y0: Tp + (76 + 24) * k, y1: Tp + ch - (196 + 8) * k };
+    if (st.B.y1 - st.B.y0 < 100) st.B.y1 = st.B.y0 + 100;
+    st.W = st.B.x1 + st.B.x0; st.H = st.B.y1 + st.B.y0;   // (the middle, for the shy ones' escape)
+    clearStage(sc, true); if (pl) { st.plWas = { x: pl.x, y: pl.y, d: pl.depth }; pl.setDepth(pl.y + 1); const bx = pl.x - dxy(at, pl)[0] * 12, by = pl.y - dxy(at, pl)[1] * 12; if (!solid(bx, by)) sc.tweens.add({ targets: pl, x: bx, y: by, duration: 200 }); }   // you step back to let your Fablemon out
+    // the wild one where it stood; yours hops out beside you, towards it
+    const into = (x, y) => [Math.max(st.B.x0, Math.min(st.B.x1, x)), Math.max(st.B.y0, Math.min(st.B.y1, y))];
+    let [fx, fy] = into(at.x, at.y);
+    const dx = fx - px, dy = fy - py, d = Math.hypot(dx, dy) || 1;
+    let [mx, my] = into(px + dx / d * 14, py + dy / d * 14); if (solid(mx, my)) [mx, my] = into(px, py);
+    st.me = fighter(sc, st.first, 'me', px, py); st.foe = fighter(sc, st.foeMon, 'foe', fx, fy);
+    place(st.me); place(st.foe); face(st.me, dx, dy, false); face(st.foe, -dx, -dy, false);
+    const M0 = st.me, F0 = st.foe; sc.tweens.add({ targets: M0, x: mx, y: my, duration: 260, ease: 'Quad.out', onUpdate: () => { if (M0.spr.active) place(M0); } });
+    st.me.spr.setScale(st.me.spr.scaleX * .3, st.me.spr.scaleY * .3); sc.tweens.add({ targets: st.me.spr, scaleX: st.me.spr.scaleX / .3, scaleY: st.me.spr.scaleY / .3, duration: 260, ease: 'Back.out' });
+    // and the wild one backs off a few steps to give you room
+    let bx2 = fx, by2 = fy; for (let n = 0; n < 40; n++) { const tx = bx2 + dx / d * 1.6, ty = by2 + dy / d * 1.6; if (tx < st.B.x0 || tx > st.B.x1 || ty < st.B.y0 || ty > st.B.y1 || solid(tx, ty)) break; bx2 = tx; by2 = ty; }
+    sc.tweens.add({ targets: F0, x: bx2, y: by2, duration: 420, delay: 150, ease: 'Quad.out', onUpdate: () => { if (F0.spr.active) place(F0); } });
+    if (st.foeMon.fab) { st.foe.ring = sc.add.star(st.foe.x, st.foe.y, 4, 2, 6, 0xfff6c8).setDepth(9e5 + 1); sc.tweens.add({ targets: st.foe.ring, angle: 180, alpha: .3, duration: 900, yoyo: true, repeat: -1 }); }
+    buildMoves(); refresh();
+    say(st.foeMon.fab ? `✦ A Fabled ${SPECIES[st.foeMon.sp].name}! ✦` : `A wild ${SPECIES[st.foeMon.sp].name}!`, 1600);
+    if (!S.flags.rtHelp || S.flags.rtHelp < 3) { S.flags.rtHelp = (S.flags.rtHelp || 0) + 1; const h = $r('rtbHelp'); h.style.display = ''; h.textContent = 'Steer with the stick. Tap a move when it has recharged: they aim themselves. Dodge to dash out of the way. Weaken it, then tap Catch.'; setTimeout(() => h.style.display = 'none', 6000); }
+    st.ready = 1;   // a moment before the wild one acts
+    st.upd = (time, delta) => tick(time, delta); sc.events.on('update', st.upd);
+  }
+  function dxy(a, b) { const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 1; return [dx / d, dy / d]; }
+  function stageDown(done) {
+    const sc = done.sc; if (!sc || !sc.sys || !sc.sys.isActive()) return;
+    sc.events.off('update', done.upd);
+    sc.tweens.killTweensOf([done.me, done.foe].filter(Boolean));
+    for (const f of [done.me, done.foe]) if (f) { if (f.ring) f.ring.destroy(); f.sh.destroy(); f.spr.destroy(); }
+    const was = st; st = done; clearStage(sc, false); st = was;
+    if (done.plWas && sc.player && sc.player.active) sc.player.setPosition(done.plWas.x, done.plWas.y).setDepth(done.plWas.d);
+    const cam = sc.cameras.main, fol = done.camWas && done.camWas.follow;
+    if (fol && fol.active) { cam.startFollow(fol, true, .12, .12); sc.time.delayedCall(700, () => { if (cam._follow === fol) cam.setLerp(done.camWas.lx, done.camWas.ly); }); }
+  }
+  function tick(time, delta) {
+      if (!st || !st.me) return; const sc = st.sc;
       const dt = Math.min(.05, delta / 1000), me = st.me, foe = st.foe;
       if (st.over) return;
       st.ready -= dt;
@@ -15619,19 +15660,19 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.g.setPosition(b.x, b.y); b.glow.setPosition(b.x, b.y);
         const t = b.tgt;
         if (Math.hypot(b.x - t.x, b.y - (t.y - t.spr.displayHeight * .45)) < t.r + 5 && t.m.hp > 0 && st[t.side] === t) { hit(b.f, t, b.id, true); kill(b, true); continue; }
-        if (b.life <= 0 || b.x < -10 || b.y < -10 || b.x > st.W + 10 || b.y > st.H + 10) kill(b);
+        if (b.life <= 0 || b.x < st.B.x0 - 30 || b.y < st.B.y0 - 30 || b.x > st.B.x1 + 30 || b.y > st.B.y1 + 30) kill(b);
       }
       // faints
-      if (foe.m.hp <= 0) { foe.spr.setTint(0x777777); this.tweens.add({ targets: foe.spr, alpha: 0, y: foe.spr.y + 6, duration: 500 }); Sound.play('faint'); return end('win'); }
+      if (foe.m.hp <= 0) { foe.spr.setTint(0x777777); sc.tweens.add({ targets: foe.spr, alpha: 0, y: foe.spr.y + 6, duration: 500 }); Sound.play('faint'); return end('win'); }
       if (me.m.hp <= 0) {
         Sound.play('faint'); me.m.status = null; const next = team().find(m => m.hp > 0);
         if (!next) return end('lose');
         say(`${monName(me.m)} fainted!`, 1200); swapIn(next);
       }
       if ((st.uiT = (st.uiT || 0) - dt) <= 0) { st.uiT = .08; cdUi(); }
-    }
   }
   function move(f, mx, my, dt, isMe) {
+    const ox = f.x, oy = f.y;
     if (f.lunge) { f.lunge.t -= dt; f.x += f.lunge.vx * dt; f.y += f.lunge.vy * dt; }
     else if (f.stun <= 0 && (mx || my)) {
       const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
@@ -15639,6 +15680,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (isMe) face(f, mx, my, l > .2); else face(f, mx, my, true);
     } else if (!f.lunge) { const o = f.side === 'me' ? st.foe : st.me; face(f, o.x - f.x, o.y - f.y, false); }
     f.x = Math.max(st.B.x0, Math.min(st.B.x1, f.x)); f.y = Math.max(st.B.y0, Math.min(st.B.y1, f.y));
+    if (solid(f.x, f.y) && !solid(ox, oy)) { if (!solid(f.x, oy)) f.y = oy; else if (!solid(ox, f.y)) f.x = ox; else { f.x = ox; f.y = oy; } if (f.lunge) f.lunge.t = 0; }
     place(f);
   }
   function kill(b, burst) {
@@ -15672,7 +15714,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
 
   // ---------- start and end
-  function start(sc, foe) {
+  function start(sc, foe, at) {
     const first = team().find(m => m.hp > 0); if (!first) return;
     sc.paused = true; S.seen[foe.sp] = 1;
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
@@ -15680,7 +15722,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       dodgeSkill: Math.min(.45, .12 + foe.lv / 260), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme };
     Sound.hushRain(true); Sound.theme('battle');
     document.body.classList.add('rtb-on'); ui.classList.add('show');
-    setTimeout(() => { if (!st) return; if (game.scene.getScene(ARENA_KEY)) { game.scene.start(ARENA_KEY, { from: sc }); game.scene.bringToTop(ARENA_KEY); } }, 200);
+    const here = at || (sc.player ? { x: sc.player.x, y: sc.player.y - 40 } : { x: 0, y: 0 });
+    setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe); } } }, 120);
   }
   function end(out) {
     if (!st || st.over) return; st.over = true;
@@ -15688,16 +15731,16 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     setTimeout(() => {
       ui.classList.remove('show'); document.body.classList.remove('rtb-on');
       for (const b of done.bolts) { b.g.destroy(); b.glow.destroy(); }
-      if (game.scene.isActive(ARENA_KEY)) game.scene.stop(ARENA_KEY);
+      stageDown(done);
       st = null; inp.jx = inp.jy = 0; inp.keys = {};
       for (const m of S.mons) { if (m.status === 'slp') m.status = null; }
       if (out === 'ran' || out === 'fled') { Sound.hushRain(false); Sound.theme(done.prevTheme || 'field'); for (const m of S.mons) { m.status = null; m.slp = 0; } if (done.from) { done.from.paused = false; if (done.from.p) done.from.p.busy = .4; if (done.from.refreshFollower) done.from.refreshFollower(); } return; }
       Battle.resolveRT(foe, out, [...done.used]);
     }, out === 'win' ? 650 : 250);
   }
-  return { start, Arena, get active() { return !!st; }, get st() { return st; } };
+  return { start, get active() { return !!st; }, get st() { return st; } };
 })();
-var EXTRA_SCENES = (typeof EXTRA_SCENES !== 'undefined' ? EXTRA_SCENES : []).concat([Object.assign(RTB.Arena, { KEY: 'rtb' })]);
+
 
 </script>
 </body>
