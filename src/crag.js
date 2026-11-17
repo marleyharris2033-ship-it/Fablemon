@@ -183,7 +183,8 @@ function cragGround(sc, R) {
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
     const k = K(x, y), h = hash(x >> 1, y >> 1);
     if (k === '#') { tex(h < .5 ? 'cobble' : 'cobble_moss2', x, y); g.fillStyle = RC.mine ? 'rgba(14,8,18,.6)' : 'rgba(46,34,30,.42)'; g.fillRect(x * T, y * T, T, T); continue; }
-    if (k === ',') tex('slab', x, y);
+    if (GP_UNDER) { }   // painted ground underneath (ground.js)
+    else if (k === ',') tex('slab', x, y);
     else if (RAILS.includes(k)) tex('dirt_pebble', x, y);
     else if (k >= '0' && k <= '9') tex('cobble_dry', x, y);
     else tex(h < .55 ? 'dirt_pebble' : 'dirt_patch', x, y);

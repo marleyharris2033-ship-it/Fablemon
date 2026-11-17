@@ -165,13 +165,14 @@ function beachGround(sc, R) {
       continue;
     }
     if (k === '#' || k === ';') {   // grassy dune bank (#), or plain walkable grass (;)
-      const h = hash(x, y); g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
-      g.fillStyle = k === ';' ? 'rgba(60,80,70,.22)' : 'rgba(214,190,120,.28)'; g.fillRect(X, Y, T, T);
+      const h = hash(x, y); if (!GP_UNDER) g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
+      g.fillStyle = k === ';' ? 'rgba(60,80,70,.22)' : 'rgba(214,190,120,.28)'; if (!GP_UNDER || k === '#') g.fillRect(X, Y, T, T);
       continue;
     }
     // sand, damp near the water
     const wet = sea(x + 1, y) || sea(x - 1, y) || sea(x, y + 1) || sea(x, y - 1);
-    for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+    if (GP_UNDER) { if (wet) { g.fillStyle = 'rgba(90,70,40,.16)'; g.fillRect(X, Y, T, T); } }   // painted sand underneath: just darken it where it's damp
+    else for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
       const n = hash(X + u * 7, Y + v * 3);
       const b = wet ? [214, 186, 128] : [236, 212, 156];
       const d = n < .08 ? -26 : n < .2 ? -12 : n > .96 ? 14 : 0;
@@ -182,7 +183,7 @@ function beachGround(sc, R) {
       for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#9a6a3e' : '#bf8a54'; g.fillRect(X, Y + i * 4, T, 3); g.fillStyle = '#6e4a2a'; g.fillRect(X, Y + i * 4 + 3, T, 1); }
       g.fillStyle = 'rgba(255,240,200,.18)'; g.fillRect(X, Y, T, 1);
     }
-    if (k >= '0' && k <= '9') { g.fillStyle = 'rgba(150,170,90,.35)'; g.fillRect(X, Y, T, T); }
+    if (k >= '0' && k <= '9' && !GP_UNDER) { g.fillStyle = 'rgba(150,170,90,.35)'; g.fillRect(X, Y, T, T); }
   }
   // foam where the sea meets land, and a bank edge on the dunes
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {

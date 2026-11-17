@@ -7247,7 +7247,8 @@ function cragGround(sc, R) {
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
     const k = K(x, y), h = hash(x >> 1, y >> 1);
     if (k === '#') { tex(h < .5 ? 'cobble' : 'cobble_moss2', x, y); g.fillStyle = RC.mine ? 'rgba(14,8,18,.6)' : 'rgba(46,34,30,.42)'; g.fillRect(x * T, y * T, T, T); continue; }
-    if (k === ',') tex('slab', x, y);
+    if (GP_UNDER) { }   // painted ground underneath (ground.js)
+    else if (k === ',') tex('slab', x, y);
     else if (RAILS.includes(k)) tex('dirt_pebble', x, y);
     else if (k >= '0' && k <= '9') tex('cobble_dry', x, y);
     else tex(h < .55 ? 'dirt_pebble' : 'dirt_patch', x, y);
@@ -7917,13 +7918,14 @@ function beachGround(sc, R) {
       continue;
     }
     if (k === '#' || k === ';') {   // grassy dune bank (#), or plain walkable grass (;)
-      const h = hash(x, y); g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
-      g.fillStyle = k === ';' ? 'rgba(60,80,70,.22)' : 'rgba(214,190,120,.28)'; g.fillRect(X, Y, T, T);
+      const h = hash(x, y); if (!GP_UNDER) g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
+      g.fillStyle = k === ';' ? 'rgba(60,80,70,.22)' : 'rgba(214,190,120,.28)'; if (!GP_UNDER || k === '#') g.fillRect(X, Y, T, T);
       continue;
     }
     // sand, damp near the water
     const wet = sea(x + 1, y) || sea(x - 1, y) || sea(x, y + 1) || sea(x, y - 1);
-    for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+    if (GP_UNDER) { if (wet) { g.fillStyle = 'rgba(90,70,40,.16)'; g.fillRect(X, Y, T, T); } }   // painted sand underneath: just darken it where it's damp
+    else for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
       const n = hash(X + u * 7, Y + v * 3);
       const b = wet ? [214, 186, 128] : [236, 212, 156];
       const d = n < .08 ? -26 : n < .2 ? -12 : n > .96 ? 14 : 0;
@@ -7934,7 +7936,7 @@ function beachGround(sc, R) {
       for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#9a6a3e' : '#bf8a54'; g.fillRect(X, Y + i * 4, T, 3); g.fillStyle = '#6e4a2a'; g.fillRect(X, Y + i * 4 + 3, T, 1); }
       g.fillStyle = 'rgba(255,240,200,.18)'; g.fillRect(X, Y, T, 1);
     }
-    if (k >= '0' && k <= '9') { g.fillStyle = 'rgba(150,170,90,.35)'; g.fillRect(X, Y, T, T); }
+    if (k >= '0' && k <= '9' && !GP_UNDER) { g.fillStyle = 'rgba(150,170,90,.35)'; g.fillRect(X, Y, T, T); }
   }
   // foam where the sea meets land, and a bank edge on the dunes
   for (let y = 0; y < RH; y++) for (let x = 0; x < RW; x++) {
@@ -9156,7 +9158,7 @@ function moorGround(sc, R) {
       continue; }
     if (RC.snow && k !== 'H') {   // Windcrown Peak: deep snow, wind-rippled, a trodden track for the path
       const path = k === ',';
-      for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+      if (!GP_UNDER) for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
         const n = hash(X + u, Y + v), rip = Math.sin((X + u) * .35 + (Y + v) * .9 + Math.sin((Y + v) * .2) * 2) > .82 ? -10 : 0;
         const base = path ? [220, 226, 238] : [236, 242, 250], j = (n < .08 ? -8 : n > .96 ? 5 : 0) + rip;
         px(X + u, Y + v, `rgb(${base[0] + j},${base[1] + j},${base[2] + Math.round(j * .6)})`);
@@ -9165,14 +9167,15 @@ function moorGround(sc, R) {
       else if (h > .88) { px(X + 6, Y + 10, '#8a94a8'); px(X + 7, Y + 10, '#6a7488'); px(X + 6, Y + 9, '#fff'); }   // a pebble poking through
       continue;
     }
-    if (k === ',') { g.drawImage(CRAG_TEX.dirt_light, (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); continue; }
+    if (k === ',') { if (!GP_UNDER) g.drawImage(CRAG_TEX.dirt_light, (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); continue; }
     if (k === 'H') {   // wooden steps set into the cliff
       g.fillStyle = '#5a3a22'; g.fillRect(X, Y, T, T);
       for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#a8703c' : '#bf8a54'; g.fillRect(X, Y + i * 4, T, 3); g.fillStyle = '#e0b07a'; g.fillRect(X, Y + i * 4, T, 1); }
       g.fillStyle = '#3e2614'; g.fillRect(X, Y, 1, T); g.fillRect(X + T - 1, Y, 1, T);
       continue;
     }
-    // heather turf: grass with sprigs of purple and a few pale flowers
+    // heather turf: grass with sprigs of purple and a few pale flowers (the painted heather has its own)
+    if (GP_UNDER) continue;
     g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
     g.fillStyle = 'rgba(70,60,90,.16)'; g.fillRect(X, Y, T, T);
     for (let i = 0; i < 4; i++) { const a = hash(x * 9 + i, y * 5 + 3), b = hash(x * 3 + 1, y * 11 + i); if (a < .55) { const hx = X + Math.floor(b * 14), hy = Y + Math.floor(hash(i, x + y * 7) * 14); px(hx, hy, '#b06ac0'); px(hx + 1, hy, '#8a4a9c'); px(hx, hy - 1, '#d08ad8'); } }
@@ -11760,6 +11763,7 @@ function openWardrobe() {
      as the source of truth; its corner autotiles are read back into corner kinds, and every putTileAt repaints the
      tiles around it (hoeing, watering, laying paths).
    - groundFromCells(scene, w, h, cellKind, pal): for maps that know their ground per tile (Smallroot). */
+let GP_UNDER = false;   // set while an ascii map's own ground draws: it then leaves the base to the painted ground
 const GK = 3, GTS = T * GK;   // px per game px, tile size in px
 // how many tiles one texture spans before it repeats: smaller for stones so they sit at a believable size
 const GPERIOD = { cobble: 4, river: 4, slab: 4.5, board: 4, soil: 4, grass: 6, heather: 6, moss: 5, rock: 6, sand: 8, snow: 8, dirt: 6, peat: 6, water: 8, shallow: 6 };
@@ -12033,6 +12037,33 @@ Route.prototype.create = function () {
   if (!this.ground || RC.ascii) return;
   try { this.groundP = groundFromLayer(this, this.ground, RC.bog ? GPAL_BOG : GPAL_MEADOW, RW, RH); } catch (e) { console.warn('ground', e); this.ground.setVisible(true); }
 };
+
+/* ---------- the ascii maps (16 Nov 2026): crags and Quarrydown, the coast and the sea, Highmoor
+   The painted ground goes underneath, and each map's own drawing keeps only what's special to it on top:
+   cliff faces, crevasses and bridges, the sea with its depth and foam, gorges, boardwalks and steps. */
+const GPAL_CRAG = { dirt: 'dirt', rock: 'rock', slab: 'slab', grass: 'grass@dull' };
+const GPAL_MINE = { dirt: 'dirt@dull', rock: 'rock@dull', slab: 'slab@dull', grass: 'moss@dull' };
+const GPAL_BEACH = { sand: 'sand', grass: 'grass', rock: 'rock', dirt: 'sand' };
+const GPAL_MOOR = { heather: 'heather', rock: 'rock', dirt: 'dirt', snow: 'snow' };
+function asciiKind(mode, k) {
+  const zone = k >= '0' && k <= '9';
+  if (mode === 'beach') return k === '#' || k === ';' ? 'grass' : zone && !RC.sail ? 'grass' : 'sand';
+  if (mode === 'moor') { if (k === '#' || k === 'C') return 'rock'; if (RC.snow) return 'snow'; return k === ',' || k === 'H' ? 'dirt' : 'heather'; }
+  return k === '#' ? 'rock' : k === ',' ? 'slab' : zone ? 'grass' : 'dirt';
+}
+for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['moorGround', 'moor']]) {
+  const orig = window[name] || eval(name);
+  const wrapped = function (sc, R) {
+    let P = null;
+    if (GROUND.ready) try {
+      const pal = mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : GPAL_CRAG;
+      P = groundFromCells(sc, RW, RH, (x, y) => asciiKind(mode, R.kind[y * RW + x]), pal);
+    } catch (e) { console.warn('ground', e); P = null; }
+    sc.groundP = P; GP_UNDER = !!P;
+    try { return orig(sc, R); } finally { GP_UNDER = false; }
+  };
+  if (name === 'cragGround') cragGround = wrapped; else if (name === 'beachGround') beachGround = wrapped; else moorGround = wrapped;
+}
 
 /* ============================================================ The farmhouse
    The new interior (tools/art/cut_farmhouse.py): a painted room for each house size, and furniture you craft and

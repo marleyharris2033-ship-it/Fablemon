@@ -10,6 +10,7 @@
      as the source of truth; its corner autotiles are read back into corner kinds, and every putTileAt repaints the
      tiles around it (hoeing, watering, laying paths).
    - groundFromCells(scene, w, h, cellKind, pal): for maps that know their ground per tile (Smallroot). */
+let GP_UNDER = false;   // set while an ascii map's own ground draws: it then leaves the base to the painted ground
 const GK = 3, GTS = T * GK;   // px per game px, tile size in px
 // how many tiles one texture spans before it repeats: smaller for stones so they sit at a believable size
 const GPERIOD = { cobble: 4, river: 4, slab: 4.5, board: 4, soil: 4, grass: 6, heather: 6, moss: 5, rock: 6, sand: 8, snow: 8, dirt: 6, peat: 6, water: 8, shallow: 6 };
@@ -283,3 +284,30 @@ Route.prototype.create = function () {
   if (!this.ground || RC.ascii) return;
   try { this.groundP = groundFromLayer(this, this.ground, RC.bog ? GPAL_BOG : GPAL_MEADOW, RW, RH); } catch (e) { console.warn('ground', e); this.ground.setVisible(true); }
 };
+
+/* ---------- the ascii maps (16 Nov 2026): crags and Quarrydown, the coast and the sea, Highmoor
+   The painted ground goes underneath, and each map's own drawing keeps only what's special to it on top:
+   cliff faces, crevasses and bridges, the sea with its depth and foam, gorges, boardwalks and steps. */
+const GPAL_CRAG = { dirt: 'dirt', rock: 'rock', slab: 'slab', grass: 'grass@dull' };
+const GPAL_MINE = { dirt: 'dirt@dull', rock: 'rock@dull', slab: 'slab@dull', grass: 'moss@dull' };
+const GPAL_BEACH = { sand: 'sand', grass: 'grass', rock: 'rock', dirt: 'sand' };
+const GPAL_MOOR = { heather: 'heather', rock: 'rock', dirt: 'dirt', snow: 'snow' };
+function asciiKind(mode, k) {
+  const zone = k >= '0' && k <= '9';
+  if (mode === 'beach') return k === '#' || k === ';' ? 'grass' : zone && !RC.sail ? 'grass' : 'sand';
+  if (mode === 'moor') { if (k === '#' || k === 'C') return 'rock'; if (RC.snow) return 'snow'; return k === ',' || k === 'H' ? 'dirt' : 'heather'; }
+  return k === '#' ? 'rock' : k === ',' ? 'slab' : zone ? 'grass' : 'dirt';
+}
+for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['moorGround', 'moor']]) {
+  const orig = window[name] || eval(name);
+  const wrapped = function (sc, R) {
+    let P = null;
+    if (GROUND.ready) try {
+      const pal = mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : GPAL_CRAG;
+      P = groundFromCells(sc, RW, RH, (x, y) => asciiKind(mode, R.kind[y * RW + x]), pal);
+    } catch (e) { console.warn('ground', e); P = null; }
+    sc.groundP = P; GP_UNDER = !!P;
+    try { return orig(sc, R); } finally { GP_UNDER = false; }
+  };
+  if (name === 'cragGround') cragGround = wrapped; else if (name === 'beachGround') beachGround = wrapped; else moorGround = wrapped;
+}

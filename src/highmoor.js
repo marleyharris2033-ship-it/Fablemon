@@ -111,7 +111,7 @@ function moorGround(sc, R) {
       continue; }
     if (RC.snow && k !== 'H') {   // Windcrown Peak: deep snow, wind-rippled, a trodden track for the path
       const path = k === ',';
-      for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
+      if (!GP_UNDER) for (let v = 0; v < T; v++) for (let u = 0; u < T; u++) {
         const n = hash(X + u, Y + v), rip = Math.sin((X + u) * .35 + (Y + v) * .9 + Math.sin((Y + v) * .2) * 2) > .82 ? -10 : 0;
         const base = path ? [220, 226, 238] : [236, 242, 250], j = (n < .08 ? -8 : n > .96 ? 5 : 0) + rip;
         px(X + u, Y + v, `rgb(${base[0] + j},${base[1] + j},${base[2] + Math.round(j * .6)})`);
@@ -120,14 +120,15 @@ function moorGround(sc, R) {
       else if (h > .88) { px(X + 6, Y + 10, '#8a94a8'); px(X + 7, Y + 10, '#6a7488'); px(X + 6, Y + 9, '#fff'); }   // a pebble poking through
       continue;
     }
-    if (k === ',') { g.drawImage(CRAG_TEX.dirt_light, (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); continue; }
+    if (k === ',') { if (!GP_UNDER) g.drawImage(CRAG_TEX.dirt_light, (x & 1) * T, (y & 1) * T, T, T, X, Y, T, T); continue; }
     if (k === 'H') {   // wooden steps set into the cliff
       g.fillStyle = '#5a3a22'; g.fillRect(X, Y, T, T);
       for (let i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#a8703c' : '#bf8a54'; g.fillRect(X, Y + i * 4, T, 3); g.fillStyle = '#e0b07a'; g.fillRect(X, Y + i * 4, T, 1); }
       g.fillStyle = '#3e2614'; g.fillRect(X, Y, 1, T); g.fillRect(X + T - 1, Y, 1, T);
       continue;
     }
-    // heather turf: grass with sprigs of purple and a few pale flowers
+    // heather turf: grass with sprigs of purple and a few pale flowers (the painted heather has its own)
+    if (GP_UNDER) continue;
     g.drawImage(ter, (h < .6 ? 0 : h < .8 ? 1 : 2) * 16, FILL_ROW * 16, 16, 16, X, Y, T, T);
     g.fillStyle = 'rgba(70,60,90,.16)'; g.fillRect(X, Y, T, T);
     for (let i = 0; i < 4; i++) { const a = hash(x * 9 + i, y * 5 + 3), b = hash(x * 3 + 1, y * 11 + i); if (a < .55) { const hx = X + Math.floor(b * 14), hy = Y + Math.floor(hash(i, x + y * 7) * 14); px(hx, hy, '#b06ac0'); px(hx + 1, hy, '#8a4a9c'); px(hx, hy - 1, '#d08ad8'); } }
