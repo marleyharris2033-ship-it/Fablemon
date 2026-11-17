@@ -36,7 +36,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 #rtbMoves button.eff-up small{color:#1f7a2e}#rtbMoves button.eff-dn small{color:#9a4a20}
 #rtbSide{position:absolute;right:10px;bottom:calc(132px + env(safe-area-inset-bottom));display:flex;flex-direction:row;align-items:flex-end;gap:6px;pointer-events:auto}
 #rtbSide button{width:48px;height:48px;border-radius:50%;border:3px solid #2c4a2c;background:#fffaea;font-size:20px;position:relative;overflow:hidden;padding:0;touch-action:manipulation}
-#rtbSide button small{position:absolute;bottom:2px;left:0;right:0;font-size:9px;font-weight:800}
+#rtbSide button img.ic{position:absolute;left:50%;top:5px;width:26px;height:26px;margin-left:-13px;image-rendering:pixelated;object-fit:contain}#rtbSide button img.ic[src='']{visibility:hidden}#rtbSide button small{position:absolute;bottom:2px;left:0;right:0;font-size:9px;font-weight:800}
 #rtbSide button .cd{position:absolute;inset:0;background:rgba(30,30,30,.55);transform-origin:bottom;pointer-events:none}
 #rtbSide #rtbDodge{width:62px;height:62px;background:#e8f4ff}
 #rtbJoy{position:absolute;left:14px;bottom:calc(18px + env(safe-area-inset-bottom));width:120px;height:120px;border-radius:50%;background:rgba(255,250,234,.25);border:3px solid rgba(255,250,234,.6);pointer-events:auto;touch-action:none}
@@ -46,7 +46,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
   ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
-    <div id="rtbJoy"><i></i></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal">🍵<small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm">🌰<small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><div id="rtbMoves"></div>`;
+    <div id="rtbJoy"><i></i></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
 
@@ -183,8 +183,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 
   // ---------- the player's buttons
   function useMoveBtn(i) { if (!st || st.over) return; const id = st.me.m.moves[i]; if (id && !useMove(st.me, id) && (st.me.cd[id] || 0) > 0) Sound.play('error'); }
-  function charmId() { return ['skyward_charm', 'sturdy_charm', 'root_charm'].find(c => inv.count(c) > 0) || null; }
-  function healId() { const me = st && st.me && st.me.m; if (me && me.status && inv.count('tonic') > 0) return 'tonic'; return ['mon_treat', 'berry_crumble', 'honey', 'berry', 'hearth_elixir'].find(c => ITEMS[c] && inv.count(c) > 0) || null; }
+  function charmId() { const p = (S.rtSlots || {}).charm; if (p && inv.count(p) > 0) return p; return RT_CHARMS.find(c => inv.count(c) > 0) || null; }
+  function healId() { const p = (S.rtSlots || {}).heal; if (p && ITEMS[p] && inv.count(p) > 0) return p; const me = st && st.me && st.me.m; if (me && me.status && inv.count('tonic') > 0) return 'tonic'; return ['mon_treat', 'berry_crumble', 'honey', 'berry', 'hearth_elixir'].find(c => ITEMS[c] && inv.count(c) > 0) || null; }
   function act(a) {
     if (!st || st.over) return;
     const me = st.me;
@@ -419,6 +419,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const c = charmId(), h = healId();
     $r('rtbCharm').querySelector('small').textContent = c ? `${inv.count(c)} left` : 'None';
     $r('rtbHeal').querySelector('small').textContent = h ? `${inv.count(h)} left` : 'None';
+    const ci = $r('rtbCharm').querySelector('.ic'), hi = $r('rtbHeal').querySelector('.ic');   // the actual item on each button, so you know what it'll use
+    ci.src = iconFor(c || 'root_charm'); ci.style.opacity = c ? 1 : .35; hi.src = iconFor(h || 'mon_treat'); hi.style.opacity = h ? 1 : .35;
   }
   function buildMoves() {
     $r('rtbMoves').innerHTML = st.me.m.moves.map((id, i) => { const M = MOVES[id], e = M.pow ? effOn(M.type, st.foe.m.sp) : 1;

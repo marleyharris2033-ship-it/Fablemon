@@ -805,6 +805,9 @@ function sortBackpack() {
   for (let i = 12; i < sl.length; i++) sl[i] = rest[i - 12] || null;
   inv.emit();
 }
+// what the action battles' Catch and Heal buttons use (17 Nov): picked from the backpack; empty means the best you have
+const RT_CHARMS = ['skyward_charm', 'sturdy_charm', 'root_charm'];
+const rtKind = id => RT_CHARMS.includes(id) ? 'charm' : ITEMS[id] && (ITEMS[id].heal || ITEMS[id].cure) && !ITEMS[id].held ? 'heal' : null;
 function openBag() {
   let pick = -1, drag = null;
   const gs = Math.max(24, Math.min(42, Math.floor((Math.min(window.innerWidth * .94, 600) - 52) / 12) - 2));
@@ -812,7 +815,8 @@ function openBag() {
     const sl = inv.slots;
     const hot = sl.slice(0, 12).map((s, i) => slotHTML(i, s, (i === pick ? 'pick ' : '') + (i === S.sel ? 'sel' : ''))).join('');
     const rest = sl.slice(12).map((s, i) => slotHTML(i + 12, s, i + 12 === pick ? 'pick' : '')).join('');
-    const info = pick >= 0 && sl[pick] ? `<p><b>${ITEMS[sl[pick].id].name}</b>: ${ITEMS[sl[pick].id].desc}${ITEMS[sl[pick].id].sell && !/Sells for/.test(ITEMS[sl[pick].id].desc) ? ` <small>(sells for ${ITEMS[sl[pick].id].sell}g)</small>` : ''}</p>${ITEMS[sl[pick].id].eat ? `<div class="row"><button class="btn gold" data-a="eat">Eat it (+${ITEMS[sl[pick].id].eat} energy)</button></div>` : ''}` : '<p>Drag items between slots, or tap one then tap where it should go. The top row is your hotbar. Drag onto the bin to throw an item away.</p>';
+    const info = pick >= 0 && sl[pick] ? `<p><b>${ITEMS[sl[pick].id].name}</b>: ${ITEMS[sl[pick].id].desc}${ITEMS[sl[pick].id].sell && !/Sells for/.test(ITEMS[sl[pick].id].desc) ? ` <small>(sells for ${ITEMS[sl[pick].id].sell}g)</small>` : ''}</p>${ITEMS[sl[pick].id].eat ? `<div class="row"><button class="btn gold" data-a="eat">Eat it (+${ITEMS[sl[pick].id].eat} energy)</button></div>` : ''}${(() => { const id = sl[pick].id, k = rtKind(id); if (!k) return ''; const on = (S.rtSlots || {})[k] === id, lbl = k === 'charm' ? 'Catch' : 'Heal';
+        return `<div class="row">${on ? `<button class="btn" data-a="rtoff">✓ On the ${lbl} button in action battles (tap to go back to the best one)</button>` : `<button class="btn gold" data-a="rton">⚡ Put on the ${lbl} button in action battles</button>`}</div>`; })()}` : '<p>Drag items between slots, or tap one then tap where it should go. The top row is your hotbar. Drag onto the bin to throw an item away.</p>';
     return `<div style="--s:${gs}px"><div class="grid hot">${hot}</div><div class="grid">${rest}</div></div>
       <div class="trashrow"><button class="btn" data-a="sort" style="margin-right:auto">↕ Sort and stack</button><div class="slot trash" data-trash="1" title="Trash"><img src="${ICONS.trash}"></div></div>${info}`;
   };
@@ -825,6 +829,8 @@ function openBag() {
   openModal('Backpack', render(), a => {
     if (a === 'eat' && pick >= 0) { eatHeld(pick); if (!inv.slots[pick]) pick = -1; rerender(); }
     if (a === 'sort') { sortBackpack(); pick = -1; Sound.play('pop'); rerender(); renderHotbar(); }
+    if ((a === 'rton' || a === 'rtoff') && pick >= 0 && inv.slots[pick]) { const id = inv.slots[pick].id, k = rtKind(id); S.rtSlots = S.rtSlots || {}; if (a === 'rton') S.rtSlots[k] = id; else delete S.rtSlots[k];
+      Sound.play('pop'); toast(a === 'rton' ? `${ITEMS[id].name} is on your ${k === 'charm' ? 'Catch' : 'Heal'} button.` : `Your ${k === 'charm' ? 'Catch' : 'Heal'} button uses your best one again.`, 1800); rerender(); }
   });
   const body = $('mBody');
   const down = e => {
