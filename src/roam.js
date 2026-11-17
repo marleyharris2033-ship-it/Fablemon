@@ -42,8 +42,8 @@ Object.assign(Route.prototype, {
       const i = this.roamTiles[Math.floor(Math.random() * this.roamTiles.length)], x = i % RW, y = (i / RW) | 0;
       if (!this.roamFree(x, y) || (this.p && Math.abs(this.p.x - x) + Math.abs(this.p.y - y) < 6)) continue;
       const z = this.R.grass[i], [, , , , a, b, tag] = GRASS_ZONES[z]; let m = rollWild(a, b, tag && RC[tag]);
-      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => roamRare(q.m.sp, tag && RC[tag]))) m = rollWild(a, b, tag && RC[tag]);   // one rare one out at a time keeps them special
-      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => roamRare(q.m.sp, tag && RC[tag]))) continue;
+      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => !q.alpha && roamRare(q.m.sp, tag && RC[tag]))) m = rollWild(a, b, tag && RC[tag]);   // one rare one out at a time keeps them special
+      if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => !q.alpha && roamRare(q.m.sp, tag && RC[tag]))) continue;
       const wid = walkId(this, m); if (!this.textures.exists('mon_' + wid)) continue;
       monAnims(this, wid);
       const spr = hdSpr(this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1), wid);
@@ -140,3 +140,73 @@ handleSetting = function (a, d, el) {
   if (a === 'action') { opts.action = d.v === 'on'; saveOpts(); toast(opts.action ? 'Action battles for wild Fablemon.' : 'Classic battles for wild Fablemon.', 1600); }
   return _roamSet(a, d, el);
 };
+
+/* ---------- Alphas (18 Nov): once a day a big, tough Alpha roams one land route you've been to.
+   A morning notice says where, the map marks it, it never wanders off, and beating it pays double experience,
+   gold and a rare item. Catching one is harder, but it keeps its strong potential. */
+const ALPHA_GIFTS = ['study_leaf', 'lucky_acorn', 'hearth_elixir', 'skyward_charm'];
+function alphaRoutes() {
+  return Object.keys(ROUTES).filter(k => { const R = ROUTES[k]; return R && !R.sail && (R.zones || []).length && R.enc && (S.visited || {})[k]; });
+}
+function alphaRoll() {
+  const ks = alphaRoutes(); if (!ks.length) { S.alpha = { day: S.day, none: 1 }; return; }
+  const k = ks[Math.floor(Math.random() * ks.length)], R = ROUTES[k], tab = R.enc.day || [];
+  // prefer the less common ones: weight by 1/w so an Alpha is usually something worth seeing
+  const tot = tab.reduce((a, [, w]) => a + 1 / w, 0); let r = Math.random() * tot, sp = tab[0] && tab[0][0];
+  for (const [s, w] of tab) if ((r -= 1 / w) < 0) { sp = s; break; }
+  const top = Math.max(...R.zones.map(z => z[5] || 5));
+  S.alpha = { day: S.day, route: k, sp, lv: Math.min(100, top + 5), done: false };
+}
+function alphaToday() { if (!S.alpha || S.alpha.day !== S.day) alphaRoll(); return S.alpha.none || S.alpha.done ? null : S.alpha; }
+const alphaPlace = k => { const P = (typeof MAP_PLACES !== 'undefined' ? MAP_PLACES : []).find(p => p.k === k); return (P && P.name) || (ROUTES[k] && ROUTES[k].name) || k; };
+// the morning notice
+const _alphaNight = nightly;
+nightly = function (passedOut) {
+  const out = _alphaNight.apply(this, arguments);
+  try { alphaRoll(); const A = alphaToday(); if (A) setTimeout(() => toast(`📣 An Alpha ${SPECIES[A.sp].name} has been seen on ${alphaPlace(A.route)}! It's on your map.`, 4200), 3500); } catch (e) { console.warn('alpha', e); }
+  return out;
+};
+// it's out there, bigger than the rest, with a glow at its feet
+const _alphaCreate = Route.prototype.create;
+Route.prototype.create = function () {
+  _alphaCreate.call(this);
+  try {
+    const A = this.roamOn && alphaToday(); if (!A || A.route !== this.scene.key) return;
+    for (let tries = 0; tries < 40; tries++) {
+      const i = this.roamTiles[Math.floor(Math.random() * this.roamTiles.length)], x = i % RW, y = (i / RW) | 0;
+      if (!this.roamFree(x, y) || (this.p && Math.abs(this.p.x - x) + Math.abs(this.p.y - y) < 8)) continue;
+      const m = wildMon(A.sp, A.lv); for (const k in m.iv) m.iv[k] = Math.max(m.iv[k], 6 + Math.floor(Math.random() * 3)); m.hp = monStat(m, 'hp'); m.alpha = 1;
+      const wid = walkId(this, m); if (!this.textures.exists('mon_' + wid)) return;
+      monAnims(this, wid);
+      const spr = hdSpr(this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1), wid); spr.setScale(spr.scaleX * 1.4, spr.scaleY * 1.4);
+      const r = { m, wid, spr, x, y, zone: this.R.grass[i], mood: 'bold', dir: 'down', t: 1, moving: false, alert: 0, alpha: 1 };
+      this.shadow(spr, Math.round(spr.displayWidth * .5), 5);
+      r.glint = this.add.ellipse(spr.x, spr.y - 1, spr.displayWidth * .9, 9, 0xff8a20, .55).setDepth(2).setBlendMode(Phaser.BlendModes ? Phaser.BlendModes.ADD : 1);
+      this.tweens.add({ targets: r.glint, alpha: .2, scaleX: 1.25, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      this.roamDraw(r); this.roam.push(r); this.roamAlpha = r; return;
+    }
+  } catch (e) { console.warn('alpha', e); }
+};
+// its glow sits at its feet, not over its head
+const _alphaDraw = Route.prototype.roamDraw;
+Route.prototype.roamDraw = function (r) { _alphaDraw.call(this, r); if (r.alpha && r.glint) r.glint.setPosition(r.spr.x, r.spr.y - 1); };
+// Alphas don't wander off, and they don't count as the route's one rare
+const _alphaFrame = Route.prototype.frameHook;
+Route.prototype.frameHook = function (dt) {
+  if (this.roamAlpha) this.roamAlpha.born = this.time.now;
+  const out = _alphaFrame.call(this, dt);
+  if (this.alphaFight && !Battle.active && !(typeof RTB !== 'undefined' && RTB.active)) { if (this.alphaFight.hp <= 0 && S.alpha) S.alpha.done = true; this.alphaFight = null; }   // classic battles
+  return out;
+};
+const _alphaEngage = Route.prototype.roamEngage;
+Route.prototype.roamEngage = function (r) { if (r.alpha) { this.alphaFight = r.m; this.roamAlpha = null; } return _alphaEngage.call(this, r); };
+// the map shows where it is
+const _alphaMap = openMap;
+openMap = function () {
+  _alphaMap.apply(this, arguments);
+  try { const A = alphaToday(); if (!A) return; const i = MAP_PLACES.findIndex(P => P.k === A.route), b = document.querySelector(`.wpin[data-i="${i}"]`);
+    if (b) b.insertAdjacentHTML('beforeend', '<i class="walpha">🔥</i>');
+    const info = $('wmapInfo'); if (info) info.insertAdjacentHTML('afterbegin', `🔥 <b>Alpha ${SPECIES[A.sp].name}</b> (Lv ${A.lv}) on ${alphaPlace(A.route)} today. `); } catch (e) { }
+};
+const _alphaNotes = placeNotes;
+placeNotes = function (P) { const l = _alphaNotes(P), A = alphaToday(); if (A && A.route === P.k) l.unshift(`🔥 An Alpha ${SPECIES[A.sp].name} (Lv ${A.lv}) roams here today`); return l; };

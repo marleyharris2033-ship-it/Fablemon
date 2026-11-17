@@ -4094,7 +4094,7 @@ const Battle = (() => {
     const rows = new Map(), want = [];
     const row = m => { if (!rows.has(m)) rows.set(m, { m, lv0: m.lv, xp: 0, learned: [] }); return rows.get(m); };
     for (const foe of foes) {
-      const S0 = SPECIES[foe.sp], gain = Math.max(1, Math.floor((S0.exp || 50) * foe.lv / 5 * .9 * (B.wild ? 1 : 1.5) * (S.xpDay === S.day ? 1.5 : 1) * (hasPerk('rowan') ? 1.1 : 1)));
+      const S0 = SPECIES[foe.sp], gain = Math.max(1, Math.floor((S0.exp || 50) * foe.lv / 5 * .9 * (B.wild ? 1 : 1.5) * (foe.alpha ? 2 : 1) * (S.xpDay === S.day ? 1.5 : 1) * (hasPerk('rowan') ? 1.1 : 1)));
       const fought = [...B.used].map(uid => S.mons.find(x => x.uid === uid)).filter(m => m && m.hp > 0);
       const rest = team().filter(m => m.hp > 0 && !fought.includes(m)), share = Math.max(1, Math.floor(gain / 2));
       for (const m of fought) { const g = Math.floor(gain * (m.held === 'study_leaf' ? 1.2 : 1) * catchUp(m)); m.xp += g; row(m).xp += g; }
@@ -4269,12 +4269,19 @@ const Battle = (() => {
     q('bstage').style.backgroundImage = 'none'; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
     sprites(); box('me'); box('foe'); el.classList.add('show', 'rt'); layout();
     if (out === 'lose') return blackout();
+    if (foe.alpha && S.alpha && (out === 'caught' || out === 'win')) S.alpha.done = true;
     if (out === 'caught') { await keepCaught(); return finish(); }
     Sound.theme('none'); Sound.victory();
     const { rows, want } = xpQuiet(T ? (beaten && beaten.length ? beaten : [foe]) : [foe]);
     let prize = 0, lucky = false;
     if (T) { lucky = [...B.used].some(uid => (S.mons.find(x => x.uid === uid) || {}).held === 'lucky_acorn'); prize = Math.round(T.prize * (lucky ? 1.25 : 1)); S.gold += prize; updateHUD(); Sound.play('coin'); }
-    await rtCard(T ? `You beat ${T.label} ${T.name}!` : 'Victory!', T ? (T.lose ? `"${T.lose}"` : '') : `The wild ${SPECIES[foe.sp].name} fainted.`, rows, prize ? `${prize}${lucky ? ' (Lucky Acorn bonus!)' : ''}` : 0);
+    let gift = '';
+    if (!T && foe.alpha) {   // an Alpha pays: gold and something rare
+      prize = foe.lv * 25; S.gold += prize; updateHUD(); Sound.play('coin');
+      const it = ['study_leaf', 'lucky_acorn', 'hearth_elixir', 'skyward_charm'].filter(k => ITEMS[k]); const g = it[Math.floor(Math.random() * it.length)];
+      if (g) { const n = g === 'skyward_charm' ? 3 : 1; if (!inv.add(g, n)) gift = `${n > 1 ? n + '× ' : ''}${ITEMS[g].name}`; else gift = ''; renderHotbar(); }
+    }
+    await rtCard(T ? `You beat ${T.label} ${T.name}!` : foe.alpha ? '🔥 Alpha defeated! 🔥' : 'Victory!', T ? (T.lose ? `"${T.lose}"` : '') : foe.alpha ? `The Alpha ${SPECIES[foe.sp].name} backs down. Double experience!${gift ? ` It left behind a ${gift}!` : ''}` : `The wild ${SPECIES[foe.sp].name} fainted.`, rows, prize ? `${prize}${lucky ? ' (Lucky Acorn bonus!)' : ''}` : 0);
     for (const [m, id] of want) if (!m.moves.includes(id)) await learn(m, id);
     if (T && T.onWin) T.onWin();
     await evolveAll(); finish();
@@ -4283,8 +4290,13 @@ const Battle = (() => {
   function rtTrainer(foe, T) {
     if (!T || T.classic || opts.actionT === false || T.phase2 || typeof RTB === 'undefined' || RTB.active || !scene || !scene.player || !scene.player.active || !scene.cameras) return false;
     if (RC && RC.sail && scene.R) return false;
-    const pl = scene.player; let keep = null, bd = 6 * T_PX;
-    for (const o of scene.children.list) if (o.type === 'Sprite' && o !== pl && o.visible && o.texture && /^(tr_|npc_|ppl_)/.test(o.texture.key)) { const d = Math.hypot(o.x - pl.x, o.y - pl.y); if (d < bd) { bd = d; keep = o; } }
+    const pl = scene.player, nm = String(T.name || '').toLowerCase().replace(/[^a-z]/g, ''); let keep = null, bd = 6 * T_PX, named = null, nd = 12 * T_PX;
+    for (const o of scene.children.list) if ((o.type === 'Sprite' || o.type === 'Image') && o !== pl && o.visible && o.texture && /^(tr_|npc_|ppl_)/.test(o.texture.key)) {
+      const d = Math.hypot(o.x - pl.x, o.y - pl.y);
+      if (nm && o.texture.key.replace(/^(tr_|npc_|ppl_)/, '') === nm && d < nd) { nd = d; named = o; }   // the trainer by name first (Tamsin, not the miller beside her)
+      if (o.type === 'Sprite' && d < bd) { bd = d; keep = o; }
+    }
+    keep = named || keep;
     let at;
     if (keep) at = { x: keep.x + (pl.x - keep.x) * .35, y: keep.y + (pl.y - keep.y) * .35 + 2 };
     else { const dv = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[(scene.p && scene.p.dir) || 'up'] || [0, -1]; at = { x: pl.x + dv[0] * 48, y: pl.y + dv[1] * 48 }; }
