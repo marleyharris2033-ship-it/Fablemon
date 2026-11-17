@@ -4077,6 +4077,31 @@ const Battle = (() => {
       }
     }
   }
+  // action battles: the experience for every Fablemon beaten, worked out quietly and shown on one card
+  function xpQuiet(foes) {
+    const rows = new Map(), want = [];
+    const row = m => { if (!rows.has(m)) rows.set(m, { m, lv0: m.lv, xp: 0, learned: [] }); return rows.get(m); };
+    for (const foe of foes) {
+      const S0 = SPECIES[foe.sp], gain = Math.max(1, Math.floor((S0.exp || 50) * foe.lv / 5 * .9 * (B.wild ? 1 : 1.5) * (S.xpDay === S.day ? 1.5 : 1) * (hasPerk('rowan') ? 1.1 : 1)));
+      const fought = [...B.used].map(uid => S.mons.find(x => x.uid === uid)).filter(m => m && m.hp > 0);
+      const rest = team().filter(m => m.hp > 0 && !fought.includes(m)), share = Math.max(1, Math.floor(gain / 2));
+      for (const m of fought) { const g = Math.floor(gain * (m.held === 'study_leaf' ? 1.2 : 1) * catchUp(m)); m.xp += g; row(m).xp += g; }
+      for (const m of rest) { const g = Math.floor(share * (m.held === 'study_leaf' ? 1.2 : 1) * catchUp(m)); m.xp += g; row(m).xp += g; }
+    }
+    for (const r of rows.values()) { const m = r.m;
+      while (m.lv < 100 && m.xp >= xpNext(m)) {
+        const oldMax = monStat(m, 'hp'); m.lv++; m.hp += monStat(m, 'hp') - oldMax;
+        for (const [l, id] of LEARN[m.sp] || []) if (l === m.lv && !m.moves.includes(id)) { if (m.moves.length < 4) { m.moves.push(id); r.learned.push(id); } else want.push([m, id]); }
+      }
+    }
+    return { rows: [...rows.values()], want };
+  }
+  function rtCard(title, sub, rows, gold) {
+    const bar = m => `<div class="bxp"><i style="width:${100 * Math.max(0, Math.min(1, (m.xp - m.lv ** 3) / (xpNext(m) - m.lv ** 3)))}%"></i></div>`;
+    q('bmsg').innerHTML = `<div class="rts"><b class="rtt">${title}</b>${sub ? `<span class="rtsub">${sub}</span>` : ''}${(rows || []).map(r => `<div class="rtrow"><img src="${monPicOf(r.m)}"><span>${monName(r.m)}<small>Lv ${r.lv0}${r.m.lv > r.lv0 ? ` → <b class="up">${r.m.lv}</b>` : ''}</small></span><em>+${r.xp} XP</em>${bar(r.m)}${r.learned.length ? `<div class="nm">Learned ${r.learned.map(id => MOVES[id].name).join(', ')}!</div>` : ''}</div>`).join('')}${gold ? `<div class="rtgold">🪙 +${gold}g</div>` : ''}</div>`;
+    if ((rows || []).some(r => r.m.lv > r.lv0)) Sound.play('levelup');
+    return menu([{ html: 'Continue', v: 1, cls: 'gold' }]);
+  }
   async function learn(m, id) {
     if (m.moves.length < 4) { m.moves.push(id); Sound.play('coin'); return say(`${monName(m)} learned ${MOVES[id].name}!`, 1300); }
     q('bmsg').innerHTML = `<div style="font-size:14px;margin-bottom:4px">${monName(m)} wants to learn a new move, but already knows 4. Forget one?</div>${moveCard(id, m, ' <span class="newtag">NEW</span>')}`;
@@ -4146,7 +4171,7 @@ const Battle = (() => {
       q('bfoe').style.visibility = ''; q('bfoebox').style.visibility = ''; q('bmebox').style.visibility = '';
     }
   }
-  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show'); B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); if (scene.p) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; } refreshTeamBtn(); updateHUD(); Sound.music(true); setTimeout(autoSave, 50); }
+  function finish() { for (const m of S.mons) { m.status = null; m.slp = 0; } Sound.hushRain(false); Sound.theme(B && B.prevTheme || 'field'); el.classList.remove('show', 'rt'); q('bstage').style.backgroundImage = ''; B = null; tapNext = null; if (scene) { scene.paused = false; if (scene.p) scene.p.busy = .4; if (scene.refreshFollower) scene.refreshFollower(); if (scene.p) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; } refreshTeamBtn(); updateHUD(); Sound.music(true); setTimeout(autoSave, 50); }
   const battleBg = () => scene && ['route3', 'route4', 'brookholt', 'bhgym'].includes(scene.scene.key) ? ASSET.bgBog : scene && /^(crag|quarrydown|qdpit|heatherstep|galeledges|highmoor|windcrown)/.test(scene.scene.key) ? ASSET.bgCrag : scene && scene.scene.key === 'brlight' ? ASSET.bgBeacon : scene && scene.scene.key === 'hmmill' ? ASSET.bgHighmoor : scene && /^(dunes|driftwood|glimmer|shoals|stormwatch|beaconreach|isles|windward)$/.test(scene.scene.key) ? ASSET.bgSea : ASSET.bgMeadow;
   const foeLabel = () => B.wild ? 'The wild ' : 'The opposing ';
   async function run(foe, T) {
@@ -4226,32 +4251,21 @@ const Battle = (() => {
   async function resolveRT(foe, out, used, T, beaten) {
     const alive = used.map(u => S.mons.find(m => m.uid === u)).filter(m => m && m.hp > 0);
     const me = alive[alive.length - 1] || team().find(m => m.hp > 0) || team()[0];
-    if (T) {   // an action battle against a trainer: experience for each Fablemon beaten, then the prize and whatever comes next
-      B = { foe, me, wild: false, T, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
-      if (scene) scene.paused = true;
-      q('bstage').style.backgroundImage = `url(${battleBg()})`; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
-      sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
-      if (out === 'lose') return blackout();
-      q('bfoe').classList.add('faint'); Sound.theme('none'); Sound.victory();
-      for (const m of beaten || [foe]) { B.foe = m; await gainXP(); }
-      q('bfoe').classList.remove('faint');
-      await say(`You beat ${T.label} ${T.name}!`, 1400);
-      if (T.lose) await say(`"${T.lose}"`, 2200);
-      const lucky = [...B.used].some(uid => (S.mons.find(x => x.uid === uid) || {}).held === 'lucky_acorn'), prize = Math.round(T.prize * (lucky ? 1.25 : 1));
-      S.gold += prize; updateHUD(); Sound.play('coin');
-      await say(`You got ${prize}g for winning${lucky ? ' (Lucky Acorn bonus!)' : ''}.`, 1500);
-      if (T.onWin) T.onWin();
-      await evolveAll(); return finish();
-    }
-    B = { foe, me, wild: true, T: null, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
+    // no battle screen after an action battle: a card over the map with what you won (17 Nov)
+    B = { foe, me, wild: !T, T: T || null, rt: true, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
     if (scene) scene.paused = true;
-    q('bstage').style.backgroundImage = `url(${battleBg()})`; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
-    sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
+    q('bstage').style.backgroundImage = 'none'; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
+    sprites(); box('me'); box('foe'); el.classList.add('show', 'rt'); layout();
     if (out === 'lose') return blackout();
-    if (out === 'caught') { q('bfoe').style.visibility = 'hidden'; q('bcharm').src = iconFor('root_charm'); q('bcharm').className = 'throw sit glow'; await keepCaught(); q('bfoe').style.visibility = ''; return finish(); }
-    q('bfoe').classList.add('faint'); Sound.theme('none'); Sound.victory();
-    await say(`The wild ${SPECIES[foe.sp].name} fainted!`, 1100);
-    await gainXP(); await evolveAll(); q('bfoe').classList.remove('faint'); finish();
+    if (out === 'caught') { await keepCaught(); return finish(); }
+    Sound.theme('none'); Sound.victory();
+    const { rows, want } = xpQuiet(T ? (beaten && beaten.length ? beaten : [foe]) : [foe]);
+    let prize = 0, lucky = false;
+    if (T) { lucky = [...B.used].some(uid => (S.mons.find(x => x.uid === uid) || {}).held === 'lucky_acorn'); prize = Math.round(T.prize * (lucky ? 1.25 : 1)); S.gold += prize; updateHUD(); Sound.play('coin'); }
+    await rtCard(T ? `You beat ${T.label} ${T.name}!` : 'Victory!', T ? (T.lose ? `"${T.lose}"` : '') : `The wild ${SPECIES[foe.sp].name} fainted.`, rows, prize ? `${prize}${lucky ? ' (Lucky Acorn bonus!)' : ''}` : 0);
+    for (const [m, id] of want) if (!m.moves.includes(id)) await learn(m, id);
+    if (T && T.onWin) T.onWin();
+    await evolveAll(); finish();
   }
   // trainers fight in action battles too (17 Nov), unless they're turned off in Settings or you're out at sea
   function rtTrainer(foe, T) {

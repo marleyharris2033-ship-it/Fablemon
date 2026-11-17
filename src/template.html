@@ -161,6 +161,17 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 #battle:not(.side) #bui{flex:0 0 auto;min-height:150px}
 #bmsg{font-size:16px;line-height:1.35;min-height:44px;font-weight:600}
 #bmenu{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+/* after an action battle (17 Nov): no battle screen, just a card over the map */
+#battle.rt{background:rgba(10,18,10,.35);justify-content:flex-end;padding-bottom:max(14px,env(safe-area-inset-bottom))}
+#battle.rt #bstage{background:none!important;overflow:visible}#battle.rt #bfoe,#battle.rt #bfoebox,#battle.rt #bmebox,#battle.rt #bcharm{display:none!important}
+#battle.rt #bme:not(.evolving):not(.evolved){visibility:hidden}
+#battle.rt #bui{width:min(360px,94vw)!important;min-height:0;max-height:70vh;flex:0 0 auto}
+#battle.rt #bmsg{font-size:15px;min-height:0}
+.rts b.rtt{display:block;font:800 19px var(--pix,var(--ui));text-align:center;color:#3a2a14}.rts .rtsub{display:block;text-align:center;font-size:13px;opacity:.75;margin-bottom:6px}
+.rtrow{display:grid;grid-template-columns:40px 1fr auto;align-items:center;gap:2px 8px;padding:4px 0;border-top:1px dashed rgba(90,58,30,.25)}
+.rtrow img{width:40px;height:40px;image-rendering:pixelated;grid-row:span 2}.rtrow span{font-weight:700;font-size:14px}.rtrow span small{font-weight:700;opacity:.75;margin-left:4px}
+.rtrow em{font-style:normal;font-weight:800;color:#2f6b3a;font-size:13px}.rtrow .bxp{grid-column:2/4;margin:0}.rtrow .up{color:#c06a10}.rtrow .nm{grid-column:2/4;font-size:12px;color:#2f6b3a;font-weight:700}
+.rtgold{text-align:center;font-weight:800;font-size:16px;color:#a07010;margin-top:6px}
 #bmenu .btn{padding:8px 6px;font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15}
 #bmenu .btn small{font-size:11px;font-weight:600;opacity:.8}#bmenu .eff{font-size:10px;font-weight:800;letter-spacing:.2px}#bmenu .eff.up{color:#1f7a2e}#bmenu .eff.dn{color:#9a4a20}#bmenu .eff.no{color:#7a7a7a}#bmenu .btn img{width:22px;height:22px;image-rendering:pixelated}
 #battle.side #bmenu{grid-template-columns:1fr}

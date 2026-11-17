@@ -256,9 +256,10 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const sc = st.sc, me = st.me, foe = st.foe, img = sc.add.image(me.x, me.y - 16, 'objects', 'stone').setDepth(9e5);
     const icon = iconFor(cid); if (icon && !sc.textures.exists('rt_' + cid)) { const im = new Image(); im.onload = () => { if (!sc.textures.exists('rt_' + cid)) sc.textures.addImage('rt_' + cid, im); if (img.active) img.setTexture('rt_' + cid).setDisplaySize(12, 12); }; im.src = icon; } else if (sc.textures.exists('rt_' + cid)) img.setTexture('rt_' + cid).setDisplaySize(12, 12);
     say(`You threw a ${ITEMS[cid].name}!`, 900);
-    sc.tweens.add({ targets: img, x: foe.x, y: foe.y - 12, duration: 380, ease: 'Quad.out', onComplete: () => {
+    const x0 = img.x, y0 = img.y, pr = { t: 0 };   // the charm curves after the wild one, so it only misses if it dodges
+    sc.tweens.add({ targets: pr, t: 1, duration: 380, ease: 'Quad.out', onUpdate: () => { if (!img.active || !st) return; img.setPosition(x0 + (st.foe.x - x0) * pr.t, y0 + (st.foe.y - 12 - y0) * pr.t - Math.sin(pr.t * Math.PI) * 18); }, onComplete: () => {
       if (!st) return img.destroy();
-      if (foe.iframe > 0 || Math.hypot(img.x - foe.x, img.y - 12 - (foe.y - 12)) > 40) { say('It missed!'); return img.destroy(); }
+      if (foe.iframe > 0 || Math.hypot(img.x - foe.x, img.y - (foe.y - 12)) > 40) { say('It missed!'); return img.destroy(); }
       // the classic catch odds
       const Mx = monStat(foe.m, 'hp'), rate = (SPECIES[foe.m.sp].rate || 120) * (cid === 'sturdy_charm' ? 1.5 : cid === 'skyward_charm' ? 2 : 1) * (foe.m.status === 'slp' ? 2 : foe.m.status ? 1.5 : 1) * (typeof blessed === 'function' && blessed('wild') ? 1.15 : 1);
       const a2 = Math.max(1, ((3 * Mx - 2 * foe.m.hp) * rate) / (3 * Mx)), b2 = a2 >= 255 ? 65536 : 1048560 / Math.sqrt(Math.sqrt(16711680 / a2));
