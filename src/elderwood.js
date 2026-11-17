@@ -90,12 +90,14 @@ const GLADE_ENC = ewEnc([['sprigfawn', 12], ['stumpstag', 6], ['tappit', 12], ['
   [['snarlwisp', 16], ['murkhowl', 6], ['hollowcub', 10], ['tanglebruin', 5], ['cobblerollie', 8], ['hollowbark_3', 4], ['inkwick', 6]]);
 const NO_ENC = { day: [['ramruff', 1]], night: [['ramruff', 1]] };
 
-// trainer kinds for the forest; they borrow other trainers' art until their own arrives
+// trainer kinds for the forest (their own art since 17 Nov)
 Object.assign(TRAINER_TYPES, {
-  ranger: { label: 'Ranger', art: 'rambler', challenge: ["You're a long way from the farms. The forest tests everyone who walks it.", "Stay on the trail! ...After our battle."], lose: ['The forest likes you, I think.'], after: ['Mind the trucks on the road.'] },
-  logger: { label: 'Logger', art: 'miner', challenge: ["Mind yourself, this is a work road. Fancy a quick battle on my break?", "Greenline pays by the log. I'm on a break, so let's battle."], lose: ["Ha! You've a strong arm for a farmer."], after: ["It's honest work. Mostly."] },
-  herder: { label: 'Herder', art: 'forager', challenge: ["The herds have scattered. I'm in no mood, but let's battle anyway."], lose: ['Fair enough.'], after: ['If you see a stag with silver antlers, tell Alder.'] },
+  ranger: { label: 'Ranger', challenge: ["You're a long way from the farms. The forest tests everyone who walks it.", "Stay on the trail! ...After our battle."], lose: ['The forest likes you, I think.'], after: ['Mind the trucks on the road.'] },
+  logger: { label: 'Logger', challenge: ["Mind yourself, this is a work road. Fancy a quick battle on my break?", "Greenline pays by the log. I'm on a break, so let's battle."], lose: ["Ha! You've a strong arm for a farmer."], after: ["It's honest work. Mostly."] },
+  herder: { label: 'Herder', challenge: ["The herds have scattered. I'm in no mood, but let's battle anyway."], lose: ['Fair enough.'], after: ['If you see a stag with silver antlers, tell Alder.'] },
 });
+// the women of each trade have their own look
+Object.assign(TRAINER_TYPES, { ranger2: { ...TRAINER_TYPES.ranger }, logger2: { ...TRAINER_TYPES.logger }, herder2: { ...TRAINER_TYPES.herder } });
 
 const EW_BASE = { ew: true, paths: [], ponds: [], bridge: null, open: [], clear: [], pickups: [], signs: {}, trainers: [], zones: [], props: [] };
 Object.assign(ROUTES, {
@@ -109,7 +111,7 @@ Object.assign(ROUTES, {
     trainers: [
       { id: 'fw_t1', kind: 'ranger', name: 'Moss', x: 16, y: 52, dir: 'right', sight: 4, team: [['sprigfawn', 60], ['tappit', 60], ['hollowcub', 61]] },
       { id: 'fw_t2', kind: 'logger', name: 'Dougie', x: 22, y: 47, dir: 'left', sight: 4, team: [['pebblouse', 60], ['simmerkit', 61], ['ramruff', 61]] },
-      { id: 'fw_t3', kind: 'herder', name: 'Elspeth', x: 16, y: 9, dir: 'right', sight: 4, team: [['sprigfawn', 61], ['hollowcub', 62], ['stumpstag', 62]] },
+      { id: 'fw_t3', kind: 'herder2', name: 'Elspeth', x: 16, y: 9, dir: 'right', sight: 4, team: [['sprigfawn', 61], ['hollowcub', 62], ['stumpstag', 62]] },
       { id: 'fw_t4', kind: 'logger', name: 'Big Ned', x: 22, y: 5, dir: 'left', sight: 4, team: [['cobblerollie', 62], ['simmerkit', 62], ['tanglebruin', 63]] },
     ],
     gate: { area: [17, 26, 21, 28], sign: [16, 29], ok: () => !!ew().campShut, openMsg: 'The checkpoint has been abandoned. The haul road is open.',
@@ -129,10 +131,10 @@ Object.assign(ROUTES, {
     pickups: [{ id: 'eg1', x: 50, y: 6, item: 'tonic', n: 4 }, { id: 'eg2', x: 5, y: 45, gold: 7000 }, { id: 'eg3', x: 20, y: 6, item: 'mon_treat', n: 3 }],
     signs: { '25,45': 'The Elder Glade. The oldest wood in the valley. Elderwood is north; the Eldest Tree, west.', '31,29': "Fresh tyre ruts and a stencilled post: 'GREENLINE TIMBER. HAUL ROAD. CAMP EAST.'" },
     trainers: [
-      { id: 'eg_t1', kind: 'ranger', name: 'Rowanne', x: 25, y: 38, dir: 'right', sight: 4, team: [['stumpstag', 63], ['tappit', 63], ['snarlwisp', 64]] },
+      { id: 'eg_t1', kind: 'ranger2', name: 'Rowanne', x: 25, y: 38, dir: 'right', sight: 4, team: [['stumpstag', 63], ['tappit', 63], ['snarlwisp', 64]] },
       { id: 'eg_t2', kind: 'herder', name: 'Corrie', x: 26, y: 12, dir: 'right', sight: 4, team: [['tanglebruin', 63], ['stumpstag', 64], ['drummajor', 64]] },
       { id: 'eg_t3', kind: 'forager', name: 'Bramwell', x: 14, y: 21, dir: 'up', sight: 3, team: [['simmerkit', 63], ['hollowcub', 64], ['murkhowl', 64]] },
-      { id: 'eg_t4', kind: 'logger', name: 'Kerr', x: 40, y: 34, dir: 'up', sight: 3, team: [['cobblerollie', 64], ['pebblouse', 64], ['tanglebruin', 65]] },
+      { id: 'eg_t4', kind: 'logger2', name: 'Kerr', x: 40, y: 34, dir: 'up', sight: 3, team: [['cobblerollie', 64], ['pebblouse', 64], ['tanglebruin', 65]] },
     ],
     down: x => ['fernwalk', { x: Math.max(17, Math.min(21, x - 9)), y: 1, dir: 'down' }],
     up: x => ['elderwood', { x: 21, y: 31, dir: 'up' }],

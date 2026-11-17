@@ -16,14 +16,18 @@ Object.assign(ITEMS, {
 const _ewItems = hdItems;
 hdItems = async function () { await _ewItems(); for (const [id, f] of [['salt_lick', 'stone'], ['truffle', 'potato']]) if (!ICONS[id] || ICONS[id] === ICONS.wood) { ICONS[id] = ICONS[f]; ICON_CANVAS[id] = ICON_CANVAS[f]; } };
 
-// stand-in people (portraits borrowed from other trainers until theirs arrive)
+// the Elderwood people (their own art since 17 Nov: tools/art/cut_ewchars.py)
 Object.assign(TRAINER_TYPES, {
-  tansy: { label: 'Ranger', art: 'forager', challenge: ['Ready?'], lose: ['Aw.'], after: ['Come on!'] },
-  pruett: { label: 'Mayor', art: 'birdwatcher', challenge: ['...'], lose: ['...'], after: ['...'] },
-  dunn: { label: 'Logger', art: 'miner', challenge: ['...'], lose: ['...'], after: ['...'] },
-  stroud: { label: 'Haulmaster', art: 'dunmore', challenge: ['...'], lose: ['...'], after: ['...'] },
-  ellis: { label: 'Carver', art: 'busker', challenge: ['...'], lose: ['...'], after: ['...'] },
+  tansy: { label: 'Ranger', challenge: ['Ready?'], lose: ['Aw.'], after: ['Come on!'] },
+  pruett: { label: 'Mayor', challenge: ['...'], lose: ['...'], after: ['...'] },
+  dunn: { label: 'Logger', challenge: ['...'], lose: ['...'], after: ['...'] },
+  stroud: { label: 'Haulmaster', challenge: ['...'], lose: ['...'], after: ['...'] },
+  ellis: { label: 'Carver', challenge: ['...'], lose: ['...'], after: ['...'] },
+  hazel: { label: 'Landlady', challenge: ['...'], lose: ['...'], after: ['...'] },
+  oliver: { label: 'Storekeeper', challenge: ['...'], lose: ['...'], after: ['...'] },
 });
+// the keeper behind the counter: their portrait and a line
+const ewKeeper = (kind, name, line, f = 0) => `<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><img src="${trainerPic(kind, f)}" style="width:72px;height:72px;object-fit:contain;flex:0 0 auto"><p style="margin:0"><b>${name}</b><br>"${line}"</p></div>`;
 const EWS = (kind, name) => (t, f = 0) => ({ who: 'trainer', name, img: trainerPic(kind, f), t });
 const EW = {
   bramble: (t, f = 1) => ({ who: 'bramble', t, f }),
@@ -505,12 +509,12 @@ ewDoorHook = (sc, id) => {
   }
   if (id === 'ew_store') {
     if (!ewRepaired('ew_mill')) return false;
-    const render = () => `<p>Forest Stores. Now the mill's running, the shelves are filling up again. "Salt licks, seeds, the usual. And anything you forage, I'll take off your hands."</p><div class="mlist">${EW_SHOP.map(([i, p]) => shopRow(i, p, 0, 1)).join('')}</div>`;
+    const render = () => `${ewKeeper('oliver', 'Oliver', "Now the mill's running, the shelves are filling up again. Salt licks, seeds, the usual. And anything you forage, I'll take off your hands.")}<div class="mlist">${EW_SHOP.map(([i, p]) => shopRow(i, p, 0, 1)).join('')}</div>`;
     openModal('Forest Stores', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
     return true;
   }
   if (id === 'ew_inn') {
-    openModal('The Antler Inn', '<p>A fire roars under a great rack of antlers. "Sit down, love. You look like you\'ve walked through the whole forest. Your Fablemon can curl up by the hearth."</p><div class="row"><button class="btn gold" data-a="heal">Rest by the fire (heal my team)</button></div>', a => {
+    openModal('The Antler Inn', ewKeeper('hazel', 'Hazel', "Sit down, love. You look like you've walked through the whole forest. Your Fablemon can curl up by the hearth.", 1) + '<div class="row"><button class="btn gold" data-a="heal">Rest by the fire (heal my team)</button></div>', a => {
       if (a === 'heal') { S.mons.forEach(restMon); refreshTeamBtn(); Sound.play('fill'); toast('Your Fablemon are fully healed and their moves are restored!', 2400); closeModal(); }
     });
     return true;
