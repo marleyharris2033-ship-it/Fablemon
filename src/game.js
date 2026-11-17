@@ -964,10 +964,21 @@ const CRAFT_TABS = [
   ['Garden', ['bench', 'planter', 'flowerbed', 'hedge', 'bush', 'wildflowers', 'rockery']],
   ['Lights & decor', ['lantern', 'lamp', 'barrel', 'crate']],
 ];
-let craftTab = 0;
+let craftTab = -1;   // -1: the category tiles (17 Nov: like the main menu, instead of a wall of tab buttons)
+const CRAFT_ICON = { 'Adventure': 'root_charm', 'Farm': 'sprinkler', 'Paths & fences': 'fence', 'Garden': 'flowerbed', 'Lights & decor': 'lantern', 'Animals & machines': 'mayo_machine',
+  'Bedroom & living': 'f_bed', 'Kitchen & dining': 'f_table', 'Workshop & touches': 'f_bookcase', 'Sitting room & bedroom': 'f_sofa', 'Hearth & kitchen': 'f_fireplace', 'Workshop & garden': 'f_spinning', 'Pet corner & conservatory': 'f_cattree' };
+function craftTiles() {
+  const tile = i => { const [n, list] = CRAFT_TABS[i], rs = RECIPES.filter(r => list.includes(r.out)), ok = rs.filter(r => !recipeLocked(r) && inv.canCraft(r)).length;
+    const ic = CRAFT_ICON[n] && ITEMS[CRAFT_ICON[n]] ? CRAFT_ICON[n] : (rs.find(r => !recipeLocked(r)) || rs[0] || { out: list[0] }).out;
+    return `<button class="mtile ctile" data-a="tab" data-k="${i}"><img src="${iconFor(ic)}">${n}${ok ? `<i>${ok} ready</i>` : ''}</button>`; };
+  const out = CRAFT_TABS.map((t, i) => i).filter(i => !/^f_/.test(CRAFT_TABS[i][1][0] || '')), inn = CRAFT_TABS.map((t, i) => i).filter(i => /^f_/.test(CRAFT_TABS[i][1][0] || ''));
+  return `<p class="ctitle">Outdoors</p><div class="mtiles">${out.map(tile).join('')}</div>${inn.length ? `<p class="ctitle">Furniture for your house</p><div class="mtiles">${inn.map(tile).join('')}</div>` : ''}`;
+}
 function openCraft() {
+  craftTab = -1;
   const render = () => {
-    const tabs = CRAFT_TABS.map(([n], i) => `<button class="btn ${i === craftTab ? 'gold' : ''}" data-a="tab" data-k="${i}" style="padding:4px 9px;font-size:13px">${n}</button>`).join('');
+    if (craftTab < 0 || !CRAFT_TABS[craftTab]) return craftTiles();
+    const tabs = `<div class="cback"><button class="btn" data-a="cats">← All categories</button><b>${CRAFT_TABS[craftTab][0]}</b></div>`;
     const rows = RECIPES.map((r, k) => [r, k]).filter(([r]) => CRAFT_TABS[craftTab][1].includes(r.out)).map(([r, k]) => {
       if (recipeLocked(r)) return `<div class="recipe" style="opacity:.55"><img src="${iconFor(r.out)}" style="filter:grayscale(1)"><div class="g"><b>${ITEMS[r.out].name}</b><small>${r.crest ? `🔒 After your ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][r.crest]} Crest` : `🌳 Unlocks at Hearthroot stage ${r.stage + 1}`}</small></div></div>`;
       const can = inv.canCraft(r);
@@ -976,10 +987,11 @@ function openCraft() {
       return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${ITEMS[r.out].name}${r.n > 1 ? ' ×' + r.n : ''}</b><small>${need}</small></div>
         <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button></div>`;
     }).join('');
-    return `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${tabs}</div><div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
+    return `${tabs}<div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
   };
   openModal('Crafting', render(), (a, d) => {
-    if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); return; }
+    if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
+    if (a === 'cats') { craftTab = -1; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
     if (a === 'craft') {
       const r = RECIPES[+d.k]; if (!r || recipeLocked(r)) return;
       const most = Math.min(99, ...Object.entries(needOf(r)).map(([id, v]) => Math.floor(inv.count(id) / v)));

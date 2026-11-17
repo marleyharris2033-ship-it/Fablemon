@@ -307,6 +307,10 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 .mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
 .mtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:1.15;background:#fffaea;border:3px solid var(--green);box-shadow:inset 0 -4px 0 rgba(31,77,43,.15),3px 3px 0 #173a20;font:700 14px var(--pix);color:var(--green);cursor:pointer;padding:4px}
 .mtile span{font-size:28px;line-height:1}
+.ctile{position:relative;font-size:12.5px;text-align:center;line-height:1.15;gap:5px}.ctile img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
+.ctile i span,.ctile span.num{font-size:inherit!important;line-height:inherit}.ctile i{position:absolute;top:4px;right:4px;font:800 10px var(--ui);font-style:normal;background:#2f6b3a;color:#fff;border-radius:8px;padding:1px 6px}
+.ctitle{margin:2px 0 6px;font:800 13px var(--ui);color:var(--green);text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.cback{display:flex;align-items:center;gap:10px;margin-bottom:8px}.cback .btn{padding:5px 10px;font-size:13px}.cback b{font:800 16px var(--pix,var(--ui));color:#3a2a14}
 .mtile:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #173a20}
 .mfoot{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mfoot .btn{width:100%;padding:10px 4px}
 .mback{margin-bottom:8px}
@@ -353,15 +357,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261117-223334">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261117-223334">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261117-223334">
+<link rel="manifest" href="manifest.webmanifest?v=20261117-224307">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261117-224307">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261117-224307">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-223334').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-224307').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -1590,10 +1594,21 @@ const CRAFT_TABS = [
   ['Garden', ['bench', 'planter', 'flowerbed', 'hedge', 'bush', 'wildflowers', 'rockery']],
   ['Lights & decor', ['lantern', 'lamp', 'barrel', 'crate']],
 ];
-let craftTab = 0;
+let craftTab = -1;   // -1: the category tiles (17 Nov: like the main menu, instead of a wall of tab buttons)
+const CRAFT_ICON = { 'Adventure': 'root_charm', 'Farm': 'sprinkler', 'Paths & fences': 'fence', 'Garden': 'flowerbed', 'Lights & decor': 'lantern', 'Animals & machines': 'mayo_machine',
+  'Bedroom & living': 'f_bed', 'Kitchen & dining': 'f_table', 'Workshop & touches': 'f_bookcase', 'Sitting room & bedroom': 'f_sofa', 'Hearth & kitchen': 'f_fireplace', 'Workshop & garden': 'f_spinning', 'Pet corner & conservatory': 'f_cattree' };
+function craftTiles() {
+  const tile = i => { const [n, list] = CRAFT_TABS[i], rs = RECIPES.filter(r => list.includes(r.out)), ok = rs.filter(r => !recipeLocked(r) && inv.canCraft(r)).length;
+    const ic = CRAFT_ICON[n] && ITEMS[CRAFT_ICON[n]] ? CRAFT_ICON[n] : (rs.find(r => !recipeLocked(r)) || rs[0] || { out: list[0] }).out;
+    return `<button class="mtile ctile" data-a="tab" data-k="${i}"><img src="${iconFor(ic)}">${n}${ok ? `<i>${ok} ready</i>` : ''}</button>`; };
+  const out = CRAFT_TABS.map((t, i) => i).filter(i => !/^f_/.test(CRAFT_TABS[i][1][0] || '')), inn = CRAFT_TABS.map((t, i) => i).filter(i => /^f_/.test(CRAFT_TABS[i][1][0] || ''));
+  return `<p class="ctitle">Outdoors</p><div class="mtiles">${out.map(tile).join('')}</div>${inn.length ? `<p class="ctitle">Furniture for your house</p><div class="mtiles">${inn.map(tile).join('')}</div>` : ''}`;
+}
 function openCraft() {
+  craftTab = -1;
   const render = () => {
-    const tabs = CRAFT_TABS.map(([n], i) => `<button class="btn ${i === craftTab ? 'gold' : ''}" data-a="tab" data-k="${i}" style="padding:4px 9px;font-size:13px">${n}</button>`).join('');
+    if (craftTab < 0 || !CRAFT_TABS[craftTab]) return craftTiles();
+    const tabs = `<div class="cback"><button class="btn" data-a="cats">← All categories</button><b>${CRAFT_TABS[craftTab][0]}</b></div>`;
     const rows = RECIPES.map((r, k) => [r, k]).filter(([r]) => CRAFT_TABS[craftTab][1].includes(r.out)).map(([r, k]) => {
       if (recipeLocked(r)) return `<div class="recipe" style="opacity:.55"><img src="${iconFor(r.out)}" style="filter:grayscale(1)"><div class="g"><b>${ITEMS[r.out].name}</b><small>${r.crest ? `🔒 After your ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][r.crest]} Crest` : `🌳 Unlocks at Hearthroot stage ${r.stage + 1}`}</small></div></div>`;
       const can = inv.canCraft(r);
@@ -1602,10 +1617,11 @@ function openCraft() {
       return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${ITEMS[r.out].name}${r.n > 1 ? ' ×' + r.n : ''}</b><small>${need}</small></div>
         <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button></div>`;
     }).join('');
-    return `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${tabs}</div><div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
+    return `${tabs}<div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
   };
   openModal('Crafting', render(), (a, d) => {
-    if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); return; }
+    if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
+    if (a === 'cats') { craftTab = -1; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
     if (a === 'craft') {
       const r = RECIPES[+d.k]; if (!r || recipeLocked(r)) return;
       const most = Math.min(99, ...Object.entries(needOf(r)).map(([id, v]) => Math.floor(inv.count(id) / v)));
