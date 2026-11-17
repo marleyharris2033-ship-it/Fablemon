@@ -3945,7 +3945,7 @@ class Town extends World {
     for (const [id, b] of Object.entries(BUILDINGS)) {
       const fr = isOpen(id) || id === 'bramble' ? b.frame : (b.frame + '_old');
       const s = this.add.image(b.cx * T + 8, b.by * T + 16, 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15);
-      this.bsprites[id] = s; this.tall.push(s);
+      this.bsprites[id] = s; this.tall.push(s); if (id === 'derby') s.noShadow = 1;   // an open arch: no shadow under it
     }
     const st = hearthStage();
     this.hearth = this.add.image(36 * T + 8, 24 * T + 16, 'town', 'hearth' + st).setOrigin(.5, 1).setDepth(24 * T + 15);

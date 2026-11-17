@@ -340,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261117-194724">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261117-194724">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261117-194724">
+<link rel="manifest" href="manifest.webmanifest?v=20261117-194948">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261117-194948">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261117-194948">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-194724').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-194948').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -3954,7 +3954,7 @@ class Town extends World {
     for (const [id, b] of Object.entries(BUILDINGS)) {
       const fr = isOpen(id) || id === 'bramble' ? b.frame : (b.frame + '_old');
       const s = this.add.image(b.cx * T + 8, b.by * T + 16, 'town', fr).setOrigin(.5, 1).setDepth(b.by * T + 15);
-      this.bsprites[id] = s; this.tall.push(s);
+      this.bsprites[id] = s; this.tall.push(s); if (id === 'derby') s.noShadow = 1;   // an open arch: no shadow under it
     }
     const st = hearthStage();
     this.hearth = this.add.image(36 * T + 8, 24 * T + 16, 'town', 'hearth' + st).setOrigin(.5, 1).setDepth(24 * T + 15);
