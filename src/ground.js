@@ -13,12 +13,13 @@
 let GP_UNDER = false;   // set while an ascii map's own ground draws: it then leaves the base to the painted ground
 const GK = 3, GTS = T * GK;   // px per game px, tile size in px
 // how many tiles one texture spans before it repeats: smaller for stones so they sit at a believable size
-const GPERIOD = { cobble: 4, river: 4, slab: 4.5, board: 4, soil: 4, grass: 6, heather: 6, moss: 5, rock: 6, sand: 8, snow: 8, dirt: 6, peat: 6, water: 8, shallow: 6 };
+const GPERIOD = { crag_gravel: 5, quarry_flags: 4, quarry_dust: 7, quarry_dust_grass: 7, mud: 7, sawdust: 6, forest_moss: 5, crag_rock: 6, cobble: 4, river: 4, slab: 4.5, board: 4, soil: 4, grass: 6, heather: 6, moss: 5, rock: 6, sand: 8, snow: 8, dirt: 6, peat: 6, water: 8, shallow: 6 };
 const GROUND = { src: {}, ready: false, cache: {} };
 
 async function groundPrepare() {
   if (GROUND.ready || !ASSET.ground) return;
   for (const [n, u] of Object.entries(ASSET.ground)) {
+    if (n === 'encounter_grass') continue;   // the long-grass patch is a sprite, not a ground
     const P = (GPERIOD[n] || 6) * GTS, im = await loadImg(u), c = document.createElement('canvas'); c.width = c.height = P;
     const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, P, P);
     GROUND.src[n] = { d: g.getImageData(0, 0, P, P).data, P };
@@ -33,6 +34,7 @@ const GTWEAK = {
   soilwet: (r, g, b) => [r * .68, g * .64, b * .66],
   soildry: (r, g, b) => { const l = (r + g + b) / 3; return [(r * .8 + l * .2) * 1.18, (g * .8 + l * .2) * 1.14, (b * .8 + l * .2) * 1.08]; },
   bog: (r, g, b) => { const l = (r + g + b) / 3; return [l * .35 + 30, l * .5 + 40, l * .32 + 22]; },
+  soft: (r, g, b) => [r * .84 + 8, g * .8 + 6, b * .74 + 2],   // the quarry dust, a little less glaring
   dull: (r, g, b) => { const l = (r + g + b) / 3; return [(r * .55 + l * .45) * .78, (g * .55 + l * .45) * .8, (b * .55 + l * .45) * .7]; },
   ice: (r, g, b) => { const l = (r + g + b) / 3; return [l * .55 + 110, l * .6 + 120, l * .5 + 140]; },
 };
@@ -58,6 +60,7 @@ const GROUND_KINDS = {
   dirt: { pri: 1 }, sand: { pri: 1 }, peat: { pri: 1 }, rock: { pri: 1 },
   cobble: { pri: 2 }, slab: { pri: 2 }, river: { pri: 2 }, board: { pri: 2, hard: true },
   soil: { pri: 4, hard: true, fam: 'soil' }, soilwet: { pri: 4.1, hard: true, fam: 'soil' },
+  floor: { pri: 1 }, path: { pri: 2 }, mudk: { pri: 2.5 }, wild: { pri: 3, tuft: true },   // regional maps (17 Nov): their own floor, path and long-grass ground
   grass: { pri: 3, tuft: true }, heather: { pri: 3, tuft: true }, moss: { pri: 3, tuft: true }, snow: { pri: 3 },
 };
 const GPAL_MEADOW = { grass: 'grass', dirt: 'dirt', water: 'water', cobble: 'cobble', sand: 'sand', shallow: 'shallow', soil: 'soil@soildry', soilwet: 'soil@soilwet' };
@@ -282,29 +285,31 @@ const _gRouteCreate = Route.prototype.create;
 Route.prototype.create = function () {
   _gRouteCreate.call(this);
   if (!this.ground || RC.ascii) return;
+  if (RC.ew && this.R) { try { this.groundP = ewGround(this, this.R); this.ground.setVisible(false); return; } catch (e) { console.warn('ground', e); } }
   try { this.groundP = groundFromLayer(this, this.ground, RC.bog ? GPAL_BOG : GPAL_MEADOW, RW, RH); } catch (e) { console.warn('ground', e); this.ground.setVisible(true); }
 };
 
 /* ---------- the ascii maps (16 Nov 2026): crags and Quarrydown, the coast and the sea, Highmoor
    The painted ground goes underneath, and each map's own drawing keeps only what's special to it on top:
    cliff faces, crevasses and bridges, the sea with its depth and foam, gorges, boardwalks and steps. */
-const GPAL_CRAG = { dirt: 'dirt', rock: 'rock', slab: 'slab', grass: 'grass@dull' };
-const GPAL_MINE = { dirt: 'dirt@dull', rock: 'rock@dull', slab: 'slab@dull', grass: 'moss@dull' };
+const GPAL_CRAG = { floor: 'crag_dirt', path: 'crag_gravel', rock: 'crag_rock', wild: 'crag_dirt_grass' };
+const GPAL_MINE = { floor: 'crag_dirt@dull', path: 'crag_gravel@dull', rock: 'crag_rock@dull', wild: 'crag_dirt@dull' };
+const GPAL_QUARRY = { floor: 'quarry_dust@soft', path: 'quarry_flags', rock: 'crag_rock', wild: 'quarry_dust_grass@soft' };
 const GPAL_BEACH = { sand: 'sand', grass: 'grass', rock: 'rock', dirt: 'sand' };
 const GPAL_MOOR = { heather: 'heather', rock: 'rock', dirt: 'dirt', snow: 'snow' };
 function asciiKind(mode, k) {
   const zone = k >= '0' && k <= '9';
   if (mode === 'beach') return k === '#' || k === ';' ? 'grass' : zone && !RC.sail ? 'grass' : 'sand';
   if (mode === 'moor') { if (k === '#' || k === 'C') return 'rock'; if (RC.snow) return 'snow'; return k === ',' || k === 'H' ? 'dirt' : 'heather'; }
-  return k === '#' ? 'rock' : k === ',' ? 'slab' : zone ? 'grass' : 'dirt';
+  return k === '#' ? 'rock' : k === ',' || RAILS.includes(k) ? 'path' : zone ? 'wild' : 'floor';
 }
-// the crags and Quarrydown keep their own ground: the user preferred it (17 Nov), until crag-specific painted textures arrive
-for (const [name, mode] of [['beachGround', 'beach'], ['moorGround', 'moor']]) {
+// the crags and Quarrydown use their own textures from the user's second ground pack (17 Nov)
+for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['moorGround', 'moor']]) {
   const orig = window[name] || eval(name);
   const wrapped = function (sc, R) {
     let P = null;
     if (GROUND.ready) try {
-      const pal = mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : GPAL_CRAG;
+      const pal = mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : /quarry|qd/.test(sc.scene.key) ? GPAL_QUARRY : GPAL_CRAG;
       P = groundFromCells(sc, RW, RH, (x, y) => asciiKind(mode, R.kind[y * RW + x]), pal);
     } catch (e) { console.warn('ground', e); P = null; }
     sc.groundP = P; GP_UNDER = !!P;
@@ -312,3 +317,62 @@ for (const [name, mode] of [['beachGround', 'beach'], ['moorGround', 'moor']]) {
   };
   if (name === 'cragGround') cragGround = wrapped; else if (name === 'beachGround') beachGround = wrapped; else moorGround = wrapped;
 }
+
+/* ---------- Elderwood (17 Nov): forest floor, forest paths, grassy forest floor under the long grass, mud on
+   Greenline's haul road and in the clear-cuts, moss in the town, sawdust and mud in the timber camp */
+const GPAL_FOREST = { floor: 'forest_floor', path: 'forest_path', wild: 'forest_floor_grass', mudk: 'mud', water: 'water', shallow: 'shallow' };
+const GPAL_EWTOWN = { ...GPAL_FOREST, floor: 'forest_moss', wild: 'forest_floor_grass' };
+const GPAL_CAMP = { ...GPAL_FOREST, floor: 'sawdust', path: 'mud', mudk: 'mud' };
+function ewGround(sc, R) {
+  const key = sc.scene.key, inR = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
+  const road = key === 'fernwalk' ? [[17, 0, 21, 64]] : key === 'eldglade' ? [[26, 30, 56, 33], [26, 30, 30, 48]] : [];
+  const cut = (RC.clearcut || []).filter(c => !c.ok || !c.ok()).map(c => c.r);
+  const pal = key === 'elderwood' ? GPAL_EWTOWN : key === 'ewcamp' ? GPAL_CAMP : GPAL_FOREST;
+  return groundFromCells(sc, RW, RH, (x, y) => {
+    const i = y * RW + x;
+    if (R.waterish[i]) return 'water';
+    if (R.grass[i] >= 0) return 'wild';
+    if (R.dirtish[i]) return road.some(r => inR(x, y, r)) ? 'mudk' : 'path';
+    if (key !== 'ewcamp' && cut.some(r => inR(x, y, r))) return 'path';   // the clear-cuts are bare earth
+    return 'floor';
+  }, pal);
+}
+
+/* ---------- the user's long-grass patch (17 Nov), recoloured for each region and season */
+const EGRASS_TINT = {
+  meadow: null,
+  forest: (r, g, b) => [r * .62, g * .78, b * .6],
+  crag: (r, g, b) => { const l = (r + g + b) / 3; return [l * .75 + 62, l * .72 + 40, l * .25 + 8]; },
+  quarry: (r, g, b) => { const l = (r + g + b) / 3; return [l * .6 + 66, l * .72 + 62, l * .5 + 44]; },
+  beach: (r, g, b) => { const l = (r + g + b) / 3; return [l * .7 + 66, l * .82 + 58, l * .42 + 26]; },
+  moor: (r, g, b) => { const l = (r + g + b) / 3; return [l * .78 + 70, l * .64 + 42, l * .3 + 14]; },
+  snow: (r, g, b) => { const l = (r + g + b) / 3; return [l * .45 + 128, l * .5 + 132, l * .45 + 144]; },
+};
+const egrassRegion = sc => RC.ew ? 'forest' : RC.moor ? (RC.snow ? 'snow' : 'moor') : RC.beach ? 'beach' : RC.ascii ? (/quarry|qd/.test(sc.scene.key) ? 'quarry' : 'crag') : 'meadow';
+let EGRASS_IMG = null;
+async function egrassLoad() { if (!EGRASS_IMG && ASSET.ground && ASSET.ground.encounter_grass) EGRASS_IMG = await loadImg(ASSET.ground.encounter_grass); }
+const _egBoot = bootGame;
+bootGame = async function () { try { await egrassLoad(); } catch (e) { } return _egBoot(); };
+function egrassTex(sc, region) {
+  const season = seasonIdx(S.day), key = `egrass_${region}_${season}`;
+  if (sc.textures.exists(key)) return key;
+  const N = EGRASS_IMG.width, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(EGRASS_IMG, 0, 0);
+  const d = g.getImageData(0, 0, N, N), a = d.data, f = EGRASS_TINT[region];
+  for (let i = 0; i < a.length; i += 4) {
+    if (!a[i + 3]) continue;
+    let [r, gg, b] = f ? f(a[i], a[i + 1], a[i + 2]) : [a[i], a[i + 1], a[i + 2]];
+    if (region !== 'snow') [r, gg, b] = recolor(season, 'grass', r, gg, b);
+    a[i] = r; a[i + 1] = gg; a[i + 2] = b;
+  }
+  g.putImageData(d, 0, 0); sc.textures.addCanvas(key, c); return key;
+}
+const _egRoute = Route.prototype.create;
+Route.prototype.create = function () {
+  _egRoute.call(this);
+  if (!EGRASS_IMG || RC.bog || !this.grassSpr) return;
+  try {
+    const key = egrassTex(this, egrassRegion(this)), sz = 32 / EGRASS_IMG.width;   // patches overlap their neighbours so the zone reads as one mass, not squares
+    for (const sp of Object.values(this.grassSpr)) if (sp && sp.setTexture) { if (sp.tintTopLeft === 0xe8dc98 || sp.tintTopLeft === 0xd8d890) sp.clearTint(); sp.setTexture(key).setFlipX(hash(sp.x, sp.y) > .5); const h = hash(sp.x * 7, sp.y * 3), k = .92 + h * .16; sp.setScale(sz * k, sz * k * .8); sp.x += (h - .5) * 4; sp.y += 3; }   // wide and lowish: rows overlap, and the grass comes up to your waist   // the region's own colour replaces the old crag and dune tints; Verdance's grey stays
+  } catch (e) { console.warn('egrass', e); }
+};
