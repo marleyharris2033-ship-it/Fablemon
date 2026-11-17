@@ -155,7 +155,7 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 #bfoebox{left:2%;top:4%}#bmebox{right:2%;bottom:5%}
 .bbox .bn{font-weight:700;color:var(--ink)}.bbox .tchip{font-size:10px}
 .bhp{height:7px;background:#3a2e26;border-radius:3px;overflow:hidden;margin-top:3px}.bhp i{display:block;height:100%;transition:width .45s}
-.bhpn{font-size:.85em;text-align:right;font-weight:700}
+.bhpn{font-size:.85em;text-align:right;font-weight:700}.bbox .bn small{font-family:var(--ui);font-weight:700;font-size:.8em;opacity:.8}
 .bxp{height:4px;background:#d8cba0;margin-top:2px;border-radius:2px;overflow:hidden}.bxp i{display:block;height:100%;background:#3a8fd0;transition:width .6s}
 #bui{flex:1 1 auto;max-height:calc(100vh - 8px);padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:auto;box-sizing:border-box}
 #battle:not(.side) #bui{flex:0 0 auto;min-height:150px}
@@ -340,15 +340,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261117-203443">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261117-203443">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261117-203443">
+<link rel="manifest" href="manifest.webmanifest?v=20261117-204742">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261117-204742">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261117-204742">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-203443').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261117-204742').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -15312,7 +15312,7 @@ const RTB = (() => {
 #rtb.show{display:block}
 body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.rtb-on #quest,body.rtb-on #topbtns,body.rtb-on #clock,body.rtb-on #energy,body.rtb-on #toast{visibility:hidden}
 #rtb .rbox{position:absolute;pointer-events:none;background:rgba(255,250,234,.94);border:3px solid #2c4a2c;border-radius:8px;padding:3px 8px;min-width:150px;font-size:13px;color:#2a2a1a;box-shadow:0 2px 0 rgba(0,0,0,.25)}
-#rtb .rbox b{font-size:13px}#rtb .rbox small{opacity:.75}
+#rtb .rbox b{font-size:13px}#rtb .rbox small{opacity:.8;font-family:var(--ui);font-weight:700}
 #rtbFoe{left:8px;top:calc(8px + env(safe-area-inset-top))}#rtbMe{right:8px;top:calc(8px + env(safe-area-inset-top))}
 #rtb .rhp{height:7px;background:#3a2e26;border-radius:3px;overflow:hidden;margin-top:3px}#rtb .rhp i{display:block;height:100%;transition:width .2s}
 #rtb .rchip{display:inline-block;font-size:10px;color:#fff;border-radius:4px;padding:0 4px;margin-left:3px}

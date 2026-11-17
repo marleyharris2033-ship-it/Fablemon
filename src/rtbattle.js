@@ -21,7 +21,7 @@ const RTB = (() => {
 #rtb.show{display:block}
 body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.rtb-on #quest,body.rtb-on #topbtns,body.rtb-on #clock,body.rtb-on #energy,body.rtb-on #toast{visibility:hidden}
 #rtb .rbox{position:absolute;pointer-events:none;background:rgba(255,250,234,.94);border:3px solid #2c4a2c;border-radius:8px;padding:3px 8px;min-width:150px;font-size:13px;color:#2a2a1a;box-shadow:0 2px 0 rgba(0,0,0,.25)}
-#rtb .rbox b{font-size:13px}#rtb .rbox small{opacity:.75}
+#rtb .rbox b{font-size:13px}#rtb .rbox small{opacity:.8;font-family:var(--ui);font-weight:700}
 #rtbFoe{left:8px;top:calc(8px + env(safe-area-inset-top))}#rtbMe{right:8px;top:calc(8px + env(safe-area-inset-top))}
 #rtb .rhp{height:7px;background:#3a2e26;border-radius:3px;overflow:hidden;margin-top:3px}#rtb .rhp i{display:block;height:100%;transition:width .2s}
 #rtb .rchip{display:inline-block;font-size:10px;color:#fff;border-radius:4px;padding:0 4px;margin-left:3px}
