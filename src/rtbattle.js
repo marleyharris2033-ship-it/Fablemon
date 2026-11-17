@@ -67,7 +67,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // ---------- rules
   const STG = k => k;
   const cdOf = id => { const M = MOVES[id]; if (!M) return 2; if (M.protect) return 6; if (!M.pow) return M.heal || M.rest ? 9 : 4.5; const n = M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1; return Math.max(1.6, Math.min(7, 1.3 + M.pow * n / 30)); };
-  const speedOf = f => (40 + Math.min(150, monStat(f.m, 'spd') * STAGE(f.stg.spd || 0)) * .45) * (f.m.status === 'par' ? .55 : 1);
+  const speedOf = f => (75 + Math.min(150, monStat(f.m, 'spd') * STAGE(f.stg.spd || 0)) * .3)   // 17 Nov: nothing crawls early on; fast ones still clearly faster * (f.m.status === 'par' ? .55 : 1);
   const statOf = (f, k) => monStat(f.m, k) * heldStat(f.m, k) * STAGE(f.stg[k] || 0);
   function damage(att, def, id) {
     const M = MOVES[id]; if (M.fixed) return att.m.lv;
