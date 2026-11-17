@@ -773,10 +773,11 @@ function slotSize() { return Math.max(26, Math.min(40, Math.floor((Math.min(wind
 function renderHotbar() {
   if (!S) return;
   const s = slotSize(); document.documentElement.style.setProperty('--s', s + 'px');
-  $('hotbar').innerHTML = inv.slots.slice(0, 12).map((sl, i) => slotHTML(i, sl, i === S.sel ? 'sel' : '')).join('');
+  $('hotbar').innerHTML = inv.slots.slice(0, 12).map((sl, i) => slotHTML(i, sl, i === S.sel ? 'sel' : '')).join('') + `<button id="hbTab" aria-label="${opts.hbMin ? 'Show the hotbar' : 'Hide the hotbar'}">${opts.hbMin ? '▴' : '▾'}</button>`;
+  document.body.classList.toggle('hb-min', !!opts.hbMin);   // tucked away: only the item in your hand shows
   const h = inv.slots[S.sel]; $('actBtn').innerHTML = h ? `<img src="${h.id === 'can' && !S.water ? ICONS.can_empty : iconFor(h.id)}">` : '<span style="font-weight:700;color:var(--green)">USE</span>'; { const as = (opts[ctlKey()] || {}).as || 1, im = $('actBtn').querySelector('img'); if (im && as !== 1) im.style.width = im.style.height = 34 * as + 'px'; }
 }
-$('hotbar').addEventListener('pointerdown', e => { const el = e.target.closest('.slot'); if (!el) return; e.stopPropagation(); select(+el.dataset.i); });
+$('hotbar').addEventListener('pointerdown', e => { if (e.target.closest('#hbTab')) { e.stopPropagation(); e.preventDefault(); opts.hbMin = !opts.hbMin; saveOpts(); renderHotbar(); Sound.play('click'); return; } const el = e.target.closest('.slot'); if (!el) return; e.stopPropagation(); select(+el.dataset.i); });
 function select(i) { S.sel = (i + 12) % 12; renderHotbar(); Sound.play('click'); const s = inv.slots[S.sel]; if (s) toast(ITEMS[s.id].name, 900); }
 function held() { return inv.slots[S.sel]; }
 function updateHUD() {

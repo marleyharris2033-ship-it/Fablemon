@@ -264,6 +264,8 @@ body{-webkit-font-smoothing:antialiased}
 #topbtns .sq{width:50px;height:50px}
 @media (orientation: portrait){#topbtns{flex-direction:column;gap:4px}}
 #clock{padding:3px 8px}#quest{padding:3px 8px}#hotbar{padding:2px}
+#hbTab{position:absolute;right:8px;top:-22px;height:22px;min-width:40px;padding:0 10px;border:2px solid #5a3a1e;border-bottom:0;border-radius:9px 9px 0 0;background:#fbf3d9;color:#5a3a1e;font:800 13px var(--ui);line-height:18px;touch-action:manipulation}
+body.hb-min #hotbar .slot:not(.sel){display:none}body.hb-min #hbTab{right:50%;transform:translateX(50%)}
 /* control layout editor */
 body.ctlEdit #joy,body.ctlEdit #actBtn{display:flex !important;outline:3px dashed var(--gold);outline-offset:4px;cursor:move;z-index:60}
 body.ctlEdit #joy{display:block !important}
