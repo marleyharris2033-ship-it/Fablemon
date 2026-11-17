@@ -1011,7 +1011,7 @@ function openSettings(back) {
     if (a === 'ctledit') { closeModal(); return ctlEdit(true); }
     if (a === 'intro') { closeModal(); return playIntro('Farmer', () => { $('title').style.display = 'flex'; }); }
     handleSetting(a, d, el);
-    if (['ctl', 'auto', 'bspeed', 'roam', 'action'].includes(a)) $('mBody').innerHTML = render();
+    if (['ctl', 'auto', 'bspeed', 'roam', 'action', 'actionT'].includes(a)) $('mBody').innerHTML = render();
   });
 }
 function handleSetting(a, d, el) {
@@ -4223,9 +4223,26 @@ const Battle = (() => {
     await evolveAll();
     finish();
   }
-  async function resolveRT(foe, out, used) {
+  async function resolveRT(foe, out, used, T, beaten) {
     const alive = used.map(u => S.mons.find(m => m.uid === u)).filter(m => m && m.hp > 0);
     const me = alive[alive.length - 1] || team().find(m => m.hp > 0) || team()[0];
+    if (T) {   // an action battle against a trainer: experience for each Fablemon beaten, then the prize and whatever comes next
+      B = { foe, me, wild: false, T, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
+      if (scene) scene.paused = true;
+      q('bstage').style.backgroundImage = `url(${battleBg()})`; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
+      sprites(); box('me'); box('foe'); el.classList.add('show'); layout();
+      if (out === 'lose') return blackout();
+      q('bfoe').classList.add('faint'); Sound.theme('none'); Sound.victory();
+      for (const m of beaten || [foe]) { B.foe = m; await gainXP(); }
+      q('bfoe').classList.remove('faint');
+      await say(`You beat ${T.label} ${T.name}!`, 1400);
+      if (T.lose) await say(`"${T.lose}"`, 2200);
+      const lucky = [...B.used].some(uid => (S.mons.find(x => x.uid === uid) || {}).held === 'lucky_acorn'), prize = Math.round(T.prize * (lucky ? 1.25 : 1));
+      S.gold += prize; updateHUD(); Sound.play('coin');
+      await say(`You got ${prize}g for winning${lucky ? ' (Lucky Acorn bonus!)' : ''}.`, 1500);
+      if (T.onWin) T.onWin();
+      await evolveAll(); return finish();
+    }
     B = { foe, me, wild: true, T: null, st: { me: {}, foe: {} }, v: { me: {}, foe: {} }, hz: {}, wx: null, turn: 0, used: new Set(alive.map(m => m.uid)), runs: 0, prevTheme: Sound.currentTheme };
     if (scene) scene.paused = true;
     q('bstage').style.backgroundImage = `url(${battleBg()})`; q('bcharm').className = 'hidden'; q('bstage').style.filter = '';
@@ -4236,7 +4253,20 @@ const Battle = (() => {
     await say(`The wild ${SPECIES[foe.sp].name} fainted!`, 1100);
     await gainXP(); await evolveAll(); q('bfoe').classList.remove('faint'); finish();
   }
-  return { resolveRT, start(foe, T) { Sound.play('encounter'); const f = $('flash'); f.style.opacity = .9; setTimeout(() => f.style.opacity = 0, 140); setTimeout(() => run(foe, T), 220); }, get active() { return !!B; } };
+  // trainers fight in action battles too (17 Nov), unless they're turned off in Settings or you're out at sea
+  function rtTrainer(foe, T) {
+    if (!T || T.classic || opts.actionT === false || T.phase2 || typeof RTB === 'undefined' || RTB.active || !scene || !scene.player || !scene.player.active || !scene.cameras) return false;
+    if (RC && RC.sail && scene.R) return false;
+    const pl = scene.player; let keep = null, bd = 6 * T_PX;
+    for (const o of scene.children.list) if (o.type === 'Sprite' && o !== pl && o.visible && o.texture && /^(tr_|npc_|ppl_)/.test(o.texture.key)) { const d = Math.hypot(o.x - pl.x, o.y - pl.y); if (d < bd) { bd = d; keep = o; } }
+    let at;
+    if (keep) at = { x: keep.x + (pl.x - keep.x) * .35, y: keep.y + (pl.y - keep.y) * .35 + 2 };
+    else { const dv = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[(scene.p && scene.p.dir) || 'up'] || [0, -1]; at = { x: pl.x + dv[0] * 48, y: pl.y + dv[1] * 48 }; }
+    T.team.forEach(m => { m.status = null; m.slp = 0; });
+    RTB.start(scene, foe, at, T, keep); return true;
+  }
+  const T_PX = 16;
+  return { resolveRT, start(foe, T) { if (rtTrainer(foe, T)) return; Sound.play('encounter'); const f = $('flash'); f.style.opacity = .9; setTimeout(() => f.style.opacity = 0, 140); setTimeout(() => run(foe, T), 220); }, get active() { return !!B; } };
 })();
 
 /* ---------- the route's encounter tables */

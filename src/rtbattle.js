@@ -39,6 +39,11 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 #rtbSide button img.ic{position:absolute;left:50%;top:5px;width:26px;height:26px;margin-left:-13px;image-rendering:pixelated;object-fit:contain}#rtbSide button img.ic[src='']{visibility:hidden}#rtbSide button small{position:absolute;bottom:2px;left:0;right:0;font-size:9px;font-weight:800}
 #rtbSide button .cd{position:absolute;inset:0;background:rgba(30,30,30,.55);transform-origin:bottom;pointer-events:none}
 #rtbSide #rtbDodge{width:62px;height:62px;background:#e8f4ff}
+#rtbPick{position:absolute;inset:0;background:rgba(10,16,10,.55);display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:2}
+#rtbPick.show{display:flex}#rtbPick .pk{background:#fbf3d9;border:3px solid #5a3a1e;border-radius:12px;padding:12px;width:min(320px,86vw);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+#rtbPick h3{margin:0 0 8px;font:800 16px var(--pix,var(--ui));color:#3a2a14;text-align:center}
+#rtbPick button{display:flex;align-items:center;gap:8px;width:100%;margin:4px 0;padding:5px 8px;border:2px solid #2c4a2c;border-radius:9px;background:#fffaea;font:700 14px var(--ui);color:#2a2a1a;text-align:left;touch-action:manipulation}
+#rtbPick button img{width:36px;height:36px;image-rendering:pixelated}#rtbPick button small{margin-left:auto;font-weight:700;opacity:.75}
 #rtbJoy{position:absolute;left:14px;bottom:calc(18px + env(safe-area-inset-bottom));width:120px;height:120px;border-radius:50%;background:rgba(255,250,234,.25);border:3px solid rgba(255,250,234,.6);pointer-events:auto;touch-action:none}
 #rtbJoy i{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,250,234,.85);border:3px solid #2c4a2c}
 #rtbMsg{position:absolute;left:50%;top:22%;transform:translateX(-50%);color:#fff;font-weight:800;font-size:18px;text-shadow:0 2px 0 #000,0 0 6px #000;white-space:nowrap;pointer-events:none;transition:opacity .3s}
@@ -46,7 +51,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
   ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
-    <div id="rtbJoy"><i></i></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><div id="rtbMoves"></div>`;
+    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
 
@@ -62,6 +67,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const k = e.key.toLowerCase(); if (['1', '2', '3', '4'].includes(k)) useMoveBtn(+k - 1); if (k === ' ' || k === 'shift') act('dodge'); if (k === 'c') act('charm'); if (k === 'h') act('heal'); if (k === 'escape') act('run'); });
   addEventListener('keyup', e => { inp.keys[e.key.toLowerCase()] = 0; });
   ui.addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (!b || !st) return; e.preventDefault();
+    if (b.dataset.pk !== undefined) { const m = team()[+b.dataset.pk]; if (st.choosing && m && m.hp > 0) { $r('rtbPick').classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; } return; }
+    if (st.choosing) return;
     if (b.dataset.mv !== undefined) useMoveBtn(+b.dataset.mv); else if (b.dataset.sw !== undefined) switchTo(+b.dataset.sw); else if (b.dataset.a) act(b.dataset.a); });
 
   // ---------- rules
@@ -195,6 +202,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       const d = Math.hypot(dx, dy) || 1; me.lunge = { t: .16, vx: dx / d * 260, vy: dy / d * 260 }; me.iframe = .35; me.dodgeT = 1.2; me.spr.setAlpha(.6);
       st.sc.time.delayedCall(170, () => { if (st) { me.lunge = null; me.spr.setAlpha(1); } }); Sound.play('swish'); return;
     }
+    if (a === 'charm' && st.T) return say("You can't catch someone else's Fablemon!");
     if (a === 'charm') {
       const c = charmId(); if (!c) return say('You have no charms!');
       if ((st.charmT || 0) > 0) return;
@@ -207,6 +215,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (ITEMS[h].cure && me.m.status) { me.m.status = null; me.stun = 0; refresh(); }
       if (ITEMS[h].heal) healF(me, healAmt(h, me.m)); say(`${monName(me.m)} ${ITEMS[h].heal ? 'ate' : 'drank'} the ${ITEMS[h].name}!`); return;
     }
+    if (a === 'run' && st.T) return say("You can't run from a trainer battle!");
     if (a === 'run') {
       const d = Math.hypot(st.foe.x - me.x, st.foe.y - me.y);
       st.runs = (st.runs || 0) + 1;
@@ -217,6 +226,25 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function switchTo(i) {
     if (!st || st.over) return; const m = team()[i]; if (!m || m.hp <= 0 || m === st.me.m || (st.swT || 0) > 0) return;
     swapIn(m); st.swT = 3;
+  }
+  function choose(me) {
+    st.choosing = true; me.spr.setTint(0x777777).setAlpha(.5); inp.jx = inp.jy = 0;
+    for (const b of st.bolts.slice()) kill(b);
+    const P = $r('rtbPick'); P.querySelector('h3').textContent = `${monName(me.m)} fainted! Who's next?`;
+    P.querySelector('.pl').innerHTML = team().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
+    P.classList.add('show');
+  }
+  function nextFoe(m) {   // the trainer sends out their next Fablemon from where they stand
+    st.switching = true; for (const b of st.bolts.slice()) kill(b);
+    const sc = st.sc, old = st.foe;
+    sc.time.delayedCall(900, () => {
+      if (!st || st.over) return;
+      if (old.ring) old.ring.destroy(); old.sh.destroy(); old.spr.destroy();
+      st.foeMon = m; S.seen[m.sp] = 1;
+      st.foe = fighter(sc, m, 'foe', st.home.x, st.home.y); place(st.foe); face(st.foe, st.me.x - st.foe.x, st.me.y - st.foe.y, false); st.foe.iframe = .8;
+      say(`${st.T.label} ${st.T.name} sent out ${SPECIES[m.sp].name}!`, 1400); Sound.play('pop');
+      buildMoves(); refresh(); st.switching = false; st.ready = .9;
+    });
   }
   function swapIn(m) {
     const sc = st.sc, old = st.me, x = old.x, y = old.y;
@@ -250,6 +278,9 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function think(dt) {
     const f = st.foe, me = st.me, M0 = f.m.moves.map(id => MOVES[id]).filter(Boolean);
     if (f.stun > 0 || f.lunge || st.catching) return [0, 0];
+    if (st.T && st.T.boss && (st.T.heals ?? 2) > 0 && f.m.hp > 0 && f.m.hp < monStat(f.m, 'hp') * .3 && !(st.fhT > 0)) {   // a Warden patches their Fablemon up, like in a classic battle
+      st.T.heals = (st.T.heals ?? 2) - 1; st.fhT = 6; healF(f, Math.ceil(monStat(f.m, 'hp') / 2)); say(`${st.T.name} used a potion on ${SPECIES[f.m.sp].name}!`, 1300); return [0, 0];
+    }
     const dx = me.x - f.x, dy = me.y - f.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
     const physical = monStat(f.m, 'atk') >= monStat(f.m, 'eatk');
     // shy ones bolt for the edge when they're losing
@@ -295,16 +326,17 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       st.hidden = [];
       for (const o of sc.children.list) {
         if (o === sc.player || !o.visible || o.type !== 'Sprite' || !o.texture) continue;
+        if (o === st.keep) continue;   // the trainer you're fighting stays
         if (/^(mon_|tr_|npc_|ppl_|ew_)/.test(o.texture.key)) { st.hidden.push(o); o.setVisible(false); }
       }
       for (const r of sc.roam || []) if (r.glint && r.glint.visible) { st.hidden.push(r.glint); r.glint.setVisible(false); }
-      if (sc.follower && sc.follower.visible) { st.hidden.push(sc.follower); sc.follower.setVisible(false); }
+      if (sc.follower && sc.follower.visible && sc.follower !== st.keep) { st.hidden.push(sc.follower); sc.follower.setVisible(false); }
     } else for (const o of st.hidden || []) if (o.active) o.setVisible(true);
     if (sc.syncShadows) sc.syncShadows();
   }
   function stageUp(sc, at) {
     st.sc = sc; const cam = sc.cameras.main, zoom = cam.zoom, cw = cam.width / zoom, ch = cam.height / zoom;
-    const pl = sc.player, px = pl ? pl.x : at.x, py = pl ? pl.y : at.y;
+    const pl = sc.player; let px = pl ? pl.x : at.x, py = pl ? pl.y : at.y;
     // the view: centred between you and it, kept on the map
     const bx = cam._bounds || { x: 0, y: 0, width: 1e5, height: 1e5 };
     let cx = (px + at.x) / 2, cy = (py + at.y) / 2 - 10;
@@ -315,24 +347,30 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     st.B = { x0: L + 12, x1: L + cw - 12, y0: Tp + (76 + 24) * k, y1: Tp + ch - (196 + 8) * k };
     if (st.B.y1 - st.B.y0 < 100) st.B.y1 = st.B.y0 + 100;
     st.W = st.B.x1 + st.B.x0; st.H = st.B.y1 + st.B.y0;   // (the middle, for the shy ones' escape)
-    clearStage(sc, true); if (pl) { st.plWas = { x: pl.x, y: pl.y, d: pl.depth }; pl.setDepth(pl.y + 1); const bx = pl.x - dxy(at, pl)[0] * 12, by = pl.y - dxy(at, pl)[1] * 12; if (!solid(bx, by)) sc.tweens.add({ targets: pl, x: bx, y: by, duration: 200 }); }   // you step back to let your Fablemon out
+    clearStage(sc, true); if (pl) { st.plWas = { x: pl.x, y: pl.y, d: pl.depth }; pl.setDepth(pl.y + 1); const tr = st.keep || at, u = dxy(pl, tr);   // trainers: you step back a few paces so there's room; wild ones: just a step
+      let bx = pl.x - dxy(at, pl)[0] * 12, by = pl.y - dxy(at, pl)[1] * 12;
+      if (st.T) for (const dd of [60, 44, 28, 12]) { const tx = pl.x + u[0] * dd, ty = pl.y + u[1] * dd; if (!solid(tx, ty) && tx > st.B.x0 && tx < st.B.x1 && ty > st.B.y0 && ty < st.B.y1) { bx = tx; by = ty; break; } }
+      if (!solid(bx, by)) { sc.tweens.add({ targets: pl, x: bx, y: by, duration: st.T ? 320 : 200 }); if (st.T) { px = bx; py = by; } }
+      if (st.T && st.keep) at = { x: tr.x - u[0] * 18, y: tr.y - u[1] * 18 + 2 };   }   // their Fablemon comes out in front of them
     // the wild one where it stood; yours hops out beside you, towards it
     const into = (x, y) => [Math.max(st.B.x0, Math.min(st.B.x1, x)), Math.max(st.B.y0, Math.min(st.B.y1, y))];
     let [fx, fy] = into(at.x, at.y);
     const dx = fx - px, dy = fy - py, d = Math.hypot(dx, dy) || 1;
     let [mx, my] = into(px + dx / d * 14, py + dy / d * 14); if (solid(mx, my)) [mx, my] = into(px, py);
+    st.home = { x: fx, y: fy };
     st.me = fighter(sc, st.first, 'me', px, py); st.foe = fighter(sc, st.foeMon, 'foe', fx, fy);
     place(st.me); place(st.foe); face(st.me, dx, dy, false); face(st.foe, -dx, -dy, false);
     const M0 = st.me, F0 = st.foe; sc.tweens.add({ targets: M0, x: mx, y: my, duration: 260, ease: 'Quad.out', onUpdate: () => { if (M0.spr.active) place(M0); } });
     st.me.spr.setScale(st.me.spr.scaleX * .3, st.me.spr.scaleY * .3); sc.tweens.add({ targets: st.me.spr, scaleX: st.me.spr.scaleX / .3, scaleY: st.me.spr.scaleY / .3, duration: 260, ease: 'Back.out' });
     // and the wild one backs off a few steps to give you room
-    let bx2 = fx, by2 = fy; for (let n = 0; n < 40; n++) { const tx = bx2 + dx / d * 1.6, ty = by2 + dy / d * 1.6; if (tx < st.B.x0 || tx > st.B.x1 || ty < st.B.y0 || ty > st.B.y1 || solid(tx, ty)) break; bx2 = tx; by2 = ty; }
+    let bx2 = fx, by2 = fy; if (!st.T) for (let n = 0; n < 40; n++) { const tx = bx2 + dx / d * 1.6, ty = by2 + dy / d * 1.6; if (tx < st.B.x0 || tx > st.B.x1 || ty < st.B.y0 || ty > st.B.y1 || solid(tx, ty)) break; bx2 = tx; by2 = ty; }
     sc.tweens.add({ targets: F0, x: bx2, y: by2, duration: 420, delay: 150, ease: 'Quad.out', onUpdate: () => { if (F0.spr.active) place(F0); } });
     if (st.foeMon.fab) { st.foe.ring = sc.add.star(st.foe.x, st.foe.y, 4, 2, 6, 0xfff6c8).setDepth(9e5 + 1); sc.tweens.add({ targets: st.foe.ring, angle: 180, alpha: .3, duration: 900, yoyo: true, repeat: -1 }); }
     buildMoves(); refresh();
-    say(st.foeMon.fab ? `✦ A Fabled ${SPECIES[st.foeMon.sp].name}! ✦` : `A wild ${SPECIES[st.foeMon.sp].name}!`, 1600);
-    if (!S.flags.rtHelp || S.flags.rtHelp < 3) { S.flags.rtHelp = (S.flags.rtHelp || 0) + 1; const h = $r('rtbHelp'); h.style.display = ''; h.textContent = 'Steer with the stick. Tap a move when it has recharged: they aim themselves. Dodge to dash out of the way. Weaken it, then tap Catch.'; setTimeout(() => h.style.display = 'none', 6000); }
-    st.ready = 1;   // a moment before the wild one acts
+    if (st.T) { const lines = st.T.intro && st.T.intro.length ? st.T.intro.slice() : [`${st.T.label} ${st.T.name} wants to battle!`, `${st.T.label} ${st.T.name} sent out ${SPECIES[st.foeMon.sp].name}!`]; let k = 0; const nx = () => { if (!st || st.over || k >= lines.length) return; say(lines[k++], 1500); setTimeout(nx, 1500); }; nx(); }
+    else say(st.foeMon.fab ? `✦ A Fabled ${SPECIES[st.foeMon.sp].name}! ✦` : `A wild ${SPECIES[st.foeMon.sp].name}!`, 1600);
+    if (!S.flags.rtHelp || S.flags.rtHelp < 3) { S.flags.rtHelp = (S.flags.rtHelp || 0) + 1; const h = $r('rtbHelp'); h.style.display = ''; h.textContent = 'Steer with the stick. Tap a move when it has recharged: they aim themselves. Dodge to dash out of the way.' + (st.T ? '' : ' Weaken it, then tap Catch.'); setTimeout(() => h.style.display = 'none', 6000); }
+    st.ready = st.T ? 1.8 : 1;   // a moment before the wild one acts
     st.upd = (time, delta) => tick(time, delta); sc.events.on('update', st.upd);
   }
   function dxy(a, b) { const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 1; return [dx / d, dy / d]; }
@@ -347,7 +385,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     if (fol && fol.active) { cam.startFollow(fol, true, .12, .12); sc.time.delayedCall(700, () => { if (cam._follow === fol) cam.setLerp(done.camWas.lx, done.camWas.ly); }); }
   }
   function tick(time, delta) {
-      if (!st || !st.me) return; const sc = st.sc;
+      if (!st || !st.me || st.choosing || st.switching) return; const sc = st.sc; st.fhT = (st.fhT || 0) - Math.min(.05, delta / 1000);
       const dt = Math.min(.05, delta / 1000), me = st.me, foe = st.foe;
       if (st.over) return;
       st.ready -= dt;
@@ -381,11 +419,17 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         if (b.life <= 0 || b.x < st.B.x0 - 30 || b.y < st.B.y0 - 30 || b.x > st.B.x1 + 30 || b.y > st.B.y1 + 30) kill(b);
       }
       // faints
-      if (foe.m.hp <= 0) { foe.spr.setTint(0x777777); sc.tweens.add({ targets: foe.spr, alpha: 0, y: foe.spr.y + 6, duration: 500 }); Sound.play('faint'); return end('win'); }
+      if (foe.m.hp <= 0) {
+        foe.spr.setTint(0x777777); sc.tweens.add({ targets: foe.spr, alpha: 0, y: foe.spr.y + 6, duration: 500 }); Sound.play('faint');
+        if (st.T) { st.beaten.push(foe.m); const next = st.T.team.find(m => m.hp > 0); if (next) return nextFoe(next); }
+        return end('win');
+      }
       if (me.m.hp <= 0) {
         Sound.play('faint'); me.m.status = null; const next = team().find(m => m.hp > 0);
         if (!next) return end('lose');
-        say(`${monName(me.m)} fainted!`, 1200); swapIn(next);
+        say(`${monName(me.m)} fainted!`, 1200);
+        if (team().filter(m => m.hp > 0).length > 1) return choose(me);   // pause and pick who goes next
+        swapIn(next);
       }
       if ((st.uiT = (st.uiT || 0) - dt) <= 0) { st.uiT = .08; cdUi(); }
   }
@@ -434,16 +478,16 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
 
   // ---------- start and end
-  function start(sc, foe, at) {
+  function start(sc, foe, at, T, keep) {
     const first = team().find(m => m.hp > 0); if (!first) return;
     sc.paused = true; S.seen[foe.sp] = 1;
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
-    st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, mood: typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
-      dodgeSkill: Math.min(.45, .12 + foe.lv / 260), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme };
+    st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
+      dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme };
     Sound.hushRain(true); Sound.theme('battle');
-    document.body.classList.add('rtb-on'); ui.classList.add('show');
+    document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1;
     const here = at || (sc.player ? { x: sc.player.x, y: sc.player.y - 40 } : { x: 0, y: 0 });
-    setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe); } } }, 120);
+    setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe, T ? Object.assign({}, T, { classic: true }) : undefined); } } }, 120);
   }
   function end(out) {
     if (!st || st.over) return; st.over = true;
@@ -455,7 +499,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       st = null; inp.jx = inp.jy = 0; inp.keys = {};
       for (const m of S.mons) { if (m.status === 'slp') m.status = null; }
       if (out === 'ran' || out === 'fled') { Sound.hushRain(false); Sound.theme(done.prevTheme || 'field'); for (const m of S.mons) { m.status = null; m.slp = 0; } if (done.from) { done.from.paused = false; if (done.from.p) done.from.p.busy = .4; if (done.from.refreshFollower) done.from.refreshFollower(); } return; }
-      Battle.resolveRT(foe, out, [...done.used]);
+      Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);
   }
   return { start, get active() { return !!st; }, get st() { return st; } };

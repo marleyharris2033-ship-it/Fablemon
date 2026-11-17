@@ -129,11 +129,14 @@ controlsHTML = function () {
   return _roamCtl() + `<div class="setc"><b>Wild Fablemon</b>${seg('roam', opts.roam === false ? 'off' : 'on', [['on', '👀 Roaming'], ['off', '🌾 Hidden in grass']])}
       <small>${opts.roam === false ? 'Wild Fablemon jump out at random from the long grass, like before.' : 'Wild Fablemon wander the long grass where you can see them. Walk into one to battle it.'}</small></div>
     <div class="setc"><b>Wild battle style</b>${seg('action', opts.action === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
-      <small>${opts.action === false ? 'Wild battles are turn-based, picking moves from a menu.' : 'Wild battles are real-time: steer your Fablemon, fire moves when they recharge and dodge. Trainers and Wardens stay classic.'}</small></div>`;
+      <small>${opts.action === false ? 'Wild battles are turn-based, picking moves from a menu.' : 'Wild battles are real-time: steer your Fablemon, fire moves when they recharge and dodge.'}</small></div>
+    <div class="setc"><b>Trainer battle style</b>${seg('actionT', opts.actionT === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
+      <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>`;
 };
 const _roamSet = handleSetting;
 handleSetting = function (a, d, el) {
   if (a === 'roam') { opts.roam = d.v === 'on'; saveOpts(); toast(opts.roam ? 'Wild Fablemon roam the grass.' : 'Wild Fablemon hide in the grass.', 1600); }
+  if (a === 'actionT') { opts.actionT = d.v === 'on'; saveOpts(); toast(opts.actionT ? 'Action battles for trainers.' : 'Classic battles for trainers.', 1600); }
   if (a === 'action') { opts.action = d.v === 'on'; saveOpts(); toast(opts.action ? 'Action battles for wild Fablemon.' : 'Classic battles for wild Fablemon.', 1600); }
   return _roamSet(a, d, el);
 };
