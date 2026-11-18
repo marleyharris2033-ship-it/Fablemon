@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fablemon character creator preview</title>
+<style>
+:root{--bg:#f3ead2;--ink:#3a2a14;--card:#fffaea;--edge:#c9a64e;--green:#2c4a2c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:14px 16px 4px}h1{margin:0;font-size:20px}header p{margin:4px 0 0;opacity:.75;font-size:13px}
+#stage{display:flex;justify-content:center;gap:4px;background:#bcd6bc;margin:10px 12px;border-radius:12px;border:3px solid var(--green);padding:8px 4px;overflow:hidden}
+#stage canvas{image-rendering:auto;width:min(23vw,150px);height:auto}
+section{margin:10px 12px;background:var(--card);border:2px solid var(--edge);border-radius:12px;padding:8px 10px}
+section h2{margin:0 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts button{border:2px solid #d9c79a;background:#fff;border-radius:9px;padding:6px 9px;font:600 13px system-ui;color:var(--ink);cursor:pointer}
+.opts button.on{border-color:var(--green);background:#e4f0d8;box-shadow:0 0 0 2px var(--green) inset}
+.sw{width:30px;height:30px;border-radius:50%;padding:0!important;border:3px solid #fff!important;box-shadow:0 0 0 1px #0003}
+.sw.on{box-shadow:0 0 0 3px var(--green)!important}
+.row{display:flex;gap:8px;justify-content:center;margin:10px}
+.big{background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:700 15px system-ui;cursor:pointer}
+</style></head><body>
+<header><h1>Character creator preview</h1><p>The new base body with the faces, beards and hairstyles fitted so far. Every colour can be changed.</p></header>
+<div id="stage"></div>
+<div class="row"><button class="big" id="rand">🎲 Randomise</button><button class="big" id="walk">⏸ Pause</button></div>
+<section><h2>Face</h2><div class="opts" id="face"></div></section>
+<section><h2>Skin</h2><div class="opts" id="skin"></div></section>
+<section><h2>Hair</h2><div class="opts" id="hair"></div></section>
+<section><h2>Hair colour</h2><div class="opts" id="hcol"></div></section>
+<section><h2>Beard</h2><div class="opts" id="beard"></div></section>
+<section><h2>Beard colour</h2><div class="opts" id="bcol"></div></section>
+<script>
+const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
+const SKIN = [['Original', null], ['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
+const HAIRC = [['Original', null], ['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
+const nice = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+const S = { face: 0, skin: 0, hair: CC.hair.indexOf('swept'), hcol: 0, beard: -1, bcol: 0, playing: true };
+let atlas, mat, matData;
+const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+const hexHsv = hx => { const n = parseInt(hx.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; if (h < 0) h += 1; return [h, mx ? d / mx : 0, mx]; };
+const hsv2rgb = (h, s, v) => { h = ((h % 1) + 1) % 1; const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s); return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6]; };
+const cache = {};
+// one piece, its materials recoloured: each pixel keeps its shading (brightness relative to the piece's middle tone)
+// and takes the swatch's hue; shadows lean warmer and richer, highlights lighter, the dark outline stays
+function piece(key, cols) {
+  const ck = key + '|' + cols.join(','); if (cache[ck]) return cache[ck];
+  const P = CC.pieces[key]; if (!P) return null; const [x, y, w, h] = P.f;
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+  g.drawImage(atlas, x, y, w, h, 0, 0, w, h);
+  if (cols.some(Boolean)) {
+    const id = g.getImageData(0, 0, w, h), d = id.data, mats = [];
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats.push(Math.round(matData[(y + yy) * mat.width + x + xx] / 60));
+    for (let m = 1; m <= 3; m++) {
+      const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
+      const vs = []; for (let i = 0; i < mats.length; i++) if (mats[i] === m && d[i * 4 + 3] > 0) vs.push(Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255);
+      if (!vs.length) continue; vs.sort((a, b) => a - b); const med = vs[vs.length >> 1] || .5;
+      for (let i = 0; i < mats.length; i++) {
+        if (mats[i] !== m || !d[i * 4 + 3]) continue;
+        const v = Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255; if (v < .16) continue;
+        const k = v / med, nv = Math.min(1, tv * Math.pow(k, 1.05)), ns = Math.min(1, ts * (k < 1 ? 1 + (1 - k) * .45 : 1 - (k - 1) * .5)), nh = th + (k < 1 ? -(1 - k) * .03 : (k - 1) * .02);
+        const [r, gg, b] = hsv2rgb(nh, Math.max(0, ns), nv); d[i * 4] = r * 255; d[i * 4 + 1] = gg * 255; d[i * 4 + 2] = b * 255;
+      }
+    }
+    g.putImageData(id, 0, 0);
+  }
+  return cache[ck] = c;
+}
+const canv = [0, 1, 2, 3].map(() => { const c = document.createElement('canvas'); c.width = CC.cell; c.height = CC.cell; document.getElementById('stage').appendChild(c); return c; });
+function draw(step) {
+  const skin = SKIN[S.skin][1], hc = HAIRC[S.hcol][1], bc = (HAIRC[S.bcol] || [])[1];
+  for (let d = 0; d < 4; d++) {
+    const f = d * 4 + (step % 4), g = canv[d].getContext('2d'), [ax, ay] = CC.anchors[f];
+    g.clearRect(0, 0, CC.cell, CC.cell);
+    const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax : 0)), Math.round(P.at[1] + (follow ? ay : 0))); };
+    put('body_' + f, [skin, null, null], false);
+    put(`head${S.face}_${d}`, [skin, null, null]);
+    if (S.beard >= 0 && d !== 3) put(`beard${S.beard}_${d}`, [null, null, bc || hc]);
+    if (S.hair >= 0) put(`hair_${CC.hair[S.hair]}_${d}`, [null, hc, null]);
+  }
+}
+function ui() {
+  const opts = (id, list, key, sw) => { const el = document.getElementById(id); el.innerHTML = '';
+    list.forEach(([label, val], i) => { const b = document.createElement('button'); if (sw) { b.className = 'sw'; b.title = label; b.style.background = val || 'linear-gradient(135deg,#fff 45%,#c33 50%,#fff 55%)'; } else b.textContent = label;
+      if (S[key] === val || (!sw && S[key] === i - (list[0][1] === -1 ? 1 : 0)) || (sw && S[key] === i)) b.classList.add('on');
+      b.onclick = () => { S[key] = sw ? i : (list[0][1] === -1 ? i - 1 : i); ui(); draw(step); }; el.appendChild(b); }); };
+  opts('face', [...Array(CC.heads)].map((_, i) => ['Face ' + (i + 1)]), 'face');
+  opts('skin', SKIN, 'skin', 1);
+  opts('hair', [['Bald', -1], ...CC.hair.map(n => [nice(n)])], 'hair');
+  opts('hcol', HAIRC, 'hcol', 1);
+  opts('beard', [['None', -1], ...[...Array(CC.beards)].map((_, i) => ['Beard ' + (i + 1)])], 'beard');
+  opts('bcol', [['Match hair', null], ...HAIRC.slice(1)], 'bcol', 1);
+}
+let step = 1;
+document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Pause' : '▶ Walk'; if (!S.playing) { step = 1; draw(step); } };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.face = r(CC.heads); S.skin = 1 + r(SKIN.length - 1); S.hair = r(CC.hair.length + 1) - 1; S.hcol = 1 + r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = 0; ui(); draw(step); };
+(async () => {
+  [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
+  const c = document.createElement('canvas'); c.width = mat.width; c.height = mat.height; const g = c.getContext('2d'); g.drawImage(mat, 0, 0);
+  const md = g.getImageData(0, 0, mat.width, mat.height).data; matData = new Uint8Array(mat.width * mat.height); for (let i = 0; i < matData.length; i++) matData[i] = md[i * 4];
+  ui(); draw(step); setInterval(() => { if (S.playing) { step++; draw(step); } }, 180);
+})();
+</script></body></html>

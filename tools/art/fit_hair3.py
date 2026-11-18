@@ -55,12 +55,27 @@ def head_regions(v):
 NAPE = {}
 REG = [head_regions(v) for v in range(4)]
 def views(path):
-    H = rgba(path); lb, n = ndi.label(H[..., 3] > 0)
-    objs = sorted([o for i, o in enumerate(ndi.find_objects(lb)) if (lb[o] == i + 1).sum() > 1500], key=lambda o: o[1].start)
-    f, bk, sd = [H[o] for o in objs[:3]]
+    """Front, back and side (facing left) sit in the left, middle and right thirds of the image. Everything in a third
+    belongs to that view, loose strands included; small enclosed holes (dark highlights taken for background) are filled."""
+    H = rgba(path); W = H.shape[1]; out = []
+    for i in range(3):
+        part = H[:, i * W // 3:(i + 1) * W // 3].copy(); m = part[..., 3] > 0
+        lb, n = ndi.label(m); sizes = ndi.sum(m, lb, range(1, n + 1))
+        keep = np.isin(lb, [j + 1 for j, z in enumerate(sizes) if z >= 60])     # drop specks
+        holes = ndi.binary_fill_holes(keep) & ~keep; hl, hn = ndi.label(holes)
+        for j in range(1, hn + 1):
+            if (hl == j).sum() < 600: keep |= hl == j
+        fill = keep & ~m
+        if fill.any():
+            idx = ndi.distance_transform_edt(~m, return_distances=False, return_indices=True)
+            part[fill, :3] = part[idx[0][fill], idx[1][fill], :3]
+        part[..., 3] = keep * 255
+        ys, xs = np.nonzero(keep); out.append(part[ys.min():ys.max() + 1, xs.min():xs.max() + 1])
+    f, bk, sd = out
     return {0: f, 1: sd, 2: sd[:, ::-1].copy(), 3: bk}
-def best_pos(piece, s, v, nape=False):
+def best_pos(piece, s, v, nape=False, crown=False):
     fr, head, need, forb, top = REG[v]
+    if crown: need = need.copy(); ys = np.nonzero(need.any(1))[0]; need[ys[0] + int((ys[-1] - ys[0]) * .45):] = False
     if nape and v in NAPE: need = need | NAPE[v]
     im = np.asarray(Image.fromarray(piece).resize((max(1, round(piece.shape[1] * s)), max(1, round(piece.shape[0] * s))), Image.LANCZOS)); hm = im[..., 3] > 127
     P = 120; pd = lambda m: np.pad(m.astype(float), P); k = hm[::-1, ::-1].astype(float)
@@ -72,7 +87,7 @@ TUNE = {'shaggy': 1}
 FIX = {'bob': .53, 'swept': .365}   # the user approved these as they are
 def fit(path):
     V = views(path); best = None; nm = os.path.basename(path)[5:-4]
-    for s in ([FIX[nm]] if nm in FIX else np.arange(.28, .55, .005)):
+    for s in ([FIX[nm]] if nm in FIX else np.arange(.28, .62, .005)):
         res = [best_pos(V[v], round(float(s), 3), v)[0] for v in range(4)]
         ok = all(r['cov'] >= .995 and r['face'] == 0 for r in res)
         if ok:
@@ -86,9 +101,17 @@ def fit(path):
                             for v, r in zip(vs, cand): best[v] = r
                             break
             break
+    alt = None
+    if nm not in FIX:   # long or centre-parted styles: size from the side and back views, the front only needs the crown
+        for s in np.arange(.30, .62, .005):
+            res = [best_pos(V[v], round(float(s), 3), v)[0] for v in (1, 2, 3)]
+            if all(r['cov'] >= .99 and r['face'] == 0 for r in res):
+                f0 = best_pos(V[0], round(float(s), 3), 0, crown=True)[0]
+                if f0['face'] == 0 and f0['cov'] >= .99: alt = [f0] + res; break
+    if alt and (best is None or alt[1]['s'] < best[1]['s']): best = alt
     if best is None:   # report the closest
         sc = []
-        for s in np.arange(.28, .55, .01):
+        for s in np.arange(.28, .62, .01):
             res = [best_pos(V[v], round(float(s), 3), v)[0] for v in range(4)]
             sc.append((sum(r['cov'] for r in res) - sum(r['face'] for r in res) / 50, res))
         best = max(sc, key=lambda t: t[0])[1]
