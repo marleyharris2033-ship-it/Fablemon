@@ -1,10 +1,32 @@
 import base64, json, os, sys
-def uri(p, mime): return f'data:{mime};base64,' + base64.b64encode(open(p, 'rb').read()).decode()
+import hashlib, io
+# Smaller download (18 Nov 2026): PNGs go in as lossless WebP (the exact same pixels; marked ;px=1 so the CSS keeps
+# them pixel-sharp) and JPEGs as high-quality WebP. Whichever is smaller wins. Results are cached in .webpcache.
+def _shrunk(p, mime):
+    raw = open(p, 'rb').read()
+    if mime not in ('image/png', 'image/jpeg') or os.environ.get('FABLE_NO_SHRINK'): return mime, raw
+    key = hashlib.sha1(raw).hexdigest() + ('L' if mime == 'image/png' else 'Q86')
+    cp = os.path.join('.webpcache', key + '.webp')
+    if not os.path.exists(cp):
+        from PIL import Image
+        os.makedirs('.webpcache', exist_ok=True); im = Image.open(io.BytesIO(raw)); b = io.BytesIO()
+        if mime == 'image/png':
+            im = im.convert('RGBA') if im.mode in ('P', 'LA', 'RGBA') or 'transparency' in im.info else im.convert('RGB')
+            im.save(b, 'WEBP', lossless=True, quality=100, method=6, exact=True)
+        else:
+            im.convert('RGB').save(b, 'WEBP', quality=86, method=6)
+        open(cp, 'wb').write(b.getvalue())
+    w = open(cp, 'rb').read()
+    if len(w) >= len(raw): return mime, raw
+    return ('image/webp;px=1' if mime == 'image/png' else 'image/webp'), w
+def uri(p, mime):
+    m, b = _shrunk(p, mime)
+    return f'data:{m};base64,' + base64.b64encode(b).decode()
 phaser = sys.argv[1]; out = sys.argv[2]
 assets = {
   'terrain': uri('terrain.png', 'image/png'), 'objects': uri('objects.png', 'image/png'),
   'objectsJson': json.load(open('objects.json')), 'walk': uri('farmer_walk.png', 'image/png'),
-  'tools': uri('farmer_tools.png', 'image/png'), 'icons': uri('icons.png', 'image/png'), 'iconsMap': json.load(open('icons.json')), 'intro': [uri(f'intro/s{i}.jpg', 'image/jpeg') for i in range(1, 13)], 'title': uri('title.jpg', 'image/jpeg'),
+  'tools': uri('farmer_tools.png', 'image/png'), 'icons': uri('icons.png', 'image/png'), 'iconsMap': json.load(open('icons.json')), 'intro': [uri(f'intro/s{i}.jpg', 'image/jpeg') for i in range(1, 13)],
   'town': uri('town.png', 'image/png'), 'townJson': json.load(open('town.json')), 'portraits': uri('portraits.png', 'image/png'), 'houses': uri('houses.png', 'image/png'), 'housesJson': json.load(open('houses.json')), 'monIcons': uri('mon_icons.png', 'image/png'), 'monBattle': uri('mon_battle.png', 'image/png'),
   **{'mon_' + n: uri(f'mon_{n}.png', 'image/png') for n in [n for n in ['hedglet', 'cindimple', 'rillip', 'tusskip', 'whirplet', 'cloverclasp', 'flintuck', 'fuzzwick', 'duskwick', 'mortoad', 'brashlet', 'brooknook', 'briamble', 'kilnook', 'weirlet', 'fleecebolt', 'whirlwyn', 'cloverguard', 'flintburrow', 'staticwing', 'duskcloak', 'rampartoad', 'pyrebrash', 'brookstride', 'muddlebub', 'lotling', 'puffpiper', 'puffpiper_cotton', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom', 'fenfang', 'mirebellows', 'lotveil', 'reefarer', 'reefarer_cotton', 'yawnox', 'brimbramble', 'stormveil', 'hollowbark', 'marshviper', 'fulgarok', 'craglet', 'cindhop', 'bristlecone', 'clinkit', 'ramruff', 'craglet_2', 'cindhop_2', 'bristlecone_2', 'clinkit_2', 'ramruff_2', 'hedgerholt', 'hearthrusk', 'merewheel', 'plumevix', 'whorlcrest', 'cloverlegion', 'flintcairn', 'moonspark', 'duskwyrm', 'torrentail', 'reefarer_3', 'reefarer_cotton_3', 'mirebellows_3', 'lotveil_3', 'yawnox_3', 'brimbramble_3', 'stormveil_3', 'hollowbark_3', 'cindhop_3', 'bristlecone_3', 'clinkit_3', 'craglet_3', 'nipshade', 'nipshade_2', 'nipshade_3', 'riftshear', 'riftshear_2', 'riftshear_3', 'inkwick', 'inkwick_2', 'inkwick_3', 'kilnback', 'kilnback_2', 'kilnback_3', 'foilfin', 'foilfin_2', 'foilfin_3', 'floecalf', 'floecalf_2', 'kitlet', 'kitlet_2', 'kitlet_3', 'flurrowl', 'flurrowl_2', 'flurrowl_3', 'wishling', 'wishling_2', 'wishling_3', 'heathfoal', 'heathfoal_2', 'cirrovale', 'samarrow', 'samaslice', 'samarazor', 'wickid', 'wickveil', 'solwick', 'rillcurl', 'riptwake', 'maelstromaw'] if not os.path.exists(f'hd/{n}_w.webp')]}, 'bgMeadow': uri('battle_meadow.jpg', 'image/jpeg'), 'bgBog': uri('battle_bog.jpg', 'image/jpeg'), 'bgCrag': uri('battle_crag.jpg', 'image/jpeg'),
   **{'tr_' + n: uri(f'tr_{n}.png', 'image/png') for n in ['rambler', 'ponddipper', 'birdwatcher', 'forager', 'busker', 'allotment', 'delphine', 'reedcutter', 'wispwatcher', 'miner', 'climber', 'granger', 'orrin', 'tamsin', 'vtech', 'vtech2', 'thorne', 'pell', 'dunmore', 'vale', 'gleam', 'brask', 'ash', 'alder', 'isolde', 'tansy', 'pruett', 'dunn', 'stroud', 'ellis', 'hazel', 'oliver', 'ranger', 'ranger2', 'logger', 'logger2', 'herder', 'herder2']}, 'trPortraits': uri('tr_portraits.png', 'image/png'),
