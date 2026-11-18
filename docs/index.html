@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261118-191020">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261118-191020">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261118-191020">
+<link rel="manifest" href="manifest.webmanifest?v=20261118-192241">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261118-192241">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261118-192241">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-191020').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-192241').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -15578,7 +15578,7 @@ controlsHTML = function () {
     <div class="setc"><b>Trainer battle style</b>${seg('actionT', opts.actionT === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
       <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>
     <div class="setc"><b>Auto battle (action battles)</b>${seg('rtAuto', opts.rtAuto ? 'on' : 'off', [['off', '🕹️ I steer'], ['on', '🤖 Auto']])}
-      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks, dodges and picks who goes next by itself. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
+      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks and dodges by itself; you still pick who goes next if one faints. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
 };
 const _roamSet = handleSetting;
 handleSetting = function (a, d, el) {
@@ -16096,13 +16096,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const P = $r('rtbPick'); P.querySelector('h3').textContent = `${monName(me.m)} fainted! Who's next?`;
     P.querySelector('.pl').innerHTML = team().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
     P.classList.add('show');
-    if (opts.rtAuto) {   // Auto picks the next one after a moment, unless you pick first
-      const pickT = () => { const live = team().filter(m => m.hp > 0); if (!live.length) return null;
-        const sc0 = m => (m.hp / monStat(m, 'hp')) * Math.max(...m.moves.map(id => MOVES[id] && MOVES[id].pow ? effOn(MOVES[id].type, st.foe.m.sp) * stabOf(MOVES[id].type, m.sp) : .5)) * (1 + m.lv / 100);
-        return live.sort((a, b) => sc0(b) - sc0(a))[0]; };
-      st.sc.time.delayedCall(1300, () => { if (!st || !st.choosing) return; const m = pickT(); if (!m) return; P.classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; });
-    }
-  }
+  }   // (18 Nov: you always pick who goes next, even on Auto)
   function autoUi() { const b = $r('rtbAuto'); if (b) b.classList.toggle('on', !!opts.rtAuto); }
   function nextFoe(m) {   // the trainer sends out their next Fablemon from where they stand
     st.switching = true; for (const b of st.bolts.slice()) kill(b);

@@ -428,13 +428,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const P = $r('rtbPick'); P.querySelector('h3').textContent = `${monName(me.m)} fainted! Who's next?`;
     P.querySelector('.pl').innerHTML = team().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
     P.classList.add('show');
-    if (opts.rtAuto) {   // Auto picks the next one after a moment, unless you pick first
-      const pickT = () => { const live = team().filter(m => m.hp > 0); if (!live.length) return null;
-        const sc0 = m => (m.hp / monStat(m, 'hp')) * Math.max(...m.moves.map(id => MOVES[id] && MOVES[id].pow ? effOn(MOVES[id].type, st.foe.m.sp) * stabOf(MOVES[id].type, m.sp) : .5)) * (1 + m.lv / 100);
-        return live.sort((a, b) => sc0(b) - sc0(a))[0]; };
-      st.sc.time.delayedCall(1300, () => { if (!st || !st.choosing) return; const m = pickT(); if (!m) return; P.classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; });
-    }
-  }
+  }   // (18 Nov: you always pick who goes next, even on Auto)
   function autoUi() { const b = $r('rtbAuto'); if (b) b.classList.toggle('on', !!opts.rtAuto); }
   function nextFoe(m) {   // the trainer sends out their next Fablemon from where they stand
     st.switching = true; for (const b of st.bolts.slice()) kill(b);

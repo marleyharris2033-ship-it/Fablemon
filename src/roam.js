@@ -134,7 +134,7 @@ controlsHTML = function () {
     <div class="setc"><b>Trainer battle style</b>${seg('actionT', opts.actionT === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
       <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>
     <div class="setc"><b>Auto battle (action battles)</b>${seg('rtAuto', opts.rtAuto ? 'on' : 'off', [['off', '🕹️ I steer'], ['on', '🤖 Auto']])}
-      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks, dodges and picks who goes next by itself. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
+      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks and dodges by itself; you still pick who goes next if one faints. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
 };
 const _roamSet = handleSetting;
 handleSetting = function (a, d, el) {
