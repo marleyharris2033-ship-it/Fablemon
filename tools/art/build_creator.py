@@ -135,6 +135,28 @@ for i in range(6):
     hv['r'] = dict(piece=mp, s=s, x=x, y=y, iou=iou, src=(px, py))
     heads.append(hv); print('head', i + 1, ' '.join(f"{c}:{hv[c]['iou']:.2f}" for c in range(3)), flush=True)
 # beards: same cell coordinates as the heads, so they ride on head 1's transform for that view (all heads share a skull)
+def seat_side_beard(piece, s):
+    """Side view, facing left. The moustache's top-front goes right under the nose; then the beard is leant (a vertical
+    shear about the moustache) so its sideburn's top meets the hairline just in front of the ear, as a real beard does."""
+    h = heads[0][1]; fa = resize(h['piece'], h['s'])[..., 3] > 127; H, W = fa.shape
+    lx = [np.nonzero(fa[y])[0][0] if fa[y].any() else W for y in range(H)]
+    rows = range(int(H * .5), int(H * .78)); ny = min(rows, key=lambda y: (lx[y], -y)); nx = lx[ny]
+    uy = next((y for y in range(ny + 1, H) if lx[y] >= nx + max(2, W * .05)), ny + 2)
+    N = (h['x'] + lx[uy], h['y'] + uy)                                    # just under the nose
+    E = (h['x'] + W * .62, h['y'] + H * .40)                              # front of the ear, at the hairline
+    b = resize(piece, s); ba = b[..., 3] > 127; bh, bw = ba.shape
+    def top_in(x0, x1):
+        cols = [x for x in range(int(x0), int(x1)) if ba[:, x].any()]; x = min(cols, key=lambda x: (np.nonzero(ba[:, x])[0][0], x)); return x, np.nonzero(ba[:, x])[0][0]
+    mx, my = top_in(0, bw * .3); sx, sy = top_in(bw * .75, bw)
+    bx, by = N[0] - mx, N[1] + 1 - my                                     # moustache under the nose
+    k = ((E[1]) - (by + sy)) / max(1, sx - mx)                            # lift per pixel back from the moustache
+    k = max(-.45, min(.1, k))
+    im = Image.fromarray(piece); W0, H0 = im.size; kk = k                 # shear in source pixels (same slope)
+    up = int(np.ceil(-kk * W0)) if kk < 0 else 0; dn = int(np.ceil(kk * W0)) if kk > 0 else 0
+    mx0 = mx / s
+    sh = im.transform((W0, H0 + up + dn), Image.AFFINE, (1, 0, 0, -kk, 1, kk * mx0 - up), resample=Image.BICUBIC)
+    print('side beard: lean', round(k, 3), 'nose', N, 'ear', [round(v) for v in E], flush=True)
+    return np.asarray(sh), round(bx), round(by - up * s + 0)
 beards = []
 for i in range(4):
     bv = {}
@@ -147,6 +169,9 @@ for i in range(4):
         piece, (px, py) = biggest(raw, min_px=20, fill_holes=0)
         h = heads[0][col]; s = h['s']
         bv[col] = dict(piece=piece, s=s, x=round(h['x'] + (px - h['src'][0]) * s), y=round(h['y'] + (py - h['src'][1]) * s))
+        if col == 1:   # side view: seat it by landmarks, then lean it so the sideburn climbs to the hairline
+            piece, bv[1]['x'], bv[1]['y'] = seat_side_beard(piece, s)
+            bv[1]['piece'] = piece
         if col == 1:   # facing right: the left placement mirrored about the head
             hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; bw = piece.shape[1] * s
             bv['r'] = dict(piece=piece[:, ::-1].copy(), s=s, x=round(hr['x'] + wl - (bv[1]['x'] - hl['x']) - bw), y=round(hr['y'] + (bv[1]['y'] - hl['y'])))
