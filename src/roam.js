@@ -142,29 +142,36 @@ handleSetting = function (a, d, el) {
   return _roamSet(a, d, el);
 };
 
-/* ---------- Alphas (18 Nov): once a day a big, tough Alpha roams one land route you've been to.
-   A morning notice says where, the map marks it, it never wanders off, and beating it pays double experience,
+/* ---------- Alphas (18 Nov): once a week a big, tough Alpha roams one land route you've been to, all week until
+   it's beaten. A Monday-morning notice (and a letter) says where, the map marks it, it never wanders off, and beating it pays double experience,
    gold and a rare item. Catching one is harder, but it keeps its strong potential. */
 const ALPHA_GIFTS = ['study_leaf', 'lucky_acorn', 'hearth_elixir', 'skyward_charm'];
 function alphaRoutes() {
   return Object.keys(ROUTES).filter(k => { const R = ROUTES[k]; return R && !R.sail && (R.zones || []).length && R.enc && (S.visited || {})[k]; });
 }
+const alphaWeek = (d = S.day) => Math.floor((d - 1) / 7);
 function alphaRoll() {
-  const ks = alphaRoutes(); if (!ks.length) { S.alpha = { day: S.day, none: 1 }; return; }
+  const ks = alphaRoutes(); if (!ks.length) { S.alpha = { day: S.day, week: alphaWeek(), none: 1 }; return; }
   const k = ks[Math.floor(Math.random() * ks.length)], R = ROUTES[k], tab = R.enc.day || [];
   // prefer the less common ones: weight by 1/w so an Alpha is usually something worth seeing
   const tot = tab.reduce((a, [, w]) => a + 1 / w, 0); let r = Math.random() * tot, sp = tab[0] && tab[0][0];
   for (const [s, w] of tab) if ((r -= 1 / w) < 0) { sp = s; break; }
   const top = Math.max(...R.zones.map(z => z[5] || 5));
-  S.alpha = { day: S.day, route: k, sp, lv: Math.min(100, top + 5), done: false };
+  S.alpha = { day: S.day, week: alphaWeek(), route: k, sp, lv: Math.min(100, top + 5), done: false };
 }
-function alphaToday() { if (!S.alpha || S.alpha.day !== S.day) alphaRoll(); return S.alpha.none || S.alpha.done ? null : S.alpha; }
+function alphaToday() { if (!S.alpha || S.alpha.week !== alphaWeek() || (S.alpha.none && S.alpha.day !== S.day)) alphaRoll(); return S.alpha.none || S.alpha.done ? null : S.alpha; }
 const alphaPlace = k => { const P = (typeof MAP_PLACES !== 'undefined' ? MAP_PLACES : []).find(p => p.k === k); return (P && P.name) || (ROUTES[k] && ROUTES[k].name) || k; };
 // the morning notice
 const _alphaNight = nightly;
 nightly = function (passedOut) {
   const out = _alphaNight.apply(this, arguments);
-  try { alphaRoll(); const A = alphaToday(); if (A) setTimeout(() => toast(`📣 An Alpha ${SPECIES[A.sp].name} has been seen on ${alphaPlace(A.route)}! It's on your map.`, 4200), 3500); } catch (e) { console.warn('alpha', e); }
+  try {
+    const was = S.alpha && S.alpha.week === alphaWeek() && !S.alpha.none; const A = alphaToday();
+    if (A && !was) {   // a new week, a new Alpha
+      setTimeout(() => toast(`📣 An Alpha ${SPECIES[A.sp].name} has been seen on ${alphaPlace(A.route)}! It's on your map this week.`, 4200), 3500);
+      if (typeof postSend === 'function') postSend('alpha_' + alphaWeek(), { from: 'Smallroot Wildlife Watch', subj: 'Alpha sighting', body: n => `WEEKLY SIGHTINGS\n\nAn Alpha ${SPECIES[A.sp].name} has been seen roaming ${alphaPlace(A.route)}. It's bigger and much tougher than the rest (about level ${A.lv}), and it won't wander off.\n\nIt'll be there all week, until someone beats it. Beat it for double experience and gold, and something rare. Catch it and it keeps its strength.\n\nKeepers, take care.` });
+    }
+  } catch (e) { console.warn('alpha', e); }
   return out;
 };
 // it's out there, bigger than the rest, with a glow at its feet

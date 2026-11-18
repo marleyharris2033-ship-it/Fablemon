@@ -143,15 +143,30 @@ Town.prototype.create = function () {
 ITEMS.rootsap = { name: 'Hearthroot Root', stack: 1, place: 'obj', obj: 'rootsap', desc: 'A living root from the Hearthroot. Plant it on your farm: it grows with the great tree and blesses the soil around it. Pick it up with your axe to move it.' };
 OBJ_ART.rootsap = ['cv', 'hearthsap'];
 if (typeof GLOWS !== 'undefined') GLOWS.push('rootsap');
-const rootReach = () => 1 + hearthStage();   // 2 at Budding (a 5×5 square) up to 5 at Lantern-lit
+const rootReach = () => Math.max(2, 1 + hearthStage());   // 2 at Budding (a 5×5 square) up to 5 at Lantern-lit
 function rootSap() { for (const [k, o] of Object.entries(S.objs || {})) if (o.t === 'rootsap') { const [x, y] = k.split(',').map(Number); return { x, y, k }; } return null; }
 const _rwDraw = Farm.prototype.drawObj;
 Farm.prototype.drawObj = function (x, y) {
   _rwDraw.call(this, x, y);
+  this.rootAreaDraw();
   const o = S.objs[x + ',' + y]; if (!o || o.t !== 'rootsap') return;
   const img = this.objSprites[x + ',' + y] && this.objSprites[x + ',' + y][0]; if (!img) return;
   img.setScale(.85 + .18 * hearthStage());
   if (hearth().grey === S.day) img.setTint(0x9a9a8e);
+};
+// the blessed ground: a soft golden square round the root, 2 tiles each way at first, growing with the Hearthroot
+Farm.prototype.rootAreaDraw = function () {
+  const sap = rootSap(), r = rootReach(), key = sap ? sap.k + ':' + r + ':' + (hearth().grey === S.day ? 'g' : '') : '';
+  if (this.rootAreaKey === key && (!key || (this.rootArea && this.rootArea.active))) return;
+  this.rootAreaKey = key; if (this.rootArea) { this.rootArea.destroy(); this.rootArea = null; }
+  if (!sap) return;
+  const x0 = (sap.x - r) * T, y0 = (sap.y - r) * T, s = (2 * r + 1) * T, grey = hearth().grey === S.day, col = grey ? 0xb8b8a8 : 0xffd23a;
+  const g = this.rootArea = this.add.graphics().setDepth(1.5);
+  g.fillStyle(col, .10).fillRect(x0, y0, s, s);
+  g.lineStyle(1, col, .75);
+  for (let i = 0; i < s; i += 6) { g.lineBetween(x0 + i, y0 + .5, x0 + Math.min(s, i + 3), y0 + .5); g.lineBetween(x0 + i, y0 + s - .5, x0 + Math.min(s, i + 3), y0 + s - .5); g.lineBetween(x0 + .5, y0 + i, x0 + .5, y0 + Math.min(s, i + 3)); g.lineBetween(x0 + s - .5, y0 + i, x0 + s - .5, y0 + Math.min(s, i + 3)); }
+  g.fillStyle(col, .9); for (const [cx, cy] of [[x0, y0], [x0 + s, y0], [x0, y0 + s], [x0 + s, y0 + s]]) g.fillRect(cx - 1.5, cy - 1.5, 3, 3);
+  if (!grey) this.tweens.add({ targets: g, alpha: .55, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 };
 const _rwUse = Farm.prototype.useObj;
 Farm.prototype.useObj = function (x, y) {
