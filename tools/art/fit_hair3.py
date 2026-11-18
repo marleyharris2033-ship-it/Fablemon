@@ -10,7 +10,15 @@ D = 'art_incoming/creator/v3/'
 def rgba(p):
     a = np.asarray(Image.open(p).convert('RGB')).astype(int); r, g, b = a[..., 0], a[..., 1], a[..., 2]
     m = ndi.binary_opening(~((r > 150) & (b > 150) & (g < 130)), iterations=1)
-    m = ndi.binary_erosion(m, iterations=1) | (m & ~((r > 140) & (b > 120) & (g < 110)))   # trim the pink fringe
+    pinkish = (b > g + 25) & (r > g + 25)                      # magenta has crept into these pixels
+    edge = m & ~ndi.binary_erosion(m, iterations=2)
+    m = ndi.binary_erosion(m, iterations=1) | (m & ~((r > 140) & (b > 120) & (g < 110)))   # (as approved)
+    a = a.copy(); rim = m & edge & pinkish; a[rim] = (a[rim] * .35).astype(int)       # pink rim pixels become outline
+    spill = m & ((b > g + 12) & (r > g + 12)) & ~rim              # pink-tinged pixels inside: paint them with the hair round them
+    good = m & ~spill & ~rim
+    if spill.any() and good.any():
+        idx = ndi.distance_transform_edt(~good, return_distances=False, return_indices=True)
+        a[spill] = a[idx[0][spill], idx[1][spill]]
     return np.dstack([a, m * 255]).astype(np.uint8)
 BASE = rgba(D + 'base_walk.png'); C = BASE.shape[0] / 4
 def cell(r, c):
@@ -37,27 +45,47 @@ def head_regions(v):
         if v == 0: forb[:, :x0 + int(w * .2)] = False; forb[:, x1 - int(w * .2):] = False
         elif v == 1: forb[:, x0 + int(w * .5):] = False     # facing left: the face is the left half
         elif v == 2: forb[:, :x1 - int(w * .5)] = False
+    if v in (1, 2):   # side views: the hair also has to come down the back of the head to the nape
+        cols = np.nonzero(head.any(0))[0]; x0, x1 = cols[0], cols[-1]; w = x1 - x0
+        nape = head.copy(); nape[top + int(HH * .72):] = False
+        if v == 1: nape[:, :x1 - int(w * .30)] = False
+        else: nape[:, x0 + int(w * .30):] = False
+        NAPE[v] = nape
     return fr, head, need, forb, top
+NAPE = {}
 REG = [head_regions(v) for v in range(4)]
 def views(path):
     H = rgba(path); lb, n = ndi.label(H[..., 3] > 0)
     objs = sorted([o for i, o in enumerate(ndi.find_objects(lb)) if (lb[o] == i + 1).sum() > 1500], key=lambda o: o[1].start)
     f, bk, sd = [H[o] for o in objs[:3]]
     return {0: f, 1: sd, 2: sd[:, ::-1].copy(), 3: bk}
-def best_pos(piece, s, v):
+def best_pos(piece, s, v, nape=False):
     fr, head, need, forb, top = REG[v]
+    if nape and v in NAPE: need = need | NAPE[v]
     im = np.asarray(Image.fromarray(piece).resize((max(1, round(piece.shape[1] * s)), max(1, round(piece.shape[0] * s))), Image.LANCZOS)); hm = im[..., 3] > 127
     P = 120; pd = lambda m: np.pad(m.astype(float), P); k = hm[::-1, ::-1].astype(float)
     cov = np.rint(fftconvolve(pd(need), k)); bad = np.rint(fftconvolve(pd(forb), k)); on = fftconvolve(pd(head), k)
     N = need.sum(); q = cov / N - bad * 0.05 + on / (N * 500.)
     iy, ix = np.unravel_index(np.argmax(q), q.shape)
     return dict(s=s, x=int(ix - (hm.shape[1] - 1) - P), y=int(iy - (hm.shape[0] - 1) - P), w=im.shape[1], h=im.shape[0], cov=float(cov[iy, ix] / N), face=int(bad[iy, ix])), im
+TUNE = {'shaggy': 1}
+FIX = {'bob': .53, 'swept': .365}   # the user approved these as they are
 def fit(path):
-    V = views(path); best = None
-    for s in np.arange(.28, .55, .005):
+    V = views(path); best = None; nm = os.path.basename(path)[5:-4]
+    for s in ([FIX[nm]] if nm in FIX else np.arange(.28, .55, .005)):
         res = [best_pos(V[v], round(float(s), 3), v)[0] for v in range(4)]
         ok = all(r['cov'] >= .995 and r['face'] == 0 for r in res)
-        if ok: best = res; break
+        if ok:
+            best = res
+            if TUNE.get(os.path.basename(path)[5:-4]):   # tighten one style's views; both sides share one scale
+                best = list(res)
+                for vs in ([0], [1, 2], [3]):
+                    for k in np.arange(.86, 1.3001, .02):
+                        cand = [best_pos(V[v], round(float(s * k), 4), v, True)[0] for v in vs]
+                        if all(r['cov'] >= .995 and r['face'] == 0 for r in cand):
+                            for v, r in zip(vs, cand): best[v] = r
+                            break
+            break
     if best is None:   # report the closest
         sc = []
         for s in np.arange(.28, .55, .01):
