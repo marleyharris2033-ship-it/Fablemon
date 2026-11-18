@@ -137,31 +137,54 @@ Object.assign(ROUTES, {
       { id: 'eg_t4', kind: 'logger2', name: 'Kerr', x: 40, y: 34, dir: 'up', sight: 3, team: [['cobblerollie', 64], ['pebblouse', 64], ['tanglebruin', 65]] },
     ],
     down: x => ['fernwalk', { x: Math.max(17, Math.min(21, x - 9)), y: 1, dir: 'down' }],
-    up: x => ['elderwood', { x: 21, y: 31, dir: 'up' }],
+    up: x => ['elderwood', { x: 47, y: 69, dir: 'up' }],
     left: y => ['eldest', { x: 30, y: 15, dir: 'left' }],
     right: y => ['ewcamp', { x: 1, y: 15, dir: 'right' }],
     spawn: { x: 28, y: 46, dir: 'up' }, enc: GLADE_ENC },
 
-  elderwood: { ...EW_BASE, name: 'Elderwood', w: 44, h: 34, town: true, forest: .3,
-    paths: [[20, 18, 23, 34], [4, 22, 40, 24], [20, 0, 23, 18], [6, 8, 38, 10]],
-    walls: [[0, 13, 19, 17], [24, 13, 43, 17]],
-    open: [[19, 30, 24, 33]], clear: [[2, 18, 42, 30], [2, 3, 42, 12]],
+  // Elderwood (18 Nov): the forest's capital, twice the size of Smallroot. A grand avenue runs from the south gate
+  // through the market square to the Warden's Lodge; the river runs down the east side, and the old footbridge
+  // (the story's first repair) crosses to the herd paddock, the Town Hall and Ellis's workshop.
+  elderwood: { ...EW_BASE, name: 'Elderwood', w: 100, h: 72, town: true, forest: .34,
+    paths: [[46, 11, 49, 71], [8, 11, 66, 13], [8, 24, 66, 26], [9, 11, 11, 26], [8, 45, 69, 48], [8, 60, 66, 62], [9, 24, 11, 62], [34, 36, 58, 55],
+      [75, 45, 95, 48], [84, 26, 86, 62], [75, 60, 95, 62]],
+    ponds: [-2, 3, 8, 13, 18, 23, 28, 33, 38, 43, 48, 53, 58, 63, 68, 73].map(y => [73, y, 2.4, 3.4]),
+    get bridge() { return ewRepaired('ew_bridge') ? { x0: 70, x1: 76, y0: 45, y1: 48 } : null; },
+    open: [[45, 67, 50, 71]], clear: [[3, 3, 69, 68], [76, 3, 96, 68]],
     buildings: [
-      { id: 'ew_lodge', atlas: 'bh', frame: 'bh_lockhouse', cx: 34, by: 21, door: 0, name: "Warden's Lodge" },
-      { id: 'ew_inn', atlas: 'hm', frame: 'hm_clinic', cx: 9, by: 21, door: 0, name: 'The Antler Inn' },
-      { id: 'ew_store', atlas: 'hm', frame: 'hm_shop', cx: 15, by: 29, door: 0, name: 'Forest Stores' },
-      { id: 'ew_mill', atlas: 'bh', frame: 'bh_mill', old: 'bh_mill_old', cx: 30, by: 29, door: 0, name: 'Old Town Mill', repair: true, done: () => ewRepaired('ew_mill') },
-      { id: 'ew_mayor', atlas: 'cove', frame: 'cv_house', cx: 9, by: 7, door: 0, name: "Mayor's House" },
-      { id: 'ew_carver', atlas: 'cove', frame: 'cv_hut', cx: 33, by: 7, door: 0, name: "Ellis's Workshop" },
+      { id: 'ew_lodge', atlas: 'bh', frame: 'bh_lockhouse', cx: 47, by: 10, door: 0, name: "Warden's Lodge" },
+      { id: 'ew_inn', atlas: 'hm', frame: 'hm_clinic', cx: 39, by: 35, door: 0, name: 'The Antler Inn' },
+      { id: 'ew_store', atlas: 'hm', frame: 'hm_shop', cx: 55, by: 35, door: 0, name: 'Forest Stores' },
+      { id: 'ew_mill', atlas: 'bh', frame: 'bh_mill', old: 'bh_mill_old', cx: 64, by: 44, door: 0, name: 'Old Town Mill', repair: true, done: () => ewRepaired('ew_mill') },
+      { id: 'ew_mayor', atlas: 'town', frame: 'hall', cx: 91, by: 44, door: 0, name: 'Town Hall' },
+      { id: 'ew_carver', atlas: 'cove', frame: 'cv_hut', cx: 80, by: 59, door: 0, name: "Ellis's Workshop" },
+      // the rest of the capital: homes and trades
+      { id: 'ew_h1', atlas: 'town', frame: 'homeA', cx: 17, by: 23, door: 0, name: 'Timber house' },
+      { id: 'ew_h2', atlas: 'cove', frame: 'cv_cottage', cx: 27, by: 23, door: 0, name: "Woodcutter's cottage" },
+      { id: 'ew_h3', atlas: 'bh', frame: 'bh_cottage', cx: 37, by: 23, door: 0, name: 'Old forest cottage' },
+      { id: 'ew_joinery', atlas: 'town', frame: 'carpenter', cx: 57, by: 23, door: 0, name: 'The Joinery' },
+      { id: 'ew_h4', atlas: 'town', frame: 'homeC', cx: 19, by: 44, door: 0, name: 'Long house' },
+      { id: 'ew_h5', atlas: 'cove', frame: 'cv_house', cx: 29, by: 44, door: 0, name: 'Mossy house' },
+      { id: 'ew_smith', atlas: 'town', frame: 'smith', cx: 38, by: 59, door: 0, name: 'Elderwood Smithy' },
+      { id: 'ew_bake', atlas: 'qd', frame: 'qd_shop', cx: 55, by: 59, door: 0, name: 'The Bakehouse' },
+      { id: 'ew_h6', atlas: 'br', frame: 'br_cottage', cx: 18, by: 59, door: 0, name: "Gardener's house" },
+      { id: 'ew_h7', atlas: 'town', frame: 'homeB', cx: 28, by: 59, door: 0, name: 'Brick house' },
+      { id: 'ew_h8', atlas: 'cove', frame: 'cv_cottage', cx: 91, by: 59, door: 0, name: 'Riverside house' },
+      { id: 'ew_h9', atlas: 'qd', frame: 'qd_cottage', cx: 79, by: 44, door: 0, name: "Ferryman's house" },
+      { id: 'ew_h10', atlas: 'hm', frame: 'hm_kite_house', cx: 16, by: 10, door: 0, name: 'Tall house' },
+      { id: 'ew_h11', atlas: 'town', frame: 'homeA', cx: 26, by: 10, door: 0, name: 'Hunters\' lodge' },
+      { id: 'ew_h12', atlas: 'br', frame: 'br_cottage', cx: 36, by: 10, door: 0, name: 'Stone cottage' },
+      { id: 'ew_h13', atlas: 'town', frame: 'tavern', cx: 58, by: 10, door: 0, name: 'The Old Oak' },
     ],
-    props: [['bh_board', 24, 25, 3, 'bh']],
-    ewdecor: [['hm', 'hm_hay_cart', 15, 4], ['bog', 'log', 27, 4], ['bog', 'log', 28, 5], ['hm', 'hm_bench', 26, 26], ['hm', 'hm_planter', 18, 26]],
-    signs: { '18,31': "Elderwood. Please walk softly: the trees are older than the town.", '25,24': '__door:ew_board' },
-    gate: { area: [20, 14, 23, 17], sign: [19, 18], ok: () => ewRepaired('ew_bridge'), openMsg: 'The new footbridge is open. The paddock and the north of town are reachable again!',
-      get text() { return "The old footbridge to the paddock lies broken in the river. A notice: 'Repairs to be funded by the town. See the board.'"; } },
+    props: [['bh_board', 40, 41, 3, 'bh']],
+    ewdecor: [['town', 'fountain', 45, 52, 4], ['town', 'stall', 36, 40, 3], ['town', 'stall', 36, 51, 3], ['town', 'stall', 55, 40, 3], ['town', 'stall', 55, 51, 3], ['town', 'stall', 36, 46, 3], ['town', 'stall', 55, 46, 3], ['town', 'lamp', 35, 37, 1], ['town', 'lamp', 57, 37, 1], ['town', 'lamp', 35, 54, 1], ['town', 'lamp', 57, 54, 1], ['town', 'lamp', 45, 16, 1], ['town', 'lamp', 50, 16, 1], ['town', 'lamp', 45, 21, 1], ['town', 'lamp', 50, 21, 1], ['town', 'lamp', 45, 30, 1], ['town', 'lamp', 50, 30, 1], ['town', 'lamp', 45, 65, 1], ['town', 'lamp', 50, 65, 1], ['town', 'lamp', 12, 23, 1], ['town', 'lamp', 66, 23, 1], ['town', 'lamp', 12, 44, 1], ['town', 'lamp', 66, 63, 1], ['town', 'lamp', 13, 63, 1], ['town', 'lamp', 76, 49, 1], ['town', 'lamp', 95, 49, 1], ['town', 'lamp', 12, 14, 1], ['town', 'lamp', 30, 14, 1], ['town', 'lamp', 66, 14, 1], ['hm', 'hm_bench', 41, 38, 2], ['hm', 'hm_bench', 51, 38, 2], ['hm', 'hm_bench', 41, 53, 2], ['hm', 'hm_bench', 51, 53, 2], ['town', 'flowerbed', 38, 44, 3], ['town', 'flowerbed', 54, 44, 3], ['town', 'planter', 38, 49, 3], ['town', 'planter', 54, 49, 3], ['objects', 'tree_pine', 20, 28, 1], ['objects', 'tree_apple', 23, 28, 1], ['objects', 'tree_oak', 25, 28, 1], ['objects', 'tree_apple', 27, 28, 1], ['objects', 'tree_oak', 30, 28, 1], ['objects', 'tree_oak', 15, 29, 1], ['objects', 'tree_oak', 17, 29, 1], ['objects', 'tree_oak', 19, 30, 1], ['objects', 'tree_oak', 21, 30, 1], ['objects', 'tree_oak', 23, 30, 1], ['objects', 'tree_apple', 25, 30, 1], ['objects', 'tree_oak', 27, 30, 1], ['objects', 'tree_pine', 29, 30, 1], ['objects', 'tree_oak', 14, 31, 1], ['objects', 'tree_oak', 17, 31, 1], ['objects', 'tree_oak', 19, 32, 1], ['objects', 'tree_oak', 23, 32, 1], ['objects', 'tree_pine', 25, 32, 1], ['objects', 'tree_oak', 27, 32, 1], ['objects', 'tree_oak', 29, 32, 1], ['objects', 'tree_pine', 14, 33, 1], ['objects', 'tree_oak', 21, 33, 1], ['objects', 'tree_pine', 16, 34, 1], ['objects', 'tree_pine', 19, 34, 1], ['objects', 'tree_apple', 24, 34, 1], ['objects', 'tree_oak', 28, 34, 1], ['objects', 'tree_apple', 30, 34, 1], ['objects', 'tree_oak', 26, 35, 1], ['objects', 'tree_pine', 14, 36, 1], ['objects', 'tree_oak', 18, 36, 1], ['objects', 'tree_oak', 22, 37, 1], ['objects', 'tree_pine', 26, 37, 1], ['objects', 'tree_oak', 15, 38, 1], ['objects', 'tree_oak', 17, 38, 1], ['objects', 'tree_pine', 21, 39, 1], ['objects', 'tree_oak', 23, 39, 1], ['objects', 'tree_oak', 29, 39, 1], ['objects', 'tree_pine', 64, 28, 1], ['objects', 'tree_pine', 66, 28, 1], ['objects', 'tree_oak', 68, 28, 1], ['objects', 'tree_pine', 61, 29, 1], ['objects', 'tree_oak', 64, 30, 1], ['objects', 'tree_oak', 67, 30, 1], ['objects', 'tree_pine', 63, 32, 1], ['objects', 'tree_oak', 61, 33, 1], ['objects', 'tree_apple', 65, 33, 1], ['objects', 'tree_pine', 68, 33, 1], ['objects', 'tree_apple', 64, 35, 1], ['objects', 'tree_oak', 61, 36, 1], ['objects', 'tree_oak', 68, 36, 1], ['objects', 'tree_pine', 17, 15, 1], ['objects', 'tree_apple', 20, 15, 1], ['objects', 'tree_oak', 24, 15, 1], ['objects', 'tree_pine', 28, 15, 1], ['objects', 'tree_apple', 30, 15, 1], ['objects', 'tree_pine', 34, 15, 1], ['objects', 'tree_oak', 36, 15, 1], ['objects', 'tree_apple', 39, 15, 1], ['objects', 'tree_apple', 15, 16, 1], ['objects', 'tree_pine', 22, 16, 1], ['objects', 'tree_oak', 26, 16, 1], ['objects', 'tree_oak', 19, 17, 1], ['objects', 'tree_oak', 28, 17, 1], ['objects', 'tree_oak', 32, 17, 1], ['objects', 'tree_apple', 34, 17, 1], ['objects', 'tree_apple', 39, 17, 1], ['objects', 'tree_pine', 15, 18, 1], ['objects', 'tree_oak', 24, 18, 1], ['objects', 'tree_pine', 26, 18, 1], ['objects', 'tree_oak', 30, 18, 1], ['objects', 'tree_apple', 36, 18, 1], ['objects', 'tree_oak', 18, 19, 1], ['objects', 'tree_oak', 22, 19, 1], ['objects', 'tree_pine', 33, 19, 1], ['objects', 'tree_pine', 14, 20, 1], ['objects', 'tree_pine', 24, 20, 1], ['objects', 'tree_pine', 27, 20, 1], ['objects', 'tree_apple', 30, 20, 1], ['objects', 'tree_pine', 39, 20, 1], ['objects', 'tree_apple', 53, 15, 1], ['objects', 'tree_oak', 55, 15, 1], ['objects', 'tree_pine', 57, 15, 1], ['objects', 'tree_pine', 67, 15, 1], ['objects', 'tree_apple', 63, 16, 1], ['objects', 'tree_pine', 65, 16, 1], ['objects', 'tree_oak', 55, 17, 1], ['objects', 'tree_apple', 58, 17, 1], ['objects', 'tree_apple', 60, 17, 1], ['objects', 'tree_pine', 53, 18, 1], ['objects', 'tree_oak', 62, 18, 1], ['objects', 'tree_pine', 64, 18, 1], ['objects', 'tree_oak', 66, 18, 1], ['objects', 'tree_pine', 55, 19, 1], ['objects', 'tree_pine', 57, 19, 1], ['objects', 'tree_oak', 59, 19, 1], ['objects', 'tree_pine', 68, 19, 1], ['objects', 'tree_apple', 61, 20, 1], ['objects', 'tree_oak', 63, 20, 1], ['objects', 'tree_oak', 65, 20, 1], ['objects', 'tree_pine', 16, 64, 1], ['objects', 'tree_oak', 20, 64, 1], ['objects', 'tree_oak', 27, 64, 1], ['objects', 'tree_pine', 31, 64, 1], ['objects', 'tree_pine', 34, 64, 1], ['objects', 'tree_pine', 37, 64, 1], ['objects', 'tree_oak', 42, 64, 1], ['objects', 'tree_oak', 14, 65, 1], ['objects', 'tree_pine', 22, 65, 1], ['objects', 'tree_apple', 24, 65, 1], ['objects', 'tree_apple', 39, 65, 1], ['objects', 'tree_pine', 16, 66, 1], ['objects', 'tree_apple', 18, 66, 1], ['objects', 'tree_oak', 20, 66, 1], ['objects', 'tree_pine', 29, 66, 1], ['objects', 'tree_oak', 31, 66, 1], ['objects', 'tree_oak', 33, 66, 1], ['objects', 'tree_pine', 42, 66, 1], ['objects', 'tree_oak', 37, 67, 1], ['objects', 'tree_pine', 39, 67, 1], ['objects', 'tree_oak', 53, 64, 1], ['objects', 'tree_oak', 55, 64, 1], ['objects', 'tree_apple', 58, 64, 1], ['objects', 'tree_oak', 60, 64, 1], ['objects', 'tree_pine', 62, 64, 1], ['objects', 'tree_oak', 66, 64, 1], ['objects', 'tree_pine', 68, 64, 1], ['objects', 'tree_oak', 64, 65, 1], ['objects', 'tree_oak', 54, 66, 1], ['objects', 'tree_oak', 56, 66, 1], ['objects', 'tree_apple', 60, 66, 1], ['objects', 'tree_oak', 62, 66, 1], ['objects', 'tree_pine', 67, 66, 1], ['objects', 'tree_apple', 81, 4, 1], ['objects', 'tree_pine', 79, 5, 1], ['objects', 'tree_apple', 81, 6, 1], ['objects', 'tree_apple', 79, 7, 1], ['objects', 'tree_pine', 77, 8, 1], ['objects', 'tree_oak', 79, 10, 1], ['objects', 'tree_oak', 95, 4, 1], ['objects', 'tree_oak', 91, 5, 1], ['objects', 'tree_apple', 93, 6, 1], ['objects', 'tree_pine', 91, 9, 1], ['objects', 'tree_oak', 93, 9, 1], ['objects', 'tree_pine', 90, 11, 1], ['objects', 'tree_oak', 95, 11, 1], ['objects', 'fence_h', 77, 33, 2], ['objects', 'fence_h', 79, 33, 2], ['objects', 'fence_h', 81, 33, 2], ['objects', 'fence_h', 87, 33, 2], ['objects', 'fence_h', 89, 33, 2], ['objects', 'fence_h', 91, 33, 2], ['objects', 'fence_h', 93, 33, 2], ['bog', 'log', 61, 40, 2], ['bog', 'log', 63, 40, 2], ['bog', 'log', 65, 40, 2], ['bog', 'log', 60, 27, 2], ['bog', 'log', 62, 27, 2], ['hm', 'hm_hay_cart', 80, 28, 2], ['hm', 'hm_hay_cart', 92, 16, 2], ['hm', 'hm_planter', 30, 26, 2], ['hm', 'hm_planter', 62, 26, 2]],
+    signs: { '44,68': "Elderwood, capital of the forest. Please walk softly: the trees are older than the town.", '41,40': '__door:ew_board',
+      '83,41': "The herd paddock. When the great herds are home, they rest here.", '45,11': "The Warden's Lodge. Warden Alder keeps the forest and its herds." },
+    gate: { area: [68, 45, 69, 48], sign: [67, 49], ok: () => ewRepaired('ew_bridge'), openMsg: 'The new footbridge is open. The paddock and the far bank of town are reachable again!',
+      get text() { return "The old footbridge across the river lies broken in the water. A notice: 'Repairs to be funded by the town. See the board in the market square.'"; } },
     trainers: [],
     down: x => ['eldglade', { x: 28, y: 1, dir: 'down' }],
-    spawn: { x: 21, y: 31, dir: 'up' }, enc: NO_ENC },
+    spawn: { x: 47, y: 69, dir: 'up' }, enc: NO_ENC },
 
   ewcamp: { ...EW_BASE, name: 'Greenline Timber Camp', w: 40, h: 32, quiet: true, forest: .2, tint: [0x3a3020, .08],
     paths: [[0, 14, 40, 17], [8, 5, 33, 27]],
@@ -186,7 +209,7 @@ Object.assign(ROUTES, {
 
 /* ---------- the town's repairs (stage 2 adds what they unlock) */
 const EW_PROJECTS = {
-  ew_bridge: { name: 'Paddock footbridge', need: { wood: 120, fiber: 60 }, gold: 6000, blurb: 'A new footbridge over the river to the herd paddock and the north of town.' },
+  ew_bridge: { name: 'Paddock footbridge', need: { wood: 120, fiber: 60 }, gold: 6000, blurb: 'A new footbridge over the river to the herd paddock, the Town Hall and the far bank of town.' },
   ew_mill: { name: 'Old Town Mill', need: { wood: 200, stone: 120 }, gold: 9000, blurb: 'Get the town mill sawing again, so Elderwood folk can work for themselves instead of for Greenline.' },
 };
 const ewRepaired = id => !!(ew().done || {})[id];
@@ -217,6 +240,16 @@ function ewDoor(sc, id) {
     ew_mill: ewRepaired('ew_mill') ? 'The Old Town Mill. Saws whine, and local folk are back at work.' : 'The Old Town Mill. Cold and quiet since Greenline came. A sign: "CLOSED. SEE NOTICE BOARD."',
     ew_mayor: "Mayor Pruett's house. The curtains are drawn.",
     ew_carver: "Ellis's Workshop. Carved birds hang in the window. A note: 'Out gathering offcuts.'",
+    ew_joinery: 'The Joinery. Half-built chairs and a smell of sawdust. "Greenline buys all our timber now. Not much left to make."',
+    ew_smith: 'Elderwood Smithy. The forge is banked low. Axe heads hang in a row.',
+    ew_bake: 'The Bakehouse. Acorn bread and elderberry buns. "Fresh at dawn, gone by nine!"',
+    ew_h1: 'A tall timber house. Someone is practising the fiddle inside.', ew_h2: "A woodcutter's cottage. An axe leans by the door, unused.",
+    ew_h3: 'An old forest cottage, half grown over with ivy.', ew_h4: 'A long house. Children are arguing over a board game.',
+    ew_h5: 'A mossy house. A cat watches you from the windowsill.', ew_h6: "The gardener's house. Seedlings line every sill.",
+    ew_h7: 'A brick house. Nobody answers.', ew_h8: 'A riverside house. Fishing rods are drying on the porch.',
+    ew_h9: "The ferryman's house. With the bridge out, he's been rowing folk across all week.",
+    ew_h10: 'A tall, narrow house. Wind chimes made of acorn caps tinkle by the door.', ew_h11: "The hunters' lodge. Antlers over the door, shed ones, collected from the forest floor.",
+    ew_h12: 'A stone cottage. Someone inside is singing an old forest song.', ew_h13: 'The Old Oak, a quiet pub for the old loggers. "Locals only, love. Try the Antler."',
   };
   return toast(shut[id] || (B ? B.name : ''), 3600);
 }
@@ -247,3 +280,16 @@ Object.assign(VD_PLACES, {
 
 /* ---------- scenes */
 var EXTRA_SCENES = (typeof EXTRA_SCENES !== 'undefined' ? EXTRA_SCENES : []).concat(EW_KEYS.map(k => { const C = class extends Route { constructor() { super(k); } }; C.KEY = k; return C; }));
+
+/* ---------- saves made inside the old, smaller Elderwood (before 18 Nov) may put you inside a tree or a house now:
+   step out to the south gate */
+const _ewSafeCreate = Route.prototype.create;
+Route.prototype.create = function () {
+  _ewSafeCreate.call(this);
+  try {
+    if (this.scene.key !== 'elderwood' || !this.p || this.passable(this.p.x, this.p.y)) return;
+    const sp = RC.spawn; this.p.x = sp.x; this.p.y = sp.y; this.p.dir = sp.dir;
+    if (this.player) this.player.setPosition(sp.x * T + 8, sp.y * T + 15).setDepth(sp.y * T + 15);
+    if (this.refreshFollower) this.refreshFollower();
+  } catch (e) { console.warn('ew spawn', e); }
+};

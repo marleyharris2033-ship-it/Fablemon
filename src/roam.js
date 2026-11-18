@@ -60,7 +60,8 @@ Object.assign(Route.prototype, {
   },
   roamRemove(r) { this.roam = this.roam.filter(q => q !== r); if (r.glint) r.glint.destroy(); if (r.spr.shadowImg) r.spr.shadowImg.destroy(); r.spr.destroy(); },
   roamStep(r, dx, dy) {
-    const nx = r.x + dx, ny = r.y + dy; if (!this.roamFree(nx, ny) || this.R.grass[ny * RW + nx] !== r.zone && Math.random() < .85) return false;
+    const nx = r.x + dx, ny = r.y + dy; if (this.p && this.time.now < (this.roamSettle || 0) && Math.abs(nx - this.p.x) + Math.abs(ny - this.p.y) <= 1) return false;   // right after a fight, they keep their distance
+    if (!this.roamFree(nx, ny) || this.R.grass[ny * RW + nx] !== r.zone && Math.random() < .85) return false;
     r.x = nx; r.y = ny; r.dir = dx > 0 ? 'right' : dx < 0 ? 'left' : dy > 0 ? 'down' : 'up'; r.moving = true;
     r.spr.anims.play(`${r.wid}_${r.dir}`, true);
     const dur = r.mood === 'bold' && r.alert ? 260 : 420;

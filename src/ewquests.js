@@ -48,9 +48,9 @@ const EW_Q = [
   ewTask('ew_deer', 'Find a way past the Verdance checkpoint on Fernwalk', 'Verdance has blocked the road through Fernwalk. Someone in the ferns by the road seems to know the forest well.', () => ew().deer, {}, 'fernwalk'),
   ewTask('ew_town', 'Reach Elderwood', 'Follow the old deer path round the checkpoint, then the trail north through the Elder Glade.', () => (S.visited || {}).elderwood, { gold: 3000, items: { tonic: 3 } }, 'eldglade'),
   // 2. A town split in two
-  ewTask('ew_alder1', "Visit Warden Alder at his Lodge", "Alder's Lodge is on the east side of Elderwood's square.", () => ew().alder, {}, 'elderwood'),
-  ewTask('ew_mayor', 'Hear Mayor Pruett out', "The Mayor's house is in the north of town. Tansy says he's at the inn most days, avoiding everyone.", () => ew().mayor, {}, 'elderwood'),
-  ewTask('ew_bridge', 'Fund the paddock footbridge', () => `Use Elderwood's notice board in the square. The herd paddock is across the river. (${EW_PROJECTS.ew_bridge.gold}g, ${Object.entries(EW_PROJECTS.ew_bridge.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_bridge'), { gold: 1500 }, 'elderwood'),
+  ewTask('ew_alder1', "Visit Warden Alder at his Lodge", "Alder's Lodge is at the north end of Elderwood's grand avenue, past the market square.", () => ew().alder, {}, 'elderwood'),
+  ewTask('ew_mayor', 'Hear Mayor Pruett out', "The Town Hall is across the river. Tansy says Pruett is at the Antler Inn most days, avoiding everyone.", () => ew().mayor, {}, 'elderwood'),
+  ewTask('ew_bridge', 'Fund the paddock footbridge', () => `Use the notice board in Elderwood's market square. The herd paddock is across the river. (${EW_PROJECTS.ew_bridge.gold}g, ${Object.entries(EW_PROJECTS.ew_bridge.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_bridge'), { gold: 1500 }, 'elderwood'),
   // 3. The Scattered Herds
   ewTask('ew_ask', 'Talk to Alder about the herds', "Now the footbridge is up, Alder wants a word at his Lodge.", () => ew().herdAsk, {}, 'elderwood'),
   ewTask('ew_herds', () => `Bring the herd leaders home (${ewHerds()}/3)`, () => [
@@ -91,10 +91,10 @@ const LAMP_TEXT = { moon: 'a crescent moon', stag: 'a running stag', root: 'a ta
 ROUTES.fernwalk.actors = () => ew().deer ? [] : [{ id: 'ew_tansy', x: 15, y: 37, tex: 'tr_' + trArt('tansy'), dir: 'right' }];
 ROUTES.elderwood.actors = () => {
   const out = [];
-  if (ew().deer) out.push({ id: 'ew_tansy', x: 18, y: 25, tex: 'tr_' + trArt('tansy'), dir: 'down' });
-  if (ew().herds.stag) out.push({ id: 'ew_pstag', x: 25, y: 3, mon: EW_MON.stag });
-  if (ew().herds.boar) out.push({ id: 'ew_pboar', x: 29, y: 3, mon: EW_MON.boar });
-  if (ew().herds.owl) out.push({ id: 'ew_powl', x: 18, y: 5, mon: EW_MON.owl });
+  if (ew().deer) out.push({ id: 'ew_tansy', x: 44, y: 40, tex: 'tr_' + trArt('tansy'), dir: 'down' });
+  if (ew().herds.stag) out.push({ id: 'ew_pstag', x: 84, y: 16, mon: EW_MON.stag });
+  if (ew().herds.boar) out.push({ id: 'ew_pboar', x: 90, y: 24, mon: EW_MON.boar });
+  if (ew().herds.owl) out.push({ id: 'ew_powl', x: 80, y: 12, mon: EW_MON.owl });
   return out;
 };
 ROUTES.eldglade.actors = () => {
@@ -312,8 +312,8 @@ ROUTES.ewcamp.onEnter = sc => { if (ewNight() && !ew().inCamp) { ew().inCamp = 1
 const _ewTownActors = ROUTES.elderwood.actors;
 ROUTES.elderwood.actors = () => {
   const W = ew(), out = _ewTownActors();
-  if (W.dunn && (W.planted || 0) >= 12) out.push({ id: 'ew_dunn', x: 27, y: 31, tex: 'tr_' + trArt('dunn'), dir: 'down' });
-  else if (ewRepaired('ew_mill') && !W.dunn) out.push({ id: 'ew_dunn', x: 27, y: 31, tex: 'tr_' + trArt('dunn'), dir: 'up' });
+  if (W.dunn && (W.planted || 0) >= 12) out.push({ id: 'ew_dunn', x: 64, y: 49, tex: 'tr_' + trArt('dunn'), dir: 'up' });
+  else if (ewRepaired('ew_mill') && !W.dunn) out.push({ id: 'ew_dunn', x: 64, y: 49, tex: 'tr_' + trArt('dunn'), dir: 'up' });
   return out;
 };
 const _ewTreeActors = ROUTES.eldest.actors;
