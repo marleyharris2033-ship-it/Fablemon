@@ -46,8 +46,9 @@ const QD_PROJECTS = {
   qd_crane: { name: 'Old Crane', need: { wood: 150, stone: 80, fiber: 40 }, gold: 3500, blurb: 'The great timber crane that lifted every block out of the quarry. New rope, new beams.' },
 };
 const qdState = () => (S.qd = S.qd || { done: {}, pending: {} });
-const qdDone = id => !!qdState().done[id];
-const qdRepairs = () => Object.keys(qdState().done).length;
+// 18 Nov: only Smallroot needs rebuilding; Quarrydown's are already sound, so the Pit is open
+const qdDone = id => true;
+const qdRepairs = () => Object.keys(QD_PROJECTS).length;
 const pitOpen = () => qdRepairs() >= 2 || !!(S.crests && S.crests.stone);
 CREST_INFO.stone = ['⛰️ Stone Crest', '#8a7458'];
 { const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
@@ -85,13 +86,13 @@ function qdBoard() {
   const render = () => {
     const B = qdState();
     const rows = Object.entries(QD_PROJECTS).map(([id, p]) => {
-      if (B.done[id]) return `<div class="proj"><b>${p.name}</b><span class="st">✔ Restored</span></div>`;
+      if (qdDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
       const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs} <span class="need ${S.gold < p.gold ? 'no' : ''}">🪙 ${p.gold.toLocaleString()}g</span></div><button class="btn ${ok ? 'gold' : ''} sm" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
-    return `<p>Quarrydown's repair list, pinned up by the foreman. Warden Granger won't open the Quarry Pit to challengers until both are done: <b>${qdRepairs()}/2</b>.</p><div class="mlist">${rows}</div><p class="hint">Stone & Supply sells stone, wood and fiber if you're short.</p>`;
+    return `<p>Quarrydown's notice board. The quarry crews keep the town sound: nothing needs fixing. Warden Granger waits in the Quarry Pit at the top of town.</p><div class="mlist">${rows}</div><p class="hint">Stone & Supply sells stone, wood and fiber if you're short.</p>`;
   };
   openModal('Quarrydown notice board', render(), (a, d) => {
     if (a !== 'fund') return;

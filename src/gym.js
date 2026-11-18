@@ -1,5 +1,5 @@
 /* ============================================================ Brookholt Lock House (Delphine's gym)
-   Opens once both Brookholt repairs are done; Delphine then waits inside on her platform.
+   Delphine waits inside on her platform (since 18 Nov the town needs no repairs first).
    The room is one painted picture; WALK lists the tiles you can stand on (21 x 28 tiles). */
 const GYM_W = 21, GYM_H = 28, GYM_BOSS = { x: 10, y: 4 }, GYM_EXIT = { scene: 'brookholt', x: 36, y: 11, dir: 'down' };
 const GYM_WALK = (() => {

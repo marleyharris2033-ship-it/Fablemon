@@ -7,8 +7,9 @@ const BH_PROJECTS = {
   bh_mill: { name: 'Old Watermill', need: { wood: 120, stone: 60 }, gold: 1500, blurb: 'Get the wheel turning again. The canal folk would love it.' },
 };
 const bhState = () => (S.bh = S.bh || { done: {}, pending: {} });
-const bhDone = id => !!bhState().done[id];
-const bhRepairs = () => Object.keys(bhState().done).length;
+// 18 Nov: only Smallroot needs rebuilding; Brookholt's buildings are already in good repair, so Delphine battles straight away
+const bhDone = id => true;
+const bhRepairs = () => Object.keys(BH_PROJECTS).length;
 // Wardens choose their own moves, like a gym leader would: a Tide team with a little Gale cover for Leaf challengers
 // Fenfang is her ace, backed by both Puffpiper forms
 const DELPHINE_TEAM = [['lotling', 21, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 22, ['hum', 'featherdance', 'downdraft', 'sapsip']],
@@ -20,13 +21,13 @@ function bhBoard() {
   const render = () => {
     const B = bhState();
     const rows = Object.entries(BH_PROJECTS).map(([id, p]) => {
-      if (B.done[id]) return `<div class="proj"><b>${p.name}</b><span class="st">✔ Restored</span></div>`;
+      if (bhDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
       const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
-    return `<p>Brookholt's repair list. Warden Delphine won't battle anyone until the town has been looked after: <b>${bhRepairs()}/2</b> done.</p><div class="mlist">${rows}</div>`;
+    return `<p>Brookholt's notice board. The canal folk keep the town in good order: nothing needs fixing. Warden Delphine waits at the Lock House.</p><div class="mlist">${rows}</div>`;
   };
   openModal('Brookholt notice board', render(), (a, d) => {
     if (a !== 'fund') return;

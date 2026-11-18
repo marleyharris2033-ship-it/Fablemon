@@ -366,15 +366,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261118-005712">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261118-005712">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261118-005712">
+<link rel="manifest" href="manifest.webmanifest?v=20261118-010141">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261118-010141">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261118-010141">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-005712').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-010141').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -2560,10 +2560,10 @@ const QUESTS = [
   { id: 'warden', name: 'Earn the Root Crest from Warden Mabel', hint: 'She waits in the walled garden at the end of Brookside Lane. Rest at the spring well first!', done: () => S.crests && S.crests.root, reward: { gold: 1000, items: { mon_treat: 2 } } },
   { id: 'bog', name: 'Cross Mossmere Bog', hint: 'Head east from the middle of Brookside Lane, past the old rockfall. Beat all five keepers in the bog.', done: () => ['mb1', 'mb2', 'mb3', 'mb4', 'mb5'].every(beatTrainer), reward: { gold: 1500, items: { sturdy_charm: 3 } } },
   { id: 'fen', name: 'Solve Sluice Fen', hint: 'Past Mossmere Bog, the fen is cut up by flooded channels. Pull the old levers to drain a way through to the far side.', done: () => !!(S.visited && S.visited.fenDone), reward: { gold: 1500, items: { mon_treat: 2 } } },
-  { id: 'brook', name: 'Earn the Brook Crest from Warden Delphine', hint: "Cross Sluice Fen to Brookholt. Fund two repairs on the town's notice board, then challenge Delphine at the Lock House. Her Tide team is level 20–24.", done: () => S.crests && S.crests.brook, reward: { gold: 1500, items: { tonic: 3 } } },
+  { id: 'brook', name: 'Earn the Brook Crest from Warden Delphine', hint: "Cross Sluice Fen to Brookholt and challenge Warden Delphine at the Lock House. Her Tide team is level 20–24.", done: () => S.crests && S.crests.brook, reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'elder', name: "Restore 3 buildings for Elder Bramble", get hint() { return S.flags.elderQ ? `Have ${elderNeed()} buildings restored in Smallroot, any you like. Ones you've already done count (${elderDone()}/${elderNeed()} so far). Then tell Bramble. The road north of Brookholt stays closed until you do.` : 'Elder Bramble wants a word with you in Smallroot square.'; }, done: () => !!S.flags.elderThanked, reward: { gold: 3000, items: { sturdy_charm: 5, mon_treat: 3 } } },
   { id: 'quarry', name: 'Reach Quarrydown', hint: 'The landslide on Cragside Heights has been cleared. Follow the road north from the top of the Heights.', done: () => !!(S.visited && S.visited.quarrydown), reward: { gold: 1500, items: { sturdy_charm: 5 } } },
-  { id: 'stone', name: 'Earn the Stone Crest from Warden Granger', get hint() { return `Fund the two repairs on Quarrydown's notice board (${qdRepairs()}/2 done), then challenge Granger at the Quarry Pit, top of the town. His team is level 32–36.`; }, done: () => !!(S.crests && S.crests.stone), reward: { gold: 2500, items: { mon_treat: 3 } } },
+  { id: 'stone', name: 'Earn the Stone Crest from Warden Granger', get hint() { return `Challenge Warden Granger at the Quarry Pit, top of the town. His team is level 32–36.`; }, done: () => !!(S.crests && S.crests.stone), reward: { gold: 2500, items: { mon_treat: 3 } } },
   { id: 'west', name: 'Tell Elder Bramble about the Stone Crest', hint: 'Elder Bramble wanders the Smallroot square in the daytime. He has news for you.', done: () => !!S.flags.westOpen, reward: { gold: 500 } },
   { id: 'cove', name: 'Explore west of your farm', hint: 'A way has opened through the trees at the west edge of your farm. Follow it through Saltgrass Dunes to Driftwood Cove.', done: () => !!(S.visited && S.visited.driftwood), reward: { gold: 1500, items: { tonic: 3 } } },
   { id: 'boat', name: 'Build a boat with Hal the shipwright', get hint() { return `Hal at Driftwood Cove builds it in four stages, one a night (${(S.cove || {}).stage || 0}/4 done). Quarrydown's Stone & Supply sells wood, stone and fiber.`; }, done: () => ((S.cove || {}).stage || 0) >= 4, reward: { gold: 3000, items: { mon_treat: 3 } } },
@@ -6173,8 +6173,9 @@ const BH_PROJECTS = {
   bh_mill: { name: 'Old Watermill', need: { wood: 120, stone: 60 }, gold: 1500, blurb: 'Get the wheel turning again. The canal folk would love it.' },
 };
 const bhState = () => (S.bh = S.bh || { done: {}, pending: {} });
-const bhDone = id => !!bhState().done[id];
-const bhRepairs = () => Object.keys(bhState().done).length;
+// 18 Nov: only Smallroot needs rebuilding; Brookholt's buildings are already in good repair, so Delphine battles straight away
+const bhDone = id => true;
+const bhRepairs = () => Object.keys(BH_PROJECTS).length;
 // Wardens choose their own moves, like a gym leader would: a Tide team with a little Gale cover for Leaf challengers
 // Fenfang is her ace, backed by both Puffpiper forms
 const DELPHINE_TEAM = [['lotling', 21, ['undertow', 'staticfield', 'springsip', 'bogbubble']], ['puffpiper_cotton', 22, ['hum', 'featherdance', 'downdraft', 'sapsip']],
@@ -6186,13 +6187,13 @@ function bhBoard() {
   const render = () => {
     const B = bhState();
     const rows = Object.entries(BH_PROJECTS).map(([id, p]) => {
-      if (B.done[id]) return `<div class="proj"><b>${p.name}</b><span class="st">✔ Restored</span></div>`;
+      if (bhDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
       const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
-    return `<p>Brookholt's repair list. Warden Delphine won't battle anyone until the town has been looked after: <b>${bhRepairs()}/2</b> done.</p><div class="mlist">${rows}</div>`;
+    return `<p>Brookholt's notice board. The canal folk keep the town in good order: nothing needs fixing. Warden Delphine waits at the Lock House.</p><div class="mlist">${rows}</div>`;
   };
   openModal('Brookholt notice board', render(), (a, d) => {
     if (a !== 'fund') return;
@@ -7127,7 +7128,7 @@ function openHeldPicker(m, back) {
 }
 
 /* ============================================================ Brookholt Lock House (Delphine's gym)
-   Opens once both Brookholt repairs are done; Delphine then waits inside on her platform.
+   Delphine waits inside on her platform (since 18 Nov the town needs no repairs first).
    The room is one painted picture; WALK lists the tiles you can stand on (21 x 28 tiles). */
 const GYM_W = 21, GYM_H = 28, GYM_BOSS = { x: 10, y: 4 }, GYM_EXIT = { scene: 'brookholt', x: 36, y: 11, dir: 'down' };
 const GYM_WALK = (() => {
@@ -7675,8 +7676,9 @@ const QD_PROJECTS = {
   qd_crane: { name: 'Old Crane', need: { wood: 150, stone: 80, fiber: 40 }, gold: 3500, blurb: 'The great timber crane that lifted every block out of the quarry. New rope, new beams.' },
 };
 const qdState = () => (S.qd = S.qd || { done: {}, pending: {} });
-const qdDone = id => !!qdState().done[id];
-const qdRepairs = () => Object.keys(qdState().done).length;
+// 18 Nov: only Smallroot needs rebuilding; Quarrydown's are already sound, so the Pit is open
+const qdDone = id => true;
+const qdRepairs = () => Object.keys(QD_PROJECTS).length;
 const pitOpen = () => qdRepairs() >= 2 || !!(S.crests && S.crests.stone);
 CREST_INFO.stone = ['⛰️ Stone Crest', '#8a7458'];
 { const h = CREST_INFO.hearth; delete CREST_INFO.hearth; CREST_INFO.hearth = h; }   // keep Rowan's crest last
@@ -7714,13 +7716,13 @@ function qdBoard() {
   const render = () => {
     const B = qdState();
     const rows = Object.entries(QD_PROJECTS).map(([id, p]) => {
-      if (B.done[id]) return `<div class="proj"><b>${p.name}</b><span class="st">✔ Restored</span></div>`;
+      if (qdDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
       const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs} <span class="need ${S.gold < p.gold ? 'no' : ''}">🪙 ${p.gold.toLocaleString()}g</span></div><button class="btn ${ok ? 'gold' : ''} sm" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
-    return `<p>Quarrydown's repair list, pinned up by the foreman. Warden Granger won't open the Quarry Pit to challengers until both are done: <b>${qdRepairs()}/2</b>.</p><div class="mlist">${rows}</div><p class="hint">Stone & Supply sells stone, wood and fiber if you're short.</p>`;
+    return `<p>Quarrydown's notice board. The quarry crews keep the town sound: nothing needs fixing. Warden Granger waits in the Quarry Pit at the top of town.</p><div class="mlist">${rows}</div><p class="hint">Stone & Supply sells stone, wood and fiber if you're short.</p>`;
   };
   openModal('Quarrydown notice board', render(), (a, d) => {
     if (a !== 'fund') return;
