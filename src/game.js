@@ -1758,7 +1758,7 @@ function openStarterPick() {
 }
 
 /* ---------- follower (mixed into every World scene) */
-const evoOf = m => { const e = SPECIES[m.sp].evo; return e && MON_ORDER.includes(e[0]) && m.lv >= e[1] ? e[0] : null; };
+const evoOf = m => { const e = SPECIES[m.sp].evo; return e && MON_ORDER.includes(e[0]) && m.lv >= e[1] && m.evoStop !== m.lv ? e[0] : null; };   // evoStop: stopped at this level (18 Nov), it tries again next level
 const baseOf = sp => { const prev = Object.keys(SPECIES).find(k => SPECIES[k].evo && SPECIES[k].evo[0] === sp); return prev ? baseOf(prev) : sp; };
 // evolved forms use their first stage's walking sprite until their own sheet is added
 const walkSp = sp => ASSET['mon_' + sp] ? sp : baseOf(sp);
@@ -4173,8 +4173,18 @@ const Battle = (() => {
       q('bfoe').style.visibility = 'hidden'; q('bfoebox').style.visibility = 'hidden'; q('bmebox').style.visibility = 'hidden';
       const me = q('bme'); const pic = sp => monPicOf({ sp, fab: m.fab }, 'front'); if (m.fab) { fabWarm(to); fabPic(from, 'front'); }
       me.src = pic(from); me.className = 'bmon evolving';
+      // a Stop button for the whole of the evolving (18 Nov): it tries again at the next level-up
+      let stop = false; const sb = document.createElement('button'); sb.className = 'evostop'; sb.textContent = '✋ Stop evolving';
+      sb.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); stop = true; sb.remove(); }); el.appendChild(sb);
       Sound.theme('none'); await say(`What? ${oldName} is evolving!`, 1800);
-      for (let i = 0; i < 6; i++) { me.src = pic(i % 2 ? to : from); Sound.play('wobble'); await sleep(Math.max(140, 420 - i * 55)); }
+      for (let i = 0; i < 6 && !stop; i++) { me.src = pic(i % 2 ? to : from); Sound.play('wobble'); await sleep(Math.max(140, 420 - i * 55)); }
+      if (!stop) await sleep(350);   // a last moment to change your mind
+      sb.remove();
+      if (stop) {
+        m.evoStop = m.lv; me.src = pic(from); me.className = 'bmon'; Sound.play('pop');
+        await say(`Huh? ${oldName} stopped evolving!`, 1800);
+        q('bfoe').style.visibility = ''; q('bfoebox').style.visibility = ''; q('bmebox').style.visibility = ''; continue;
+      }
       m.sp = to; m.hp = Math.min(monStat(m, 'hp'), m.hp + (monStat(m, 'hp') - oldMax));
       me.src = pic(to); me.className = 'bmon evolved'; Sound.play('gotcha');
       S.caught[to] = 1; S.seen[to] = 1; if (m.fab) fabNote(to);
