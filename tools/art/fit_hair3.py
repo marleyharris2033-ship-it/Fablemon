@@ -11,10 +11,11 @@ def rgba(p):
     a = np.asarray(Image.open(p).convert('RGB')).astype(int); r, g, b = a[..., 0], a[..., 1], a[..., 2]
     m = ndi.binary_opening(~((r > 150) & (b > 150) & (g < 130)), iterations=1)
     pinkish = (b > g + 25) & (r > g + 25)                      # magenta has crept into these pixels
+    if (pinkish & m).sum() > .3 * m.sum(): pinkish = np.zeros_like(pinkish)   # purple hair: its own colour, not spill
     edge = m & ~ndi.binary_erosion(m, iterations=2)
     m = ndi.binary_erosion(m, iterations=1) | (m & ~((r > 140) & (b > 120) & (g < 110)))   # (as approved)
     a = a.copy(); rim = m & edge & pinkish; a[rim] = (a[rim] * .35).astype(int)       # pink rim pixels become outline
-    spill = m & ((b > g + 12) & (r > g + 12)) & ~rim              # pink-tinged pixels inside: paint them with the hair round them
+    spill = m & ((b > g + 12) & (r > g + 12)) & ~rim & pinkish.any()              # pink-tinged pixels inside: paint them with the hair round them
     good = m & ~spill & ~rim
     if spill.any() and good.any():
         idx = ndi.distance_transform_edt(~good, return_distances=False, return_indices=True)

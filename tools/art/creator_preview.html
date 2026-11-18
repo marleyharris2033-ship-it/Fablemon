@@ -1,52 +1,76 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fablemon character creator preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f3ead2;--ink:#3a2a14;--card:#fffaea;--edge:#c9a64e;--green:#2c4a2c}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif}
-header{padding:14px 16px 4px}h1{margin:0;font-size:20px}header p{margin:4px 0 0;opacity:.75;font-size:13px}
-#stage{display:flex;justify-content:center;gap:4px;background:#bcd6bc;margin:10px 12px;border-radius:12px;border:3px solid var(--green);padding:8px 4px;overflow:hidden}
-#stage canvas{image-rendering:auto;width:min(23vw,150px);height:auto}
-section{margin:10px 12px;background:var(--card);border:2px solid var(--edge);border-radius:12px;padding:8px 10px}
-section h2{margin:0 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
-.opts{display:flex;flex-wrap:wrap;gap:6px}
-.opts button{border:2px solid #d9c79a;background:#fff;border-radius:9px;padding:6px 9px;font:600 13px system-ui;color:var(--ink);cursor:pointer}
-.opts button.on{border-color:var(--green);background:#e4f0d8;box-shadow:0 0 0 2px var(--green) inset}
-.sw{width:30px;height:30px;border-radius:50%;padding:0!important;border:3px solid #fff!important;box-shadow:0 0 0 1px #0003}
-.sw.on{box-shadow:0 0 0 3px var(--green)!important}
-.row{display:flex;gap:8px;justify-content:center;margin:10px}
-.big{background:var(--green);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:700 15px system-ui;cursor:pointer}
+:root{--wood:#7a4a24;--wood2:#5a3416;--paper:#fbf0d3;--edge:#c9a64e;--ink:#3a2a14;--green:#3f7a34;--pix:'Press Start 2P',monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:#2d4a2a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Crect width='16' height='16' fill='%23345a30'/%3E%3Crect x='3' y='5' width='2' height='2' fill='%233c6636'/%3E%3Crect x='11' y='11' width='2' height='2' fill='%232e5229'/%3E%3C/svg%3E");color:var(--ink);font:800 15px/1.2 Nunito,system-ui,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:520px;height:100dvh;display:flex;flex-direction:column;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+.panel{background:var(--paper);border:4px solid var(--wood);border-radius:14px;box-shadow:0 0 0 3px var(--wood2),0 6px 0 rgba(0,0,0,.35);flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.title{background:var(--wood);color:#fff7dc;font:12px var(--pix);text-align:center;padding:10px 6px 9px;letter-spacing:.5px;text-shadow:0 2px 0 #3a1e08}
+/* the character: always on screen */
+.preview{position:relative;margin:8px 10px 4px;flex:0 0 auto;height:min(44dvh,400px);background:#bcd6bc;border:3px solid var(--wood);border-radius:12px;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.preview::after{content:'';position:absolute;left:50%;bottom:6%;width:34%;height:7%;transform:translateX(-50%);background:rgba(30,40,20,.22);border-radius:50%}
+#cv{height:96%;width:auto;position:relative;z-index:1;image-rendering:auto}
+.turn{position:absolute;bottom:8px;width:44px;height:44px;border-radius:50%;border:3px solid var(--wood);background:var(--paper);font-size:20px;z-index:2;cursor:pointer;color:var(--wood)}
+.turn.l{left:8px}.turn.r{right:8px}
+.dice{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:10px;border:3px solid var(--wood);background:var(--paper);font-size:22px;z-index:2;cursor:pointer}
+.walk{position:absolute;top:8px;left:8px;height:34px;padding:0 10px;border-radius:10px;border:3px solid var(--wood);background:var(--paper);font:800 13px Nunito;z-index:2;cursor:pointer;color:var(--ink)}
+/* the choices */
+.rows{flex:1;min-height:0;overflow:auto;padding:4px 10px 6px}
+.name{display:flex;align-items:center;gap:8px;margin:4px 0 6px}
+.name label{font-size:13px;width:84px;flex:0 0 auto}
+.name input{flex:1;min-width:0;font:800 16px Nunito;padding:7px 10px;border:3px solid var(--edge);border-radius:10px;background:#fff;color:var(--ink)}
+.row{display:flex;align-items:center;gap:6px;margin:5px 0}
+.row .lab{width:84px;flex:0 0 auto;font-size:13px}
+.row button.arr{width:38px;height:38px;flex:0 0 auto;border:3px solid var(--wood);background:var(--wood);color:#fff7dc;border-radius:9px;font-size:15px;cursor:pointer;touch-action:manipulation}
+.row button.arr:active{transform:translateY(1px)}
+.row .val{flex:1;min-width:0;height:38px;border:3px solid var(--edge);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.row .val i{width:18px;height:18px;border-radius:50%;flex:0 0 auto;border:2px solid #0003}
+.row .val small{opacity:.55;font-size:11px}.row .val span{overflow:hidden;text-overflow:ellipsis}@media (max-width:400px){.row .val small{display:none}}
+.go{margin:8px 10px 10px;flex:0 0 auto;border:0;border-radius:12px;background:var(--green);color:#fff;font:11px var(--pix);padding:14px;box-shadow:0 4px 0 #23471c;cursor:pointer}
 </style></head><body>
-<header><h1>Character creator preview</h1><p>The new base body with the faces, beards and hairstyles fitted so far. Every colour can be changed.</p></header>
-<div id="stage"></div>
-<div class="row"><button class="big" id="rand">🎲 Randomise</button><button class="big" id="walk">⏸ Pause</button></div>
-<section><h2>Face</h2><div class="opts" id="face"></div></section>
-<section><h2>Skin</h2><div class="opts" id="skin"></div></section>
-<section><h2>Hair</h2><div class="opts" id="hair"></div></section>
-<section><h2>Hair colour</h2><div class="opts" id="hcol"></div></section>
-<section><h2>Beard</h2><div class="opts" id="beard"></div></section>
-<section><h2>Beard colour</h2><div class="opts" id="bcol"></div></section>
+<div class="app"><div class="panel">
+  <div class="title">CHARACTER CREATION</div>
+  <div class="preview">
+    <button class="walk" id="walk">⏸ Stop</button><button class="dice" id="rand" title="Randomise">🎲</button>
+    <canvas id="cv"></canvas>
+    <button class="turn l" id="tl" title="Turn">⟲</button><button class="turn r" id="tr" title="Turn">⟳</button>
+  </div>
+  <div class="rows" id="rows">
+    <div class="name"><label for="nm">Name</label><input id="nm" maxlength="14" value="Farmer"></div>
+  </div>
+  <button class="go" id="go">BEGIN ADVENTURE</button>
+</div></div>
 <script>
 const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
-const SKIN = [['Original', null], ['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
-const HAIRC = [['Original', null], ['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
+const SKIN = [['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
+const HAIRC = [['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
 const nice = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const S = { face: 0, skin: 0, hair: CC.hair.indexOf('swept'), hcol: 0, beard: -1, bcol: 0, playing: true };
+const S = { face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
+const ROWS = [
+  ['Face', 'face', () => CC.heads, i => `Face ${i + 1}`],
+  ['Skin', 'skin', () => SKIN.length, i => SKIN[i][0], i => SKIN[i][1]],
+  ['Hair', 'hair', () => CC.hair.length + 1, i => i === 0 ? 'Bald' : nice(CC.hair[i - 1]), null, 1],
+  ['Hair colour', 'hcol', () => HAIRC.length, i => HAIRC[i][0], i => HAIRC[i][1]],
+  ['Beard', 'beard', () => CC.beards + 1, i => i === 0 ? 'None' : `Beard ${i}`, null, 1],
+  ['Beard colour', 'bcol', () => HAIRC.length + 1, i => i === 0 ? 'Same as hair' : HAIRC[i - 1][0], i => i === 0 ? null : HAIRC[i - 1][1], 1],
+];
 let atlas, mat, matData;
 const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
 const hexHsv = hx => { const n = parseInt(hx.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; if (h < 0) h += 1; return [h, mx ? d / mx : 0, mx]; };
 const hsv2rgb = (h, s, v) => { h = ((h % 1) + 1) % 1; const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s); return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6]; };
 const cache = {};
-// one piece, its materials recoloured: each pixel keeps its shading (brightness relative to the piece's middle tone)
-// and takes the swatch's hue; shadows lean warmer and richer, highlights lighter, the dark outline stays
+// recolour a piece: each pixel keeps its shading relative to the piece's middle tone; the outline stays dark
 function piece(key, cols) {
   const ck = key + '|' + cols.join(','); if (cache[ck]) return cache[ck];
   const P = CC.pieces[key]; if (!P) return null; const [x, y, w, h] = P.f;
   const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
   g.drawImage(atlas, x, y, w, h, 0, 0, w, h);
   if (cols.some(Boolean)) {
-    const id = g.getImageData(0, 0, w, h), d = id.data, mats = [];
-    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats.push(Math.round(matData[(y + yy) * mat.width + x + xx] / 60));
+    const id = g.getImageData(0, 0, w, h), d = id.data, mats = new Uint8Array(w * h);
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 60);
     for (let m = 1; m <= 3; m++) {
       const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
       const vs = []; for (let i = 0; i < mats.length; i++) if (mats[i] === m && d[i * 4 + 3] > 0) vs.push(Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255);
@@ -62,38 +86,44 @@ function piece(key, cols) {
   }
   return cache[ck] = c;
 }
-const canv = [0, 1, 2, 3].map(() => { const c = document.createElement('canvas'); c.width = CC.cell; c.height = CC.cell; document.getElementById('stage').appendChild(c); return c; });
-function draw(step) {
-  const skin = SKIN[S.skin][1], hc = HAIRC[S.hcol][1], bc = (HAIRC[S.bcol] || [])[1];
-  for (let d = 0; d < 4; d++) {
-    const f = d * 4 + (step % 4), g = canv[d].getContext('2d'), [ax, ay] = CC.anchors[f];
-    g.clearRect(0, 0, CC.cell, CC.cell);
-    const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax : 0)), Math.round(P.at[1] + (follow ? ay : 0))); };
-    put('body_' + f, [skin, null, null], false);
-    put(`head${S.face}_${d}`, [skin, null, null]);
-    if (S.beard >= 0 && d !== 3) put(`beard${S.beard}_${d}`, [null, null, bc || hc]);
-    if (S.hair >= 0) put(`hair_${CC.hair[S.hair]}_${d}`, [null, hc, null]);
-  }
+const cv = document.getElementById('cv');
+let step = 1, box = null;
+function bounds() {   // crop the canvas to the figure (with room for big hair), so the character fills the box
+  const pad = 16; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const k in CC.pieces) { const P = CC.pieces[k]; if (!/^body_/.test(k)) continue; x0 = Math.min(x0, P.at[0]); y0 = Math.min(y0, P.at[1]); x1 = Math.max(x1, P.at[0] + P.f[2]); y1 = Math.max(y1, P.at[1] + P.f[3]); }
+  return [Math.floor(x0 - pad), Math.floor(y0 - pad), Math.ceil(x1 - x0 + pad * 2), Math.ceil(y1 - y0 + pad + 4)];
 }
-function ui() {
-  const opts = (id, list, key, sw) => { const el = document.getElementById(id); el.innerHTML = '';
-    list.forEach(([label, val], i) => { const b = document.createElement('button'); if (sw) { b.className = 'sw'; b.title = label; b.style.background = val || 'linear-gradient(135deg,#fff 45%,#c33 50%,#fff 55%)'; } else b.textContent = label;
-      if (S[key] === val || (!sw && S[key] === i - (list[0][1] === -1 ? 1 : 0)) || (sw && S[key] === i)) b.classList.add('on');
-      b.onclick = () => { S[key] = sw ? i : (list[0][1] === -1 ? i - 1 : i); ui(); draw(step); }; el.appendChild(b); }); };
-  opts('face', [...Array(CC.heads)].map((_, i) => ['Face ' + (i + 1)]), 'face');
-  opts('skin', SKIN, 'skin', 1);
-  opts('hair', [['Bald', -1], ...CC.hair.map(n => [nice(n)])], 'hair');
-  opts('hcol', HAIRC, 'hcol', 1);
-  opts('beard', [['None', -1], ...[...Array(CC.beards)].map((_, i) => ['Beard ' + (i + 1)])], 'beard');
-  opts('bcol', [['Match hair', null], ...HAIRC.slice(1)], 'bcol', 1);
+function draw() {
+  box = box || bounds(); const [bx, by, bw, bh] = box; cv.width = bw; cv.height = bh;
+  const g = cv.getContext('2d'), d = S.dir, f = d * 4 + (step % 4), [ax, ay] = CC.anchors[f];
+  const skin = SKIN[S.skin][1], hc = HAIRC[S.hcol][1], bc = S.bcol < 0 ? hc : HAIRC[S.bcol][1];
+  const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax : 0) - bx), Math.round(P.at[1] + (follow ? ay : 0) - by)); };
+  put('body_' + f, [skin, null, null], false);
+  put(`head${S.face}_${d}`, [skin, null, null]);
+  if (S.beard >= 0 && d !== 3) put(`beard${S.beard}_${d}`, [null, null, bc]);
+  if (S.hair >= 0) put(`hair_${CC.hair[S.hair]}_${d}`, [null, hc, null]);
 }
-let step = 1;
-document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Pause' : '▶ Walk'; if (!S.playing) { step = 1; draw(step); } };
-document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.face = r(CC.heads); S.skin = 1 + r(SKIN.length - 1); S.hair = r(CC.hair.length + 1) - 1; S.hcol = 1 + r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = 0; ui(); draw(step); };
+// rows: ◀ value ▶  (index 0 of an "offset" row means "none")
+const rowsEl = document.getElementById('rows'), vals = {};
+for (const [label, key, count, name, colour, off] of ROWS) {
+  const r = document.createElement('div'); r.className = 'row';
+  r.innerHTML = `<span class="lab">${label}</span><button class="arr" data-d="-1">◀</button><div class="val"></div><button class="arr" data-d="1">▶</button>`;
+  r.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const n = count(); let i = S[key] + (off ? 1 : 0); i = (i + +b.dataset.d + n) % n; S[key] = i - (off ? 1 : 0); show(); draw(); });
+  vals[key] = [r.querySelector('.val'), count, name, colour, off]; rowsEl.appendChild(r);
+}
+function show() {
+  for (const k in vals) { const [el, count, name, colour, off] = vals[k], i = S[k] + (off ? 1 : 0), c = colour && colour(i);
+    el.innerHTML = `${c ? `<i style="background:${c}"></i>` : ''}<span>${name(i)}</span><small>${i + 1}/${count()}</small>`; }
+}
+const turn = n => { S.dir = [0, 2, 3, 1][([0, 3, 1, 2][S.dir] + n + 4) % 4]; draw(); };   // front → right → back → left
+document.getElementById('tl').onclick = () => turn(-1); document.getElementById('tr').onclick = () => turn(1);
+document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Stop' : '▶ Walk'; if (!S.playing) { step = 1; draw(); } };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
+document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
   [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
   const c = document.createElement('canvas'); c.width = mat.width; c.height = mat.height; const g = c.getContext('2d'); g.drawImage(mat, 0, 0);
   const md = g.getImageData(0, 0, mat.width, mat.height).data; matData = new Uint8Array(mat.width * mat.height); for (let i = 0; i < matData.length; i++) matData[i] = md[i * 4];
-  ui(); draw(step); setInterval(() => { if (S.playing) { step++; draw(step); } }, 180);
+  show(); draw(); setInterval(() => { if (S.playing) { step++; draw(); } }, 170);
 })();
 </script></body></html>
