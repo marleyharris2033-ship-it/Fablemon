@@ -358,15 +358,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261118-000545">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261118-000545">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261118-000545">
+<link rel="manifest" href="manifest.webmanifest?v=20261118-001830">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261118-001830">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261118-001830">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-000545').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261118-001830').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -12193,7 +12193,7 @@ for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['
 /* ---------- Elderwood (17 Nov): forest floor, forest paths, grassy forest floor under the long grass, mud on
    Greenline's haul road and in the clear-cuts, moss in the town, sawdust and mud in the timber camp */
 const GPAL_FOREST = { floor: 'forest_floor', path: 'forest_path', wild: 'forest_floor_grass', mudk: 'mud', water: 'water', shallow: 'shallow' };
-const GPAL_EWTOWN = { ...GPAL_FOREST, floor: 'forest_moss', wild: 'forest_floor_grass', path: 'cobble' };   // the capital's streets are cobbled (18 Nov)
+const GPAL_EWTOWN = { ...GPAL_FOREST, floor: 'forest_moss', wild: 'forest_floor_grass', path: 'slab' };   // the capital's streets are big flagstones (18 Nov)
 const GPAL_CAMP = { ...GPAL_FOREST, floor: 'sawdust', path: 'mud', mudk: 'mud' };
 function ewGround(sc, R) {
   const key = sc.scene.key, inR = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
