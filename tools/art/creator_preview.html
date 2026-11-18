@@ -72,6 +72,7 @@ function piece(key, cols) {
   if (cols.some(Boolean)) {
     const id = g.getImageData(0, 0, w, h), d = id.data, mats = new Uint8Array(w * h);
     for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 60);
+    const d0 = d.slice();   // untouched copy: neighbours are read from it while pixels are rewritten
     for (let m = 1; m <= 3; m++) {
       const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
       const vs = []; for (let i = 0; i < mats.length; i++) if (mats[i] === m && d[i * 4 + 3] > 0) vs.push(Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255);
@@ -79,15 +80,21 @@ function piece(key, cols) {
       // map the piece's own shading onto a ramp around the chosen colour: its darkest shades to a deep shadow, its
       // middle to the colour itself, its brightest to a modest highlight (never white, so dark hair stays dark)
       const q = f => vs[Math.min(vs.length - 1, Math.floor(vs.length * f))], lo = q(.05), med = q(.5) || .5, hi = Math.max(q(.95), med + .01);
-      const vLo = tv * .38, vHi = Math.min(.97, tv * 1.4 + .1);
+      const soft = m === 3, vLo = tv * (soft ? .55 : .38), vHi = Math.min(.97, soft ? tv * 1.22 + .06 : tv * 1.4 + .1);   // beards are tight, busy texture: a gentler ramp so they don't speckle
       for (let i = 0; i < mats.length; i++) {
         if (mats[i] !== m || !d[i * 4 + 3]) continue;
-        const v = Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255; if (v < (m === 1 ? .16 : .12)) continue;   // outlines stay as drawn
+        const v = Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255; if (m !== 3 && v < (m === 1 ? .16 : .12)) continue;   // outlines stay as drawn
         if (m === 1) {   // skin keeps its original shading rule
           const k = v / med, nv = Math.min(1, tv * Math.pow(k, 1.05)), ns = Math.min(1, ts * (k < 1 ? 1 + (1 - k) * .45 : 1 - (k - 1) * .5)), nh = th + (k < 1 ? -(1 - k) * .03 : (k - 1) * .02);
           const [r, gg, b] = hsv2rgb(nh, Math.max(0, ns), nv); d[i * 4] = r * 255; d[i * 4 + 1] = gg * 255; d[i * 4 + 2] = b * 255; continue;
         }
-        const t = v < med ? (v - med) / Math.max(med - lo, .01) : (v - med) / (hi - med);           // -1 … 0 … +1
+        let vv = v;
+        if (soft) {   // calm the beard's speckled texture: halfway towards its neighbours' brightness
+          let sum = 0, n = 0; const px = i % w, py = (i / w) | 0;
+          for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const xx = px + ox, yy = py + oy; if (xx < 0 || yy < 0 || xx >= w || yy >= h) continue; const j = yy * w + xx; if (mats[j] !== m || !d0[j * 4 + 3]) continue; sum += Math.max(d0[j * 4], d0[j * 4 + 1], d0[j * 4 + 2]) / 255; n++; }
+          if (n) vv = (v + sum / n) / 2;
+        }
+        const t = vv < med ? (vv - med) / Math.max(med - lo, .01) : (vv - med) / (hi - med);           // -1 … 0 … +1
         const nv = Math.max(0, Math.min(1, t < 0 ? tv + t * (tv - vLo) : tv + Math.min(t, 1.3) * (vHi - tv)));
         const ns = Math.max(0, Math.min(1, ts * (t < 0 ? 1 - t * .15 : 1 - Math.min(t, 1.3) * .22))), nh = th + (t < 0 ? t * .012 : t * .01);
         const [r, gg, b] = hsv2rgb(nh, ns, nv); d[i * 4] = r * 255; d[i * 4 + 1] = gg * 255; d[i * 4 + 2] = b * 255;
@@ -116,7 +123,10 @@ function draw() {
   const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax + ox : 0) - bx), Math.round(P.at[1] + (follow ? ay + oy : ay) - by)); };
   put(`body${S.body}_${f}`, [skin, null, null], false);
   put(`head${S.face}_${d}`, [skin, null, null]);
-  if (S.beard >= 0 && d !== 3) put(`beard${S.beard}_${d}`, [null, null, bc]);
+  if (S.beard >= 0 && d !== 3) {   // nudged to this face's own mouth and chin
+    const [fx, fy] = (CC.beardOff || [])[S.face]?.[d] || [0, 0], P = CC.pieces[`beard${S.beard}_${d}`], im = piece(`beard${S.beard}_${d}`, [null, null, bc]);
+    if (im) g.drawImage(im, Math.round(P.at[0] + ax + ox + fx - bx), Math.round(P.at[1] + ay + oy + fy - by));
+  }
   if (S.hair >= 0) put(`hair_${CC.hair[S.hair]}_${d}`, [null, hc, null]);
 }
 // rows: ◀ value ▶  (index 0 of an "offset" row means "none")

@@ -41,7 +41,9 @@ def mat_for(a, kind):
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])
         m[sk] = 1
     elif kind in ('hair', 'beard'):
-        h, s, v = hsv_img(a); m[al & (v > .06)] = 2 if kind == 'hair' else 3
+        h, s, v = hsv_img(a)
+        if kind == 'hair': m[al & (v > .06)] = 2
+        else: m[ndi.binary_erosion(al) | (al & (v > .06))] = 3   # beards: every inner pixel recolours, even the near-black texture; the outline stays
     return m
 def cells(img, rows, cols):
     H, W = img.shape[:2]; return [[img[r * H // rows:(r + 1) * H // rows, c * W // cols:(c + 1) * W // cols] for c in range(cols)] for r in range(rows)]
@@ -139,6 +141,9 @@ for i in range(4):
     for col in range(2):
         raw = Bs[i][col].copy(); rr, gg, bb = [raw[..., k].astype(int) for k in range(3)]
         raw[(rr > 140) & (rr > gg + 60) & (rr > bb + 40), 3] = 0          # the lips drawn in the mouth gap: the face shows through
+        m0 = raw[..., 3] > 0; lb0, n0 = ndi.label(m0)
+        if n0 > 1:   # stray specks (a dot floated above the goatee): keep only parts at least 8% the size of the beard
+            sz0 = ndi.sum(m0, lb0, range(1, n0 + 1)); raw[~np.isin(lb0, [j + 1 for j, z in enumerate(sz0) if z >= .08 * sz0.max()]), 3] = 0
         piece, (px, py) = biggest(raw, min_px=20, fill_holes=0)
         h = heads[0][col]; s = h['s']
         bv[col] = dict(piece=piece, s=s, x=round(h['x'] + (px - h['src'][0]) * s), y=round(h['y'] + (py - h['src'][1]) * s))
