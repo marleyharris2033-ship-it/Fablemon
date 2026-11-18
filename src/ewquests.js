@@ -49,7 +49,7 @@ const EW_Q = [
   ewTask('ew_town', 'Reach Elderwood', 'Follow the old deer path round the checkpoint, then the trail north through the Elder Glade.', () => (S.visited || {}).elderwood, { gold: 3000, items: { tonic: 3 } }, 'eldglade'),
   // 2. A town split in two
   ewTask('ew_alder1', "Visit Warden Alder at his Lodge", "Alder's Lodge is at the north end of Elderwood's grand avenue, past the market square.", () => ew().alder, {}, 'elderwood'),
-  ewTask('ew_mayor', 'Hear Mayor Pruett out', "The Town Hall is across the river. Tansy says Pruett is at the Antler Inn most days, avoiding everyone.", () => ew().mayor, {}, 'elderwood'),
+  ewTask('ew_mayor', 'Hear Mayor Pruett out', "The grand Town Hall is on the west side of the market square. Tansy says Pruett is at the Antler Inn most days, avoiding everyone.", () => ew().mayor, {}, 'elderwood'),
   ewTask('ew_bridge', 'Fund the paddock footbridge', () => `Use the notice board in Elderwood's market square. The herd paddock is across the river. (${EW_PROJECTS.ew_bridge.gold}g, ${Object.entries(EW_PROJECTS.ew_bridge.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_bridge'), { gold: 1500 }, 'elderwood'),
   // 3. The Scattered Herds
   ewTask('ew_ask', 'Talk to Alder about the herds', "Now the footbridge is up, Alder wants a word at his Lodge.", () => ew().herdAsk, {}, 'elderwood'),
@@ -92,9 +92,9 @@ ROUTES.fernwalk.actors = () => ew().deer ? [] : [{ id: 'ew_tansy', x: 15, y: 37,
 ROUTES.elderwood.actors = () => {
   const out = [];
   if (ew().deer) out.push({ id: 'ew_tansy', x: 44, y: 40, tex: 'tr_' + trArt('tansy'), dir: 'down' });
-  if (ew().herds.stag) out.push({ id: 'ew_pstag', x: 84, y: 16, mon: EW_MON.stag });
-  if (ew().herds.boar) out.push({ id: 'ew_pboar', x: 90, y: 24, mon: EW_MON.boar });
-  if (ew().herds.owl) out.push({ id: 'ew_powl', x: 80, y: 12, mon: EW_MON.owl });
+  if (ew().herds.stag) out.push({ id: 'ew_pstag', x: 85, y: 17, mon: EW_MON.stag });
+  if (ew().herds.boar) out.push({ id: 'ew_pboar', x: 91, y: 25, mon: EW_MON.boar });
+  if (ew().herds.owl) out.push({ id: 'ew_powl', x: 80, y: 21, mon: EW_MON.owl });
   return out;
 };
 ROUTES.eldglade.actors = () => {
