@@ -36,6 +36,10 @@ def skin_mask(a):
 def mat_for(a, kind):
     m = np.zeros(a.shape[:2], np.uint8); al = a[..., 3] > 0
     if kind == 'skin': m[skin_mask(a)] = 1
+    elif kind == 'body':   # the body sheets' shirts have a warm tint: skin must be properly saturated, and no stray specks
+        h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32); lb, n = ndi.label(sk)
+        if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])
+        m[sk] = 1
     elif kind in ('hair', 'beard'):
         h, s, v = hsv_img(a); m[al & (v > .06)] = 2 if kind == 'hair' else 3
     return m
@@ -65,6 +69,39 @@ for r in range(4):
         fr = fh.cell(r, c); a = fr[..., 3] > 0; t = np.nonzero(a.any(1))[0][0]; xs = np.nonzero(a[t:t + 50].any(0))[0]
         frames.append(fr); anchors.append([round(float((xs[0] + xs[-1]) / 2 - (xs1[0] + xs1[-1]) / 2)), int(t - t1)])
 CELL = frames[0].shape[1]
+
+# ---------- the 8 body types: headless sheets in the same 4x4 layout. Each frame is lined up with the base body's same
+# frame by its neck and shoulders (best overlap of the band just under the chin), so every head, hair and beard piece
+# sits on every body; that shift is stored per body per frame and added to the head pieces' position.
+BODY_NAMES = ['Male_Skinny', 'Male_Medium', 'Male_Muscular', 'Male_Large', 'Female_Skinny', 'Female_Medium', 'Female_Muscular', 'Female_Large']
+def neck_row(a):
+    t = np.nonzero(a.any(1))[0][0]; w = np.array([a[y].sum() for y in range(t + 60, t + 110)]); return t + 60 + int(np.argmin(w))
+bodies = []
+for bn in BODY_NAMES:
+    S = fh.rgba(D + f'bodies/{bn}.png'); out = dict(name=bn, frames=[], offs=[])
+    for f in range(16):
+        r, c = divmod(f, 4); fr = S[int(r * C):int((r + 1) * C), int(c * C):int((c + 1) * C)]
+        H0, W0 = frames[f].shape[:2]; fr = np.pad(fr, ((0, max(0, H0 - fr.shape[0])), (0, max(0, W0 - fr.shape[1])), (0, 0)))[:H0, :W0]
+        ba = frames[f][..., 3] > 0; na = fr[..., 3] > 0; yn = neck_row(ba); band = np.zeros_like(ba); band[yn:yn + 40] = True
+        ref = ba & band; best = None
+        for dy in range(-18, 19):
+            for dx in range(-14, 15):
+                sh = np.roll(np.roll(na, -dy, 0), -dx, 1) & band   # the new body moved back by (dx, dy)
+                iou = (sh & ref).sum() / max(1, (sh | ref).sum())
+                if best is None or iou > best[0]: best = (iou, dx, dy)
+        out['frames'].append(fr); out['offs'].append([best[1], best[2]])
+    tops = []
+    for fr in out['frames']:
+        a = fr[..., 3] > 0; t = np.nonzero(a.any(1))[0][0]; xs = np.nonzero(a[t:t + 10])[1]; tops.append((float(xs.mean()), int(t)))
+    out['tops'] = tops
+    bodies.append(out); print('body', bn, 'offs', out['offs'][1], out['offs'][5], out['offs'][13], flush=True)
+# The overlap fit is right for the medium male but drifts on bodies built very differently (the muscular male's neck
+# starts far higher). So every body uses the medium male's fit, moved by how far its own neck stump's top (and centre)
+# sits from his, frame by frame: the head lands on each neck exactly as it does on his.
+REFB = bodies[BODY_NAMES.index('Male_Medium')]
+for bd in bodies:
+    bd['offs'] = [[REFB['offs'][f][0] + round(bd['tops'][f][0] - REFB['tops'][f][0]), REFB['offs'][f][1] + bd['tops'][f][1] - REFB['tops'][f][1]] for f in range(16)]
+    print('body', bd['name'], 'final', bd['offs'][1], bd['offs'][5], bd['offs'][13])
 
 # ---------- heads: fitted onto each direction's standing head (best overlap of the outlines)
 def head_sil(v):
@@ -116,7 +153,8 @@ items = []   # (key, rgba, material, x, y)  x, y: placement in the standing fram
 def add(key, rgba, kind, x, y, s=1.0):
     im = resize(rgba, s * OUT_SCALE) if s * OUT_SCALE != 1 else rgba
     items.append((key, im, mat_for(im, kind), x * OUT_SCALE, y * OUT_SCALE))
-for f, fr in enumerate(frames): add(f'body_{f}', fr, 'skin', 0, 0)
+for i, bd in enumerate(bodies):
+    for f, fr in enumerate(bd['frames']): add(f'body{i}_{f}', fr, 'body', 0, 0)
 DIRV = {0: 0, 1: 1, 3: 2}   # direction -> head column
 for i, hv in enumerate(heads):
     for d, col in ((0, 0), (1, 1), (2, 'r'), (3, 2)):
@@ -188,5 +226,23 @@ for n in HAIR_NAMES:
     for d in (0, 1, 2, 3):
         im, x, y = P[d]; add(f'hair_{n}_{d}', im, 'hair', x, y, 1.0)
     print('hair', n, flush=True)
+# shelf packing
+items.sort(key=lambda t: -t[1].shape[0]); W = 2048; x = y = rowh = 0; place = {}
+for key, im, mt, px, py in items:
+    w, h = im.shape[1], im.shape[0]
+    if x + w > W: x = 0; y += rowh + 2; rowh = 0
+    place[key] = (x, y, w, h); x += w + 2; rowh = max(rowh, h)
+H = y + rowh
+atlas = np.zeros((H, W, 4), np.uint8); mat = np.zeros((H, W), np.uint8)
+meta = {}
+for key, im, mt, px, py in items:
+    x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 60
+    meta[key] = dict(f=[x, y, w, h], at=[round(float(px), 1), round(float(py), 1)])
+Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, quality=100, method=6)
+Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
+json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
+               hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0],
+               bodies=[dict(name=b['name'].replace('_', ' '), offs=[[o[0] * OUT_SCALE, o[1] * OUT_SCALE] for o in b['offs']]) for b in bodies]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
+print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws
