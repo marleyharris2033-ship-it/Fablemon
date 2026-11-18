@@ -13,7 +13,7 @@ from skimage import color, filters, morphology, measure, segmentation, draw
 SRC = 'art_incoming/derby_tracks/'; OUT = 'src/'
 CFG = {
   'meadow': dict(flood=((400, 820), 14), start=(742, 820), dir=(1, 0)),
-  'bramble': dict(flood=((200, 700), 22), start=(198, 545), dir=(0, 1)),
+  'bramble': dict(flood=((200, 700), 22), start=(198, 545), dir=(0, -1)),   # north from the start line
   # the bog floods mid-race: 'line' is the dry route (round the far east side), 'alt' the one through the middle of the bog
   'mudrun': dict(flood=((400, 925), 14), bridges=[(690, 920, 890, 920, 40)], start=(780, 920), dir=(-1, 0),
                  via=[(100, 600), (300, 120), (1150, 170), (1420, 520), (1400, 860)],

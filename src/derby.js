@@ -345,7 +345,7 @@ function racerFrom(m, st, track, i, who, sk) {
   const img = DERBY_IMG['mon_' + walkSp(m.sp)], fw = img.width / 4, k = WALK_HD[walkSp(m.sp)] || (HD[walkSp(m.sp)] && HD[walkSp(m.sp)].w ? HD_WALK : 1);
   return {
     who, m, sp: m.sp, img, fw, fh: img.height / 4, dw: fw / k, dh: img.height / 4 / k, hd: k > 1, st, sk, you: who === 'You',
-    x: p.x + p.nx * side * track.half * .45, y: p.y + p.ny * side * track.half * .45, vx: 0, vy: 0, dir: 'up',
+    x: p.x + p.nx * side * track.half * .45, y: p.y + p.ny * side * track.half * .45, vx: 0, vy: 0, dir: Math.abs(p.tx) > Math.abs(p.ty) ? (p.tx > 0 ? 'right' : 'left') : (p.ty > 0 ? 'down' : 'up'),   // facing the way the race goes
     vmax: 50 + 2.2 * st.spd, stam: 100, dash: 0, boost: 0, stun: 0, anim: 0,
     prog: -24 - Math.floor(i / 2) * 22, lp: -24 - Math.floor(i / 2) * 22, ni: null, lap: 0, lapStart: 0, laps: [], done: 0, lane: 0, laneT: 0,
     types: typesOf(m.sp),
