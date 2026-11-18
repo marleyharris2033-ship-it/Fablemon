@@ -137,33 +137,56 @@ for d, col in ((0, 0), (1, 1), (3, 2)):
     fx0 += h['x']; fx1 += h['x']; fy0 += h['y']
     MAP[d] = ((bx0 + bx1) / 2, by0, (fx0 + fx1) / 2, fy0, (fx1 - fx0) / (bx1 - bx0))
     print('map', d, [round(float(v), 2) for v in MAP[d]])
+# Fitting only moves and scales, but the face pieces' skulls are a different shape from the bald body the hair was fitted
+# on (fuller forehead, rounder crown). So each hair piece is reshaped: along every direction out from the head's centre,
+# hair that sat on the body's scalp is pushed (or pulled) to sit on the face piece's scalp, and everything further out
+# moves with it, keeping its thickness. Below the ears nothing changes, so braids and long hair hang as drawn.
+from scipy import ndimage as ndi
+M = 220
+def face_mask(d, col):
+    base = fh.REG[d][1]; h = heads[0][col]; im = resize(h['piece'], h['s'])[..., 3] > 127
+    fm = np.zeros((base.shape[0] + 2 * M, base.shape[1] + 2 * M), bool); fm[h['y'] + M:h['y'] + M + im.shape[0], h['x'] + M:h['x'] + M + im.shape[1]] = im
+    return fm[M:-M, M:-M]
+def radii(m, c):
+    T = np.radians(np.arange(360)); R = np.zeros(360)
+    for i, t in enumerate(T):
+        rs = np.arange(0, 200, .5); xs = np.round(c[0] + rs * np.cos(t)).astype(int); ys = np.round(c[1] + rs * np.sin(t)).astype(int)
+        ok = (xs >= 0) & (ys >= 0) & (xs < m.shape[1]) & (ys < m.shape[0]); inside = np.zeros_like(rs, bool); inside[ok] = m[ys[ok], xs[ok]]
+        R[i] = rs[np.nonzero(inside)[0][-1]] if inside.any() else 0
+    return R
+WARP = {}
+for d, col in ((0, 0), (1, 1), (3, 2)):
+    bm = fh.REG[d][1]; fm = face_mask(d, col)
+    ys, xs = np.nonzero(bm); c = ((xs.min() + xs.max()) / 2, ys.min() + .55 * (ys.max() - ys.min()))
+    Rb, Rf = radii(bm, c), radii(fm, c)
+    k = np.ones(9) / 9; sm = lambda a: np.convolve(np.r_[a[-4:], a, a[:4]], k, 'valid')
+    Rb, Rf = sm(Rb), sm(Rf); up = -np.sin(np.radians(np.arange(360))); w = np.clip((up + .5) / .5, 0, 1)
+    ok = (Rb > 5) & (Rf > 5); Rf = np.where(ok, Rb + (Rf - Rb) * w, Rb)
+    WARP[d] = (c, Rb, Rf); print('warp', d, 'max push', round(float((Rf - Rb).max()), 1), 'max pull', round(float((Rf - Rb).min()), 1))
+def warp(img, s, x, y, d):
+    c, Rb, Rf = WARP[d]; im = resize(img, s).astype(float); H, W = fh.REG[d][1].shape
+    cv = np.zeros((H + 2 * M, W + 2 * M, 4)); y0, x0 = y + M, x + M
+    cv[y0:y0 + im.shape[0], x0:x0 + im.shape[1]] = im
+    a = cv[..., 3:] / 255; cv[..., :3] *= a                       # premultiply so edges don't fringe
+    yy, xx = np.mgrid[0:cv.shape[0], 0:cv.shape[1]].astype(float); dx, dy = xx - (c[0] + M), yy - (c[1] + M)
+    r = np.hypot(dx, dy); th = np.degrees(np.arctan2(dy, dx)) % 360; i0 = np.floor(th).astype(int) % 360; f = th - np.floor(th)
+    rb = Rb[i0] * (1 - f) + Rb[(i0 + 1) % 360] * f; rf = Rf[i0] * (1 - f) + Rf[(i0 + 1) % 360] * f
+    src = np.where(r < rf, r * rb / np.maximum(rf, 1e-3), r - (rf - rb)); sc = src / np.maximum(r, 1e-3)
+    sx, sy = (c[0] + M) + dx * sc, (c[1] + M) + dy * sc
+    out = np.stack([ndi.map_coordinates(cv[..., k], [sy, sx], order=1) for k in range(4)], -1)
+    al = np.clip(out[..., 3], 0, 255); rgb = out[..., :3] / np.maximum(al[..., None] / 255, 1e-3); al[al < 8] = 0
+    out = np.dstack([np.clip(rgb, 0, 255), al]).astype(np.uint8)
+    ys, xs = np.nonzero(out[..., 3]); out = out[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    return out, xs.min() - M, ys.min() - M
 for n in HAIR_NAMES:
-    V = fh.views(D + f'hair_{n}.png'); out = {}
+    V = fh.views(D + f'hair_{n}.png'); P = {}
     for d in (0, 1, 3):
         bcx, btop, fcx, ftop, k = MAP[d]; r = fits[n][d]
-        out[d] = dict(s=r['s'] * k, x=round(fcx + (r['x'] - bcx) * k), y=round(ftop + (r['y'] - btop) * k))
-        out[d]['w'] = round(V[d].shape[1] * out[d]['s'])
-    hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; l = out[1]
-    out[2] = dict(s=l['s'], x=round(hr['x'] + wl - (l['x'] - hl['x']) - l['w']), y=round(hr['y'] + (l['y'] - hl['y'])))
-    HF[n] = out
+        P[d] = warp(V[d], r['s'] * k, round(fcx + (r['x'] - bcx) * k), round(ftop + (r['y'] - btop) * k), d)
+    hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; im, lx, ly = P[1]
+    P[2] = (im[:, ::-1].copy(), round(hr['x'] + wl - (lx - hl['x']) - im.shape[1]), round(hr['y'] + (ly - hl['y'])))
     for d in (0, 1, 2, 3):
-        r = out[d]; add(f'hair_{n}_{d}', V[d], 'hair', r['x'], r['y'], r['s'])
-# shelf packing
-items.sort(key=lambda t: -t[1].shape[0]); W = 2048; x = y = rowh = 0; place = {}
-for key, im, mt, px, py in items:
-    w, h = im.shape[1], im.shape[0]
-    if x + w > W: x = 0; y += rowh + 2; rowh = 0
-    place[key] = (x, y, w, h); x += w + 2; rowh = max(rowh, h)
-H = y + rowh
-atlas = np.zeros((H, W, 4), np.uint8); mat = np.zeros((H, W), np.uint8)
-meta = {}
-for key, im, mt, px, py in items:
-    x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 60
-    meta[key] = dict(f=[x, y, w, h], at=[round(float(px), 1), round(float(py), 1)])
-Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, quality=100, method=6)
-Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
-json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
-               hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
-print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
+        im, x, y = P[d]; add(f'hair_{n}_{d}', im, 'hair', x, y, 1.0)
+    print('hair', n, flush=True)
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws
