@@ -72,12 +72,12 @@ def head_sil(v):
 Hs = cells(fh.rgba(D + 'heads_6.png'), 6, 3)          # columns: front, side (left), back
 Bs = cells(fh.rgba(D + 'beards_4.png'), 6, 3)
 VIEW_OF_COL = {0: 0, 1: 1, 2: 3}
-def fit_head(piece, v):
+def fit_head(piece, v, fixed=None):
     head, top = head_sil(v); hm = piece[..., 3] > 127
     rows = np.nonzero(head.any(1))[0]; cols = np.nonzero(head.any(0))[0]
-    s = (cols[-1] - cols[0] + 1) / hm.shape[1]
+    s = fixed or (cols[-1] - cols[0] + 1) / hm.shape[1]
     best = None
-    for k in np.arange(.96, 1.045, .01):
+    for k in ([1.0] if fixed else np.arange(.96, 1.045, .01)):
         im = resize(piece, s * k); m = im[..., 3] > 127
         from scipy.signal import fftconvolve
         P = 40; H2 = np.pad(head.astype(float), P)
@@ -92,7 +92,7 @@ for i in range(6):
         piece, (px, py) = biggest(Hs[i][col], fill_holes=4000)
         iou, s, x, y = fit_head(piece, VIEW_OF_COL[col])
         hv[col] = dict(piece=piece, s=s, x=x, y=y, iou=iou, src=(px, py))
-    mp = hv[1]['piece'][:, ::-1].copy(); iou, s, x, y = fit_head(mp, 2)   # facing right: the side view mirrored
+    mp = hv[1]['piece'][:, ::-1].copy(); iou, s, x, y = fit_head(mp, 2, fixed=hv[1]['s'])   # facing right: the side view mirrored, same size
     hv['r'] = dict(piece=mp, s=s, x=x, y=y, iou=iou, src=(px, py))
     heads.append(hv); print('head', i + 1, ' '.join(f"{c}:{hv[c]['iou']:.2f}" for c in range(3)), flush=True)
 # beards: same cell coordinates as the heads, so they ride on head 1's transform for that view (all heads share a skull)
@@ -105,10 +105,9 @@ for i in range(4):
         piece, (px, py) = biggest(raw, min_px=20, fill_holes=0)
         h = heads[0][col]; s = h['s']
         bv[col] = dict(piece=piece, s=s, x=round(h['x'] + (px - h['src'][0]) * s), y=round(h['y'] + (py - h['src'][1]) * s))
-        if col == 1:   # facing right: mirror within the side head's box
-            hp = Hs[0][1]; _, (hx, hy) = biggest(hp, fill_holes=4000); hw = biggest(hp, fill_holes=4000)[0].shape[1]
-            hr = heads[0]['r']; rel = (px - hx); mx = hw - rel - piece.shape[1]
-            bv['r'] = dict(piece=piece[:, ::-1].copy(), s=hr['s'], x=round(hr['x'] + mx * hr['s']), y=round(hr['y'] + (py - hy) * hr['s']))
+        if col == 1:   # facing right: the left placement mirrored about the head
+            hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; bw = piece.shape[1] * s
+            bv['r'] = dict(piece=piece[:, ::-1].copy(), s=s, x=round(hr['x'] + wl - (bv[1]['x'] - hl['x']) - bw), y=round(hr['y'] + (bv[1]['y'] - hl['y'])))
     beards.append(bv)
 fits = json.load(open(D + 'fits3.json'))
 
@@ -126,10 +125,29 @@ for i, bv in enumerate(beards):
     for d, col in ((0, 0), (1, 1), (2, 'r')):
         b = bv[col]; add(f'beard{i}_{d}', b['piece'], 'beard', b['x'], b['y'], b['s'])
 HAIR_NAMES = sorted(fits)
+# the head the player sees is the face piece, not the body's own head. The approved fits (fits3) sit on the body's head,
+# so carry each one across onto the face piece: same spot relative to the head's top centre, scaled with the head.
+def bbox(m):
+    ys, xs = np.nonzero(m); return xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+HF = {}
+MAP = {}
+for d, col in ((0, 0), (1, 1), (3, 2)):
+    bx0, by0, bx1, by1 = bbox(fh.REG[d][1])
+    h = heads[0][col]; m = resize(h['piece'], h['s'])[..., 3] > 127; fx0, fy0, fx1, fy1 = bbox(m)
+    fx0 += h['x']; fx1 += h['x']; fy0 += h['y']
+    MAP[d] = ((bx0 + bx1) / 2, by0, (fx0 + fx1) / 2, fy0, (fx1 - fx0) / (bx1 - bx0))
+    print('map', d, [round(float(v), 2) for v in MAP[d]])
 for n in HAIR_NAMES:
-    V = fh.views(D + f'hair_{n}.png')
+    V = fh.views(D + f'hair_{n}.png'); out = {}
+    for d in (0, 1, 3):
+        bcx, btop, fcx, ftop, k = MAP[d]; r = fits[n][d]
+        out[d] = dict(s=r['s'] * k, x=round(fcx + (r['x'] - bcx) * k), y=round(ftop + (r['y'] - btop) * k))
+        out[d]['w'] = round(V[d].shape[1] * out[d]['s'])
+    hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; l = out[1]
+    out[2] = dict(s=l['s'], x=round(hr['x'] + wl - (l['x'] - hl['x']) - l['w']), y=round(hr['y'] + (l['y'] - hl['y'])))
+    HF[n] = out
     for d in (0, 1, 2, 3):
-        r = fits[n][d]; add(f'hair_{n}_{d}', V[d], 'hair', r['x'], r['y'], r['s'])
+        r = out[d]; add(f'hair_{n}_{d}', V[d], 'hair', r['x'], r['y'], r['s'])
 # shelf packing
 items.sort(key=lambda t: -t[1].shape[0]); W = 2048; x = y = rowh = 0; place = {}
 for key, im, mt, px, py in items:
@@ -145,5 +163,7 @@ for key, im, mt, px, py in items:
 Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, quality=100, method=6)
 Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
 json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
-               hair=HAIR_NAMES, heads=6, beards=4), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
+               hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
 print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
+import subprocess, sys
+subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws
