@@ -18,16 +18,16 @@ const DERBY_TRACKS = {
     blurb: 'Grass, logs and hay bales. Leaf and Wild Fablemon keep their footing on the grass.',
   },
   bramble: {
-    name: 'Meadow Loop (reversed)', w: 46, h: 34, scale: .9, width: 4, ground: 'grass', surface: 'dirt', reverse: true, hedges: true,
+    name: 'Bramble Lanes', w: 46, h: 34, scale: .9, width: 4, ground: 'grass', surface: 'dirt',
     pts: [[8, 7], [20, 5], [33, 6], [40, 10], [39, 16], [31, 17], [26, 21], [32, 26], [36, 29], [24, 30], [12, 29], [6, 23], [5, 14]],
-    obstacles: 12, kinds: ['stump', 'bush_round', 'crate', 'rock_large', 'bush_round'], puddles: 3, boosts: 3, grip: ['Leaf', 'Wild'],
-    blurb: 'The Meadow Loop run backwards, narrower, with hedges in the way.',
+    obstacles: 9, kinds: ['stump', 'bush_round', 'crate', 'rock_large', 'bush_round'], puddles: 2, boosts: 3, grip: ['Leaf', 'Wild'],
+    blurb: 'Narrow gravel lanes between the hedgerows, over the old stone bridge.',
   },
   mudrun: {
     name: 'Mossmere Mudrun', w: 50, h: 36, scale: 1.15, width: 5, ground: 'moss', surface: 'mud',
     pts: [[7, 8], [18, 5], [30, 8], [42, 5], [45, 13], [38, 18], [44, 25], [40, 31], [27, 30], [20, 24], [13, 31], [5, 26], [9, 17]],
     obstacles: 7, kinds: ['stump', 'rock_large', 'rock_pair'], puddles: 7, boosts: 3, grip: [], mudSlow: .93,
-    blurb: 'Thick mud and deep puddles. Tide Fablemon splash straight through.',
+    blurb: 'Thick mud and deep puddles. Halfway through, the bog floods and the way through the middle opens up. Tide Fablemon splash straight through.',
   },
   quarry: {
     name: 'Quarry Ring', w: 50, h: 37, scale: 1.45, width: 5, ground: 'gravel', surface: 'slab',
@@ -36,6 +36,31 @@ const DERBY_TRACKS = {
     blurb: 'Loose rock and fallen blocks all round the quarry floor. Stone Fablemon barely notice when they hit something.',
   },
 };
+
+// Painted tracks (18 Nov 2026): the road traced from each picture by tools/art/cut_tracks.py into ASSET.derbyTracks
+// (image px, every 8px from the start line). k: world px per image px, so faster cups get bigger tracks. laps: per track.
+// Mudrun floods: lap 1 runs the dry route round the east side; from lap 2 (flood) the middle of the bog drains and
+// the east side goes under (alt route). The Quarry Ring has no picture yet and is still drawn from its points.
+const DERBY_ART = {
+  meadow: { art: 'meadow', k: .6, laps: 3 },
+  bramble: { art: 'bramble', k: .8, laps: 2 },
+  mudrun: { art: 'mudrun', k: .75, laps: 2, flood: 1 },
+};
+// the later cups' tracks, ready for when those cups open
+Object.assign(DERBY_TRACKS, {
+  beach: { name: 'Driftwood Beach Dash', ground: 'sand', surface: 'sand', obstacles: 10, kinds: ['crate', 'rock_pair', 'stump', 'rock_large'], puddles: 6, boosts: 4, grip: ['Tide'], art: 'beach', k: .8, laps: 2,
+    blurb: 'Firm sand between the driftwood posts, with rock pools on the bends. Tide Fablemon are at home here.' },
+  gale: { name: 'Gale Ridge', ground: 'heather', surface: 'stone', obstacles: 10, kinds: ['rock_large', 'rock_pair', 'crate'], puddles: 2, boosts: 5, grip: ['Gale'], art: 'gale', k: .7, laps: 3,
+    blurb: 'Stone and planks along the cliff tops. Gale Fablemon ride the wind round the bends.' },
+  rootway: { name: 'Rootway', ground: 'forest', surface: 'dirt', obstacles: 12, kinds: ['stump', 'rock_large', 'bush_round', 'stump'], puddles: 3, boosts: 4, grip: ['Leaf', 'Wild'], art: 'rootway', k: .85, laps: 3,
+    blurb: 'Packed earth under the giant roots of the old forest. Leaf and Wild Fablemon know every turn.' },
+  lantern: { name: 'Lantern Run', ground: 'night', surface: 'stone', obstacles: 10, kinds: ['rock_pair', 'crate', 'stump'], puddles: 3, boosts: 4, grip: ['Shade'], art: 'lantern', k: 1.2, laps: 2,
+    blurb: 'A night race on dark cobbles, lit by lanterns all the way round.' },
+  summit: { name: 'Summit Circuit', ground: 'stone', surface: 'stone', obstacles: 14, kinds: ['rock_large', 'rock_pair', 'crate', 'stump'], puddles: 3, boosts: 6, grip: [], art: 'summit', k: 1.5, laps: 2,
+    blurb: 'The grand final, on polished stone above the clouds.' },
+});
+for (const [k, a] of Object.entries(DERBY_ART)) Object.assign(DERBY_TRACKS[k], a);
+const trackArt = key => { const t = DERBY_TRACKS[key]; return t && t.art && ASSET.derbyTracks && ASSET.derbyTracks[t.art] && ASSET['track_' + t.art] ? ASSET.derbyTracks[t.art] : null; };
 
 // rival racers. sk = how well they drive (racing line and reactions), iv = their Speed potential (1-10)
 const R_ = (who, sp, lv, sk = .9, iv = 5, held = null) => ({ who, sp, lv, sk, iv, held });
@@ -78,7 +103,7 @@ const DERBY_CUPS = [
 
 ];
 
-const derby = () => (S.derby = S.derby || { won: {}, best: {}, wins: 0, races: 0 });
+const derby = () => { const d = S.derby = S.derby || { won: {}, best: {}, wins: 0, races: 0 }; if (!d.trackV) { d.trackV = 2; for (const k of Object.keys(DERBY_ART)) delete d.best[k]; } return d; };   // the repainted tracks start fresh records
 const derbyWon = id => !!(derby().won[id]);
 const MONTY = (t, f = 0) => ({ who: 'monty', name: VILL.monty.name, img: VPIC['monty' + f], hearts: heartStr('monty'), t });
 // a Fablemon's stage, counted along its evolution line (two-stage finals like Rampartoad count as second stages)
@@ -185,10 +210,12 @@ async function finishCup(cup, m, place) {
 
 /* ---------- the race itself */
 const DERBY_IMG = {};
-async function derbyImages(sps) {
+async function derbyImages(sps, track) {
   if (!DERBY_IMG.gravel && ASSET.crag) { DERBY_IMG.gravel = rgbaCanvas(ASSET.crag.ground.dirt_pebble); DERBY_IMG.slab = rgbaCanvas(ASSET.crag.ground.slab); }
   const need = { objects: ASSET.objects, terrain: ASSET.terrain, peat: ASSET.g_peat, moss: ASSET.g_moss, bogwater: ASSET.g_bogwater };
-  for (const sp of sps) need['mon_' + walkSp(sp)] = ASSET['mon_' + walkSp(sp)];   // the high-detail sheet when there is one (see hd.js)
+  for (const sp of sps) need['mon_' + walkSp(sp)] = ASSET['mon_' + walkSp(sp)];
+  const t = DERBY_TRACKS[track]; if (t && t.art && ASSET['track_' + t.art]) need['track_' + t.art] = ASSET['track_' + t.art];   // just this race's picture
+  if (ASSET.hdWorld && ASSET.hdWorld.objects && ASSET.hdWorld.objects.frames) need.objHD = ASSET.hdWorld.objects.img;   // the high-detail sheet when there is one (see hd.js)
   await Promise.all(Object.entries(need).filter(([k, v]) => v && !DERBY_IMG[k]).map(async ([k, v]) => { DERBY_IMG[k] = await loadImg(v); }));
 }
 const OBJ = n => (ASSET.objectsJson.frames || ASSET.objectsJson)[n].frame;
@@ -198,7 +225,8 @@ function rng(seed) { let s = seed >>> 0 || 1; return () => { s ^= s << 13; s >>>
 
 function buildTrack(key, seed) {
   const def = DERBY_TRACKS[key], T16 = 16, rand = rng(seed);
-  const sc = def.scale || 1;
+  const sc = def.scale || 1, art = trackArt(key);
+  if (art) return buildArtTrack(key, def, art, rand);
   let P = def.pts.map(([x, y]) => [x * T16 * sc + 8, y * T16 * sc + 8]); if (def.reverse) P = P.slice().reverse();
   // Catmull-Rom through the points, closed, sampled every ~6px
   const line = [];
@@ -244,7 +272,49 @@ function buildTrack(key, seed) {
   return { def, key, line, cum, L, half, at, nearest, obstacles: obstacles.concat(trees), puddles, boosts, scenery, W, H };
 }
 
+// a route along a closed polyline: length, a point (with direction and side) at any distance, and the nearest point
+function trackRoute(line) {
+  const N = line.length, cum = [0];
+  for (let i = 1; i <= N; i++) cum.push(cum[i - 1] + Math.hypot(line[i % N][0] - line[i - 1][0], line[i % N][1] - line[i - 1][1]));
+  const L = cum[N];
+  const at = s => { s = ((s % L) + L) % L; let i = 0, j = N; while (j - i > 1) { const m = (i + j) >> 1; if (cum[m] <= s) i = m; else j = m; } const a = line[i], b = line[(i + 1) % N], f = (s - cum[i]) / Math.max(1e-6, cum[i + 1] - cum[i]); const x = a[0] + (b[0] - a[0]) * f, y = a[1] + (b[1] - a[1]) * f, dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; return { x, y, tx: dx / l, ty: dy / l, nx: -dy / l, ny: dx / l }; };
+  const nearest = (x, y, hint) => {
+    let best = 1e18, bi = 0; const span = hint == null ? N : 40;
+    for (let k = -span; k <= span; k++) { const i = hint == null ? (k + span) % N : ((hint + k) % N + N) % N; const d = (line[i][0] - x) ** 2 + (line[i][1] - y) ** 2; if (d < best) { best = d; bi = i; } if (hint == null && k + span >= N - 1) break; }
+    return { i: bi, d: Math.sqrt(best), s: cum[bi] };
+  };
+  return { line, cum, L, at, nearest };
+}
+function buildArtTrack(key, def, art, rand) {
+  const k = def.k || 1, W = Math.round(art.w * k), H = Math.round(art.h * k), half = art.half * k;
+  const A = trackRoute(art.line.map(([x, y]) => [x * k, y * k]));
+  const B = art.alt && def.flood ? trackRoute(art.alt.map(([x, y]) => [x * k, y * k])) : null;
+  // hazards along the dry route, never right by the start line or where the two routes part
+  const placed = [], obstacles = [], puddles = [], boosts = [];
+  const spot = (minGap, offMax) => {
+    for (let tries = 0; tries < 60; tries++) {
+      const s = 160 + rand() * (A.L - 320), o = (rand() * 2 - 1) * offMax, p = A.at(s), x = p.x + p.nx * o, y = p.y + p.ny * o;
+      if (placed.every(q => Math.hypot(q[0] - x, q[1] - y) > minGap)) { placed.push([x, y]); return { x, y, s, o, p }; }
+    }
+    return null;
+  };
+  for (let i = 0; i < def.boosts; i++) { const q = spot(50, half * .3); if (q) boosts.push({ x: q.x, y: q.y, ang: Math.atan2(q.p.ty, q.p.tx) }); }
+  for (let i = 0; i < def.puddles; i++) { const q = spot(40, half * .55); if (q) puddles.push({ x: q.x, y: q.y, rx: 12 + rand() * 9, ry: 8 + rand() * 5 }); }
+  for (let i = 0; i < def.obstacles; i++) { const q = spot(40, half * .65); if (q) { const kind = def.kinds[Math.floor(rand() * def.kinds.length)], f = OBJ(kind); obstacles.push({ x: q.x, y: q.y, kind, r: Math.max(6, Math.min(10, f.w / 2 - 1)) }); } }
+  // where only one route runs: under water while that route is closed
+  const only = (R1, R2) => { const segs = []; let cur = null; R1.line.forEach(([x, y], i) => { if (R2.nearest(x, y).d > half * 1.15) { if (!cur) segs.push(cur = []); cur.push([x, y]); } else cur = null; }); return segs.filter(s => s.length > 3); };
+  const tr = { def, key, art: true, ...A, half, W, H, obstacles, puddles, boosts, scenery: [], route: A };
+  if (B) Object.assign(tr, { alt: B, floodLap: def.flood, wetA: only(A, B), wetB: only(B, A) });
+  return tr;
+}
+
 function drawTrackBG(tr) {
+  if (tr.art) {   // the painting, with the puddles laid on it
+    const c = document.createElement('canvas'); c.width = tr.W; c.height = tr.H; const g = c.getContext('2d');
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(DERBY_IMG['track_' + tr.def.art], 0, 0, tr.W, tr.H);
+    for (const q of tr.puddles) { g.save(); g.beginPath(); g.ellipse(q.x, q.y, q.rx + 1.5, q.ry + 1.5, 0, 0, 7); g.fillStyle = 'rgba(30,40,30,.45)'; g.fill(); g.beginPath(); g.ellipse(q.x, q.y, q.rx, q.ry, 0, 0, 7); g.fillStyle = 'rgba(70,120,130,.85)'; g.fill(); g.fillStyle = 'rgba(190,230,255,.35)'; g.beginPath(); g.ellipse(q.x - q.rx * .3, q.y - q.ry * .3, q.rx * .35, q.ry * .25, 0, 0, 7); g.fill(); g.restore(); }
+    return c;
+  }
   const c = document.createElement('canvas'); c.width = tr.W; c.height = tr.H; const g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   const ter = DERBY_IMG.terrain, tile = (sx, sy) => { const t = document.createElement('canvas'); t.width = t.height = 16; t.getContext('2d').drawImage(ter, sx * 16, sy * 16, 16, 16, 0, 0, 16, 16); return g.createPattern(t, 'repeat'); };
   const tex = im => g.createPattern(im, 'repeat');
@@ -277,7 +347,7 @@ function racerFrom(m, st, track, i, who, sk) {
     who, m, sp: m.sp, img, fw, fh: img.height / 4, dw: fw / k, dh: img.height / 4 / k, hd: k > 1, st, sk, you: who === 'You',
     x: p.x + p.nx * side * track.half * .45, y: p.y + p.ny * side * track.half * .45, vx: 0, vy: 0, dir: 'up',
     vmax: 50 + 2.2 * st.spd, stam: 100, dash: 0, boost: 0, stun: 0, anim: 0,
-    prog: -24 - Math.floor(i / 2) * 22, ni: null, lap: 0, lapStart: 0, laps: [], done: 0, lane: 0, laneT: 0,
+    prog: -24 - Math.floor(i / 2) * 22, lp: -24 - Math.floor(i / 2) * 22, ni: null, lap: 0, lapStart: 0, laps: [], done: 0, lane: 0, laneT: 0,
     types: typesOf(m.sp),
   };
 }
@@ -286,8 +356,10 @@ function derbyRace(cup, mine, rivals, raceNo) {
   return new Promise(async resolve => {
     const d = derby(), seed = (cup.id.charCodeAt(0) * 977 + raceNo * 131 + d.races * 7) | 0;
     const field = rivals.map(r => ({ r, m: { sp: r.sp, lv: r.lv, iv: { hp: 5, atk: 5, def: 5, spd: r.iv }, held: r.held } }));
-    await derbyImages([mine.sp, ...field.map(f => f.m.sp)]);
-    const tr = buildTrack(cup.track, seed), bg = drawTrackBG(tr);
+    await derbyImages([mine.sp, ...field.map(f => f.m.sp)], cup.track);
+    const tr = buildTrack(cup.track, seed), bg = drawTrackBG(tr), LAPS = tr.def.laps || DERBY_LAPS;
+    const RT = r => (tr.alt && r.lap >= tr.floodLap ? tr.alt : tr);   // the route a racer is on this lap
+    let flood = tr.alt ? 0 : null, floodT = 0;   // the bog: 0 dry, then 1 once the leader starts the flood lap
     const order = [{ m: mine, who: 'You', sk: 1 }, ...field.map(f => ({ m: f.m, who: f.r.who, sk: f.r.sk }))];
     // you start at the back on the first race, further up after
     const grid = raceNo === 0 ? [3, 0, 1, 2] : [2, 0, 1, 3];
@@ -298,7 +370,7 @@ function derbyRace(cup, mine, rivals, raceNo) {
     const el = document.createElement('div'); el.id = 'derby';
     el.style.cssText = 'position:fixed;inset:0;z-index:40;background:#1f2a1e;touch-action:none;user-select:none;-webkit-user-select:none';
     el.innerHTML = `<canvas id="dcv" style="position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated"></canvas>
-      <div class="panel" style="position:absolute;left:10px;top:max(10px,env(safe-area-inset-top));padding:6px 10px;font-weight:700;line-height:1.25;pointer-events:none"><div id="dlap">Lap 1/${DERBY_LAPS}</div><div id="dpos" style="font-size:22px">-</div><div id="dtime" style="font-size:13px;opacity:.8">0:00.00</div></div>
+      <div class="panel" style="position:absolute;left:10px;top:max(10px,env(safe-area-inset-top));padding:6px 10px;font-weight:700;line-height:1.25;pointer-events:none"><div id="dlap">Lap 1/${LAPS}</div><div id="dpos" style="font-size:22px">-</div><div id="dtime" style="font-size:13px;opacity:.8">0:00.00</div></div>
       <canvas id="dmini" width="120" height="90" class="panel" style="position:absolute;right:10px;top:max(10px,env(safe-area-inset-top));width:120px;height:90px;padding:0;pointer-events:none"></canvas>
       <button class="btn sm" id="dquit" style="position:absolute;right:10px;top:calc(max(10px,env(safe-area-inset-top)) + 100px)">✕ Leave</button>
       <div id="dstickz" style="position:absolute;left:0;bottom:0;width:55%;height:55%"></div>
@@ -333,19 +405,23 @@ function derbyRace(cup, mine, rivals, raceNo) {
     const tide = r => r.types.includes('Tide');
     const inPuddle = r => tr.puddles.some(q => ((r.x - q.x) / q.rx) ** 2 + ((r.y - q.y) / q.ry) ** 2 < 1);
     function surface(r) {
-      const n = tr.nearest(r.x, r.y, r.ni); r.ni = n.i;
+      const rt = RT(r), n = rt.nearest(r.x, r.y, r.ni); r.ni = n.i;
       let k = n.d <= tr.half ? 1 : n.d <= tr.half + 6 ? .85 : (grip(r) ? .8 : .58);
+      if (tr.alt) {   // the closed route is under water
+        const other = rt === tr ? tr.alt : tr, wet = rt === tr ? 1 - floodT : floodT, no = other.nearest(r.x, r.y);
+        if (no.d <= tr.half && n.d > tr.half && wet > .3) k *= tide(r) ? .9 : .4;
+      }
       if (tr.def.surface === 'mud' && n.d <= tr.half && !tide(r)) k *= tr.def.mudSlow || .9;
       if (tr.def.ground === 'moss' && n.d > tr.half && tide(r)) k = Math.max(k, .72);
       if (inPuddle(r)) k = tide(r) ? Math.max(k, 1.04) : k * .5;
       return { k, n };
     }
     function aiInput(r, dt = 1 / 60) {
-      const look = 34 + r.vmax * .35, s = (r.prog % tr.L + tr.L) % tr.L;
+      const rt = RT(r), look = 34 + r.vmax * .35, s = (r.lp % rt.L + rt.L) % rt.L;
       r.laneT -= dt;
       if (r.laneT <= 0) {   // pick the clearest lane a little way ahead
         r.laneT = .25 + Math.random() * .2;
-        const lanes = [-.4, -.2, 0, .2, .4], ahead = [.4, .8, 1.2, 1.7].map(a => tr.at(s + look * a));
+        const lanes = [-.4, -.2, 0, .2, .4], ahead = [.4, .8, 1.2, 1.7].map(a => rt.at(s + look * a));
         let best = r.lane, bs = -1e9;
         for (const ln of lanes) {
           let sc = -Math.abs(ln - r.lane) * 8 - Math.abs(ln) * 6;
@@ -354,9 +430,9 @@ function derbyRace(cup, mine, rivals, raceNo) {
         }
         r.lane = best;
       }
-      const p = tr.at(s + look * .6), tx = p.x + p.nx * r.lane * tr.half * 1.6, ty = p.y + p.ny * r.lane * tr.half * 1.6;
+      const p = rt.at(s + look * .6), tx = p.x + p.nx * r.lane * tr.half * 1.6, ty = p.y + p.ny * r.lane * tr.half * 1.6;
       let dx = tx - r.x, dy = ty - r.y; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-      let sx = 0, sy = 0; const fwd = tr.at(s + 12), fx = fwd.tx, fy = fwd.ty;
+      let sx = 0, sy = 0; const fwd = rt.at(s + 12), fx = fwd.tx, fy = fwd.ty;
       for (const o of tr.obstacles) {   // swerve round anything right in front
         const ox = o.x - r.x, oy = o.y - r.y, od = Math.hypot(ox, oy), reach = o.r + 26;
         if (od > reach || od < .01 || ox * dx + oy * dy < 0) continue;
@@ -367,13 +443,13 @@ function derbyRace(cup, mine, rivals, raceNo) {
       { const l2 = Math.hypot(dx, dy) || 1; dx /= l2; dy /= l2; }
       if (dx * fx + dy * fy < .35) { dx = dx * .5 + fx * .5; dy = dy * .5 + fy * .5; const l3 = Math.hypot(dx, dy) || 1; dx /= l3; dy /= l3; }   // never swerve backwards
       const wob = Math.max(0, 1 - r.sk) * 1.4; dx += (Math.random() - .5) * wob; dy += (Math.random() - .5) * wob;
-      const curve = Math.abs(tr.at(s + look).tx * tr.at(s).ty - tr.at(s + look).ty * tr.at(s).tx);
+      const curve = Math.abs(rt.at(s + look).tx * rt.at(s).ty - rt.at(s + look).ty * rt.at(s).tx);
       const dashNow = r.stam > 70 && curve < .2 && Math.random() < .02 * r.sk;
       r.chk = (r.chk || 0) + dt;
       if (r.chk > .8) { if (r.prog - (r.lastProg ?? -1e9) < r.vmax * .15) { r.unstick = .45; r.lane = [-.45, 0, .45].filter(l => l !== r.lane)[Math.floor(Math.random() * 2)]; r.laneT = 1.2; } r.lastProg = r.prog; r.chk = 0; }
       if (r.unstick > 0) {   // back off whatever it ran into, then try another lane
         r.unstick -= dt; r.unsticks = (r.unsticks || 0) + dt; const o = tr.obstacles.reduce((b, q) => Math.hypot(q.x - r.x, q.y - r.y) < Math.hypot(b.x - r.x, b.y - r.y) ? q : b, tr.obstacles[0]);
-        const ax = r.x - o.x, ay = r.y - o.y, al = Math.hypot(ax, ay) || 1, c = tr.at(s + 20);
+        const ax = r.x - o.x, ay = r.y - o.y, al = Math.hypot(ax, ay) || 1, c = rt.at(s + 20);
         return { x: ax / al * .7 + (c.x - r.x) / (Math.hypot(c.x - r.x, c.y - r.y) || 1) * .5, y: ay / al * .7 + (c.y - r.y) / (Math.hypot(c.x - r.x, c.y - r.y) || 1) * .5, dash: false, throttle: .8 };
       }
       return { x: dx, y: dy, dash: dashNow, throttle: Math.min(1.04, .82 + r.sk * .18) };
@@ -402,13 +478,14 @@ function derbyRace(cup, mine, rivals, raceNo) {
         for (const o of tr.obstacles) { const dx = r.x - o.x, dy = r.y - o.y, dd = Math.hypot(dx, dy), mn = o.r + 6; if (dd < mn && dd > .01) { r.x = o.x + dx / dd * mn; r.y = o.y + dy / dd * mn; const vn = (r.vx * dx + r.vy * dy) / dd; if (vn < 0) { r.vx -= 1.4 * vn * dx / dd; r.vy -= 1.4 * vn * dy / dd; const hit = Math.min(1, -vn / 80); if (hit > .25 && r.stun <= 0) { r.stun = hit * .7 * 70 / (r.st.def + 50) * (tr.def.tough && r.types.includes(tr.def.tough) ? .3 : 1); if (r.you) Sound.play('thud'); } } } }
         for (const b of tr.boosts) if (Math.hypot(b.x - r.x, b.y - r.y) < 12 && r.boost < .6) { r.boost = 1; if (r.you) Sound.play('pop'); }
         // progress along the lap
-        const nn = tr.nearest(r.x, r.y, r.ni); r.ni = nn.i;
-        let ds = nn.s - ((r.prog % tr.L) + tr.L) % tr.L; if (ds > tr.L / 2) ds -= tr.L; if (ds < -tr.L / 2) ds += tr.L;
-        r.prog += ds;
+        const rt = RT(r), nn = rt.nearest(r.x, r.y, r.ni); r.ni = nn.i;
+        let ds = nn.s - ((r.lp % rt.L) + rt.L) % rt.L; if (ds > rt.L / 2) ds -= rt.L; if (ds < -rt.L / 2) ds += rt.L;
+        r.prog += ds; r.lp += ds;
         if (running && !r.done) {
-          const lap = Math.floor(r.prog / tr.L);
-          if (lap > r.lap && lap >= 1) { const t = clock * 1000; r.laps.push(t - r.lapStart); r.lapStart = t; r.lap = lap; if (r.you && lap < DERBY_LAPS) { $d('dbig').textContent = lap === DERBY_LAPS - 1 ? 'Final lap!' : `Lap ${lap + 1}`; Sound.play('pop'); setTimeout(() => { if ($d('dbig')) $d('dbig').textContent = ''; }, 1100); } }
-          if (r.prog >= tr.L * DERBY_LAPS) { r.done = clock * 1000; finished.push(r); if (r.you) { over = true; overT = 0; $d('dbig').textContent = PLACE[finished.length - 1] + '!'; Sound.play(finished.length === 1 ? 'levelup' : 'pop'); } }
+          const lap = r.lp >= rt.L ? r.lap + 1 : r.lap;
+          if (lap > r.lap) { r.lp -= rt.L; r.ni = null; }
+          if (lap > r.lap && lap >= 1) { const t = clock * 1000; r.laps.push(t - r.lapStart); r.lapStart = t; r.lap = lap; if (tr.alt && flood === 0 && lap >= tr.floodLap) { flood = 1; floodT = 0; $d('dbig').textContent = '🌊 The bog is flooding!'; Sound.play('water'); setTimeout(() => { if ($d('dbig') && /flooding/.test($d('dbig').textContent)) $d('dbig').textContent = ''; }, 2200); } if (r.you && lap < LAPS) { $d('dbig').textContent = lap === LAPS - 1 ? 'Final lap!' : `Lap ${lap + 1}`; Sound.play('pop'); setTimeout(() => { if ($d('dbig')) $d('dbig').textContent = ''; }, 1100); } }
+          if (r.lap >= LAPS) { r.done = clock * 1000; finished.push(r); if (r.you) { over = true; overT = 0; $d('dbig').textContent = PLACE[finished.length - 1] + '!'; Sound.play(finished.length === 1 ? 'levelup' : 'pop'); } }
         }
         const sp = Math.hypot(r.vx, r.vy); r.anim += dt * sp / 9;
         if (sp > 8) r.dir = Math.abs(r.vx) > Math.abs(r.vy) ? (r.vx > 0 ? 'right' : 'left') : (r.vy > 0 ? 'down' : 'up');
@@ -420,6 +497,7 @@ function derbyRace(cup, mine, rivals, raceNo) {
         a.x -= dx / dd * push * 2 * wa; a.y -= dy / dd * push * 2 * wa; b.x += dx / dd * push * 2 * (1 - wa); b.y += dy / dd * push * 2 * (1 - wa);
       }
       if (over) overT += dt;
+      if (flood) floodT = Math.min(1, floodT + dt / 5);
     }
 
     function draw() {
@@ -427,12 +505,20 @@ function derbyRace(cup, mine, rivals, raceNo) {
       g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#1f2a1e'; g.fillRect(0, 0, W, H); g.imageSmoothingEnabled = false;
       const cx = Math.max(W / z / 2, Math.min(tr.W - W / z / 2, me.x)), cy = Math.max(H / z / 2, Math.min(tr.H - H / z / 2, me.y));
       g.setTransform(z, 0, 0, z, Math.round(W / 2 - cx * z), Math.round(H / 2 - cy * z));
-      g.drawImage(bg, 0, 0);
+      g.imageSmoothingEnabled = !!tr.art; g.drawImage(bg, 0, 0); g.imageSmoothingEnabled = false;
+      if (tr.alt) {   // the bog: water over whichever way is closed, rising and draining over five seconds
+        const tt = performance.now() / 1000, wet = (segs, a) => { if (a <= .01) return; g.save(); g.lineJoin = g.lineCap = 'round';
+          for (const seg of segs) { g.beginPath(); seg.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y));
+            g.strokeStyle = `rgba(40,84,92,${.92 * a})`; g.lineWidth = tr.half * 2 + 8; g.stroke();
+            g.setLineDash([6, 14]); g.lineDashOffset = -tt * 14; g.strokeStyle = `rgba(170,220,230,${.35 * a})`; g.lineWidth = tr.half * 1.1; g.stroke(); g.setLineDash([]); }
+          g.restore(); };
+        wet(tr.wetB, 1 - floodT); wet(tr.wetA, flood ? floodT : 0);
+      }
       const t = performance.now() / 1000;
       for (const b of tr.boosts) { g.save(); g.translate(b.x, b.y); g.rotate(b.ang); for (let k = 0; k < 3; k++) { g.fillStyle = `rgba(255,${200 + 40 * Math.sin(t * 6 - k)},60,${.65 + .35 * Math.sin(t * 6 - k)})`; g.beginPath(); g.moveTo(-8 + k * 5, -6); g.lineTo(-3 + k * 5, 0); g.lineTo(-8 + k * 5, 6); g.lineTo(-6 + k * 5, 6); g.lineTo(-1 + k * 5, 0); g.lineTo(-6 + k * 5, -6); g.fill(); } g.restore(); }
       const ob = DERBY_IMG.objects, things = [...tr.obstacles.map(o => ({ y: o.y, o })), ...R.map(r => ({ y: r.y, r }))].sort((a, b) => a.y - b.y);
       for (const q of things) {
-        if (q.o) { const f = OBJ(q.o.kind); g.drawImage(ob, f.x, f.y, f.w, f.h, Math.round(q.o.x - f.w / 2), Math.round(q.o.y + 4 - f.h), f.w, f.h); continue; }
+        if (q.o) { const f = OBJ(q.o.kind), hf = DERBY_IMG.objHD && (ASSET.hdWorld.objects.frames[q.o.kind] || {}).frame; if (hf) { g.imageSmoothingEnabled = true; g.drawImage(DERBY_IMG.objHD, hf.x, hf.y, hf.w, hf.h, q.o.x - f.w / 2, q.o.y + 4 - f.h, f.w, f.h); g.imageSmoothingEnabled = false; } else g.drawImage(ob, f.x, f.y, f.w, f.h, Math.round(q.o.x - f.w / 2), Math.round(q.o.y + 4 - f.h), f.w, f.h); continue; }
         const r = q.r, row = DIRS.indexOf(r.dir), moving = Math.hypot(r.vx, r.vy) > 8, col = moving ? [1, 0, 3, 0][Math.floor(r.anim) % 4] : 0;
         g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(r.x, r.y + 1, r.dw * .28, 3, 0, 0, 7); g.fill();
         if (r.dash > 0 || r.boost > 0) { g.fillStyle = r.boost > 0 ? 'rgba(255,210,80,.5)' : 'rgba(255,255,255,.45)'; for (let k = 1; k <= 3; k++) g.fillRect(Math.round(r.x - r.vx * .02 * k) - 1, Math.round(r.y - r.vy * .02 * k) - 2, 2, 2); }
@@ -441,17 +527,18 @@ function derbyRace(cup, mine, rivals, raceNo) {
         g.globalAlpha = 1;
         // name tags
         g.font = 'bold 6px system-ui, sans-serif'; g.textAlign = 'center';
-        const label = r.you ? '▼' : r.who, ly = Math.round(r.y - r.fh - 1);
+        const label = r.you ? '▼' : r.who, ly = Math.round(r.y - r.dh - 1);
         g.fillStyle = '#2a1e1a'; g.fillText(label, r.x + .5, ly + .5); g.fillStyle = r.you ? '#ffe35a' : '#fbf3d9'; g.fillText(label, r.x, ly);
       }
       // minimap
       mini.setTransform(1, 0, 0, 1, 0, 0); mini.clearRect(0, 0, 120, 90); const ms = Math.min(110 / tr.W, 80 / tr.H), ox = (120 - tr.W * ms) / 2, oy = (90 - tr.H * ms) / 2;
-      mini.strokeStyle = '#a8865a'; mini.lineWidth = 4; mini.lineJoin = 'round'; mini.beginPath(); tr.line.forEach(([x, y], i) => i ? mini.lineTo(ox + x * ms, oy + y * ms) : mini.moveTo(ox + x * ms, oy + y * ms)); mini.closePath(); mini.stroke();
+      const mroute = (ln, col) => { mini.strokeStyle = col; mini.lineWidth = 4; mini.lineJoin = 'round'; mini.beginPath(); ln.forEach(([x, y], i) => i ? mini.lineTo(ox + x * ms, oy + y * ms) : mini.moveTo(ox + x * ms, oy + y * ms)); mini.closePath(); mini.stroke(); };
+      if (tr.alt) { const onB = RT(me) === tr.alt; mroute(onB ? tr.line : tr.alt.line, 'rgba(70,120,130,.8)'); mroute(onB ? tr.alt.line : tr.line, '#a8865a'); } else mroute(tr.line, '#a8865a');
       for (const r of R) { mini.fillStyle = r.you ? '#ffe35a' : '#d0405a'; mini.beginPath(); mini.arc(ox + r.x * ms, oy + r.y * ms, r.you ? 3.5 : 2.5, 0, 7); mini.fill(); }
     }
-    const rank = () => [...finished, ...R.filter(r => !r.done).sort((a, b) => b.prog - a.prog)];
+    const rk = r => r.lap * 1e6 + r.lp, rank = () => [...finished, ...R.filter(r => !r.done).sort((a, b) => rk(b) - rk(a))];
     function hud() {
-      $d('dlap').textContent = `Lap ${Math.min(DERBY_LAPS, Math.max(1, me.lap + 1))}/${DERBY_LAPS}`;
+      $d('dlap').textContent = `Lap ${Math.min(LAPS, Math.max(1, me.lap + 1))}/${LAPS}`;
       $d('dpos').textContent = `${PLACE[rank().indexOf(me)]} of ${R.length}`;
       $d('dtime').textContent = fmtLap(Math.max(0, clock * 1000));
       $d('dstam').style.width = me.stam + '%'; $d('dstam').style.background = me.stam >= 35 ? '#7ec85a' : '#c0602a';
@@ -468,7 +555,7 @@ function derbyRace(cup, mine, rivals, raceNo) {
     function results() {
       // anyone still running gets a finishing time from how far they had left to go
       const now = clock * 1000;
-      for (const r of R.filter(q => !q.done).sort((a, b) => b.prog - a.prog)) { const left = tr.L * DERBY_LAPS - r.prog, v = Math.max(20, r.vmax * .8); r.done = now + left / v * 1000; finished.push(r); }
+      for (const r of R.filter(q => !q.done).sort((a, b) => rk(b) - rk(a))) { let left = RT(r).L - r.lp; for (let l = r.lap + 1; l < LAPS; l++) left += (tr.alt && l >= tr.floodLap ? tr.alt : tr).L; const v = Math.max(20, r.vmax * .8); r.done = now + left / v * 1000; finished.push(r); }
       finished.sort((a, b) => a.done - b.done);
       const times = {}, sp = {}; for (const r of R) { times[r.who] = r.done; sp[r.who] = r.sp; }
       bestLap = me.laps.length ? Math.min(...me.laps) : 0;

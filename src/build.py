@@ -45,6 +45,10 @@ assets['ground'] = {os.path.basename(p)[:-5]: uri(p, 'image/webp') for p in sort
 # Warden battle arenas cut by tools/art/cut_arenas.py (Isolde's waits for Gloamhollow)
 for n in ['mabel', 'delphine', 'granger', 'orrin', 'tamsin', 'alder', 'rowan']:
     assets['arena_' + n] = uri(f'arena_{n}.webp', 'image/webp'); assets['arenabg_' + n] = uri(f'arenabg_{n}.jpg', 'image/jpeg')
+# painted Derby tracks (tools/art/cut_tracks.py)
+TRACKS_LIVE = ['meadow', 'bramble', 'mudrun']   # the rest (beach, gale, rootway, lantern, summit) join when their cups do
+assets['derbyTracks'] = {k: v for k, v in json.load(open('derby_tracks.json')).items() if k in TRACKS_LIVE}
+for n in assets['derbyTracks']: assets['track_' + n] = uri(f'track_{n}.webp', 'image/webp')
 assets['hd'] = {}
 for p in sorted(glob.glob('hd/*.webp')):
     sid, kind = os.path.basename(p)[:-5].rsplit('_', 1); assets['hd'].setdefault(sid, {})[kind] = uri(p, 'image/webp')
