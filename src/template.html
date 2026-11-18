@@ -331,6 +331,14 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 .wpin b{font:700 11px var(--pix);color:#2a1e1a;background:rgba(251,243,217,.92);border:2px solid #5e3b20;padding:1px 4px}
 .wpin.unseen b{color:#e8e0cc;background:rgba(40,40,46,.7);border-color:#1e1e22}
 .wpin.here b{background:#ffe9a0;border-color:#d99a1e}
+.tmtabs{display:flex;gap:6px;margin-bottom:6px}.tmtabs .btn{padding:5px 10px;font-size:13px}
+.tmwrap{overflow:auto;height:min(62vh,520px);border:3px solid #5a3a1e;border-radius:6px;background:#1d2b1d;-webkit-overflow-scrolling:touch}
+.tmap{position:relative;line-height:0}.tmap img{width:100%;display:block}
+.tmlbl{position:absolute;transform:translate(-50%,-50%);font:800 9px var(--ui);line-height:1.1;color:#fff;background:rgba(40,28,16,.78);border:1px solid rgba(255,240,200,.5);border-radius:5px;padding:1px 4px;white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis;pointer-events:auto}
+.tmme,.tmnpc{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;border:2px solid #fff;pointer-events:none;transition:left .4s linear,top .4s linear}
+.tmme{background:#d03a2a;box-shadow:0 0 0 3px rgba(208,58,42,.35);animation:tmpulse 1.2s ease-in-out infinite;z-index:3}@keyframes tmpulse{50%{box-shadow:0 0 0 7px rgba(208,58,42,.12)}}
+.tmnpc{background:#e0a020;z-index:2}.tmnpc.in{opacity:.5}.tmnpc b{position:absolute;left:50%;top:12px;transform:translateX(-50%);font:800 8px var(--ui);line-height:1;color:#fff;text-shadow:0 1px 2px #000,0 0 2px #000;white-space:nowrap}
+.tmwho{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;margin-top:4px}.tmwho img{width:18px;height:18px;vertical-align:middle;border-radius:4px}
 .walpha{position:absolute;right:-10px;top:-12px;font-style:normal;font-size:15px;animation:wgoal .7s ease-in-out infinite alternate;pointer-events:none}
 .wgoal{font:900 15px var(--pix);font-style:normal;color:#ffe35a;-webkit-text-stroke:1px #2a1e1a;text-shadow:0 1px 0 #2a1e1a;animation:wgoal .9s ease-in-out infinite alternate}@keyframes wgoal{from{transform:translateY(0)}to{transform:translateY(-3px)}}
 .wyou{position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:#d04030;font-style:normal;font-size:14px;text-shadow:0 1px 0 #fff}
