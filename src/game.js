@@ -1023,7 +1023,7 @@ function openSettings(back) {
     if (a === 'ctledit') { closeModal(); return ctlEdit(true); }
     if (a === 'intro') { closeModal(); return playIntro('Farmer', () => { $('title').style.display = 'flex'; }); }
     handleSetting(a, d, el);
-    if (['ctl', 'auto', 'bspeed', 'roam', 'action', 'actionT'].includes(a)) $('mBody').innerHTML = render();
+    if (['ctl', 'auto', 'bspeed', 'roam', 'action', 'actionT', 'rtAuto'].includes(a)) $('mBody').innerHTML = render();
   });
 }
 function handleSetting(a, d, el) {

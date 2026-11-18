@@ -1654,7 +1654,7 @@ function openSettings(back) {
     if (a === 'ctledit') { closeModal(); return ctlEdit(true); }
     if (a === 'intro') { closeModal(); return playIntro('Farmer', () => { $('title').style.display = 'flex'; }); }
     handleSetting(a, d, el);
-    if (['ctl', 'auto', 'bspeed', 'roam', 'action', 'actionT'].includes(a)) $('mBody').innerHTML = render();
+    if (['ctl', 'auto', 'bspeed', 'roam', 'action', 'actionT', 'rtAuto'].includes(a)) $('mBody').innerHTML = render();
   });
 }
 function handleSetting(a, d, el) {
@@ -15556,12 +15556,15 @@ controlsHTML = function () {
     <div class="setc"><b>Wild battle style</b>${seg('action', opts.action === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
       <small>${opts.action === false ? 'Wild battles are turn-based, picking moves from a menu.' : 'Wild battles are real-time: steer your Fablemon, fire moves when they recharge and dodge.'}</small></div>
     <div class="setc"><b>Trainer battle style</b>${seg('actionT', opts.actionT === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
-      <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>`;
+      <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>
+    <div class="setc"><b>Auto battle (action battles)</b>${seg('rtAuto', opts.rtAuto ? 'on' : 'off', [['off', '🕹️ I steer'], ['on', '🤖 Auto']])}
+      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks, dodges and picks who goes next by itself. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
 };
 const _roamSet = handleSetting;
 handleSetting = function (a, d, el) {
   if (a === 'roam') { opts.roam = d.v === 'on'; saveOpts(); toast(opts.roam ? 'Wild Fablemon roam the grass.' : 'Wild Fablemon hide in the grass.', 1600); }
   if (a === 'actionT') { opts.actionT = d.v === 'on'; saveOpts(); toast(opts.actionT ? 'Action battles for trainers.' : 'Classic battles for trainers.', 1600); }
+  if (a === 'rtAuto') { opts.rtAuto = d.v === 'on'; saveOpts(); toast(opts.rtAuto ? 'Auto battle on.' : 'Auto battle off.', 1600); }
   if (a === 'action') { opts.action = d.v === 'on'; saveOpts(); toast(opts.action ? 'Action battles for wild Fablemon.' : 'Classic battles for wild Fablemon.', 1600); }
   return _roamSet(a, d, el);
 };
@@ -15684,6 +15687,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 #rtbSide button img.ic{position:absolute;left:50%;top:5px;width:26px;height:26px;margin-left:-13px;image-rendering:pixelated;object-fit:contain}#rtbSide button img.ic[src='']{visibility:hidden}#rtbSide button small{position:absolute;bottom:2px;left:0;right:0;font-size:9px;font-weight:800}
 #rtbSide button .cd{position:absolute;inset:0;background:rgba(30,30,30,.55);transform-origin:bottom;pointer-events:none}
 #rtbSide #rtbDodge{width:62px;height:62px;background:#e8f4ff}
+#rtbAuto{position:absolute;left:14px;bottom:calc(150px + env(safe-area-inset-bottom));pointer-events:auto;font:800 13px var(--ui);padding:6px 10px;border-radius:18px;border:3px solid #2c4a2c;background:#fffaea;color:#2a2a1a;opacity:.85;touch-action:manipulation}
+#rtbAuto.on{background:#ffe27a;border-color:#b8862a;opacity:1;box-shadow:0 0 0 2px #e0a020}
 #rtbPick{position:absolute;inset:0;background:rgba(10,16,10,.55);display:none;align-items:center;justify-content:center;pointer-events:auto;z-index:2}
 #rtbPick.show{display:flex}#rtbPick .pk{background:#fbf3d9;border:3px solid #5a3a1e;border-radius:12px;padding:12px;width:min(320px,86vw);box-shadow:0 4px 0 rgba(0,0,0,.3)}
 #rtbPick h3{margin:0 0 8px;font:800 16px var(--pix,var(--ui));color:#3a2a14;text-align:center}
@@ -15696,7 +15701,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
   ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
-    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><div id="rtbMoves"></div>`;
+    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">🤖 Auto</button><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
 
@@ -16039,6 +16044,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       const d = Math.hypot(dx, dy) || 1; me.lunge = { t: .16, vx: dx / d * 260, vy: dy / d * 260 }; me.iframe = .35; me.dodgeT = 1.2; me.spr.setAlpha(.6); for (const t of [0, 50, 100, 150]) st.sc.time.delayedCall(t, () => st && ghost(me, 0xbfe8ff, .45)); burst(me.x, me.y - 2, 'Wild', 4, { tex: 'fx_smoke', speed: 30, life: 300, size: .6, flat: 1 });
       st.sc.time.delayedCall(170, () => { if (st) { me.lunge = null; me.spr.setAlpha(1); } }); Sound.play('swish'); return;
     }
+    if (a === 'auto') { opts.rtAuto = !opts.rtAuto; saveOpts(); autoUi(); say(opts.rtAuto ? 'Auto battle on: your Fablemon fights by itself.' : 'Auto battle off: you’re in control.', 1300); return; }
     if (a === 'charm' && st.T) return say("You can't catch someone else's Fablemon!");
     if (a === 'charm') {
       const c = charmId(); if (!c) return say('You have no charms!');
@@ -16070,7 +16076,14 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const P = $r('rtbPick'); P.querySelector('h3').textContent = `${monName(me.m)} fainted! Who's next?`;
     P.querySelector('.pl').innerHTML = team().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
     P.classList.add('show');
+    if (opts.rtAuto) {   // Auto picks the next one after a moment, unless you pick first
+      const pickT = () => { const live = team().filter(m => m.hp > 0); if (!live.length) return null;
+        const sc0 = m => (m.hp / monStat(m, 'hp')) * Math.max(...m.moves.map(id => MOVES[id] && MOVES[id].pow ? effOn(MOVES[id].type, st.foe.m.sp) * stabOf(MOVES[id].type, m.sp) : .5)) * (1 + m.lv / 100);
+        return live.sort((a, b) => sc0(b) - sc0(a))[0]; };
+      st.sc.time.delayedCall(1300, () => { if (!st || !st.choosing) return; const m = pickT(); if (!m) return; P.classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; });
+    }
   }
+  function autoUi() { const b = $r('rtbAuto'); if (b) b.classList.toggle('on', !!opts.rtAuto); }
   function nextFoe(m) {   // the trainer sends out their next Fablemon from where they stand
     st.switching = true; for (const b of st.bolts.slice()) kill(b);
     const sc = st.sc, old = st.foe;
@@ -16113,16 +16126,17 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
 
   // ---------- the foe's mind
-  function think(dt) {
-    const f = st.foe, me = st.me, M0 = f.m.moves.map(id => MOVES[id]).filter(Boolean);
+  // the brain: the wild one or the trainer's Fablemon, and yours too on Auto (opts.rtAuto, 18 Nov)
+  function think(dt, f = st.foe, me = st.me, auto = false) {
+    const M0 = f.m.moves.map(id => MOVES[id]).filter(Boolean), skill = auto ? .7 : st.dodgeSkill, aggr = auto ? .95 : st.aggr;
     if (f.stun > 0 || f.lunge || st.catching) return [0, 0];
-    if (st.T && st.T.boss && (st.T.heals ?? 2) > 0 && f.m.hp > 0 && f.m.hp < monStat(f.m, 'hp') * .3 && !(st.fhT > 0)) {   // a Warden patches their Fablemon up, like in a classic battle
+    if (!auto && st.T && st.T.boss && (st.T.heals ?? 2) > 0 && f.m.hp > 0 && f.m.hp < monStat(f.m, 'hp') * .3 && !(st.fhT > 0)) {   // a Warden patches their Fablemon up, like in a classic battle
       st.T.heals = (st.T.heals ?? 2) - 1; st.fhT = 6; healF(f, Math.ceil(monStat(f.m, 'hp') / 2)); say(`${st.T.name} used a potion on ${SPECIES[f.m.sp].name}!`, 1300); return [0, 0];
     }
     const dx = me.x - f.x, dy = me.y - f.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
     const physical = monStat(f.m, 'atk') >= monStat(f.m, 'eatk');
     // shy ones bolt for the edge when they're losing
-    if (st.mood === 'shy' && f.m.hp < monStat(f.m, 'hp') * .3) {
+    if (!auto && st.mood === 'shy' && f.m.hp < monStat(f.m, 'hp') * .3) {
       const ex = f.x < st.W / 2 ? -1 : 1; if (f.x <= st.B.x0 + 2 || f.x >= st.B.x1 - 2) { say(`The wild ${SPECIES[f.m.sp].name} ran away!`, 1500); end('fled'); return [0, 0]; }
       return [ex, -uy * .3];
     }
@@ -16130,7 +16144,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     f.ai.dodgeT -= dt;
     if (f.ai.dodgeT <= 0) for (const b of st.bolts) if (b.f === me && !b.seen) {
       const rx = f.x - b.x, ry = f.y - 10 - b.y, along = (rx * b.vx + ry * b.vy) / Math.hypot(b.vx, b.vy);
-      if (along > 0 && along < 70) { b.seen = 1; if (Math.random() < st.dodgeSkill) { const s = Math.random() < .5 ? 1 : -1; f.lunge = { t: .15, vx: -b.vy / 175 * 230 * s, vy: b.vx / 175 * 230 * s }; f.iframe = .2; f.ai.dodgeT = 1.4; st.sc.time.delayedCall(160, () => st && (f.lunge = null)); return [0, 0]; } }
+      if (along > 0 && along < 70) { b.seen = 1; if (Math.random() < skill) { const s = Math.random() < .5 ? 1 : -1; f.lunge = { t: .15, vx: -b.vy / 175 * 230 * s, vy: b.vx / 175 * 230 * s }; f.iframe = .2; f.ai.dodgeT = 1.4; st.sc.time.delayedCall(160, () => st && (f.lunge = null)); return [0, 0]; } }
     }
     // pick a move
     f.ai.think -= dt;
@@ -16140,7 +16154,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (ready.length) {
         const score = id => { const M = MOVES[id]; if (!M.pow) return (Math.random() < .18 ? 60 : 0); const close = moveCat(id) === 'p' && !M.ranged; if (close && d > 46) return 0; if (!close && d > 190) return 0; return M.pow * effOn(M.type, me.m.sp) * stabOf(M.type, f.m.sp) * (M.hits ? (M.hits[0] + M.hits[1]) / 2 : 1) * (.7 + Math.random() * .6); };
         const best = ready.map(id => [id, score(id)]).sort((a, b) => b[1] - a[1])[0];
-        if (best && best[1] > 0 && Math.random() < st.aggr) useMove(f, best[0]);
+        if (best && best[1] > 0 && Math.random() < aggr) useMove(f, best[0]);
       }
     }
     // keep its distance: physical ones close in, elemental ones hang back and circle
@@ -16264,6 +16278,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         mx = inp.jx || ((inp.keys.d || inp.keys.arrowright ? 1 : 0) - (inp.keys.a || inp.keys.arrowleft ? 1 : 0));
         my = inp.jy || ((inp.keys.s || inp.keys.arrowdown ? 1 : 0) - (inp.keys.w || inp.keys.arrowup ? 1 : 0));
       }
+      if (opts.rtAuto && !mx && !my && !st.catching && me.stun <= 0 && st.ready <= 0) [mx, my] = think(dt, me, foe, true);   // Auto: your Fablemon fights on its own; touching the stick takes over
+      if (st.over) return;
       move(me, mx, my, dt, true);
       // the wild one
       const [fx, fy] = st.ready > 0 ? [0, 0] : think(dt); if (st.over) return;
@@ -16346,7 +16362,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
     st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
       dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme };
-    Sound.hushRain(true); Sound.theme('battle');
+    Sound.hushRain(true); Sound.theme('battle'); autoUi();
     document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1;
     const here = at || (sc.player ? { x: sc.player.x, y: sc.player.y - 40 } : { x: 0, y: 0 });
     setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe, T ? Object.assign({}, T, { classic: true }) : undefined); } } }, 120);

@@ -132,12 +132,15 @@ controlsHTML = function () {
     <div class="setc"><b>Wild battle style</b>${seg('action', opts.action === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
       <small>${opts.action === false ? 'Wild battles are turn-based, picking moves from a menu.' : 'Wild battles are real-time: steer your Fablemon, fire moves when they recharge and dodge.'}</small></div>
     <div class="setc"><b>Trainer battle style</b>${seg('actionT', opts.actionT === false ? 'off' : 'on', [['on', '⚡ Action'], ['off', '🎴 Classic']])}
-      <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>`;
+      <small>${opts.actionT === false ? 'Trainers and Wardens battle turn by turn.' : 'Trainers and Wardens battle in real time too, right where you meet them.'}</small></div>
+    <div class="setc"><b>Auto battle (action battles)</b>${seg('rtAuto', opts.rtAuto ? 'on' : 'off', [['off', '🕹️ I steer'], ['on', '🤖 Auto']])}
+      <small>${opts.rtAuto ? 'Your Fablemon moves, attacks, dodges and picks who goes next by itself. Touch the stick to take over; you can still catch, heal and run.' : 'You steer and pick the moves. There is also an 🤖 Auto button in every action battle.'}</small></div>`;
 };
 const _roamSet = handleSetting;
 handleSetting = function (a, d, el) {
   if (a === 'roam') { opts.roam = d.v === 'on'; saveOpts(); toast(opts.roam ? 'Wild Fablemon roam the grass.' : 'Wild Fablemon hide in the grass.', 1600); }
   if (a === 'actionT') { opts.actionT = d.v === 'on'; saveOpts(); toast(opts.actionT ? 'Action battles for trainers.' : 'Classic battles for trainers.', 1600); }
+  if (a === 'rtAuto') { opts.rtAuto = d.v === 'on'; saveOpts(); toast(opts.rtAuto ? 'Auto battle on.' : 'Auto battle off.', 1600); }
   if (a === 'action') { opts.action = d.v === 'on'; saveOpts(); toast(opts.action ? 'Action battles for wild Fablemon.' : 'Classic battles for wild Fablemon.', 1600); }
   return _roamSet(a, d, el);
 };
