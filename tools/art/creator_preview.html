@@ -48,9 +48,9 @@ const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
 const SKIN = [['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
 const HAIRC = [['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
 const nice = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const S = { body: 1, face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
+const S = { outfit: Math.max(0, CC.outfits.findIndex(o => o.name === 'Brookholt Farmer')), face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
 const ROWS = [
-  ['Body', 'body', () => CC.bodies.length, i => CC.bodies[i].name],
+  ['Outfit', 'outfit', () => CC.outfits.length, i => CC.outfits[i].name],   // the outfit brings its own body shape
   ['Face', 'face', () => CC.heads, i => `Face ${i + 1}`],
   ['Skin', 'skin', () => SKIN.length, i => SKIN[i][0], i => SKIN[i][1]],
   ['Hair', 'hair', () => CC.hair.length + 1, i => i === 0 ? 'Bald' : nice(CC.hair[i - 1]), null, 1],
@@ -109,8 +109,8 @@ let step = 1, box = null;
 function bounds() {   // crop the canvas to the figure (with room for big hair), so the character fills the box
   const pad = 16; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   const grow = (x, y, w, h) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x + w); y1 = Math.max(y1, y + h); };
-  CC.bodies.forEach((B, i) => { for (let f = 0; f < 16; f++) {
-    const P = CC.pieces[`body${i}_${f}`]; grow(P.at[0], P.at[1], P.f[2], P.f[3]);
+  CC.outfits.forEach((B, i) => { for (let f = 0; f < 16; f++) {
+    const P = CC.pieces[`outfit${i}_${f}`]; grow(P.at[0], P.at[1], P.f[2], P.f[3]);
     const H = CC.pieces[`head0_${f >> 2}`]; grow(H.at[0] + B.offs[f][0], H.at[1] + B.offs[f][1] - 6, H.f[2], H.f[3]);   // heads sit higher on the tall bodies
   } });
   return [Math.floor(x0 - pad), Math.floor(y0 - pad), Math.ceil(x1 - x0 + pad * 2), Math.ceil(y1 - y0 + pad + 4)];
@@ -119,9 +119,11 @@ function draw() {
   box = box || bounds(); const [bx, by, bw, bh] = box; cv.width = bw; cv.height = bh;
   const g = cv.getContext('2d'), d = S.dir, f = d * 4 + (step % 4), [ax, ay0] = CC.anchors[f], ay = ay0 + (CC.bob || [0, 0, 0, 0])[step % 4];   // the whole figure dips on the stride frames, so the face pieces move with the head
   const skin = SKIN[S.skin][1], hc = HAIRC[S.hcol][1], bc = S.bcol < 0 ? hc : HAIRC[S.bcol][1];
-  const [ox, oy] = CC.bodies[S.body].offs[f];   // where this body's neck is, relative to the base the pieces were fitted on
+  const O = CC.outfits[S.outfit], [ox, oy] = O.offs[f];   // where this body's neck is, relative to the base the pieces were fitted on
   const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax + ox : 0) - bx), Math.round(P.at[1] + (follow ? ay + oy : ay) - by)); };
-  put(`body${S.body}_${f}`, [skin, null, null], false);
+  { const P = CC.pieces[`neck${O.body}_${f}`], im = piece(`neck${O.body}_${f}`, [skin, null, null]);   // a neck behind the collar
+    if (im) g.drawImage(im, Math.round(P.at[0] + O.neck[f][0] - bx), Math.round(P.at[1] + O.neck[f][1] + ay - by)); }
+  put(`outfit${S.outfit}_${f}`, [skin, null, null], false);
   put(`head${S.face}_${d}`, [skin, null, null]);
   if (S.beard >= 0 && d !== 3) {   // nudged to this face's own mouth and chin
     const [fx, fy] = (CC.beardOff || [])[S.face]?.[d] || [0, 0], P = CC.pieces[`beard${S.beard}_${d}`], im = piece(`beard${S.beard}_${d}`, [null, null, bc]);
@@ -144,7 +146,7 @@ function show() {
 const turn = n => { S.dir = [0, 2, 3, 1][([0, 3, 1, 2][S.dir] + n + 4) % 4]; draw(); };   // front → right → back → left
 document.getElementById('tl').onclick = () => turn(-1); document.getElementById('tr').onclick = () => turn(1);
 document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Stop' : '▶ Walk'; if (!S.playing) { step = 1; draw(); } };
-document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.body = r(CC.bodies.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
 document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
   [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);

@@ -10,7 +10,7 @@ Sources (art_incoming/creator/v3/):
 Everything is placed in the coordinates of the base sheet's standing frame for each direction (column 1). Walking
 frames move a piece by how far the head moved (anchor dx, dy per frame). Right-facing views are the left ones mirrored.
 Output is at OUT_SCALE of the source (the base figure is ~273 px tall in the source)."""
-import json, os, sys, importlib.util
+import json, glob, os, os, sys, importlib.util
 import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
@@ -36,6 +36,10 @@ def skin_mask(a):
 def mat_for(a, kind):
     m = np.zeros(a.shape[:2], np.uint8); al = a[..., 3] > 0
     if kind == 'skin': m[skin_mask(a)] = 1
+    elif kind == 'outfit':   # clothes keep their colours; only bare skin (if any shows) follows the skin colour
+        h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32) & (s <= .62) & (v >= .55); lb, n = ndi.label(sk)
+        if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 40])
+        m[sk] = 1
     elif kind == 'body':   # the body sheets' shirts have a warm tint: skin must be properly saturated, and no stray specks
         h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32); lb, n = ndi.label(sk)
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])
@@ -104,6 +108,26 @@ REFB = bodies[BODY_NAMES.index('Male_Medium')]
 for bd in bodies:
     bd['offs'] = [[REFB['offs'][f][0] + round(bd['tops'][f][0] - REFB['tops'][f][0]), REFB['offs'][f][1] + bd['tops'][f][1] - REFB['tops'][f][1]] for f in range(16)]
     print('body', bd['name'], 'final', bd['offs'][1], bd['offs'][5], bd['offs'][13])
+
+# ---------- outfits: each is a whole clothed body, drawn on one of the 8 body types (its folder). Choosing an outfit
+# chooses the body. Each frame is lined up with its body type's same frame (best overlap of the whole figure below
+# the collar), and the head goes where it goes on that body, moved by the same amount.
+outfits = []
+for bi, bn in enumerate(BODY_NAMES):
+    for p in sorted(glob.glob(D + f'outfits/{bn}/*.png')):
+        S = fh.rgba(p); od = dict(name=os.path.basename(p)[:-4].replace('_', ' '), body=bi, frames=[], offs=[])
+        for f in range(16):
+            r, c = divmod(f, 4); fr = S[int(r * C):int((r + 1) * C), int(c * C):int((c + 1) * C)]
+            H0, W0 = frames[f].shape[:2]; fr = np.pad(fr, ((0, max(0, H0 - fr.shape[0])), (0, max(0, W0 - fr.shape[1])), (0, 0)))[:H0, :W0]
+            ba = bodies[bi]['frames'][f][..., 3] > 0; oa = fr[..., 3] > 0
+            t = np.nonzero(ba.any(1))[0][0]; band = np.zeros_like(ba); band[t + 12:] = True; ref = ba & band; best = None
+            for dy in range(-10, 11):
+                for dx in range(-10, 11):
+                    sh = np.roll(np.roll(oa, -dy, 0), -dx, 1) & band; iou = (sh & ref).sum() / max(1, (sh | ref).sum())
+                    if best is None or iou > best[0]: best = (iou, dx, dy)
+            od['frames'].append(fr); od['offs'].append([bodies[bi]['offs'][f][0] + best[1], bodies[bi]['offs'][f][1] + best[2]]); od.setdefault('iou', []).append(round(best[0], 2))
+            od.setdefault('shift', []).append([best[1], best[2]])
+        outfits.append(od); print('outfit', od['name'], 'shift', od['offs'][1], 'iou', min(od['iou']), flush=True)
 
 # ---------- heads: fitted onto each direction's standing head (best overlap of the outlines)
 def head_sil(v):
@@ -183,8 +207,15 @@ items = []   # (key, rgba, material, x, y)  x, y: placement in the standing fram
 def add(key, rgba, kind, x, y, s=1.0):
     im = resize(rgba, s * OUT_SCALE) if s * OUT_SCALE != 1 else rgba
     items.append((key, im, mat_for(im, kind), x * OUT_SCALE, y * OUT_SCALE))
+# a neck to sit behind every outfit: the body type's own neck stump, carried a little way down so hollow collars
+# show skin instead of a hole (it takes the skin colour like the rest of the body)
 for i, bd in enumerate(bodies):
-    for f, fr in enumerate(bd['frames']): add(f'body{i}_{f}', fr, 'body', 0, 0)
+    for f, fr in enumerate(bd['frames']):
+        al = fr[..., 3] > 0; t = np.nonzero(al.any(1))[0][0]; xs = np.nonzero(al[t:t + 8].any(0))[0]
+        nk = np.zeros_like(fr); x0, x1 = xs.min() + 1, xs.max(); nk[t:t + 44, x0:x1] = fr[t:t + 44, x0:x1]
+        add(f'neck{i}_{f}', nk, 'body', 0, 0)
+for i, od in enumerate(outfits):
+    for f, fr in enumerate(od['frames']): add(f'outfit{i}_{f}', fr, 'outfit', 0, 0)
 DIRV = {0: 0, 1: 1, 3: 2}   # direction -> head column
 for i, hv in enumerate(heads):
     for d, col in ((0, 0), (1, 1), (2, 'r'), (3, 2)):
@@ -272,7 +303,8 @@ Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, qualit
 Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
 json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
                hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0],
-               bodies=[dict(name=b['name'].replace('_', ' '), offs=[[o[0] * OUT_SCALE, o[1] * OUT_SCALE] for o in b['offs']]) for b in bodies]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
+               bodies=[b['name'].replace('_', ' ') for b in bodies],
+               outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']]) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
 print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws
