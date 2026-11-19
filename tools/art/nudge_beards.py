@@ -11,6 +11,7 @@ c = json.load(open(J)); A = np.asarray(Image.open('src/creator/cc_atlas.webp').c
 def crop(k):
     x, y, w, h = c['pieces'][k]['f']; return A[y:y + h, x:x + w]
 def mouth(f):     # front view: centre of the face, at the darkest row of the lower face's middle
+    if 'mouths' in c: return tuple(c['mouths'][f])   # measured on the faces before the smile was added
     a = crop(f'head{f}_0'); al = a[..., 3] > 127; v = a[..., :3].max(-1) / 255.; H, W = al.shape; cs = slice(int(W * .38), int(W * .62))
     rows = range(int(H * .72), int(H * .92)); y = min(rows, key=lambda r: v[r, cs][al[r, cs]].mean() if al[r, cs].any() else 9)
     at = c['pieces'][f'head{f}_0']['at']; return at[0] + W / 2, at[1] + y + .5

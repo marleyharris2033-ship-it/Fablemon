@@ -165,14 +165,20 @@ def cheer(p, col, brow, smile):
     a = np.clip(out[..., 3], 0, 255); out[..., :3] = out[..., :3] / np.maximum(a[..., None] / 255, 1e-3)
     out[..., 3] = p[..., 3]                                  # the outline of the head doesn't move
     return np.clip(out, 0, 255).astype(np.uint8)
+def mouth_of(h):   # the mouth's centre on the face as drawn (before the smile), in atlas output coordinates
+    a = resize(h['raw'], h['s'] * OUT_SCALE); al = a[..., 3] > 127; v = a[..., :3].max(-1) / 255.; H, W = al.shape
+    cs = slice(int(W * .38), int(W * .62)); rows = range(int(H * .72), int(H * .92))
+    y = min(rows, key=lambda r: v[r, cs][al[r, cs]].mean() if al[r, cs].any() else 9)
+    return [h['x'] * OUT_SCALE + W / 2, h['y'] * OUT_SCALE + y + .5]
 heads = []
 for i in range(6):
     hv = {}
     for col in range(3):
         piece, (px, py) = biggest(Hs[i][col], fill_holes=4000)
+        raw = piece
         if i in CHEER and col in (0, 1): piece = cheer(piece, col, *CHEER[i])
         iou, s, x, y = fit_head(piece, VIEW_OF_COL[col])
-        hv[col] = dict(piece=piece, s=s, x=x, y=y, iou=iou, src=(px, py))
+        hv[col] = dict(piece=piece, raw=raw, s=s, x=x, y=y, iou=iou, src=(px, py))
     mp = hv[1]['piece'][:, ::-1].copy(); iou, s, x, y = fit_head(mp, 2, fixed=hv[1]['s'])   # facing right: the side view mirrored, same size
     hv['r'] = dict(piece=mp, s=s, x=x, y=y, iou=iou, src=(px, py))
     heads.append(hv); print('head', i + 1, ' '.join(f"{c}:{hv[c]['iou']:.2f}" for c in range(3)), flush=True)
@@ -376,7 +382,7 @@ Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, qualit
 Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
 json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
                hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0],
-               bodies=[b['name'].replace('_', ' ') for b in bodies],
+               bodies=[b['name'].replace('_', ' ') for b in bodies], mouths=[mouth_of(h[0]) for h in heads],
                outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']]) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
 print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
 import subprocess, sys
