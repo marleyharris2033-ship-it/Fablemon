@@ -148,11 +148,29 @@ def fit_head(piece, v, fixed=None):
         iou = ov / np.maximum(un, 1); iy, ix = np.unravel_index(np.argmax(iou), iou.shape)
         if best is None or iou[iy, ix] > best[0]: best = (float(iou[iy, ix]), s * k, int(ix - (m.shape[1] - 1) - P), int(iy - (m.shape[0] - 1) - P))
     return best
+# friendlier male faces: the scowl comes out of the brows (inner ends lifted) and the mouth corners turn up.
+# Done as a gentle pull of the pixels on the full-size art, so the shading travels with it.
+CHEER = {0: (.07, .075), 1: (.07, .075), 2: (.06, .065), 3: (.03, .07)}   # face index: (brow lift, smile), as fractions of head height
+def cheer(p, col, brow, smile):
+    H, W = p.shape[:2]; yy, xx = np.mgrid[0:H, 0:W].astype(float); g = lambda c, sg: np.exp(-((yy - c * H) / (sg * H)) ** 2)
+    if col == 0:   # front
+        cx = W / 2; ax = np.abs(xx - cx)
+        lift = brow * H * np.clip(1 - ax / (.30 * W), 0, 1) * g(.42, .07)
+        lift += smile * H * np.clip(ax / (.14 * W), 0, 1) ** 2 * np.clip((.22 * W - ax) / (.06 * W), 0, 1) * g(.80, .05)
+    else:          # side, facing left: the brow's inner end and the mouth's corner are both towards the front
+        lift = brow * H * np.clip(1 - (xx - .12 * W) / (.30 * W), 0, 1) * (xx > .04 * W) * g(.40, .07)
+        lift += smile * H * np.clip((xx - .06 * W) / (.14 * W), 0, 1) ** 2 * np.clip((.27 * W - xx) / (.05 * W), 0, 1) * g(.76, .045)
+    f = p.astype(float); al = f[..., 3:] / 255; f[..., :3] *= al
+    out = np.stack([ndi.map_coordinates(f[..., k], [yy + lift, xx], order=1, mode='nearest') for k in range(4)], -1)
+    a = np.clip(out[..., 3], 0, 255); out[..., :3] = out[..., :3] / np.maximum(a[..., None] / 255, 1e-3)
+    out[..., 3] = p[..., 3]                                  # the outline of the head doesn't move
+    return np.clip(out, 0, 255).astype(np.uint8)
 heads = []
 for i in range(6):
     hv = {}
     for col in range(3):
         piece, (px, py) = biggest(Hs[i][col], fill_holes=4000)
+        if i in CHEER and col in (0, 1): piece = cheer(piece, col, *CHEER[i])
         iou, s, x, y = fit_head(piece, VIEW_OF_COL[col])
         hv[col] = dict(piece=piece, s=s, x=x, y=y, iou=iou, src=(px, py))
     mp = hv[1]['piece'][:, ::-1].copy(); iou, s, x, y = fit_head(mp, 2, fixed=hv[1]['s'])   # facing right: the side view mirrored, same size
@@ -277,11 +295,43 @@ def warp(img, s, x, y, d):
     out = np.dstack([np.clip(rgb, 0, 255), al]).astype(np.uint8)
     ys, xs = np.nonzero(out[..., 3]); out = out[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
     return out, xs.min() - M, ys.min() - M
+# Side views get a last check against the face itself: hair mustn't jut out in front of the face (past the forehead,
+# over the brow or cheek), and it should cover the scalp from the hairline back to the nape. Each style's side piece
+# is resized (a little) and slid (a few px) to the spot that does both best, staying put if it already does.
+FM1 = face_mask(1, 1); _ys, _xs = np.nonzero(FM1); FT, FB = _ys.min(), _ys.max(); FH = FB - FT
+FLX = np.full(FM1.shape[0], 10 ** 6); FRX = np.full(FM1.shape[0], -1)
+for _y in range(FT, FB + 1):
+    _r = np.nonzero(FM1[_y])[0]
+    if len(_r): FLX[_y], FRX[_y] = _r[0], _r[-1]
+_yy, _xx = np.mgrid[0:FM1.shape[0], 0:FM1.shape[1]]
+_xf, _xb = _xs.min(), _xs.max()
+SCALP1 = FM1 & (_yy < FT + FH * (.22 + .40 * np.clip((_xx - _xf) / max(1, _xb - _xf), 0, 1)))
+FRONT1 = (_yy > FT + .15 * FH) & (_yy < FB) & (_xx < FLX[:, None] - 3)       # in front of the face's profile
+def refine_side(img, s, x, y, top_rel):
+    H0, W0 = FM1.shape; best = None
+    for k in np.arange(.70, 1.041, .03):
+        hm = resize(img, s * k)[..., 3] > 127; h, w = hm.shape
+        bx = x + (img.shape[1] * s) * (1 - k) / 2; by = y + (img.shape[0] * s) * (1 - k) * .25
+        for dx in range(-2, 16, 2):
+            for dy in range(-6, 31, 2):
+                X, Y = int(round(bx + dx)), int(round(by + dy)); cv = np.zeros((H0, W0), bool)
+                x0, y0, x1, y1 = max(0, X), max(0, Y), min(W0, X + w), min(H0, Y + h)
+                if x1 <= x0 or y1 <= y0: continue
+                cv[y0:y1, x0:x1] = hm[y0 - Y:y1 - Y, x0 - X:x1 - X]
+                rows = np.nonzero(cv.any(1))[0]; tr = rows[0] - FT if len(rows) else 0
+                # the same hairdo is as tall over the crown from the side as from the front (within a few px)
+                sc = 2 * (cv & FRONT1).sum() + (SCALP1 & ~cv).sum() + 300 * abs(k - 1) + 2 * (abs(dx) + abs(dy)) + 20 * max(0, abs(tr - top_rel) - 6)
+                if best is None or sc < best[0]: best = (sc, k, X, Y)
+    return best
 for n in HAIR_NAMES:
     V = fh.views(D + f'hair_{n}.png'); P = {}
     for d in (0, 1, 3):
         bcx, btop, fcx, ftop, k = MAP[d]; r = fits[n][d]
-        P[d] = warp(V[d], r['s'] * k, round(fcx + (r['x'] - bcx) * k), round(ftop + (r['y'] - btop) * k), d)
+        hs, hx, hy = r['s'] * k, round(fcx + (r['x'] - bcx) * k), round(ftop + (r['y'] - btop) * k)
+        if d == 1:
+            fim, fx, fy = P[0]; ftop = np.nonzero(face_mask(0, 0).any(1))[0][0]
+            sc, kk, hx, hy = refine_side(V[1], hs, hx, hy, fy + np.nonzero(fim[..., 3].any(1))[0][0] - ftop); hs *= kk; print('side', n, 'size', round(kk, 2), 'score', int(sc), flush=True)
+        P[d] = warp(V[d], hs, hx, hy, d)
     hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; im, lx, ly = P[1]
     P[2] = (im[:, ::-1].copy(), round(hr['x'] + wl - (lx - hl['x']) - im.shape[1]), round(hr['y'] + (ly - hl['y'])))
     for d in (0, 1, 2, 3):
