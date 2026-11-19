@@ -44,7 +44,7 @@ body{margin:0;background:#2d4a2a url("data:image/svg+xml,%3Csvg xmlns='http://ww
   <button class="go" id="go">BEGIN ADVENTURE</button>
 </div></div>
 <script>
-const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
+const CC = __CC__, SHEETS = __SHEETS__;   // [colour, material] per sheet: 'shared', then one per outfit
 const SKIN = [['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
 const HAIRC = [['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
 const CLOTHC = [['Red', '#a83a30'], ['Orange', '#c8662a'], ['Gold', '#c9a03a'], ['Green', '#4f8a3a'], ['Teal', '#2f8080'], ['Blue', '#3a64a8'], ['Purple', '#6a4a9a'], ['Pink', '#c25a86']];
@@ -60,7 +60,14 @@ const ROWS = [
   ['Beard', 'beard', () => CC.beards + 1, i => i === 0 ? 'None' : `Beard ${i}`, null, 1],
   ['Beard colour', 'bcol', () => HAIRC.length + 1, i => i === 0 ? 'Same as hair' : HAIRC[i - 1][0], i => i === 0 ? null : HAIRC[i - 1][1], 1],
 ];
-let atlas, mat, matData;
+const SH = [];   // loaded sheets: { img, mat (Uint8Array of material ids), w }
+function sheet(i) {
+  return SH[i] = SH[i] || Promise.all(SHEETS[i].map(load)).then(([img, m]) => {
+    const c = document.createElement('canvas'); c.width = m.width; c.height = m.height; const g = c.getContext('2d'); g.drawImage(m, 0, 0);
+    const md = g.getImageData(0, 0, m.width, m.height).data, mat = new Uint8Array(m.width * m.height); for (let k = 0; k < mat.length; k++) mat[k] = Math.round(md[k * 4] / 40);
+    return SH[i] = { img, mat, w: m.width };
+  });
+}
 const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
 // CIELab, for clothes: a new colour keeps each pixel's lightness relative to the cloth's own, so a dark vest stays
 // darker than the shirt under it and every fold and stitch keeps its shading
@@ -81,10 +88,10 @@ function piece(key, cols) {
   const ck = key + '|' + cols.join(','); if (cache[ck]) return cache[ck];
   const P = CC.pieces[key]; if (!P) return null; const [x, y, w, h] = P.f;
   const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
-  g.drawImage(atlas, x, y, w, h, 0, 0, w, h);
+  const Q = SH[P.s]; if (!Q || Q.then) return null; g.drawImage(Q.img, x, y, w, h, 0, 0, w, h);
   if (cols.some(Boolean)) {
     const id = g.getImageData(0, 0, w, h), d = id.data, mats = new Uint8Array(w * h);
-    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 40);
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Q.mat[(y + yy) * Q.w + x + xx];
     const d0 = d.slice();   // untouched copy: neighbours are read from it while pixels are rewritten
     for (let m = 1; m <= 4; m++) {
       const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
@@ -148,6 +155,7 @@ function bounds() {   // crop the canvas to the figure (with room for big hair),
   return [Math.floor(x0 - pad), Math.floor(y0 - pad), Math.ceil(x1 - x0 + pad * 2), Math.ceil(y1 - y0 + pad + 4)];
 }
 function draw() {
+  const need = CC.pieces[`outfit${S.outfit}_0`].s; if (!SH[need] || SH[need].then) { sheet(need).then(draw); return; }   // load the outfit's sheet first
   box = box || bounds(); const [bx, by, bw, bh] = box; cv.width = bw; cv.height = bh;
   const g = cv.getContext('2d'), d = S.dir, f = d * 4 + (step % 4), [ax, ay0] = CC.anchors[f], ay = ay0 + (CC.bob || [0, 0, 0, 0])[step % 4];   // the whole figure dips on the stride frames, so the face pieces move with the head
   const skin = SKIN[S.skin][1], hc = HAIRC[S.hcol][1], bc = S.bcol < 0 ? hc : HAIRC[S.bcol][1];
@@ -181,9 +189,6 @@ document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.targe
 document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = S.face < 4 && Math.random() < .35 ? r(CC.beards) : -1; /* beards only on faces 1-4 */ S.bcol = -1; show(); draw(); };
 document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
-  [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
-  const c = document.createElement('canvas'); c.width = mat.width; c.height = mat.height; const g = c.getContext('2d'); g.drawImage(mat, 0, 0);
-  const md = g.getImageData(0, 0, mat.width, mat.height).data; matData = new Uint8Array(mat.width * mat.height); for (let i = 0; i < matData.length; i++) matData[i] = md[i * 4];
-  show(); draw(); setInterval(() => { if (S.playing) { step++; draw(); } }, 170);
+  await sheet(0); show(); draw(); setInterval(() => { if (S.playing) { step++; draw(); } }, 170);
 })();
 </script></body></html>

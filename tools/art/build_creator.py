@@ -17,7 +17,7 @@ from scipy import ndimage as ndi
 from colorsys import rgb_to_hsv
 spec = importlib.util.spec_from_file_location('fh', os.path.join(os.path.dirname(__file__), 'fit_hair3.py'))
 fh = importlib.util.module_from_spec(spec); spec.loader.exec_module(fh)
-D = fh.D; OUT = 'src/creator/'; OUT_SCALE = .5
+D = fh.D; OUT = 'src/creator/'; OUT_SCALE = float(os.environ.get('CC_SCALE', .67))   # .67: the game shows the farmer ~180 px tall
 os.makedirs(OUT, exist_ok=True)
 
 def hsv_img(a):
@@ -453,24 +453,31 @@ for n in HAIR_NAMES:
     for d in (0, 1, 2, 3):
         im, x, y = P[d]; add(f'hair_{n}_{d}', im, 'hair', x, y, 1.0)
     print('hair', n, flush=True)
-# shelf packing
-items.sort(key=lambda t: -t[1].shape[0]); W = 2048; x = y = rowh = 0; place = {}
-for key, im, mt, px, py in items:
-    w, h = im.shape[1], im.shape[0]
-    if x + w > W: x = 0; y += rowh + 2; rowh = 0
-    place[key] = (x, y, w, h); x += w + 2; rowh = max(rowh, h)
-H = y + rowh
-atlas = np.zeros((H, W, 4), np.uint8); mat = np.zeros((H, W), np.uint8)
-meta = {}
-for key, im, mt, px, py in items:
-    x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 40
-    meta[key] = dict(f=[x, y, w, h], at=[round(float(px), 1), round(float(py), 1)])
-Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, quality=100, method=6)
-Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
-json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
-               hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0],
+# shelf packing, into sheets: 'shared' (faces, hair, beards, necks) and one per outfit, so the game decodes only the
+# outfit being worn. Colour sheets are high-quality lossy WebP (lossless is ~4x the size), material maps lossless PNG.
+import glob as _g
+for f in set(_g.glob(OUT + '*.webp') + _g.glob(OUT + '*.png')): os.remove(f)
+groups = {}
+for it in items: groups.setdefault(it[0].split('_')[0] if it[0].startswith('outfit') else 'shared', []).append(it)
+meta = {}; sheets = []; tot = 0
+for sname in ['shared'] + sorted((g for g in groups if g != 'shared'), key=lambda g: int(g[6:])):
+    its = sorted(groups[sname], key=lambda t: -t[1].shape[0]); W = 2048 if sname == 'shared' else 4 * max(t[1].shape[1] for t in its) + 8
+    x = y = rowh = 0; place = {}
+    for key, im, mt, px, py in its:
+        w, h = im.shape[1], im.shape[0]
+        if x + w > W: x = 0; y += rowh + 2; rowh = 0
+        place[key] = (x, y, w, h); x += w + 2; rowh = max(rowh, h)
+    H = y + rowh; atlas = np.zeros((H, W, 4), np.uint8); mat = np.zeros((H, W), np.uint8)
+    for key, im, mt, px, py in its:
+        x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 40
+        meta[key] = dict(s=len(sheets), f=[x, y, w, h], at=[round(float(px), 1), round(float(py), 1)])
+    Image.fromarray(atlas).save(OUT + f'{sname}.webp', 'WEBP', quality=92, alpha_quality=100, method=6, use_sharp_yuv=True)
+    Image.fromarray(mat).save(OUT + f'{sname}_mat.png', optimize=True)
+    sheets.append(sname); tot += os.path.getsize(OUT + f'{sname}.webp') + os.path.getsize(OUT + f'{sname}_mat.png')
+json.dump(dict(cell=round(CELL * OUT_SCALE), scale=OUT_SCALE, sheets=sheets, anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
+               hair=HAIR_NAMES, heads=6, beards=4, bob=[round(4 * OUT_SCALE), 0, round(4 * OUT_SCALE), 0],
                bodies=[b['name'].replace('_', ' ') for b in bodies], mouths=[mouth_of(h[0]) for h in heads],
                outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']], cloth=o['cloth']) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
-print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
+print('sheets', len(sheets), 'total', tot // 1024, 'KB')
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws

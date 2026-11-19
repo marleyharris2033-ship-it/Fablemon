@@ -7,9 +7,11 @@ import json, numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 J = 'src/creator/cc.json'
-c = json.load(open(J)); A = np.asarray(Image.open('src/creator/cc_atlas.webp').convert('RGBA'))
+c = json.load(open(J)); A = {}
 def crop(k):
-    x, y, w, h = c['pieces'][k]['f']; return A[y:y + h, x:x + w]
+    P = c['pieces'][k]; n = c['sheets'][P['s']]
+    if n not in A: A[n] = np.asarray(Image.open(f'src/creator/{n}.webp').convert('RGBA'))
+    x, y, w, h = P['f']; return A[n][y:y + h, x:x + w]
 def mouth(f):     # front view: centre of the face, at the darkest row of the lower face's middle
     if 'mouths' in c: return tuple(c['mouths'][f])   # measured on the faces before the smile was added
     a = crop(f'head{f}_0'); al = a[..., 3] > 127; v = a[..., :3].max(-1) / 255.; H, W = al.shape; cs = slice(int(W * .38), int(W * .62))
