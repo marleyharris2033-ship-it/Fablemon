@@ -1,5 +1,5 @@
 """Character creator pieces (18 Nov 2026) -> src/creator/: one atlas (cc_atlas.webp), one material atlas
-(cc_mat.png: 0 keep, 1 skin, 2 hair, 3 beard) and cc.json describing every piece.
+(cc_mat.png, value/40: 0 keep, 1 skin, 2 hair, 3 beard, 4 outfit main colour, 5 outfit second colour) and cc.json describing every piece.
 
 Sources (art_incoming/creator/v3/):
   base_walk.png  4x4 walk sheet (rows down, left, right, up), bald, grey vest and shorts
@@ -33,6 +33,24 @@ def skin_mask(a):
     warm = al & (h >= .015) & (h <= .14) & (s >= .18) & (s <= .85) & (v >= .2)
     if not warm.any(): return warm
     vm = np.median(v[warm]); return warm & (v >= vm * .55)
+CLOTH = None   # set while an outfit's frames are added: its main and second cloth hues
+def _lab(rgb):
+    import cv2; return cv2.cvtColor(rgb.reshape(-1, 1, 3).astype(np.uint8), cv2.COLOR_RGB2LAB).reshape(-1, 3).astype(float)
+def cloth_hues(frames):
+    """The outfit's two biggest cloth colours, found by clustering (in Lab) every cloth pixel of all its frames: not skin,
+    not outline-dark, and not grey. Returns their Lab centres; pixels near a centre are recoloured with it."""
+    from sklearn.cluster import KMeans
+    px = []
+    for fr in frames[::2]:
+        h, s, v = hsv_img(fr); ok = (fr[..., 3] > 0) & (v > .16) & (s > .12) & ~skin_mask(fr); px.append(fr[..., :3][ok])
+    px = np.concatenate(px); lab = _lab(px)
+    km = KMeans(6, n_init=4, random_state=0).fit(lab[::max(1, len(lab) // 40000)])
+    lb = km.predict(lab); cnt = np.bincount(lb, minlength=6); order = np.argsort(-cnt)
+    cs = [km.cluster_centers_[order[0]].tolist()]
+    for j in order[1:]:   # the second must be a clearly different colour, not a shade of the first
+        c = km.cluster_centers_[j]; d = np.hypot(c[1] - cs[0][1], c[2] - cs[0][2])
+        if d > 26 and cnt[j] > .12 * cnt[order[0]]: cs.append(c.tolist()); break
+    return cs + [None] * (2 - len(cs))
 def mat_for(a, kind):
     m = np.zeros(a.shape[:2], np.uint8); al = a[..., 3] > 0
     if kind == 'skin': m[skin_mask(a)] = 1
@@ -40,6 +58,23 @@ def mat_for(a, kind):
         h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32) & (s <= .62) & (v >= .55); lb, n = ndi.label(sk)
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 40])
         m[sk] = 1
+        if CLOTH is not None:   # the outfit's two main cloth colours (found over all its frames) can be recoloured
+            L = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); dist = []
+            for c in CLOTH:   # chroma distance (a, b) mostly, lightness only a little, so every shade of the cloth goes
+                dist.append(np.full(a.shape[:2], 1e9) if c is None else np.hypot(np.hypot(L[..., 1] - c[1], L[..., 2] - c[2]), (L[..., 0] - c[0]) * .25))
+            k = np.argmin(dist, 0); dm = np.min(dist, 0)
+            ok = al & ~sk & (dm < 16) & (v > .1)
+            near = al & ~sk & (dm < 30) & (v > .1)   # shading and wear marks a little off the cloth colour: joined to the part they sit in
+            # whole garment parts change together: the outlines split the cloth into parts, and each part takes the
+            # colour most of its pixels match, so shading never splits one sleeve between two colours
+            lb, n = ndi.label(ok)
+            if n:
+                n4 = ndi.sum(ok & (k == 0), lb, range(1, n + 1)); n5 = ndi.sum(ok & (k == 1), lb, range(1, n + 1)); sz = n4 + n5
+                val = np.where(n5 > n4, 5, 4); val[sz < 6] = 0
+                lut = np.r_[0, val].astype(np.uint8); part = lut[lb]
+                grow = ndi.grey_dilation(part, size=3) * (near & ~ok); part = np.maximum(part, grow)
+                for _ in range(3): grow = ndi.grey_dilation(part, size=3) * (near & (part == 0)); part = np.maximum(part, grow)
+                m[part > 0] = part[part > 0]
     elif kind == 'body':   # the body sheets' shirts have a warm tint: skin must be properly saturated, and no stray specks
         h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32); lb, n = ndi.label(sk)
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])
@@ -239,7 +274,9 @@ for i, bd in enumerate(bodies):
         nk = np.zeros_like(fr); x0, x1 = xs.min() + 1, xs.max(); nk[t:t + 44, x0:x1] = fr[t:t + 44, x0:x1]
         add(f'neck{i}_{f}', nk, 'body', 0, 0)
 for i, od in enumerate(outfits):
+    CLOTH = cloth_hues(od['frames']); od['cloth'] = CLOTH
     for f, fr in enumerate(od['frames']): add(f'outfit{i}_{f}', fr, 'outfit', 0, 0)
+CLOTH = None
 DIRV = {0: 0, 1: 1, 3: 2}   # direction -> head column
 for i, hv in enumerate(heads):
     for d, col in ((0, 0), (1, 1), (2, 'r'), (3, 2)):
@@ -376,14 +413,14 @@ H = y + rowh
 atlas = np.zeros((H, W, 4), np.uint8); mat = np.zeros((H, W), np.uint8)
 meta = {}
 for key, im, mt, px, py in items:
-    x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 60
+    x, y, w, h = place[key]; atlas[y:y + h, x:x + w] = im; mat[y:y + h, x:x + w] = mt * 40
     meta[key] = dict(f=[x, y, w, h], at=[round(float(px), 1), round(float(py), 1)])
 Image.fromarray(atlas).save(OUT + 'cc_atlas.webp', 'WEBP', lossless=True, quality=100, method=6)
 Image.fromarray(mat).save(OUT + 'cc_mat.png', optimize=True)
 json.dump(dict(cell=round(CELL * OUT_SCALE), anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
                hair=HAIR_NAMES, heads=6, beards=4, bob=[2, 0, 2, 0],
                bodies=[b['name'].replace('_', ' ') for b in bodies], mouths=[mouth_of(h[0]) for h in heads],
-               outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']]) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
+               outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']], cloth=o['cloth']) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
 print('atlas', atlas.shape, os.path.getsize(OUT + 'cc_atlas.webp') // 1024, 'KB')
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws

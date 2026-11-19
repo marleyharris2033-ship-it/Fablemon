@@ -47,10 +47,13 @@ body{margin:0;background:#2d4a2a url("data:image/svg+xml,%3Csvg xmlns='http://ww
 const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
 const SKIN = [['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
 const HAIRC = [['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
+const CLOTHC = [['Red', '#a8322c'], ['Rust', '#b85a2a'], ['Mustard', '#c9a03a'], ['Moss', '#6f8a3a'], ['Forest', '#2f6a3c'], ['Teal', '#2f7a7a'], ['Sky', '#5c8fc4'], ['Navy', '#2d3f74'], ['Violet', '#6a4a9a'], ['Rose', '#c46a8a'], ['Brown', '#6e4a2c'], ['Charcoal', '#3e3e44'], ['Cream', '#e6d8b4']];
 const nice = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-const S = { outfit: Math.max(0, CC.outfits.findIndex(o => o.name === 'Brookholt Farmer')), face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
+const S = { oc1: -1, oc2: -1, outfit: Math.max(0, CC.outfits.findIndex(o => o.name === 'Brookholt Farmer')), face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
 const ROWS = [
   ['Outfit', 'outfit', () => CC.outfits.length, i => CC.outfits[i].name],   // the outfit brings its own body shape
+  ['Outfit colour', 'oc1', () => CLOTHC.length + 1, i => i === 0 ? 'Original' : CLOTHC[i - 1][0], i => i === 0 ? null : CLOTHC[i - 1][1], 1],
+  ['Trim colour', 'oc2', () => CLOTHC.length + 1, i => i === 0 ? 'Original' : CLOTHC[i - 1][0], i => i === 0 ? null : CLOTHC[i - 1][1], 1],
   ['Face', 'face', () => CC.heads, i => `Face ${i + 1}`],
   ['Skin', 'skin', () => SKIN.length, i => SKIN[i][0], i => SKIN[i][1]],
   ['Hair', 'hair', () => CC.hair.length + 1, i => i === 0 ? 'Bald' : nice(CC.hair[i - 1]), null, 1],
@@ -71,9 +74,9 @@ function piece(key, cols) {
   g.drawImage(atlas, x, y, w, h, 0, 0, w, h);
   if (cols.some(Boolean)) {
     const id = g.getImageData(0, 0, w, h), d = id.data, mats = new Uint8Array(w * h);
-    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 60);
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 40);
     const d0 = d.slice();   // untouched copy: neighbours are read from it while pixels are rewritten
-    for (let m = 1; m <= 3; m++) {
+    for (let m = 1; m <= 5; m++) {
       const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
       const vs = []; for (let i = 0; i < mats.length; i++) if (mats[i] === m && d[i * 4 + 3] > 0) vs.push(Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255);
       if (!vs.length) continue; vs.sort((a, b) => a - b);
@@ -123,7 +126,7 @@ function draw() {
   const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax + ox : 0) - bx), Math.round(P.at[1] + (follow ? ay + oy : ay) - by)); };
   { const P = CC.pieces[`neck${O.body}_${f}`], im = piece(`neck${O.body}_${f}`, [skin, null, null]);   // a neck behind the collar
     if (im) g.drawImage(im, Math.round(P.at[0] + O.neck[f][0] - bx), Math.round(P.at[1] + O.neck[f][1] + ay - by)); }
-  put(`outfit${S.outfit}_${f}`, [skin, null, null], false);
+  put(`outfit${S.outfit}_${f}`, [skin, null, null, S.oc1 < 0 ? null : CLOTHC[S.oc1][1], S.oc2 < 0 ? null : CLOTHC[S.oc2][1]], false);
   put(`head${S.face}_${d}`, [skin, null, null]);
   if (S.beard >= 0 && d !== 3) {   // nudged to this face's own mouth and chin
     const [fx, fy] = (CC.beardOff || [])[S.face]?.[d] || [0, 0], P = CC.pieces[`beard${S.beard}_${d}`], im = piece(`beard${S.beard}_${d}`, [null, null, bc]);
@@ -146,7 +149,7 @@ function show() {
 const turn = n => { S.dir = [0, 2, 3, 1][([0, 3, 1, 2][S.dir] + n + 4) % 4]; draw(); };   // front → right → back → left
 document.getElementById('tl').onclick = () => turn(-1); document.getElementById('tr').onclick = () => turn(1);
 document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Stop' : '▶ Walk'; if (!S.playing) { step = 1; draw(); } };
-document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.oc2 = Math.random() < .6 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
 document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
   [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
