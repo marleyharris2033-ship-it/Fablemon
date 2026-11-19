@@ -1,5 +1,5 @@
 """Character creator pieces (18 Nov 2026) -> src/creator/: one atlas (cc_atlas.webp), one material atlas
-(cc_mat.png, value/40: 0 keep, 1 skin, 2 hair, 3 beard, 4 outfit main colour, 5 outfit second colour) and cc.json describing every piece.
+(cc_mat.png, value/40: 0 keep, 1 skin, 2 hair, 3 beard, 4 outfit cloth) and cc.json describing every piece.
 
 Sources (art_incoming/creator/v3/):
   base_walk.png  4x4 walk sheet (rows down, left, right, up), bald, grey vest and shorts
@@ -36,45 +36,49 @@ def skin_mask(a):
 CLOTH = None   # set while an outfit's frames are added: its main and second cloth hues
 def _lab(rgb):
     import cv2; return cv2.cvtColor(rgb.reshape(-1, 1, 3).astype(np.uint8), cv2.COLOR_RGB2LAB).reshape(-1, 3).astype(float)
+def outfit_skin(a):
+    h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32) & (s <= .62) & (v >= .55); lb, n = ndi.label(sk)
+    if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 40])
+    return sk
+def garment_parts(a, sk):
+    """The drawn outlines split the clothes into parts (a sleeve, a pocket, a trouser leg). Returns labels and each
+    part's size and average Lab colour."""
+    L = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); body = (a[..., 3] > 0) & ~sk & (L[..., 0] > 52)
+    lb, n = ndi.label(body); idx = range(1, n + 1)
+    if not n: return lb, np.zeros(0), np.zeros((0, 3))
+    sz = np.array(ndi.sum(body, lb, idx)); mean = np.stack([np.array(ndi.mean(L[..., c], lb, idx)) for c in range(3)], 1)
+    # gloves and boots are leather, not cloth: parts at the feet, or out at the hands, are left as drawn
+    ys, xs = np.nonzero(a[..., 3] > 0); y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    cy, cx = (np.array(c) for c in zip(*ndi.center_of_mass(body, lb, idx))); ry = (cy - y0) / max(1, y1 - y0); rx = (cx - x0) / max(1, x1 - x0)
+    leather = (ry > .84) | ((ry > .42) & (ry < .75) & (np.abs(rx - .5) > .33))
+    sz = np.where(leather, 0, sz)
+    return lb, sz, mean
+def cdist(m, c):   # colour difference between part averages: hue/strength mostly, lightness a little
+    return np.sqrt((m[..., 1] - c[1]) ** 2 + (m[..., 2] - c[2]) ** 2 + ((m[..., 0] - c[0]) * .35) ** 2)
 def cloth_hues(frames):
-    """The outfit's two biggest cloth colours, found by clustering (in Lab) every cloth pixel of all its frames: not skin,
-    not outline-dark, and not grey. Returns their Lab centres; pixels near a centre are recoloured with it."""
-    from sklearn.cluster import KMeans
-    px = []
-    for fr in frames[::2]:
-        h, s, v = hsv_img(fr); ok = (fr[..., 3] > 0) & (v > .16) & (s > .12) & ~skin_mask(fr); px.append(fr[..., :3][ok])
-    px = np.concatenate(px); lab = _lab(px)
-    km = KMeans(6, n_init=4, random_state=0).fit(lab[::max(1, len(lab) // 40000)])
-    lb = km.predict(lab); cnt = np.bincount(lb, minlength=6); order = np.argsort(-cnt)
-    cs = [km.cluster_centers_[order[0]].tolist()]
-    for j in order[1:]:   # the second must be a clearly different colour, not a shade of the first
-        c = km.cluster_centers_[j]; d = np.hypot(c[1] - cs[0][1], c[2] - cs[0][2])
-        if d > 26 and cnt[j] > .12 * cnt[order[0]]: cs.append(c.tolist()); break
-    return cs + [None] * (2 - len(cs))
+    """The outfit's two biggest cloth colours: garment parts across all its frames, grouped by average colour."""
+    ms, ss = [], []
+    for fr in frames:
+        a = resize(fr, OUT_SCALE); lb, sz, mean = garment_parts(a, outfit_skin(a)); keep = sz >= 10; ms.append(mean[keep]); ss.append(sz[keep])
+    ms, ss = np.concatenate(ms), np.concatenate(ss); groups = []   # [centre, weight]
+    for i in np.argsort(-ss):
+        for g in groups:
+            if cdist(ms[i], g[0]) < 18: g[0] = (g[0] * g[1] + ms[i] * ss[i]) / (g[1] + ss[i]); g[1] += ss[i]; break
+        else: groups.append([ms[i].copy(), ss[i]])
+    groups = [g for g in groups if g[0][0] > 60]                       # not the near-black parts
+    groups.sort(key=lambda g: -g[1])
+    # the colour the dye is aimed at: the biggest group that actually has a colour (not grey/cream), if it's a fair share
+    chrom = [g for g in groups if np.hypot(g[0][1] - 128, g[0][2] - 128) >= 12 and g[1] > .35 * groups[0][1]]
+    if chrom and chrom[0] is not groups[0]: j = next(i for i, g in enumerate(groups) if g is chrom[0]); groups.insert(0, groups.pop(j))
+    out = [g[0].tolist() for g in groups[:2] if g[1] > .08 * groups[0][1]]
+    return out + [None] * (2 - len(out))
 def mat_for(a, kind):
     m = np.zeros(a.shape[:2], np.uint8); al = a[..., 3] > 0
     if kind == 'skin': m[skin_mask(a)] = 1
-    elif kind == 'outfit':   # clothes keep their colours; only bare skin (if any shows) follows the skin colour
-        h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32) & (s <= .62) & (v >= .55); lb, n = ndi.label(sk)
-        if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 40])
-        m[sk] = 1
-        if CLOTH is not None:   # the outfit's two main cloth colours (found over all its frames) can be recoloured
-            L = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); dist = []
-            for c in CLOTH:   # chroma distance (a, b) mostly, lightness only a little, so every shade of the cloth goes
-                dist.append(np.full(a.shape[:2], 1e9) if c is None else np.hypot(np.hypot(L[..., 1] - c[1], L[..., 2] - c[2]), (L[..., 0] - c[0]) * .25))
-            k = np.argmin(dist, 0); dm = np.min(dist, 0)
-            ok = al & ~sk & (dm < 16) & (v > .1)
-            near = al & ~sk & (dm < 30) & (v > .1)   # shading and wear marks a little off the cloth colour: joined to the part they sit in
-            # whole garment parts change together: the outlines split the cloth into parts, and each part takes the
-            # colour most of its pixels match, so shading never splits one sleeve between two colours
-            lb, n = ndi.label(ok)
-            if n:
-                n4 = ndi.sum(ok & (k == 0), lb, range(1, n + 1)); n5 = ndi.sum(ok & (k == 1), lb, range(1, n + 1)); sz = n4 + n5
-                val = np.where(n5 > n4, 5, 4); val[sz < 6] = 0
-                lut = np.r_[0, val].astype(np.uint8); part = lut[lb]
-                grow = ndi.grey_dilation(part, size=3) * (near & ~ok); part = np.maximum(part, grow)
-                for _ in range(3): grow = ndi.grey_dilation(part, size=3) * (near & (part == 0)); part = np.maximum(part, grow)
-                m[part > 0] = part[part > 0]
+    elif kind == 'outfit':   # bare skin follows the skin colour; the two main cloth colours can be recoloured
+        sk = outfit_skin(a); m[sk] = 1
+        if CLOTH is not None:   # the cloth (every garment part bigger than a button, not gloves or boots) can be re-dyed
+            lb, sz, mean = garment_parts(a, sk); part = np.r_[0, sz >= 15][lb] > 0; m[part] = 4
     elif kind == 'body':   # the body sheets' shirts have a warm tint: skin must be properly saturated, and no stray specks
         h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32); lb, n = ndi.label(sk)
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])

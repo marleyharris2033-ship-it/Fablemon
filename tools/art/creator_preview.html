@@ -47,13 +47,12 @@ body{margin:0;background:#2d4a2a url("data:image/svg+xml,%3Csvg xmlns='http://ww
 const CC = __CC__, ATLAS = '__ATLAS__', MAT = '__MAT__';
 const SKIN = [['Porcelain', '#f4d2b6'], ['Fair', '#eebf98'], ['Light', '#e2a679'], ['Medium', '#c98a5c'], ['Tan', '#b37244'], ['Brown', '#8d5531'], ['Dark', '#6a3d23'], ['Deep', '#4a2a18']];
 const HAIRC = [['Black', '#2b2427'], ['Dark brown', '#4a3022'], ['Brown', '#6e4428'], ['Chestnut', '#8b4a2b'], ['Auburn', '#9c3e22'], ['Ginger', '#c8642a'], ['Blonde', '#dfb35a'], ['Platinum', '#ece0b8'], ['Grey', '#9a9a9e'], ['White', '#ececea'], ['Plum', '#6a3a7a'], ['Blue', '#3e5f9e'], ['Green', '#4e8a4a'], ['Pink', '#d0708e']];
-const CLOTHC = [['Red', '#a8322c'], ['Rust', '#b85a2a'], ['Mustard', '#c9a03a'], ['Moss', '#6f8a3a'], ['Forest', '#2f6a3c'], ['Teal', '#2f7a7a'], ['Sky', '#5c8fc4'], ['Navy', '#2d3f74'], ['Violet', '#6a4a9a'], ['Rose', '#c46a8a'], ['Brown', '#6e4a2c'], ['Charcoal', '#3e3e44'], ['Cream', '#e6d8b4']];
+const CLOTHC = [['Red', '#a83a30'], ['Orange', '#c8662a'], ['Gold', '#c9a03a'], ['Green', '#4f8a3a'], ['Teal', '#2f8080'], ['Blue', '#3a64a8'], ['Purple', '#6a4a9a'], ['Pink', '#c25a86']];
 const nice = s => s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 const S = { oc1: -1, oc2: -1, outfit: Math.max(0, CC.outfits.findIndex(o => o.name === 'Brookholt Farmer')), face: 0, skin: 2, hair: Math.max(0, CC.hair.indexOf('swept')), hcol: 2, beard: -1, bcol: -1, dir: 0, playing: true };
 const ROWS = [
   ['Outfit', 'outfit', () => CC.outfits.length, i => CC.outfits[i].name],   // the outfit brings its own body shape
   ['Outfit colour', 'oc1', () => CLOTHC.length + 1, i => i === 0 ? 'Original' : CLOTHC[i - 1][0], i => i === 0 ? null : CLOTHC[i - 1][1], 1],
-  ['Trim colour', 'oc2', () => CLOTHC.length + 1, i => i === 0 ? 'Original' : CLOTHC[i - 1][0], i => i === 0 ? null : CLOTHC[i - 1][1], 1],
   ['Face', 'face', () => CC.heads, i => `Face ${i + 1}`],
   ['Skin', 'skin', () => SKIN.length, i => SKIN[i][0], i => SKIN[i][1]],
   ['Hair', 'hair', () => CC.hair.length + 1, i => i === 0 ? 'Bald' : nice(CC.hair[i - 1]), null, 1],
@@ -63,6 +62,17 @@ const ROWS = [
 ];
 let atlas, mat, matData;
 const load = src => new Promise(r => { const i = new Image(); i.onload = () => r(i); i.src = src; });
+// CIELab, for clothes: a new colour keeps each pixel's lightness relative to the cloth's own, so a dark vest stays
+// darker than the shirt under it and every fold and stitch keeps its shading
+const lin = c => c <= .04045 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4), unlin = c => c <= .0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - .055;
+const fL = t => t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116, fLi = t => t > .206893 ? t * t * t : (t - 16 / 116) / 7.787;
+function rgb2lab(r, g, b) { r = lin(r / 255); g = lin(g / 255); b = lin(b / 255);
+  const x = fL((r * .4124 + g * .3576 + b * .1805) / .95047), y = fL(r * .2126 + g * .7152 + b * .0722), z = fL((r * .0193 + g * .1192 + b * .9505) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)]; }
+function lab2rgb(L, a, bb) { const y = (L + 16) / 116, x = fLi(a / 500 + y) * .95047, yy = fLi(y), z = fLi(y - bb / 200) * 1.08883;
+  const r = 3.2406 * x - 1.5372 * yy - .4986 * z, g = -.9689 * x + 1.8758 * yy + .0415 * z, b = .0557 * x - .2040 * yy + 1.0570 * z;
+  return [r, g, b].map(c => Math.round(255 * Math.max(0, Math.min(1, unlin(Math.max(0, c)))))); }
+const hexLab = hx => { const n = parseInt(hx.slice(1), 16); return rgb2lab(n >> 16 & 255, n >> 8 & 255, n & 255); };
 const hexHsv = hx => { const n = parseInt(hx.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn; let h = !d ? 0 : mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h /= 6; if (h < 0) h += 1; return [h, mx ? d / mx : 0, mx]; };
 const hsv2rgb = (h, s, v) => { h = ((h % 1) + 1) % 1; const i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s); return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6]; };
 const cache = {};
@@ -76,8 +86,27 @@ function piece(key, cols) {
     const id = g.getImageData(0, 0, w, h), d = id.data, mats = new Uint8Array(w * h);
     for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) mats[yy * w + xx] = Math.round(matData[(y + yy) * mat.width + x + xx] / 40);
     const d0 = d.slice();   // untouched copy: neighbours are read from it while pixels are rewritten
-    for (let m = 1; m <= 5; m++) {
+    for (let m = 1; m <= 4; m++) {
       const hex = cols[m - 1]; if (!hex) continue; const [th, ts, tv] = hexHsv(hex);
+      if (m === 4) {   // clothes are re-dyed: every colour in them turns by the same amount round the colour wheel, so the
+        // outfit's own colour scheme, shading, prints and contrasts all survive; its main colour lands on the chosen one
+        const oi = +(/^outfit(\d+)_/.exec(key) || [])[1], C = CC.outfits[oi]?.cloth?.[0]; if (!C) continue;
+        const [Lc, ac, bc] = [C[0] * 100 / 255, C[1] - 128, C[2] - 128], [Lt, at, bt] = hexLab(hex), cc = Math.hypot(ac, bc), ct = Math.hypot(at, bt);
+        const turn = Math.atan2(bt, at) - Math.atan2(bc, ac), cs = Math.cos(turn), sn = Math.sin(turn), gain = Math.max(.7, Math.min(2.2, ct / Math.max(cc, 1)));   // dull cloth is brought up to the dye's strength
+        for (let i = 0; i < mats.length; i++) {
+          if (mats[i] !== 4 || !d[i * 4 + 3]) continue;
+          let [L, a, b] = rgb2lab(d0[i * 4], d0[i * 4 + 1], d0[i * 4 + 2]);
+          if (cc < 10) { const w = Math.min(1, 1 - Math.hypot(a, b) / 40); a += at * .6 * w; b += bt * .6 * w; }   // a grey or cream outfit: tinted
+          else {
+            const na = (a * cs - b * sn) * gain, nb = (a * sn + b * cs) * gain, ch = Math.hypot(na, nb), th = Math.atan2(bt, at);
+            let dh = Math.atan2(nb, na) - th; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+            const h = th + dh * .6; a = ch * Math.cos(h); b = ch * Math.sin(h);   // other colours drawn a little towards the dye, so it reads as one scheme
+          }
+          L = L + (Lt - Lc) * .3;
+          const [r, gg, bb] = lab2rgb(Math.max(2, Math.min(97, L)), a, b); d[i * 4] = r; d[i * 4 + 1] = gg; d[i * 4 + 2] = bb;
+        }
+        continue;
+      }
       const vs = []; for (let i = 0; i < mats.length; i++) if (mats[i] === m && d[i * 4 + 3] > 0) vs.push(Math.max(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]) / 255);
       if (!vs.length) continue; vs.sort((a, b) => a - b);
       // map the piece's own shading onto a ramp around the chosen colour: its darkest shades to a deep shadow, its
@@ -126,7 +155,7 @@ function draw() {
   const put = (key, cols, follow = true) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(P.at[0] + (follow ? ax + ox : 0) - bx), Math.round(P.at[1] + (follow ? ay + oy : ay) - by)); };
   { const P = CC.pieces[`neck${O.body}_${f}`], im = piece(`neck${O.body}_${f}`, [skin, null, null]);   // a neck behind the collar
     if (im) g.drawImage(im, Math.round(P.at[0] + O.neck[f][0] - bx), Math.round(P.at[1] + O.neck[f][1] + ay - by)); }
-  put(`outfit${S.outfit}_${f}`, [skin, null, null, S.oc1 < 0 ? null : CLOTHC[S.oc1][1], S.oc2 < 0 ? null : CLOTHC[S.oc2][1]], false);
+  put(`outfit${S.outfit}_${f}`, [skin, null, null, S.oc1 < 0 ? null : CLOTHC[S.oc1][1]], false);
   put(`head${S.face}_${d}`, [skin, null, null]);
   if (S.beard >= 0 && d !== 3) {   // nudged to this face's own mouth and chin
     const [fx, fy] = (CC.beardOff || [])[S.face]?.[d] || [0, 0], P = CC.pieces[`beard${S.beard}_${d}`], im = piece(`beard${S.beard}_${d}`, [null, null, bc]);
@@ -149,7 +178,7 @@ function show() {
 const turn = n => { S.dir = [0, 2, 3, 1][([0, 3, 1, 2][S.dir] + n + 4) % 4]; draw(); };   // front → right → back → left
 document.getElementById('tl').onclick = () => turn(-1); document.getElementById('tr').onclick = () => turn(1);
 document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Stop' : '▶ Walk'; if (!S.playing) { step = 1; draw(); } };
-document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.oc2 = Math.random() < .6 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
 document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
   [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
