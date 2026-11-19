@@ -323,6 +323,28 @@ def refine_side(img, s, x, y, top_rel):
                 sc = 2 * (cv & FRONT1).sum() + (SCALP1 & ~cv).sum() + 300 * abs(k - 1) + 2 * (abs(dx) + abs(dy)) + 20 * max(0, abs(tr - top_rel) - 6)
                 if best is None or sc < best[0]: best = (sc, k, X, Y)
     return best
+# Squeeze: from the side, hair must hug the skull. Its front may come at most 2px past the forehead and its back at
+# most 2px past the back of the skull (4px for long, loose styles), measured over the crown. Where a style is drawn
+# wider than that, it is squeezed front-to-back (never more than to 78%) so both edges land on the head.
+_fr = lambda a, b: FM1[FT + int(a * FH):FT + int(b * FH)]
+SKF = np.nonzero(_fr(.15, .30).any(0))[0].min(); SKB = np.nonzero(_fr(0, .45).any(0))[0].max()
+LOOSE = {'bob', 'copper_bob', 'black_curls', 'plum_black_waves'}
+NOBACK = {'chestnut_bun', 'dark_chocolate_high_ponytail'}          # their bun / tail is meant to stand out behind
+def squeeze_side(n, img, s, x, y):
+    im = resize(img, s); al = im[..., 3] > 127; H0 = al.shape[0]
+    def cols(r0, r1):
+        a0, a1 = max(0, r0 - y), min(H0, r1 - y)
+        c = np.nonzero(al[a0:a1].any(0))[0] if a1 > a0 else []
+        return (c.min() + x, c.max() + x) if len(c) else (None, None)
+    hF, _ = cols(-10 ** 6, FT + int(.30 * FH)); _, hB = cols(FT, FT + int(.45 * FH))
+    if hF is None or hB is None: return img, x
+    F = max(hF, SKF - 4); B = hB if n in NOBACK else min(hB, SKB + (8 if n in LOOSE else 4))
+    sx = max(.78, min(1.0, (B - F) / max(1, hB - hF)))
+    if sx > .995 and F == hF: return img, x
+    w0, h0 = img.shape[1], img.shape[0]; sq = np.asarray(Image.fromarray(img).resize((max(1, round(w0 * sx)), h0), Image.LANCZOS))
+    nx = round(F - (hF - x) * sx)                                   # the front edge lands on F
+    print('squeeze', n, 'to', round(sx, 2), 'front', hF - SKF, '->', F - SKF, 'back', hB - SKB, '->', round(nx + (hB - x) * sx) - SKB, flush=True)
+    return sq, nx
 for n in HAIR_NAMES:
     V = fh.views(D + f'hair_{n}.png'); P = {}
     for d in (0, 1, 3):
@@ -331,6 +353,7 @@ for n in HAIR_NAMES:
         if d == 1:
             fim, fx, fy = P[0]; ftop = np.nonzero(face_mask(0, 0).any(1))[0][0]
             sc, kk, hx, hy = refine_side(V[1], hs, hx, hy, fy + np.nonzero(fim[..., 3].any(1))[0][0] - ftop); hs *= kk; print('side', n, 'size', round(kk, 2), 'score', int(sc), flush=True)
+            V[1], hx = squeeze_side(n, V[1], hs, hx, hy)
         P[d] = warp(V[d], hs, hx, hy, d)
     hl, hr = heads[0][1], heads[0]['r']; wl = hl['piece'].shape[1] * hl['s']; im, lx, ly = P[1]
     P[2] = (im[:, ::-1].copy(), round(hr['x'] + wl - (lx - hl['x']) - im.shape[1]), round(hr['y'] + (ly - hl['y'])))
