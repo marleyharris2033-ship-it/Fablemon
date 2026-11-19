@@ -36,6 +36,35 @@ def skin_mask(a):
 CLOTH = None   # set while an outfit's frames are added: its main and second cloth hues
 def _lab(rgb):
     import cv2; return cv2.cvtColor(rgb.reshape(-1, 1, 3).astype(np.uint8), cv2.COLOR_RGB2LAB).reshape(-1, 3).astype(float)
+LEATHER_PX = None
+def leather_pixels(frames):
+    """Lab colours of the boots and gloves: pixels in the bottom tenth of the standing frames, and at the hands of the
+    front and back standing frames, clustered into a small palette."""
+    from sklearn.cluster import KMeans
+    px = []
+    for f in (1, 5, 9, 13):
+        a = resize(frames[f], OUT_SCALE); al = (a[..., 3] > 0) & ~outfit_skin(a); ys, xs = np.nonzero(al)
+        y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max(); yy, xx = np.mgrid[:a.shape[0], :a.shape[1]]
+        yr, xr = (yy - y0) / max(1, y1 - y0), (xx - x0) / max(1, x1 - x0)
+        sel = al & (yr > .9)
+        if f in (1, 13): sel |= al & (yr > .5) & (yr < .7) & ((xr < .12) | (xr > .88))
+        L = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); px.append(L[sel & (L[..., 0] > 52)])
+    px = np.concatenate(px)
+    if len(px) < 20: return []
+    km = KMeans(min(6, len(px) // 10), n_init=3, random_state=0).fit(px); return km.cluster_centers_.tolist()
+LEATHER = []   # [(Lab colour, is leather)] for the outfit being built
+def leather_colours(frames):
+    """Group every garment part of all the outfit's frames by colour; a colour group is leather (gloves, boots) when
+    most of it sits at the hands and feet."""
+    global LEATHER; LEATHER = None; groups = []
+    for fr in frames:
+        a = resize(fr, OUT_SCALE); lb, sz, mean, where = garment_parts(a, outfit_skin(a))
+        for m_, z, w in zip(mean, sz, where):
+            if z < 6: continue
+            for g in groups:
+                if cdist(m_, g[0]) < 10: g[0] = (g[0] * g[1] + m_ * z) / (g[1] + z); g[1] += z; g[2] += z * w; break
+            else: groups.append([m_.copy(), z, z * w])
+    return [(g[0].tolist(), bool(g[2] > .6 * g[1])) for g in groups]
 def outfit_skin(a):
     h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32) & (s <= .62) & (v >= .55); lb, n = ndi.label(sk)
     if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 40])
@@ -45,12 +74,21 @@ def garment_parts(a, sk):
     part's size and average Lab colour."""
     L = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); body = (a[..., 3] > 0) & ~sk & (L[..., 0] > 52)
     lb, n = ndi.label(body); idx = range(1, n + 1)
-    if not n: return lb, np.zeros(0), np.zeros((0, 3))
+    if not n: return (lb, np.zeros(0), np.zeros((0, 3))) + ((np.zeros(0, bool),) if LEATHER is None else ())
     sz = np.array(ndi.sum(body, lb, idx)); mean = np.stack([np.array(ndi.mean(L[..., c], lb, idx)) for c in range(3)], 1)
     # gloves and boots are leather, not cloth: parts at the feet, or out at the hands, are left as drawn
     ys, xs = np.nonzero(a[..., 3] > 0); y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
     cy, cx = (np.array(c) for c in zip(*ndi.center_of_mass(body, lb, idx))); ry = (cy - y0) / max(1, y1 - y0); rx = (cx - x0) / max(1, x1 - x0)
-    leather = (ry > .84) | ((ry > .42) & (ry < .75) & (np.abs(rx - .5) > .33))
+    where = (ry > .8) | ((ry > .38) & (ry < .76) & (np.abs(rx - .5) > .3))   # where gloves and boots are
+    if LEATHER is None: return lb, sz, mean, where
+    # every colour of the outfit is either cloth or leather for the whole outfit (decided over all its frames), so a
+    # boot or glove is never dyed in one frame and left in the next
+    leather = where.copy()
+    if LEATHER:
+        cs = np.array([c for c, _ in LEATHER]); isl = np.array([l for _, l in LEATHER])
+        d = np.stack([cdist(mean, c) for c in cs], 1); j = d.argmin(1); near = d.min(1) < 12
+        leather = np.where(near, isl[j], where)
+    leather |= ry > .86                       # whatever is at the feet is footwear, whatever colour it was matched to
     sz = np.where(leather, 0, sz)
     return lb, sz, mean
 def cdist(m, c):   # colour difference between part averages: hue/strength mostly, lightness a little
@@ -78,7 +116,15 @@ def mat_for(a, kind):
     elif kind == 'outfit':   # bare skin follows the skin colour; the two main cloth colours can be recoloured
         sk = outfit_skin(a); m[sk] = 1
         if CLOTH is not None:   # the cloth (every garment part bigger than a button, not gloves or boots) can be re-dyed
-            lb, sz, mean = garment_parts(a, sk); part = np.r_[0, sz >= 15][lb] > 0; m[part] = 4
+            lb, sz, mean = garment_parts(a, sk); part = np.r_[0, sz >= 15][lb] > 0
+            ys = np.nonzero(a[..., 3].any(1))[0]; part[ys[0] + int(.87 * (ys[-1] - ys[0])):] = False   # footwear, even where a boot touches the trouser leg
+            if LEATHER_PX is not None:   # boot and glove colours (sampled at the feet and hands) never dye, in any frame
+                Lp = _lab(a[..., :3]).reshape(a.shape[0], a.shape[1], 3); yr = (np.arange(a.shape[0]) - ys[0]) / max(1, ys[-1] - ys[0])
+                low = (yr > .35)[:, None]
+                for c in LEATHER_PX:
+                    hit = (cdist(Lp, np.array(c)) < 7) & low
+                    part &= ~ndi.binary_closing(hit, iterations=1)
+            m[part] = 4
     elif kind == 'body':   # the body sheets' shirts have a warm tint: skin must be properly saturated, and no stray specks
         h, s, v = hsv_img(a); sk = skin_mask(a) & (s >= .32); lb, n = ndi.label(sk)
         if n: sz = ndi.sum(sk, lb, range(1, n + 1)); sk = np.isin(lb, [j + 1 for j, z in enumerate(sz) if z >= 25])
@@ -278,7 +324,7 @@ for i, bd in enumerate(bodies):
         nk = np.zeros_like(fr); x0, x1 = xs.min() + 1, xs.max(); nk[t:t + 44, x0:x1] = fr[t:t + 44, x0:x1]
         add(f'neck{i}_{f}', nk, 'body', 0, 0)
 for i, od in enumerate(outfits):
-    CLOTH = cloth_hues(od['frames']); od['cloth'] = CLOTH
+    LEATHER_PX = None; LEATHER = leather_colours(od['frames']); LEATHER_PX = leather_pixels(od['frames']); CLOTH = cloth_hues(od['frames']); od['cloth'] = CLOTH
     for f, fr in enumerate(od['frames']): add(f'outfit{i}_{f}', fr, 'outfit', 0, 0)
 CLOTH = None
 DIRV = {0: 0, 1: 1, 3: 2}   # direction -> head column
@@ -385,7 +431,7 @@ def squeeze_side(n, img, s, x, y):
         return (c.min() + x, c.max() + x) if len(c) else (None, None)
     hF, _ = cols(-10 ** 6, FT + int(.30 * FH)); _, hB = cols(FT, FT + int(.45 * FH))
     if hF is None or hB is None: return img, x
-    F = max(hF, SKF - 4); B = hB if n in NOBACK else min(hB, SKB + (8 if n in LOOSE else 4))
+    F = max(hF, SKF - 4); B = min(hB, SKB + 40) if n in NOBACK else min(hB, SKB + (8 if n in LOOSE else 4))   # a bun or tail may stand out behind, but not like a wing
     sx = max(.78, min(1.0, (B - F) / max(1, hB - hF)))
     if sx > .995 and F == hF: return img, x
     w0, h0 = img.shape[1], img.shape[0]; sq = np.asarray(Image.fromarray(img).resize((max(1, round(w0 * sx)), h0), Image.LANCZOS))

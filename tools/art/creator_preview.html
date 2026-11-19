@@ -28,7 +28,7 @@ body{margin:0;background:#2d4a2a url("data:image/svg+xml,%3Csvg xmlns='http://ww
 .row button.arr:active{transform:translateY(1px)}
 .row .val{flex:1;min-width:0;height:38px;border:3px solid var(--edge);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
 .row .val i{width:18px;height:18px;border-radius:50%;flex:0 0 auto;border:2px solid #0003}
-.row .val small{opacity:.55;font-size:11px}.row .val span{overflow:hidden;text-overflow:ellipsis}@media (max-width:400px){.row .val small{display:none}}
+.row .val small{opacity:.55;font-size:11px}.row .val span{overflow:hidden;text-overflow:ellipsis;white-space:normal;line-height:1.05;text-align:center}.row .val span.long{font-size:11.5px}@media (max-width:400px){.row .val small{display:none}}
 .go{margin:8px 10px 10px;flex:0 0 auto;border:0;border-radius:12px;background:var(--green);color:#fff;font:11px var(--pix);padding:14px;box-shadow:0 4px 0 #23471c;cursor:pointer}
 </style></head><body>
 <div class="app"><div class="panel">
@@ -173,12 +173,12 @@ for (const [label, key, count, name, colour, off] of ROWS) {
 }
 function show() {
   for (const k in vals) { const [el, count, name, colour, off] = vals[k], i = S[k] + (off ? 1 : 0), c = colour && colour(i);
-    el.innerHTML = `${c ? `<i style="background:${c}"></i>` : ''}<span>${name(i)}</span><small>${i + 1}/${count()}</small>`; }
+    el.innerHTML = `${c ? `<i style="background:${c}"></i>` : ''}<span${String(name(i)).length > 17 ? ' class="long"' : ''}>${name(i)}</span><small>${i + 1}/${count()}</small>`; }
 }
 const turn = n => { S.dir = [0, 2, 3, 1][([0, 3, 1, 2][S.dir] + n + 4) % 4]; draw(); };   // front → right → back → left
 document.getElementById('tl').onclick = () => turn(-1); document.getElementById('tr').onclick = () => turn(1);
 document.getElementById('walk').onclick = e => { S.playing = !S.playing; e.target.textContent = S.playing ? '⏸ Stop' : '▶ Walk'; if (!S.playing) { step = 1; draw(); } };
-document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = Math.random() < .35 ? r(CC.beards) : -1; S.bcol = -1; show(); draw(); };
+document.getElementById('rand').onclick = () => { const r = n => Math.floor(Math.random() * n); S.outfit = r(CC.outfits.length); S.oc1 = Math.random() < .5 ? -1 : r(CLOTHC.length); S.face = r(CC.heads); S.skin = r(SKIN.length); S.hair = r(CC.hair.length + 1) - 1; S.hcol = r(10); S.beard = S.face < 4 && Math.random() < .35 ? r(CC.beards) : -1; /* beards only on faces 1-4 */ S.bcol = -1; show(); draw(); };
 document.getElementById('go').onclick = () => { const b = document.getElementById('go'); b.textContent = 'PREVIEW ONLY'; setTimeout(() => b.textContent = 'BEGIN ADVENTURE', 1200); };
 (async () => {
   [atlas, mat] = await Promise.all([load(ATLAS), load(MAT)]);
