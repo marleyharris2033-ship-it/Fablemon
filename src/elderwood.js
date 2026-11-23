@@ -257,7 +257,7 @@ function ewDoor(sc, id) {
     ew_h1: 'A tall timber house. Someone is practising the fiddle inside.', ew_h2: "A woodcutter's cottage. An axe leans by the door, unused.",
     ew_h3: 'An old forest cottage, half grown over with ivy.', ew_h4: 'A long house. Children are arguing over a board game.',
     ew_h5: 'A mossy house. A cat watches you from the windowsill.', ew_h6: "The gardener's house. Seedlings line every sill.",
-    ew_h7: 'A brick house. Nobody answers.', ew_h8: 'A riverside house. Fishing rods are drying on the porch.',
+    ew_h7: 'A low house under a roof of moss and ferns. Nobody answers, but the ferns rustle.', ew_h14: 'A home built up in an old elder. A rope ladder of a staircase winds round the trunk; somebody waves from the round window.', ew_h8: 'A riverside house. Fishing rods are drying on the porch.',
     ew_h9: "The ferryman's house. With the bridge out, he's been rowing folk across all week.",
     ew_h10: 'A tall, narrow house. Wind chimes made of acorn caps tinkle by the door.', ew_h11: "The hunters' lodge. Antlers over the door, shed ones, collected from the forest floor.",
     ew_h12: 'A stone cottage. Someone inside is singing an old forest song.', ew_h13: 'The Old Oak, a quiet pub for the old loggers. "Locals only, love. Try the Antler."',
@@ -309,11 +309,24 @@ Route.prototype.create = function () {
    Buildings read their footprint from ASSET[atlas + 'Json'], so the hall and the farm barns get one. */
 if (HDW.ewhall) ASSET.ewhJson = { frames: { ew_townhall: { frame: { x: 0, y: 0, w: 336, h: 210 } } } };
 if (HDW.lv && !ASSET.lvJson) ASSET.lvJson = { frames: Object.fromEntries(Object.entries(HDW.lv.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
+// Elderwood's own buildings (the user's art, 23 Nov 2026; tools/art/cut_ewbuild.py): atlas 'ewb', 3x, shown at a third
+if (HDW.ewb) {   // frame, and the door's tile offset from the centre
+  const M = { ew_lodge: ['ewb_lodge', 0], ew_inn: ['ewb_inn', 0], ew_store: ['ewb_store', 0], ew_mill: ['ewb_mill', -1], ew_carver: ['ewb_carver', -1],
+    ew_joinery: ['ewb_joinery', 0], ew_smith: ['ewb_smith', 0], ew_bake: ['ewb_bake', 0], ew_h13: ['ewb_oak', 0], ew_h1: ['ewb_timber', 0], ew_h2: ['ewb_woodcutter', 0],
+    ew_h3: ['ewb_oldcottage', 0], ew_h6: ['ewb_gardener', 1], ew_h7: ['ewb_moss', 0, 'Moss-roofed house'], ew_h8: ['ewb_riverside', 0], ew_h9: ['ewb_ferry', 0],
+    ew_h10: ['ewb_tall', 0], ew_h11: ['ewb_hunters', 0], ew_h12: ['ewb_stone', 0] };
+  const L = ROUTES.elderwood.buildings;
+  for (const b of L) { const m = M[b.id]; if (!m) continue; b.atlas = 'ewb'; b.frame = m[0]; b.door = m[1]; if (m[2]) b.name = m[2]; if (b.old) b.old = 'ewb_mill_old'; }
+  if (!L.some(b => b.id === 'ew_h14')) L.push({ id: 'ew_h14', atlas: 'ewb', frame: 'ewb_tree', cx: 65, by: 59, door: 1, name: 'Treehouse' });
+}
+if (HDW.ewb) ASSET.ewbJson = { frames: Object.fromEntries(Object.entries(HDW.ewb.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
 const _ewhLoad = hdWorldLoad;
-hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !game.textures.exists('ewh')) loader.image('ewh', HDW.ewhall.img); };
+hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !game.textures.exists('ewh')) loader.image('ewh', HDW.ewhall.img); if (HDW.ewb && !game.textures.exists('ewb')) loader.image('ewb', HDW.ewb.img); };
 const _ewhSwap = hdWorldSwap;
 hdWorldSwap = function (sc) {
   _ewhSwap(sc);
   const t = sc.textures.exists('ewh') && sc.textures.get('ewh');
   if (t && !t._shrunk) { t.add('ew_townhall', 0, 0, 0, 1008, 630); hdShrinkTexture(t, 3); t._shrunk = 1; }
+  const e = sc.textures.exists('ewb') && sc.textures.get('ewb');
+  if (e && !e._shrunk) { for (const [k, f] of Object.entries(HDW.ewb.frames)) e.add(k, 0, f.x, f.y, f.w, f.h); hdShrinkTexture(e, 3); e._shrunk = 1; }
 };
