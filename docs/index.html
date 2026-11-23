@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261123-095841">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261123-095841">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261123-095841">
+<link rel="manifest" href="manifest.webmanifest?v=20261123-101703">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261123-101703">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261123-101703">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-095841').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-101703').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -1238,6 +1238,11 @@ function autoSave() {
   try { localStorage.setItem(slotKey(slot), JSON.stringify(snapshot())); localStorage.setItem(SAVE_KEY + '_last', String(slot)); } catch (e) { }
   if (Date.now() - lastCloudAuto > 120000) { lastCloudAuto = Date.now(); try { Cloud.put(slot, snapshot()); } catch (e) { } }
 }
+// 23 Nov: also every 2 minutes of play, and whenever the app goes into the background or is closed, so a crash or a
+// phone closing the tab loses at most a couple of minutes
+setInterval(() => { if (S && S.mons && scene && !scene.sleeping && document.visibilityState === 'visible') autoSave(); }, 120000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && S && S.mons && scene) { if (scene.p && !scene.sleeping && !(typeof RTB !== 'undefined' && RTB.active)) S.spawn = { scene: scene.scene.key, x: scene.p.x, y: scene.p.y, dir: scene.p.dir }; autoSave(); } });
+window.addEventListener('pagehide', () => { if (S && S.mons && scene) autoSave(); });
 function manualSave() {
   if (!scene || !scene.p || scene.sleeping) return;
   const p = scene.p;
@@ -4784,19 +4789,22 @@ const Battle = (() => {
   }
   // a caught wild Fablemon joins the team, or goes home if the team is full (also used by the action battles)
   async function keepCaught() {
-      await say(`Gotcha! ${B.foe.fab ? 'The Fabled ' : ''}${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
       const m = newMon(B.foe.sp, B.foe.lv); m.iv = { ...B.foe.iv }; m.hp = Math.min(B.foe.hp, monStat(m, 'hp')); m.moves = B.foe.moves.slice(); m.xp = B.foe.xp; if (B.foe.fab) { m.fab = 1; fabNote(m.sp); }
       S.caught[m.sp] = 1; S.flags.catches = (S.flags.catches || 0) + 1;
+      // saved the moment it's caught (23 Nov), before any message: a crash or a closed app can't lose it
+      const room = team().length < TEAM_MAX; if (room) giveMon(m); else { m.loc = 'ranch'; S.mons.push(m); refreshTeamBtn(); }
+      autoSave();
+      await say(`Gotcha! ${B.foe.fab ? 'The Fabled ' : ''}${SPECIES[B.foe.sp].name} chose to come with you!`, 1800);
       { const best = ivBest(m); if (best[1] >= 8) await say(`It looks like it has great ${IV_NAME[best[0]]}! (${best[1]}/10)`, 1600); }
       const nm = SPECIES[m.sp].name, home = S.ranch === 2 ? 'your ranch' : 'wait at your farm until you build a ranch';
-      if (team().length < TEAM_MAX) { giveMon(m); await say(`${nm} joined your team!`, 1800); return true; }
-      // team is full: send the new one home, or swap it with someone in the team
+      if (room) { await say(`${nm} joined your team!`, 1800); return true; }
+      // team is full: it's already safe at home; or swap it with someone in the team
       q('bmsg').textContent = `Your team is full. Keep ${nm} with you by sending someone else home?`;
       const out = await menu([{ html: `Send ${nm} home`, v: null, cls: 'gold' }, ...team().map(t => ({ html: `<img src="${monPicOf(t)}">Swap ${monName(t)} <small>Lv ${t.lv}</small>`, v: t }))]);
-      if (!out) { m.loc = 'ranch'; S.mons.push(m); refreshTeamBtn(); await say(`${nm} went to ${home}.`, 1800); return true; }
-      const pos = S.mons.indexOf(out);
-      out.loc = 'ranch'; out.out = false; out.job = null;
-      S.mons.splice(pos, 0, m); refreshTeamBtn();
+      if (!out) { await say(`${nm} went to ${home}.`, 1800); return true; }
+      S.mons.splice(S.mons.indexOf(m), 1); const pos = S.mons.indexOf(out);
+      out.loc = 'ranch'; out.out = false; out.job = null; m.loc = 'team';
+      S.mons.splice(pos, 0, m); refreshTeamBtn(); autoSave();
       await say(`${monName(out)} went to ${home}, and ${nm} joined your team!`, 2000);
       return true;
       }
