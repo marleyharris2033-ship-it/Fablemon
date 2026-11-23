@@ -1,0 +1,140 @@
+{
+"farm": [
+"an_calf",
+"an_chick",
+"an_cow",
+"an_duck",
+"an_duckling",
+"an_goat",
+"an_hen",
+"an_kid",
+"an_lamb",
+"an_sheep",
+"houses",
+"lv",
+"town"
+],
+"house": [
+"furn",
+"room_0"
+],
+"town": [
+"town"
+],
+"route1": [],
+"route2": [
+"town"
+],
+"route3": [
+"bog"
+],
+"route4": [
+"bog"
+],
+"brookholt": [
+"bh",
+"bog"
+],
+"bhgym": [
+"gym_bh"
+],
+"crag1": [],
+"crag2": [
+"qd"
+],
+"crag3": [],
+"cragmine": [],
+"quarrydown": [
+"bh",
+"qd"
+],
+"qdpit": [
+"gym_qd"
+],
+"dunes": [
+"cove"
+],
+"driftwood": [
+"cove"
+],
+"glimmer": [
+"sea"
+],
+"shoals": [
+"sea"
+],
+"stormwatch": [
+"sea"
+],
+"beaconreach": [
+"br"
+],
+"brlight": [
+"gym_br"
+],
+"isles": [
+"br",
+"cove",
+"sea"
+],
+"windward": [
+"hm",
+"sea"
+],
+"heatherstep": [
+"hm"
+],
+"galeledges": [
+"hm"
+],
+"highmoor": [
+"hm"
+],
+"hmmill": [
+"gym_hm"
+],
+"windcrown": [
+"hm"
+],
+"coop": [
+"an_chick",
+"an_duck",
+"an_duckling",
+"an_hen",
+"int_coop"
+],
+"barn": [
+"an_calf",
+"an_cow",
+"an_goat",
+"an_kid",
+"an_lamb",
+"an_sheep",
+"int_barn"
+],
+"fernwalk": [],
+"eldglade": [],
+"elderwood": [
+"an_cow",
+"an_goat",
+"an_hen",
+"an_sheep",
+"bh",
+"bog",
+"ewb",
+"ewh",
+"hm",
+"lv",
+"qd",
+"town"
+],
+"ewcamp": [
+"bh",
+"bog",
+"cove",
+"qd"
+],
+"eldest": [
+"town"
+]
+}
