@@ -44,7 +44,7 @@ Object.assign(Route.prototype, {
       const z = this.R.grass[i], [, , , , a, b, tag] = GRASS_ZONES[z]; let m = rollWild(a, b, tag && RC[tag]);
       if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => !q.alpha && roamRare(q.m.sp, tag && RC[tag]))) m = rollWild(a, b, tag && RC[tag]);   // one rare one out at a time keeps them special
       if (roamRare(m.sp, tag && RC[tag]) && this.roam.some(q => !q.alpha && roamRare(q.m.sp, tag && RC[tag]))) continue;
-      const wid = walkId(this, m); if (!this.textures.exists('mon_' + wid)) continue;
+      const wid = walkId(this, m); if (!monReady(this, wid.replace(/^F/, ''))) continue;
       monAnims(this, wid);
       const spr = hdSpr(this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1), wid);
       const r = { m, wid, spr, x, y, zone: z, mood: roamMood(m), dir: 'down', t: 1 + Math.random() * 2, moving: false, alert: 0 };
@@ -187,7 +187,7 @@ Route.prototype.create = function () {
       const i = this.roamTiles[Math.floor(Math.random() * this.roamTiles.length)], x = i % RW, y = (i / RW) | 0;
       if (!this.roamFree(x, y) || (this.p && Math.abs(this.p.x - x) + Math.abs(this.p.y - y) < 8)) continue;
       const m = wildMon(A.sp, A.lv); for (const k in m.iv) m.iv[k] = Math.max(m.iv[k], 6 + Math.floor(Math.random() * 3)); m.hp = monStat(m, 'hp'); m.alpha = 1;
-      const wid = walkId(this, m); if (!this.textures.exists('mon_' + wid)) return;
+      const wid = walkId(this, m); if (!monReady(this, wid.replace(/^F/, ''))) return;
       monAnims(this, wid);
       const spr = hdSpr(this.add.sprite(x * T + 8, y * T + 15, 'mon_' + wid, 0).setOrigin(.5, 1), wid); spr.setScale(spr.scaleX * 1.4, spr.scaleY * 1.4);
       const r = { m, wid, spr, x, y, zone: this.R.grass[i], mood: 'bold', dir: 'down', t: 1, moving: false, alert: 0, alpha: 1 };

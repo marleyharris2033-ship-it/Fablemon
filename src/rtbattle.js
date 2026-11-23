@@ -704,6 +704,10 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // ---------- start and end
   function start(sc, foe, at, T, keep) {
     const first = team().find(m => m.hp > 0); if (!first) return;
+    // every walk sheet the fight could need, fetched first (they load when needed since 23 Nov)
+    const need = [foe, ...team(), ...((T && T.team) || [])].map(m => m && walkSp(m.sp)).filter(n => n && ASSET['mon_' + n] && !sc.textures.exists('mon_' + n));
+    if (need.length && !start.waited) { sc.paused = true; start.waited = 1; monFetchAll(sc, need).then(() => { start.waited = 0; start(sc, foe, at, T, keep); }); return; }
+    start.waited = 0;
     sc.paused = true; S.seen[foe.sp] = 1;
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
     st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,

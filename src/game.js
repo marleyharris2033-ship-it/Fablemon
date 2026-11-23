@@ -1767,13 +1767,70 @@ const evoOf = m => { const e = SPECIES[m.sp].evo; return e && MON_ORDER.includes
 const baseOf = sp => { const prev = Object.keys(SPECIES).find(k => SPECIES[k].evo && SPECIES[k].evo[0] === sp); return prev ? baseOf(prev) : sp; };
 // evolved forms use their first stage's walking sprite until their own sheet is added
 const walkSp = sp => ASSET['mon_' + sp] ? sp : baseOf(sp);
+const MON_BIG = { cirrovale: 48, samaslice: 40, wickveil: 40, riptwake: 40, briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, craglet_2: 40, cindhop_2: 40, bristlecone_2: 40, clinkit_2: 40, ramruff_2: 40, nipshade_2: 40, riftshear_2: 40, inkwick_2: 40, kilnback_2: 40, foilfin_2: 40, floecalf_2: 44, kitlet: 32, kitlet_2: 40, flurrowl_2: 40, wishling_2: 36, heathfoal: 32, heathfoal_2: 44, sprigfawn: 32, stumpstag: 40, elderhart: 48, tanglebruin: 44, ursylvane: 48, snarlwisp: 32, murkhowl: 40, tappit: 32, drummajor: 40, cobblerollie: 40, simmerkit: 36, thermadam: 44, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
+function monSheet(n) { const fw = MON_BIG[n] || (MON_STAGE[n] === 3 ? 44 : 28); return hdWalk(n, fw); }
+/* 23 Nov 2026: Fablemon walk sheets are loaded when a place needs them, not all ~150 at start (they were about a third
+   of the game's memory on a phone). Each scene loads, before it starts, the sheets for your team, the Fablemon living
+   there and the trainers' teams; on the farm, every Fablemon you own. Anything else is fetched the moment it's needed
+   (an invisible stand-in shows for that moment). */
+const MON_LOADING = {};
+function loadMonSheet(sc, n) {
+  if (!n || !ASSET['mon_' + n] || sc.textures.exists('mon_' + n) || MON_LOADING[n]) return false;
+  const [src, w] = monSheet(n); sc.load.spritesheet('mon_' + n, src, { frameWidth: w, frameHeight: w }); return true;
+}
+function monNeed(key) {
+  const out = new Set(), add = sp => { if (sp && SPECIES[sp]) out.add(walkSp(sp)); };
+  if (!S || !S.mons) return out;
+  for (const sp of ({ windcrown: ['cirrovale'] })[key] || []) add(sp);
+  const home = !key || ['farm', 'barn', 'coop', 'house'].includes(key);
+  for (const m of S.mons) if (home || m.loc === 'team') add(m.sp);
+  const R = typeof ROUTES !== 'undefined' && ROUTES[key];
+  if (R) {
+    for (const t of ['day', 'night']) for (const [sp] of (R.enc && R.enc[t]) || []) add(sp);
+    for (const tr of R.trainers || []) for (const e of tr.team || []) add(Array.isArray(e) ? e[0] : e && e.sp);
+  }
+  return out;
+}
+// fetch one sheet right now, from inside a running scene; calls back when it's there
+function monFetch(sc, n, cb) {
+  if (!n || !ASSET['mon_' + n]) return; if (sc.textures.exists('mon_' + n)) { cb && cb(); return; }
+  (MON_LOADING[n] = MON_LOADING[n] || []).push(cb);
+  if (MON_LOADING[n].length > 1) return;
+  const [src, w] = monSheet(n), img = new Image();
+  img.onload = () => { const cbs = MON_LOADING[n] || []; delete MON_LOADING[n]; if (!sc.textures.exists('mon_' + n)) { sc.textures.addSpriteSheet('mon_' + n, img, { frameWidth: w, frameHeight: w }); if (WALK_HD[n]) { const t = sc.textures.get('mon_' + n); t._smooth = 1; t.setFilter(Phaser.Textures.FilterMode.LINEAR); } }
+    for (const f of cbs) try { f && f(); } catch (e) { console.warn('monFetch', e); } };
+  img.onerror = () => { delete MON_LOADING[n]; };
+  img.src = src;
+}
+const monFetchAll = (sc, sps) => Promise.all([...new Set([...sps].filter(Boolean).map(walkSp))].map(n => new Promise(r => { if (!ASSET['mon_' + n] || sc.textures.exists('mon_' + n)) return r(); monFetch(sc, n, r); setTimeout(r, 8000); })));
+// a sprite asked for with a walk sheet that isn't here yet: an invisible stand-in, swapped for the real one when it lands
+(function () {
+  const F = Phaser.GameObjects.GameObjectFactory.prototype, sprite0 = F.sprite;
+  F.sprite = function (x, y, key, frame) {
+    const sc = this.scene;
+    if (typeof key === 'string' && key.startsWith('mon_') && !sc.textures.exists(key)) {
+      const id = key.slice(4), n = id.replace(/^F/, '');
+      if (ASSET['mon_' + n]) {
+        if (!sc.textures.exists('__monwait')) { const c = document.createElement('canvas'); c.width = c.height = 1; sc.textures.addCanvas('__monwait', c); }
+        const spr = sprite0.call(this, x, y, '__monwait');
+        monFetch(sc, n, () => { if (!spr.active) return; const k = sc.textures.exists(key) ? key : 'mon_' + n; spr.setTexture(k, frame); monAnims(sc, k.slice(4)); });
+        return spr;
+      }
+    }
+    return sprite0.call(this, x, y, key, frame);
+  };
+})();
+// is this walk sheet here? if not, start fetching it (and run cb when it lands)
+function monReady(sc, n, cb) { if (sc.textures.exists('mon_' + n)) return true; monFetch(sc, n, cb); return false; }
 function monAnims(sc, sp) {
+  if (!sc.textures.exists('mon_' + sp)) return;
   for (let r = 0; r < 4; r++) { const k = `${sp}_${DIRS[r]}`; if (!sc.anims.exists(k)) sc.anims.create({ key: k, frames: sc.anims.generateFrameNumbers('mon_' + sp, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 8, repeat: -1 }); }
 }
+World.prototype.preload = function () { for (const n of monNeed(this.scene.key)) loadMonSheet(this, n); };
 Object.assign(World.prototype, {
   makeFollower() {
     if (this.fol) { this.fol.spr.destroy(); this.fol = null; }
-    const m = lead(); if (!m || !this.textures.exists('mon_' + walkSp(m.sp))) return;
+    const m = lead(); if (!m || !monReady(this, walkSp(m.sp), () => this.sys && this.sys.isActive() && this.refreshFollower())) return;
     const wid = walkId(this, m); monAnims(this, wid);
     const p = this.p, [dx, dy] = DV[p.dir];
     let x = p.x - dx, y = p.y - dy; if (!this.passable(x, y)) { x = p.x; y = p.y; }
@@ -2865,7 +2922,7 @@ class Farm extends World {
     if (S.ranch !== 2) return;
     const d = ranchDoor();
     for (const m of S.mons.filter(m => m.loc === 'ranch' && m.out)) {
-      if (!this.textures.exists('mon_' + walkSp(m.sp))) continue;
+      if (!monReady(this, walkSp(m.sp))) continue;
       const wid = walkId(this, m); monAnims(this, wid);
       let x = d.x, y = d.y + 2;
       const [ax0, ay0, ax1, ay1] = m.job ? jobArea(m.job) : [d.x - 5, d.y + 1, d.x + 5, d.y + 6];
@@ -5049,8 +5106,8 @@ async function bootGame() {
       this.load.atlas('seasonal', ASSET.seasonal, ASSET.seasonalJson);
       this.load.atlas('houses', snow.houses || ASSET.houses, { frames: Object.fromEntries(Object.entries(ASSET.housesJson).map(([k, f]) => [k, { frame: { x: f.x, y: f.y, w: f.w, h: f.h } }])) });
       for (const n of Object.keys(TRAINER_TYPES)) if (ASSET['tr_' + n]) this.load.spritesheet('tr_' + n, ASSET['tr_' + n], { frameWidth: 28, frameHeight: 32 });
-      const BIG = { cirrovale: 48, samaslice: 40, wickveil: 40, riptwake: 40, briamble: 40, kilnook: 40, weirlet: 40, fleecebolt: 40, whirlwyn: 40, cloverguard: 40, flintburrow: 40, staticwing: 40, duskcloak: 40, rampartoad: 44, pyrebrash: 44, fulgarok: 40, craglet_2: 40, cindhop_2: 40, bristlecone_2: 40, clinkit_2: 40, ramruff_2: 40, nipshade_2: 40, riftshear_2: 40, inkwick_2: 40, kilnback_2: 40, foilfin_2: 40, floecalf_2: 44, kitlet: 32, kitlet_2: 40, flurrowl_2: 40, wishling_2: 36, heathfoal: 32, heathfoal_2: 44, sprigfawn: 32, stumpstag: 40, elderhart: 48, tanglebruin: 44, ursylvane: 48, snarlwisp: 32, murkhowl: 40, tappit: 32, drummajor: 40, cobblerollie: 40, simmerkit: 36, thermadam: 44, brookstride: 40, mirebellows: 40, lotveil: 40, reefarer: 40, reefarer_cotton: 40, yawnox: 40, brimbramble: 40, stormveil: 40, hollowbark: 40, marshviper: 44 };
-      for (const n of MON_ORDER) if (ASSET['mon_' + n]) { const fw = BIG[n] || (MON_STAGE[n] === 3 ? 44 : 28); const [src, w] = hdWalk(n, fw); this.load.spritesheet('mon_' + n, src, { frameWidth: w, frameHeight: w }); }
+      for (const n of MON_ORDER) if (ASSET['mon_' + n]) monSheet(n);   // (sets which sheets are high-detail)
+      for (const n of monNeed(S && S.spawn && S.spawn.scene)) loadMonSheet(this, n);   // Fablemon walk sheets load when needed (23 Nov)
       for (const n of ['bramble', 'marigold', ...VILL_IDS, 'shipwright']) this.load.spritesheet('npc_' + n, ASSET['npc_' + n], { frameWidth: 28, frameHeight: 32 });
       for (const n of ['cobble1', 'cobble2', 'cobble3', 'slab', 'riverstone', 'peat', 'moss', 'bogwater', 'lily', 'board_h', 'board_v']) this.load.image('g_' + n, ASSET['g_' + n]);
       this.load.atlas('bog', snow.bog || ASSET.bog, ASSET.bogJson);

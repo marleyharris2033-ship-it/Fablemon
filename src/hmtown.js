@@ -278,7 +278,7 @@ LEARN.cirrovale = [[1, 'gust'], [1, 'frostfeather'], [1, 'chillmist'], [1, 'updr
 MON_ORDER.push('cirrovale'); MON_STAGE.cirrovale = 3;
 EXTRA_HABITAT.cirrovale = 'Roosts in the storm on the summit of Windcrown Peak, north of Highmoor';
 const WC_DRAGON = { sp: 'cirrovale', lv: 60, name: 'Cirrovale' }, WC_STORM = { x: 15, y: 3 };
-const wcDragonReady = sc => !!(SPECIES[WC_DRAGON.sp] && sc.textures.exists('mon_' + WC_DRAGON.sp));
+const wcDragonReady = sc => !!(SPECIES[WC_DRAGON.sp] && monReady(sc, WC_DRAGON.sp));
 ROUTES.windcrown = { ...MOOR_BASE, name: 'Windcrown Peak', w: 32, h: 46, ascii: HM_MAPS.windcrown.rows, vanes: HM_MAPS.windcrown.vanes, snow: true,
   zones: [0, 1, 2, 3, 4, 5].map(() => [0, 0, 0, 0, 55, 56]).concat([[0, 0, 0, 0, 55, 57], [0, 0, 0, 0, 56, 58], [0, 0, 0, 0, 57, 58]]),
   pickups: [{ id: 'wc1', x: 28, y: 28, gold: 8000 }, { id: 'wc2', x: 28, y: 15, item: 'skyward_charm', n: 3 }, { id: 'wc3', x: 26, y: 3, item: 'hearth_elixir', n: 1 }, { id: 'wc4', x: 3, y: 22, item: 'swift_feather', n: 1 }],

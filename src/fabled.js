@@ -40,6 +40,7 @@ function fabWarm(sp) { for (const k of ['icon', 'front', 'back']) { const key = 
 function walkId(sc, m) {
   const sp = walkSp(m.sp); if (!m.fab) return sp;
   const id = 'F' + sp, key = 'mon_' + id;
+  if (!sc.textures.exists(key) && !monReady(sc, sp)) return sp;   // its sheet is still on the way: the normal colours for now
   if (!sc.textures.exists(key)) {
     const t = sc.textures.get('mon_' + sp), src = t.getSourceImage(), fw = t.get(0).width;
     const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0);

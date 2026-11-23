@@ -19,9 +19,18 @@ def _shrunk(p, mime):
     w = open(cp, 'rb').read()
     if len(w) >= len(raw): return mime, raw
     return ('image/webp;px=1' if mime == 'image/png' else 'image/webp'), w
+# 23 Nov 2026: with FABLE_ASSETS=<dir> the art goes out as separate files in <dir>/a/ (named by content, so the browser
+# can keep them), and the game only holds a short address for each. The page shrinks from ~60 MB to a few, and the
+# phone no longer keeps every picture's text in memory. Without it, everything is inlined (the one-file download).
+EXT = os.environ.get('FABLE_ASSETS')
+EXT_FILES = []
 def uri(p, mime):
     m, b = _shrunk(p, mime)
-    return f'data:{m};base64,' + base64.b64encode(b).decode()
+    if not EXT: return f'data:{m};base64,' + base64.b64encode(b).decode()
+    ext = {'image/webp;px=1': '.px.webp', 'image/webp': '.webp', 'image/png': '.png', 'image/jpeg': '.jpg'}.get(m, '.bin')
+    name = 'a/' + hashlib.sha1(b).hexdigest()[:16] + ext; fp = os.path.join(EXT, name)
+    if not os.path.exists(fp): os.makedirs(os.path.dirname(fp), exist_ok=True); open(fp, 'wb').write(b)
+    EXT_FILES.append(name); return name
 phaser = sys.argv[1]; out = sys.argv[2]
 assets = {
   'terrain': uri('terrain.png', 'image/png'), 'objects': uri('objects.png', 'image/png'),
@@ -57,3 +66,4 @@ for p in sorted(glob.glob('hd/*.webp')):
     sid, kind = os.path.basename(p)[:-5].rsplit('_', 1); assets['hd'].setdefault(sid, {})[kind] = uri(p, 'image/webp')
 html = open('template.html').read().replace('__TITLE_LOGO__', uri('title_logo.png', 'image/png')).replace('__TITLE_TALL__', uri('title_tall.jpg', 'image/jpeg')).replace('__TITLE_WIDE__', uri('title_wide.jpg', 'image/jpeg')).replace('__FRAME_BIG__', uri('frame_big.png', 'image/png')).replace('__FRAME_SM__', uri('frame_sm.png', 'image/png')).replace('__PHASER__', phaser).replace('__ASSETS__', json.dumps(assets)).replace('__GAMEJS__', open('villagers.js').read() + '\n' + open('game.js').read() + '\n' + open('hearth.js').read() + '\n' + open('moves.js').read() + '\n' + open('brookholt.js').read() + '\n' + open('social.js').read() + '\n' + open('winter.js').read() + '\n' + open('polish.js').read() + '\n' + open('held.js').read() + '\n' + open('gym.js').read() + '\n' + open('crag.js').read() + '\n' + open('quarry.js').read() + '\n' + open('cove.js').read() + '\n' + open('thirds.js').read() + '\n' + open('tidemons.js').read() + '\n' + open('sea.js').read() + '\n' + open('seamons.js').read() + '\n' + open('beacon.js').read() + '\n' + open('townsfolk.js').read() + '\n' + open('isles.js').read() + '\n' + open('highmoor.js').read() + '\n' + open('hmmons.js').read() + '\n' + open('hmtown.js').read() + '\n' + open('coastcrops.js').read() + '\n' + open('statsplit.js').read() + '\n' + open('derby.js').read() + '\n' + open('hd.js').read() + '\n' + open('fabled.js').read() + '\n' + open('verdance.js').read() + '\n' + open('look.js').read() + '\n' + open('creator.js').read() + '\n' + open('ground.js').read() + '\n' + open('house.js').read() + '\n' + open('pets.js').read() + '\n' + open('animals.js').read() + '\n' + open('requests.js').read() + '\n' + open('rootweave.js').read() + '\n' + open('starters.js').read() + '\n' + open('vdquests.js').read() + '\n' + open('vdscenes.js').read() + '\n' + open('town2.js').read() + '\n' + open('ewmons.js').read() + '\n' + open('elderwood.js').read() + '\n' + open('ewquests.js').read() + '\n' + open('roam.js').read() + '\n' + open('rtbattle.js').read() + '\n' + open('townmap.js').read() + '\n' + open('townquests.js').read() + '\n' + open('arena.js').read() + '\n' + open('post.js').read())
 open(out, 'w').write(html); print(out, len(html))
+if EXT: json.dump(sorted(set(EXT_FILES)), open(os.path.join(EXT, 'a', 'files.json'), 'w'))

@@ -28,7 +28,16 @@ if shutil.which('node'):
     r = subprocess.run(['node', '--check', f.name], capture_output=True, text=True); os.remove(f.name)
     if r.returncode: raise SystemExit('Build stopped: the game code has a syntax error.\n' + r.stderr[-1500:])
 open(os.path.join(DOCS, 'downloads', 'Fablemon_Wild_Roots.html'), 'w').write(single)
-with zipfile.ZipFile(os.path.join(DOCS, 'downloads', 'Fablemon_itch.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z: z.writestr('index.html', single)
+# 23 Nov 2026: the web app and itch get the game with its art as separate files (docs/a/), so a phone only fetches and
+# holds what it needs. The one-file download above stays whole, for playing offline from a file.
+subprocess.run(['python3', 'build.py', 'PHASER_INLINE', tmp], cwd=SRC, check=True, env={**os.environ, 'FABLE_ASSETS': DOCS})
+split = open(tmp).read().replace(tag, '<script>' + phaser + '</script>'); os.remove(tmp)
+ART = json.load(open(os.path.join(DOCS, 'a', 'files.json')))
+for f in os.listdir(os.path.join(DOCS, 'a')):   # art no longer used
+    if f != 'files.json' and 'a/' + f not in ART: os.remove(os.path.join(DOCS, 'a', f))
+with zipfile.ZipFile(os.path.join(DOCS, 'downloads', 'Fablemon_itch.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    z.writestr('index.html', split)
+    for f in ART: z.write(os.path.join(DOCS, f), f, compress_type=zipfile.ZIP_STORED)   # already compressed pictures
 # the installable web app: same game plus a manifest, icons and a service worker
 version = time.strftime('%Y%m%d-%H%M%S')
 head = f'''<link rel="manifest" href="manifest.webmanifest?v={version}">
@@ -41,7 +50,7 @@ head = f'''<link rel="manifest" href="manifest.webmanifest?v={version}">
 <meta name="theme-color" content="#1f2a1e">
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v={version}').catch(() => {{}}));</script>
 '''
-app = single.replace('</head>', head + '</head>', 1)
+app = split.replace('</head>', head + '</head>', 1)
 open(os.path.join(DOCS, 'index.html'), 'w').write(app)
 icon = Image.open(os.path.join(HERE, 'icon_source.png')).convert('RGB')
 for s in (180, 192, 512): icon.resize((s, s), Image.LANCZOS).save(os.path.join(DOCS, f'icon-{s}.png'))
@@ -49,13 +58,26 @@ json.dump({'name': 'Fablemon: Wild Roots', 'short_name': 'Fablemon', 'start_url'
            'background_color': '#1f2a1e', 'theme_color': '#1f2a1e',
            'icons': [{'src': f'icon-192.png?v={version}', 'sizes': '192x192', 'type': 'image/png'}, {'src': f'icon-512.png?v={version}', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'}]},
           open(os.path.join(DOCS, 'manifest.webmanifest'), 'w'), indent=1)
-open(os.path.join(DOCS, 'sw.js'), 'w').write(f'''// Fablemon offline cache, build {version}. Network first, so players always get the newest version when online.
-const CACHE = 'fablemon-{version}';
+open(os.path.join(DOCS, 'sw.js'), 'w').write(f'''// Fablemon offline cache, build {version}. The page: network first, so players always get the newest version.
+// The art (a/, named by content so a file never changes): kept in its own cache across updates, fetched once.
+const CACHE = 'fablemon-{version}', ART = 'fablemon-art';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {{ e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); }});
-self.addEventListener('activate', e => {{ e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); }});
+self.addEventListener('activate', e => {{
+  e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== ART).map(k => caches.delete(k))))); self.clients.claim();
+  // tidy art this version no longer uses, then quietly fetch the rest so the game also works offline
+  fetch('a/files.json').then(r => r.json()).then(async list => {{
+    const c = await caches.open(ART), want = new Set(list.map(f => new URL(f, self.registration.scope).href));
+    for (const q of await c.keys()) if (!want.has(q.url)) await c.delete(q);
+    for (const u of want) if (!(await c.match(u))) {{ try {{ const r = await fetch(u); if (r.ok) await c.put(u, r); }} catch (err) {{ return; }} }}
+  }}).catch(() => {{}});
+}});
 self.addEventListener('fetch', e => {{
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  if (new URL(e.request.url).pathname.includes('/a/')) {{
+    e.respondWith(caches.open(ART).then(c => c.match(e.request).then(m => m || fetch(e.request).then(r => {{ if (r.ok) c.put(e.request, r.clone()); return r; }}))));
+    return;
+  }}
   e.respondWith(fetch(e.request).then(r => {{ if (r.ok) {{ const cp = r.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }} return r; }})
     .catch(() => caches.match(e.request).then(m => m || caches.match('./index.html'))));
 }});
