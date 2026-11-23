@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261123-125120">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261123-125120">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261123-125120">
+<link rel="manifest" href="manifest.webmanifest?v=20261123-130347">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261123-130347">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261123-130347">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-125120').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-130347').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -17401,8 +17401,14 @@ Farm.prototype.create = function () {
      Footing how little rough ground slows it      (rises as you ride off the paths)
      Stamina how much breath it has for its perk   (rises each time it uses its perk)
      Bond    how strong its perk is                (rises with riding, and with feeding and brushing at the stable)
-   Each mount has one perk, a way of moving only it can do. Ridgeram's is Leap: two tiles ahead, clean over a fence,
-   rock, ledge or narrow stream (three tiles once its Bond reaches 50).
+   Each mount has one perk, a way of moving only it can do, paid for with breath that refills as you go:
+     Ridgeram     (Granger)              Leap      two tiles ahead over a fence, rock, ledge or stream (three at Bond 50)
+     Blazemane    (Monty, the Quarry Cup) Boost    a burst at double speed (longer with Bond)
+     Tidestrider  (Orrin)                Momentum  speed builds the longer you keep moving, up to +60%; turning doesn't lose it
+     Galeheath    (Tamsin)               Glide     a float you steer, up to three tiles (four at Bond 50)
+     Elderhart    (Alder)                Charge    shoulder through bushes and small rocks; grass doesn't stir up wild Fablemon
+   Away from your farm, Leap, Glide and Charge only ever land you somewhere you could also walk to, so they are
+   shortcuts and never a way past something the story keeps shut. All mounts arrive after Granger (the third Warden).
 
    You ride outdoors only; you hop down by yourself indoors and back up when you step out again.
    The rider is drawn in code: the farmer's top half (any outfit, any look) sits on the mount's own walk sheet,
@@ -17418,12 +17424,49 @@ const MOUNTS = {
     seat: { down: [60, 16], left: [78, 63], up: [60, 50] },
     desc: 'A saddled Rambastion from the Quarrydown pits. Sure-footed on rock and scree, and it never met a fence it couldn\'t clear.',
   },
+  blazemane: {
+    name: 'Blazemane', sp: 'fleecebolt', perk: 'boost', from: 'Monty', scale: 1.3,
+    start: { spd: 35, foot: 30, sta: 30, bond: 15 },
+    tint: { hue: 198, sat: .32, glow: 1.2 },   // a cold blue flame for a crest; the fleece stays white
+    tack: { cloth: '#7a1f2a', clothDk: '#561520', trim: '#f2d27a', leather: '#5a3420', leatherDk: '#36200f', leatherLt: '#8a5a38' },
+    seat: { down: [60, 24], left: [64, 52], up: [60, 52] },
+    desc: 'The Derby\'s fastest Fleecebolt, its crest burning blue. Give it its head on a straight and it\'s gone.',
+  },
+  tidestrider: {
+    name: 'Tidestrider', sp: 'brookstride', perk: 'momentum', from: 'Orrin', scale: 1.3,
+    start: { spd: 40, foot: 45, sta: 40, bond: 15 },
+    tint: { hue: 190, sat: .45, glow: .7 },   // a deep-sea coat with coral fins
+    tack: { cloth: '#e8e0c8', clothDk: '#b8ae94', trim: '#2f7fa8', leather: '#3e4a56', leatherDk: '#232b33', leatherLt: '#62707e' },
+    seat: { down: [60, 34], left: [72, 70], up: [60, 46] },
+    desc: 'A Brookstride raised on the Beaconreach tide-flats. Slow to get going, but once it\'s running it doesn\'t want to stop.',
+  },
+  galeheath: {
+    name: 'Galeheath', sp: 'heathfoal_2', perk: 'glide', from: 'Tamsin', scale: 1.15,
+    start: { spd: 45, foot: 45, sta: 45, bond: 20 },
+    tint: { hue: 205, sat: .5, glow: 1.15 },   // storm-grey with violet streamers
+    tack: { cloth: '#4a3a6a', clothDk: '#33284a', trim: '#d8d0f0', leather: '#4e3a2a', leatherDk: '#2e2116', leatherLt: '#7a5e44' },
+    seat: { down: [66, 52], left: [66, 80], up: [66, 64] },
+    desc: 'A Moorgale from the Highmoor winds. Its streamers catch the air, and with a run-up it will carry you across a gap.',
+  },
+  elderhart: {
+    name: 'Elderhart of the Herd', short: 'Elderhart', sp: 'elderhart', perk: 'charge', from: 'Alder', scale: 1.08,
+    start: { spd: 50, foot: 60, sta: 50, bond: 20 },
+    tint: { hue: 300, sat: .38, glow: 1.05 },   // blossom-pink crowns on a plum coat
+    tack: { cloth: '#3e5a2a', clothDk: '#2a3e1c', trim: '#e8c35a', leather: '#5a3a22', leatherDk: '#34200e', leatherLt: '#8a6040' },
+    seat: { down: [72, 44], left: [80, 66], up: [72, 62] },
+    desc: 'An old hart of Alder\'s herd, its crown in blossom. Nothing in the undergrowth stands in its way.',
+  },
 };
+const mtName = id => MOUNTS[id].short || MOUNTS[id].name;
 const MT_PERKS = {
   leap: { name: 'Leap', icon: '⤴', desc: 'Jump two tiles ahead, clean over a fence, rock, ledge or narrow stream. Three tiles once its Bond reaches 50.' },
+  boost: { name: 'Boost', icon: '⚡', desc: 'A burst at double speed: 1.5 seconds, up to 3 seconds as your Bond grows.' },
+  momentum: { name: 'Momentum', icon: '🌊', desc: 'For a while, speed builds the longer you keep moving, up to +60%. Turning doesn\'t lose it; stopping does. It lasts longer and builds faster as your Bond grows.' },
+  glide: { name: 'Glide', icon: '🪶', desc: 'Float forward and steer as you go: up to three tiles, four once its Bond reaches 50. Over water, ledges and fences.' },
+  charge: { name: 'Charge', icon: '💨', desc: 'For a few seconds, shoulder straight through bushes and small rocks, and run through tall grass without stirring up wild Fablemon. Longer as your Bond grows.' },
 };
 const MT_STATS = [['spd', 'Speed', 'Rises as you ride along paths.'], ['foot', 'Footing', 'Rises as you ride over rough ground.'], ['sta', 'Stamina', 'Rises each time it uses its perk.'], ['bond', 'Bond', 'Rises as you ride, and when you feed and brush it at the stable.']];
-const MT = { st: 100, out: false, uiT: 0, cache: {} };   // st: the current mount's breath right now
+const MT = { st: 100, out: false, uiT: 0, cache: {}, boost: 0, mom: null, charge: null };   // st: the current mount's breath right now
 
 function mtS() { if (!S) return null; S.mt = S.mt || { boots: 0, list: [], ride: 0, cur: null }; if (S.mt.bootsOff === undefined) S.mt.bootsOff = 0; return S.mt; }
 const mtCur = () => { const M = S && S.mt; if (!M || !M.list.length) return null; return M.list.find(m => m.id === M.cur) || M.list[0]; };
@@ -17431,7 +17474,7 @@ const mtMaxSt = m => Math.round(50 + m.sta / 2);
 const mtPerkCost = m => Math.round(40 - m.bond * .2);
 function mtRaise(m, k, n = 1, quiet) {
   const was = m[k]; m[k] = Math.min(100, m[k] + n); if (m[k] === was) return;
-  if (!quiet && Math.floor(m[k] / 5) !== Math.floor(was / 5)) toast(`${MOUNTS[m.id].name}'s ${MT_STATS.find(s => s[0] === k)[1]} rose to ${m[k]}!`, 1800);
+  if (!quiet && Math.floor(m[k] / 5) !== Math.floor(was / 5)) toast(`${mtName(m.id)}'s ${MT_STATS.find(s => s[0] === k)[1]} rose to ${m[k]}!`, 1800);
 }
 function mtGive(id) {
   const M = mtS(), D = MOUNTS[id]; if (M.list.some(m => m.id === id)) return;
@@ -17452,6 +17495,12 @@ function mtGifts(sc) {
     postSend('mt_ridgeram', { from: 'Warden Granger', subj: 'A ram for the road', body: n => `${n},\n\nYou beat me fair. A Warden who can do that shouldn't be walking everywhere, so I've sent you Ridgeram. He's one of the pit rams, a Rambastion raised to the saddle, and he'll carry you anywhere outdoors.\n\nHe's waiting at a post by your house. Feed him and give him a brush when you're home, and the two of you will get on. Ride him plenty: he gets quicker and surer the more ground you cover together.\n\nOne more thing. He can leap. Fences, rocks, streams. Find out for yourself.\n\nGranger`, }, true);
     sc.time.delayedCall(1500, () => toast('🐏 Granger sent you Ridgeram, a mount! Tap his button to ride.', 3800));
   }
+  if (!cr.stone) return;   // the rest come once you can ride
+  const gift = (id, ok, L, note) => { if (!ok || M.list.some(m => m.id === id)) return; mtGive(id); postSend('mt_' + id, L, true); sc.time.delayedCall(2100, () => toast(note, 3800)); };
+  gift('blazemane', typeof derbyWon === 'function' && derbyWon('quarry'), { from: 'Monty', subj: 'Your Quarry Cup prize (the real one)', body: n => `${n}!\n\nWhat a race. I've seen a lot of cups won on that gravel and not many like that.\n\nThe purse was the official prize. This is mine. Blazemane's the quickest Fleecebolt I've ever had in the stables, and he's wasted standing about waiting for race days. He wants to run, and you clearly know how to let a Fablemon run.\n\nHe'll be at your farm. Give him a straight and see what happens.\n\nMonty\nSmallroot Derby` }, '🔥 Monty sent you Blazemane, a mount! Switch mounts in the Stable.');
+  gift('tidestrider', cr.spark, { from: 'Warden Orrin', subj: 'From the tide-flats', body: n => `Dear ${n},\n\nThe beacon burns a little brighter for that battle. Thank you for it.\n\nThe keepers here raise Brookstride to carry the lamp oil across the flats when the tide's out. Tidestrider is the best of them. She's slow off the mark, but give her a long way to go and she'll keep picking up pace until the wind can't catch her.\n\nShe's waiting at your farm.\n\nOrrin, Keeper of Beaconreach` }, '🌊 Orrin sent you Tidestrider, a mount! Switch mounts in the Stable.');
+  gift('galeheath', cr.gale, { from: 'Warden Tamsin', subj: 'Something with wings, nearly', body: n => `${n},\n\nYou climbed all the way up here and then beat me in my own wind. I'd call that earning it.\n\nGaleheath was born on the high moor. Her streamers catch the air like sails: get her running and she'll lift you clean over a gap, and you can lean her where you want to land.\n\nShe's at your farm. Don't let her near the washing line.\n\nTamsin` }, '🪶 Tamsin sent you Galeheath, a mount! Switch mounts in the Stable.');
+  gift('elderhart', cr.wild, { from: 'Warden Alder', subj: 'One of the herd', body: n => `${n},\n\nThe herd has watched you since you first came into the wood. They chose you before I did.\n\nThis is the oldest of them who will still carry a rider. The Elderhart do not go around things. Briar, scrub, loose stone: it walks through and the forest closes behind it. Keep its crown tended.\n\nIt will be waiting at your farm, under the trees if you have any.\n\nAlder` }, '🦌 Alder sent you Elderhart of the Herd, a mount! Switch mounts in the Stable.');
 }
 
 /* ---------- where you can ride: out in the open, not indoors, not at sea, not down a mine */
@@ -17466,7 +17515,8 @@ function mtSpeed(sc, fast) {
   if (sc.rideKey) {
     const m = mtCur(); if (!m) return 1;
     const top = 1.75 + .85 * m.spd / 100, ground = fast ? 1.1 : .82 + .18 * m.foot / 100;   // 1.7x to 2.6x off the paths
-    return top * ground / (fast ? 1.25 : 1);
+    const perk = (MT.boost > 0 ? 2 : 1) * (MT.mom ? 1 + MT.mom.ramp : 1);
+    return top * ground * perk / (fast ? 1.25 : 1);
   }
   return M.boots && !M.bootsOff ? 1.4 : 1;
 }
@@ -17477,6 +17527,7 @@ function mtStep(sc, x, y) {
   if (fast) { if (++m.rp >= 140) { m.rp = 0; mtRaise(m, 'spd'); } }
   else if (++m.rr >= 140) { m.rr = 0; mtRaise(m, 'foot'); }
   m.ridden = (m.ridden || 0) + 1; if (m.ridden % 260 === 0) mtRaise(m, 'bond');
+  if (MT.charge) { const o = mtObstacle(sc, x, y); if (o) mtShove(sc, o, x, y); }
 }
 
 /* ---------- pictures: the variant's colouring, its tack, and the rider */
@@ -17569,7 +17620,7 @@ const MT_R = 3, MT_FW = 64, MT_FH = 76;   // ride frames: 64 x 76 in the world, 
 const MT_WAIST = .56, MT_RIDER = 1.2;                   // how far down the farmer's sprite the waist sits
 function mtCompose(sc, id, rider) {
   const D = MOUNTS[id], T = D.tack, sh = mtSheet(sc, id), fw = sh.fw, R = MT_R, FW = MT_FW * R, FH = MT_FH * R;
-  const mw = 40 * D.scale * R, k = mw / fw, mx = (FW - mw) / 2, my = FH - mw;
+  const mw = (MON_BIG[D.sp] || 40) * D.scale * R, k = mw / fw, mx = (FW - mw) / 2, my = FH - mw;
   const c = document.createElement('canvas'); c.width = FW * 4; c.height = FH * 4; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
   for (let d = 0; d < 4; d++) for (let col = 0; col < 4; col++) {
     const n = d * 4 + col, ox = col * FW, oy = d * FH, bob = (sh.tops[n] - sh.tops[d * 4]) * k;
@@ -17653,19 +17704,36 @@ function mtPerk() {
   const sc = scene, m = mtCur(); if (!sc || !m || !sc.rideKey || sc.paused || sc.sleeping) return;
   const p = sc.p; if (p.moving || p.busy > 0 || sc.hopping) return;
   const D = MOUNTS[m.id], cost = mtPerkCost(m);
-  if (MT.st < cost) { toast(`${D.name} needs to catch its breath.`, 1500); return; }
+  if (MT.boost > 0 || MT.mom || MT.charge) return;   // one at a time
+  if (MT.st < cost) { toast(`${mtName(m.id)} needs to catch its breath.`, 1500); return; }
   if (D.perk === 'leap') return mtLeap(sc, m, cost);
+  if (D.perk === 'glide') return mtGlide(sc, m, cost);
+  MT.st -= cost; if (++m.uses % 3 === 0) mtRaise(m, 'sta');
+  if (D.perk === 'boost') { MT.boost = 1.5 + 1.5 * m.bond / 100; MT.boostMax = MT.boost; Sound.play('pop', 0); mtPuff(sc, 0x8ac8ff); }
+  if (D.perk === 'momentum') { MT.mom = { t: 5 + 5 * m.bond / 100, t0: 5 + 5 * m.bond / 100, ramp: 0, rate: .3 + .3 * m.bond / 100 }; Sound.play('water', 0); }
+  if (D.perk === 'charge') mtChargeStart(sc, m);
+  mtUI(true);
+}
+// a puff of dust behind you
+function mtPuff(sc, col) {
+  const p = sc.p; if (!p) return; const [dx, dy] = DV[p.dir];
+  for (let i = 0; i < 7; i++) {
+    const c = sc.add.circle(sc.player.x - dx * 10 + (Math.random() - .5) * 12, sc.player.y - 3 + (Math.random() - .5) * 6, 2 + Math.random() * 3, col || 0xd8c8a0, .7).setDepth(sc.player.depth - 1);
+    sc.tweens.add({ targets: c, x: c.x - dx * (10 + Math.random() * 14), y: c.y - 4 - Math.random() * 6, alpha: 0, scale: 1.8, duration: 380 + Math.random() * 200, onComplete: () => c.destroy() });
+  }
+}
+// can you land here? Open ground, and (away from your farm) somewhere you could also walk to
+function mtLandOk(sc, x, y) {
+  if (!sc.passable(x, y)) return false;
+  if (typeof Farm !== 'undefined' && sc instanceof Farm) return true;
+  return !!sc.path((a, b) => a === x && b === y);
 }
 function mtLeap(sc, m, cost) {
-  const p = sc.p, [dx, dy] = DV[p.dir], reach = m.bond >= 50 ? 3 : 2, farmHere = typeof Farm !== 'undefined' && sc instanceof Farm;
+  const p = sc.p, [dx, dy] = DV[p.dir], reach = m.bond >= 50 ? 3 : 2;
   let land = null;
   for (let n = 2; n <= reach && !land; n++) {
     const x = p.x + dx * n, y = p.y + dy * n;
-    if (!sc.passable(x, y)) continue;
-    // anywhere you could also walk to (so a leap is a shortcut, never a way past something the story keeps shut);
-    // on your own farm, anywhere at all
-    if (!farmHere && !sc.path((a, b) => a === x && b === y)) continue;
-    land = { x, y };
+    if (mtLandOk(sc, x, y)) land = { x, y };   // (a shortcut, never a way past something the story keeps shut)
   }
   if (!land) { toast('Nowhere to land there.', 1300); return; }
   MT.st -= cost; if (++m.uses % 3 === 0) mtRaise(m, 'sta');
@@ -17691,10 +17759,101 @@ function mtLeap(sc, m, cost) {
     } });
 }
 
+/* ---------- Glide: a float you steer, tile by tile */
+function mtInputDir(sc) {
+  const k = sc.keys;
+  if (k) { if (k.W.isDown || k.UP.isDown) return 'up'; if (k.S.isDown || k.DOWN.isDown) return 'down'; if (k.A.isDown || k.LEFT.isDown) return 'left'; if (k.D.isDown || k.RIGHT.isDown) return 'right'; }
+  const jd = typeof joyDirs === 'function' && joyDirs(); return jd ? jd[0] : null;
+}
+function mtGlide(sc, m, cost) {
+  const p = sc.p, max = m.bond >= 50 ? 4 : 3, start = { x: p.x, y: p.y };
+  let dir = p.dir; { const [dx, dy] = DV[dir], nx = p.x + dx, ny = p.y + dy; if (nx < 0 || ny < 0 || nx >= sc.mw || ny >= sc.mh) { toast('No room to glide there.', 1300); return; } }
+  MT.st -= cost; if (++m.uses % 3 === 0) mtRaise(m, 'sta');
+  const sh = (sc.shadows || []).find(s => s.spr === sc.player), ghost = { x: sc.player.x, y: sc.player.y, active: true, visible: true }; if (sh) sh.spr = ghost;
+  sc.hopping = true; p.path = []; p.pending = null; p.busy = 99; sc.player.stop();
+  const trail = [{ x: p.x, y: p.y }]; let steps = 0, lift = 0, cur = { x: p.x, y: p.y };
+  Sound.play('pop', 1); mtPuff(sc, 0xe8e0ff);
+  const draw = () => { sc.placePlayer(); ghost.x = sc.player.x; ghost.y = sc.player.y; sc.player.y -= lift + Math.sin(sc.time.now / 120) * 1.2; sc.player.setDepth(ghost.y + 20); };
+  const fly = (to, ms, then) => { const x0 = p.px, y0 = p.py, x1 = to.x * T + 8, y1 = to.y * T + 8, o = { t: 0 };
+    sc.tweens.add({ targets: o, t: 1, duration: ms, onUpdate: () => { p.px = x0 + (x1 - x0) * o.t; p.py = y0 + (y1 - y0) * o.t; draw(); }, onComplete: then }); };
+  const finish = at => {
+    const up = { v: lift }; sc.tweens.add({ targets: up, v: 0, duration: 140, onUpdate: () => { lift = up.v; draw(); }, onComplete: () => {
+      if (sh) sh.spr = sc.player; p.x = at.x; p.y = at.y; p.px = at.x * T + 8; p.py = at.y * T + 8; sc.placePlayer(); sc.player.setFrame(DIRS.indexOf(p.dir) * 4);
+      sc.hopping = false; p.busy = 0; Sound.play('step', 1);
+      const f = sc.fol; if (f) { const [dx, dy] = DV[p.dir], bx = at.x - dx, by = at.y - dy, ok = sc.passable(bx, by); f.x = ok ? bx : at.x; f.y = ok ? by : at.y; f.px = f.x * T + 8; f.py = f.y * T + 8; f.trail = []; f.moving = false; sc.drawFollower(); }
+      if (at.x !== start.x || at.y !== start.y) sc.arriveHook && sc.arriveHook(p.x, p.y);
+    } });
+  };
+  const land = () => {
+    // come down on the last open tile along the way (back to where you started, if none)
+    let at = null; for (let i = trail.length - 1; i > 0 && !at; i--) if (mtLandOk(sc, trail[i].x, trail[i].y)) at = trail[i];
+    at = at || start;
+    if (at.x === cur.x && at.y === cur.y) return finish(at);
+    fly(at, 120 + 60 * Math.hypot(at.x - cur.x, at.y - cur.y), () => finish(at));
+  };
+  const step = () => {
+    const want = mtInputDir(sc), back = want && DV[want][0] === -DV[dir][0] && DV[want][1] === -DV[dir][1]; if (want && !back) dir = want;   // steer, but no doubling back
+    const [dx, dy] = DV[dir], nx = cur.x + dx, ny = cur.y + dy;
+    if (steps >= max || nx < 0 || ny < 0 || nx >= sc.mw || ny >= sc.mh) return land();
+    steps++; p.dir = dir; sc.player.setFrame(DIRS.indexOf(dir) * 4 + 1);
+    fly({ x: nx, y: ny }, 190, () => { cur = { x: nx, y: ny }; trail.push(cur); step(); });
+  };
+  const up = { v: 0 }; sc.tweens.add({ targets: up, v: 9, duration: 140, onUpdate: () => { lift = up.v; draw(); }, onComplete: step });
+}
+
+/* ---------- Charge: bushes and small rocks are shoved aside as you go */
+const MT_SMALL = /bush|rock|stump|pile|pebble|weed|log/;
+function mtObstacle(sc, x, y) {
+  if (typeof Farm !== 'undefined' && sc instanceof Farm) {
+    if (typeof farm === 'undefined' || !farm) return null; const id = farm.occ[y * sc.mw + x]; if (id < 0 || id === undefined) return null;
+    const d = farm.debris[id], D = d && DEBRIS[d.kind]; if (!D || D.tree || D.wide) return null; return { spr: sc.sprites && sc.sprites[id] };
+  }
+  const C = MT.charge && MT.charge.small; if (!C) return null; return C.get(y * sc.mw + x) || null;
+}
+function mtChargeStart(sc, m) {
+  const dur = 3 + 3 * m.bond / 100, small = new Map(), W = sc.mw, H = sc.mh, farmHere = typeof Farm !== 'undefined' && sc instanceof Farm;
+  if (!farmHere && sc.R && sc.R.deco) {
+    const at = new Map(); for (const o of sc.children.list) if (o.type === 'Image') at.set(o.x + ',' + o.y, o);
+    for (const d of sc.R.deco) {
+      if (d.gate || d.tall || d.flat || !MT_SMALL.test(d.f || d.tex || '')) continue;
+      const i = d.y * W + d.x; if (!sc.R.blocked[i]) continue;
+      small.set(i, { spr: at.get((d.x * T + 8) + ',' + (d.y * T + 15)) });
+    }
+  }
+  // where you can walk to now: you can charge through something only between two such places
+  let reach = null;
+  if (!farmHere) {
+    reach = new Uint8Array(W * H); const q = [sc.p.y * W + sc.p.x]; reach[q[0]] = 1;
+    while (q.length) { const c = q.pop(), x = c % W, y = (c / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, n = ny * W + nx; if (nx < 0 || ny < 0 || nx >= W || ny >= H || reach[n] || !sc.passable(nx, ny)) continue; reach[n] = 1; q.push(n); } }
+  }
+  const hadOwn = Object.prototype.hasOwnProperty.call(sc, 'passable'), orig = sc.passable;
+  MT.charge = { t: dur, t0: dur, small, sc, hadOwn, orig };
+  sc.passable = function (x, y) {
+    if (orig.call(this, x, y)) return true;
+    if (!MT.charge || x < 0 || y < 0 || x >= W || y >= H || !mtObstacle(this, x, y)) return false;
+    if (farmHere) return true;
+    const ok = (a, b) => a >= 0 && b >= 0 && a < W && b < H && reach[b * W + a];
+    return (ok(x - 1, y) && ok(x + 1, y)) || (ok(x, y - 1) && ok(x, y + 1));
+  };
+  sc.stepsSafe = 999; Sound.play('chop', 0); mtPuff(sc, 0xc8b890); sc.cameras.main.shake(90, .002);
+}
+function mtChargeEnd() {
+  const C = MT.charge; if (!C) return; MT.charge = null;
+  const sc = C.sc; if (C.hadOwn) sc.passable = C.orig; else delete sc.passable;
+  sc.stepsSafe = 3;
+}
+function mtShove(sc, o, x, y) {
+  Sound.play(Math.random() < .5 ? 'rustle' : 'chop', 0); sc.cameras.main.shake(60, .0025); mtPuff(sc, 0x9a8a60);
+  const s = o.spr; if (!s || !s.active || s.mtShoved) return; s.mtShoved = 1;
+  const [dx] = DV[sc.p.dir], side = dx ? 0 : (Math.random() < .5 ? -1 : 1);
+  sc.tweens.add({ targets: s, angle: (dx || side) * 16, x: s.x + (dx || side) * 3, duration: 110, yoyo: true, ease: 'Quad.out', onComplete: () => { s.mtShoved = 0; s.angle = 0; } });
+}
+
 /* ---------- the post on the farm, where your mount waits */
 const MT_POST = { x: 60, y: 16 };
-function mtPostSpot(sc) {
-  const ok = (x, y) => sc._mtPass0.call(sc, x, y) && !(sc.p && sc.p.x === x && sc.p.y === y) && !(x === DOOR.x && y === DOOR.y) && !(S.tilled && S.tilled[x + ',' + y]) && !(S.paths && S.paths[x + ',' + y]);
+function mtPostSpot(sc, taken = []) {
+  const near = (x, y) => taken.some(a => Math.abs(a.x - x) < 3 && Math.abs(a.y - y) < 2);
+  const ok = (x, y) => !near(x, y) && sc._mtPass0.call(sc, x, y) && !(sc.p && sc.p.x === x && sc.p.y === y) && !(x === DOOR.x && y === DOOR.y) && !(S.tilled && S.tilled[x + ',' + y]) && !(S.paths && S.paths[x + ',' + y]) && !(typeof farm !== 'undefined' && farm && farm.dirtish[y * sc.mw + x]);
   for (let r = 0; r < 7; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
     if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
     const x = MT_POST.x + dx, y = MT_POST.y + dy; if (ok(x, y) && ok(x, y + 1)) return { x, y };
@@ -17703,36 +17862,37 @@ function mtPostSpot(sc) {
 }
 function mtPost(sc) {
   if (typeof Farm === 'undefined' || !(sc instanceof Farm)) return;
-  const m = mtCur(), show = m && !sc.rideKey;
-  if (!show) { if (sc.mtSpr) { sc.mtSpr.destroy(); sc.mtSpr = null; } if (sc.mtShadow) { sc.mtShadow.destroy(); sc.mtShadow = null; } sc.mtAt = null; return; }
-  if (sc.mtSpr && sc.mtSpr.mid === m.id) return;
-  if (!monReady(sc, MOUNTS[m.id].sp, () => { if (sc.sys && sc.sys.isActive()) mtPost(sc); })) return;
-  if (sc.mtSpr) sc.mtSpr.destroy(); if (sc.mtShadow) sc.mtShadow.destroy();
+  const M = S && S.mt, ids = (M && M.list || []).map(m => m.id).filter(id => !(sc.rideKey && id === sc.rideId)), key = ids.join(',');
+  if (sc.mtKey === key) return;
+  const need = ids.map(id => MOUNTS[id].sp).filter(sp => !sc.textures.exists('mon_' + sp));
+  if (need.length) { if (!sc.mtWait) { sc.mtWait = 1; monFetchAll(sc, need).then(() => { sc.mtWait = 0; if (sc.sys && sc.sys.isActive() && sc.p) mtPost(sc); }); } return; }
+  for (const o of sc.mtSprs || []) o.destroy(); sc.mtSprs = []; sc.mtAts = []; sc.mtKey = key;
   sc._mtPass0 = sc._mtPass0 || Farm.prototype._mtPass;
-  const at = mtPostSpot(sc); if (!at) return; sc.mtAt = at;
-  const key = mtTackTex(sc, m.id), x = at.x * T + 8, y = at.y * T + 8 + 7;
-  sc.mtSpr = sc.add.sprite(x, y, key, 4).setOrigin(.5, 1).setScale(1 / MT_R).setDepth(y); sc.mtSpr.mid = m.id;
-  sc.mtShadow = sc.add.ellipse(x, y - 1, 30, 9, 0x1a1206, .32).setDepth(1.5);
-  // a slow breath
-  sc.tweens.add({ targets: sc.mtSpr, scaleY: { from: 1 / MT_R, to: 1.02 / MT_R }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+  ids.forEach((id, n) => {
+    const at = mtPostSpot(sc, sc.mtAts); if (!at) return; at.id = id; sc.mtAts.push(at);
+    const tex = mtTackTex(sc, id), x = at.x * T + 8, y = at.y * T + 8 + 7;
+    const spr = sc.add.sprite(x, y, tex, n % 2 ? 8 : 4).setOrigin(.5, 1).setScale(1 / MT_R).setDepth(y); spr.mid = id; spr.at = at;   // side on, so the saddle shows
+    sc.mtSprs.push(spr, sc.add.ellipse(x, y - 1, 30, 9, 0x1a1206, .32).setDepth(1.5));
+    sc.tweens.add({ targets: spr, scaleY: { from: 1 / MT_R, to: 1.02 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });   // a slow breath
+  });
 }
 // hook the farm: the post blocks its tile, and you can tap it or face it to open the stable
 (function () {
   if (typeof Farm === 'undefined') return;
   const FP = Farm.prototype, pass = FP.passable, target = FP.targetAt, act = FP.act, face = FP.actFacing;
   FP._mtPass = pass;
-  FP.passable = function (x, y) { const a = this.mtAt; if (a && x === a.x && y === a.y) return false; return pass.call(this, x, y); };
-  FP.targetAt = function (wx, wy) { if (this.mtSpr && this.mtAt && this.mtSpr.getBounds().contains(wx, wy)) return { type: 'mtpost', x: this.mtAt.x, y: this.mtAt.y }; return target.call(this, wx, wy); };
-  FP.act = function (t) { if (t && t.type === 'mtpost') { if (this.p.busy > 0) { this.p.queued = t; return; } this.face(t.x, t.y); return mtOpen(true); } return act.call(this, t); };
+  FP.passable = function (x, y) { if (this.mtAts && this.mtAts.some(a => a.x === x && a.y === y)) return false; return pass.call(this, x, y); };
+  FP.targetAt = function (wx, wy) { for (const o of this.mtSprs || []) if (o.at && o.getBounds().contains(wx, wy)) return { type: 'mtpost', x: o.at.x, y: o.at.y, id: o.mid }; return target.call(this, wx, wy); };
+  FP.act = function (t) { if (t && t.type === 'mtpost') { if (this.p.busy > 0) { this.p.queued = t; return; } this.face(t.x, t.y); return mtOpen(true, t.id); } return act.call(this, t); };
   FP.actFacing = function () {
-    const p = this.p, a = this.mtAt; if (p && a && !p.moving && !this.paused) { const [dx, dy] = DV[p.dir]; if (p.x + dx === a.x && p.y + dy === a.y) return this.act({ type: 'mtpost', x: a.x, y: a.y }); }
+    const p = this.p; if (p && this.mtAts && !p.moving && !this.paused) { const [dx, dy] = DV[p.dir], a = this.mtAts.find(a => p.x + dx === a.x && p.y + dy === a.y); if (a) return this.act({ type: 'mtpost', x: a.x, y: a.y, id: a.id }); }
     return face.call(this);
   };
 })();
 
 /* ---------- the stable screen: your mounts, their stats, and feeding and brushing */
 function mtMenuTile() { const M = S && S.mt; return M && (M.list.length || M.boots) ? [['mounts', M.list.length ? '🐏' : '👢', M.list.length ? 'Mounts' : 'Boots']] : []; }
-function mtOpen(atPost) {
+function mtOpen(atPost, focus) {
   const M = mtS(); if (!M) return;
   if (atPost !== undefined) MT.atPost = !!atPost;
   const here = MT.atPost && scene && typeof Farm !== 'undefined' && scene instanceof Farm;
@@ -17741,10 +17901,10 @@ function mtOpen(atPost) {
   const cards = M.list.map(m => {
     const D = MOUNTS[m.id], P = MT_PERKS[D.perk], cur = m.id === (mtCur() || {}).id;
     const fedToday = m.fed === S.day, brushedToday = m.brushed === S.day;
-    return `<div class="mtcard${cur && M.list.length > 1 ? ' cur' : ''}">
+    return `<div class="mtcard${cur && M.list.length > 1 ? ' cur' : ''}" id="mtc_${m.id}">
       <div style="display:flex;gap:10px;align-items:center">
         <img src="${mtPic(m.id)}" style="width:84px;height:84px;object-fit:contain">
-        <div style="flex:1;min-width:0"><b style="font-size:17px">${D.name}</b><div class="hint" style="margin:2px 0 6px">${D.desc}</div></div>
+        <div style="flex:1;min-width:0"><b style="font-size:17px">${D.name}</b>${cur ? ' <span class="hint">(riding)</span>' : ''}<div class="hint" style="margin:2px 0 6px">${D.desc}</div></div>
       </div>
       ${MT_STATS.map(([k, n, why]) => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0" title="${why}"><span style="width:64px">${n}</span>${bar(m[k], cols[k])}<b style="width:28px;text-align:right">${m[k]}</b></div>`).join('')}
       <p style="margin:8px 0 4px"><b>${P.icon} ${P.name}</b>: ${P.desc} <span class="hint">Uses ${mtPerkCost(m)} of ${mtMaxSt(m)} breath.</span></p>
@@ -17761,14 +17921,15 @@ function mtOpen(atPost) {
   openModal(here ? 'Stable' : 'Mounts', `<div id="mtList">${boots}${cards}</div>${ride}`, (a, d) => {
     const m = M.list.find(x => x.id === (d && d.d));
     if (a === 'boots') { M.bootsOff = M.bootsOff ? 0 : 1; mtOpen(); }
-    if (a === 'pick' && m) { M.cur = m.id; if (scene) { scene.rideWant = null; if (scene.rideKey) mtApply(scene, true); mtPost(scene); } mtUI(true); mtOpen(); }
-    if (a === 'feed' && m && m.fed !== S.day) { m.fed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 0); toast(`${MOUNTS[m.id].name} munches happily. Bond +3`, 1800); mtCare(); mtOpen(); }
-    if (a === 'brush' && m && m.brushed !== S.day) { m.brushed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 1); toast(`${MOUNTS[m.id].name} leans into the brush. Bond +3`, 1800); mtCare(); mtOpen(); }
+    if (a === 'pick' && m) { M.cur = m.id; if (scene) { scene.rideWant = null; if (scene.rideKey) mtApply(scene, true); } mtUI(true); mtOpen(); }
+    if (a === 'feed' && m && m.fed !== S.day) { m.fed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 0); toast(`${mtName(m.id)} munches happily. Bond +3`, 1800); mtCare(m.id); mtOpen(undefined, m.id); }
+    if (a === 'brush' && m && m.brushed !== S.day) { m.brushed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 1); toast(`${mtName(m.id)} leans into the brush. Bond +3`, 1800); mtCare(m.id); mtOpen(undefined, m.id); }
     if (a === 'ride') { closeModal(); mtToggle(); }
   });
+  if (focus) { const el = $('mtc_' + focus); if (el) el.scrollIntoView({ block: 'nearest' }); }
 }
 // a little happy hop at the post
-function mtCare() { const sc = scene; if (!sc || !sc.mtSpr) return; sc.tweens.add({ targets: sc.mtSpr, y: sc.mtSpr.y - 5, duration: 120, yoyo: true, repeat: 1 }); }
+function mtCare(id) { const sc = scene, s = sc && (sc.mtSprs || []).find(o => o.mid === id); if (!s) return; sc.tweens.add({ targets: s, y: s.y - 5, duration: 120, yoyo: true, repeat: 1 }); }
 
 /* ---------- the buttons: saddle (get on and off) and the perk, with a breath ring */
 function mtButtons() {
@@ -17782,6 +17943,7 @@ function mtButtons() {
   .mtb:active{transform:translateY(2px)}
   #mtPerk{--p:100}
   #mtPerk::before{content:'';position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(#3a8ad0 calc(var(--p)*1%),#0002 0);-webkit-mask:radial-gradient(circle,transparent 30px,#000 31px);mask:radial-gradient(circle,transparent 30px,#000 31px)}
+  #mtPerk.on::before{background:conic-gradient(#ffb020 calc(var(--p)*1%),#0002 0)}
   #mtPerk.low{filter:grayscale(.7);opacity:.75}
   body.ctlEdit .mtb{display:none !important}`;
   document.head.appendChild(st);
@@ -17807,10 +17969,11 @@ function mtUI(force) {
   if (force || rb.dataset.k !== m.id + riding) {
     rb.dataset.k = m.id + riding; rb.classList.toggle('on', riding);
     const ic = HD[D.sp] && HD[D.sp].i ? mtPic(m.id, 'icon') : '';
-    rb.innerHTML = ic ? `<img src="${ic}">` : '🐏'; rb.title = riding ? 'Get down (R)' : `Ride ${D.name} (R)`;
+    rb.innerHTML = ic ? `<img src="${ic}">` : '🐏'; rb.title = riding ? 'Get down (R)' : `Ride ${mtName(m.id)} (R)`;
     pb.textContent = MT_PERKS[D.perk].icon; pb.title = MT_PERKS[D.perk].name + ' (F)';
   }
-  pb.style.setProperty('--p', Math.round(100 * MT.st / mtMaxSt(m))); pb.classList.toggle('low', MT.st < mtPerkCost(m));
+  const act = MT.boost > 0 ? MT.boost / MT.boostMax : MT.mom ? MT.mom.t / MT.mom.t0 : MT.charge ? MT.charge.t / MT.charge.t0 : 0;
+  pb.style.setProperty('--p', Math.round(100 * (act || MT.st / mtMaxSt(m)))); pb.classList.toggle('low', !act && MT.st < mtPerkCost(m)); pb.classList.toggle('on', !!act);
   // sit them beside the action button (wherever you've moved it), or bottom right without one
   const a = $('actBtn').getBoundingClientRect(), touch = a.width > 0;
   const right = touch ? innerWidth - a.left + 14 : 18, bottom = touch ? innerHeight - a.top - 10 : 110;
@@ -17822,7 +17985,8 @@ function mtUI(force) {
 (function () {
   const WP = World.prototype, mk = WP.makePlayer, upd = WP.update, sw = WP.swing;
   WP.makePlayer = function (sp) {
-    this.rideKey = null; this.rideWant = null; this.hopping = false; this.mtSpr = this.mtShadow = this.mtAt = null;
+    if (MT.charge) mtChargeEnd(); MT.boost = 0; MT.mom = null;
+    this.rideKey = null; this.rideWant = null; this.hopping = false; this.mtSprs = null; this.mtAts = null; this.mtKey = null;
     mk.call(this, sp);
     try { mtButtons(); mtGifts(this); mtPost(this); } catch (e) { console.warn('mounts', e); }
   };
@@ -17834,7 +17998,11 @@ function mtUI(force) {
     if (want !== !!this.rideKey && this.rideWant !== want && !this.hopping && !(this.p.busy > 0)) { this.rideWant = want; mtApply(this, want); }
     // your look changed: the rider changes with it
     if (this.rideKey && m && (MT.cache['ride:' + m.id] || {}).img !== this.textures.get('walk').getSourceImage()) mtApply(this, true);
-    if (m) MT.st = Math.min(mtMaxSt(m), MT.st + dms / 1000 * (this.rideKey ? 9 : 14));
+    const dt = Math.min(.05, dms / 1000);
+    if (m) MT.st = Math.min(mtMaxSt(m), MT.st + dt * (this.rideKey ? 9 : 14));
+    if (MT.boost > 0) { MT.boost -= dt; if (this.p.moving && Math.random() < .35) mtPuff(this, 0x8ac8ff); }
+    if (MT.mom) { const mm = MT.mom; mm.t -= dt; if (this.p.moving) { mm.idle = 0; mm.ramp = Math.min(.6, mm.ramp + dt * mm.rate); } else if ((mm.idle = (mm.idle || 0) + dt) > .25) mm.ramp = 0; if (mm.t <= 0) MT.mom = null; }
+    if (MT.charge) { MT.charge.t -= dt; this.stepsSafe = 999; if (MT.charge.t <= 0 || !this.rideKey) mtChargeEnd(); }
     MT.uiT -= dms; if (MT.uiT <= 0) { MT.uiT = 150; mtUI(); }
   };
   // tools need both hands: hop down first
