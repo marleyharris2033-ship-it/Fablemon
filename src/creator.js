@@ -139,16 +139,40 @@ const CCX = (() => {
     if (pour) { g.fillStyle = '#9fd3f0'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(54 + i * 3, -6 + i * 9, 3.5, 0, 7); g.fill(); } }
     g.restore();
   }
-  // per direction: grip (fraction of the box), whether the tool goes behind the body, and the swing angles (degrees
-  // from straight up, clockwise) for ready, raise, strike, follow-through
-  const SW = [
-    { gx: .58, gy: .6, back: 0, a: [148, -45, 160, 152] },   // down
-    { gx: .36, gy: .58, back: 0, a: [-132, 25, -118, -126] },   // left
-    { gx: .64, gy: .58, back: 0, a: [132, -25, 118, 126] },    // right
-    { gx: .58, gy: .55, back: 1, a: [160, 20, 168, 164] }     // up
-  ];
-  const POSE = [[1, 0], [1, -3], [0, 3], [1, 0]];   // per phase: walk step to borrow, and how far the body dips (px)
-
+  /* ---- the tool rig (23 Nov 2026): each outfit's standing pose has its arms cut out (build_creator.py: rig pieces with
+     a shoulder pivot and the hand), so a swing turns the arms from the shoulder and the tool sits in the hand.
+     Angles in degrees: 0 = hanging down, 90 = held out in front, 180 = straight up (side on, "front" is the way
+     the farmer faces). Per phase: ready, raise, strike, follow-through. */
+  const SWING = { arm: [30, 190, 75, 50], tool: [65, 215, 45, 15], dip: [0, -3, 3, 1] };
+  const R = a => a * Math.PI / 180;
+  function rigParts(L, d) {
+    const oi = oIdx(L), O = CC.outfits[oi], rig = O.rig && O.rig[d]; if (!rig || !rig.length) return null;
+    return { oi, O, arms: rig.map(a => ({ ...a, P: CC.pieces[a.k] })), torso: CC.pieces[`rig${oi}_${d}_t`] };
+  }
+  // draws the farmer in the standing pose of direction d with the arms turned by ang[k] (canvas radians, clockwise),
+  // calling tool(hand) behind or in front; returns false if this outfit has no rig
+  function drawRig(g, L, d, ox0, oy0, ang, tool, toolBehind) {
+    const rp = rigParts(L, d); if (!rp) return false;
+    const f = d * 4 + 1, [ax, ay] = CC.anchors[f], skin = SKIN[L.sk][1], hc = HAIRC[L.hc][1], bc = L.bc < 0 ? hc : HAIRC[L.bc][1], [ox, oy] = rp.O.offs[f];
+    const oc = L.oc < 0 ? null : CLOTHC[L.oc][1];
+    const put = (key, cols, dx, dy) => { const P = CC.pieces[key], im = piece(key, cols); if (im) g.drawImage(im, Math.round(ox0 + P.at[0] + dx), Math.round(oy0 + P.at[1] + dy)); };
+    const hands = rp.arms.map((a, k) => { const t = ang[k] || 0, vx = a.hand[0] - a.piv[0], vy = a.hand[1] - a.piv[1];
+      return [ox0 + a.piv[0] + vx * Math.cos(t) - vy * Math.sin(t), oy0 + a.piv[1] + ay + vx * Math.sin(t) + vy * Math.cos(t)]; });
+    const arms = () => rp.arms.forEach((a, k) => { const im = piece(a.k, [skin, null, null, oc]); if (!im) return;
+      g.save(); g.translate(ox0 + a.piv[0], oy0 + a.piv[1] + ay); g.rotate(ang[k] || 0); g.drawImage(im, Math.round(a.P.at[0] - a.piv[0]), Math.round(a.P.at[1] - a.piv[1])); g.restore(); });
+    const head = () => { put(`head${L.f}_${d}`, [skin], ax + ox, ay + oy);
+      if (L.b >= 0 && d !== 3) { const [fx, fy] = (CC.beardOff || [])[L.f]?.[d] || [0, 0]; put(`beard${L.b}_${d}`, [null, null, bc], ax + ox + fx, ay + oy + fy); }
+      if (L.h) put(`hair_${L.h}_${d}`, [null, hc], ax + ox, ay + oy); };
+    if (toolBehind) tool(hands);
+    put(`neck${rp.O.body}_${f}`, [skin], rp.O.neck[f][0], rp.O.neck[f][1] + ay);
+    put(`rig${rp.oi}_${d}_t`, [skin, null, null, oc], 0, ay);
+    if (d === 0) { if (!toolBehind) tool(hands); arms(); head(); }          // facing you: hands in front, head over raised arms
+    else if (d === 3) { head(); if (!toolBehind) tool(hands); arms(); }   // facing away
+    else { head(); if (!toolBehind) tool(hands); arms(); }                 // side on: the near arm over everything, glove over the handle
+    return true;
+  }
+  // front and back: aim both hands at a point (cell coordinates), each arm turning from its own shoulder
+  function aimArms(rp, tx, ty) { return rp.arms.map(a => { const h = Math.atan2(a.hand[1] - a.piv[1], a.hand[0] - a.piv[0]), t = Math.atan2(ty - a.piv[1], tx - a.piv[0]); return t - h; }); }
   async function sheets(L) {
     L = fix(L); await ready(L);
     const B = box(), W = B.w, H = B.h;
@@ -157,19 +181,33 @@ const CCX = (() => {
     const walk = document.createElement('canvas'); walk.width = W * 4; walk.height = H * 4; const wg = walk.getContext('2d');
     for (let d = 0; d < 4; d++) [1, 0, 3, 2].forEach((st, col) => wg.drawImage(fig(d, st), col * W, d * H));
     // tools: 64 frames, 8 a row, frame (tool * 4 + dir) * 4 + phase; tools hoe, can, axe, pickaxe. Feet sit at 46/48 down.
-    const TW = W + 180, TH = Math.ceil((H + 70) * 48 / 46), feetY = Math.round(TH * 46 / 48), top = feetY - (B.feet - B.y), left = 90;
+    const TW = W + 200, TH = Math.ceil((H + 120) * 48 / 46), feetY = Math.round(TH * 46 / 48), top = feetY - (B.feet - B.y), left = 100;
     const tools = document.createElement('canvas'); tools.width = TW * 8; tools.height = TH * 8; const tg = tools.getContext('2d');
-    const len = Math.round((B.feet - B.y) * .42);
+    const len = Math.round((B.feet - B.y) * .42), oi = oIdx(L), OF = CC.outfits[oi];
+    // the figure's shoulders, waist and head top (cell coordinates) for aiming the hands, facing you
+    const P1 = CC.pieces[`outfit${oi}_1`], cx = CC.cell / 2, fTop = P1.at[1], fH = P1.f[3], waist = fTop + fH * .5, headTop = Math.min(...[0, 1, 2, 3].map(d => CC.pieces[`head${L.f}_${d}`].at[1] + OF.offs[d * 4 + 1][1]));
     ['hoe', 'can', 'axe', 'pickaxe'].forEach((t, ti) => { for (let d = 0; d < 4; d++) for (let ph = 0; ph < 4; ph++) {
-      const n = (ti * 4 + d) * 4 + ph, fx = (n % 8) * TW, fy = Math.floor(n / 8) * TH, [st, dip] = POSE[ph], s = SW[d];
-      const body = fig(d, t === 'can' ? 1 : st, t === 'can' ? 0 : dip), gx = fx + left + W * s.gx, gy = fy + top + H * s.gy + (t === 'can' ? 0 : dip);
-      const tool = () => { tg.save(); tg.translate(gx, gy);
-        if (t === 'can') { const tilt = [0, .25, .9, .6][ph]; drawCan(tg, d === 1, d === 1 ? tilt : tilt, ph >= 2); }
-        else { tg.rotate(s.a[ph] * Math.PI / 180); drawTool(tg, t, len); }
-        tg.restore(); };
+      const n = (ti * 4 + d) * 4 + ph, fx = (n % 8) * TW, fy = Math.floor(n / 8) * TH, ox0 = fx + left - B.x, dip = t === 'can' ? 0 : SWING.dip[ph], oy0 = fy + top - B.y + dip;
+      const rp = rigParts(L, d), side = d === 1 || d === 2, sg = d === 1 ? 1 : -1;
       tg.save(); tg.beginPath(); tg.rect(fx, fy, TW, TH); tg.clip();
-      const behind = s.back || (ph === 1 && t !== 'can');   // raised over the head, the tool is behind it
-      if (behind) tool(); tg.drawImage(body, fx + left, fy + top); if (!behind) tool();
+      let ok = false;
+      if (rp && t === 'can') {
+        if (side) { const near = rp.arms.length - 1, ang = rp.arms.map((_, k) => k === near ? R(65) * sg : 0);
+          ok = drawRig(tg, L, d, ox0, oy0, ang, hs => { const [hx, hy] = hs[near]; tg.save(); tg.translate(hx, hy + 4); drawCan(tg, d === 1, [0, .25, .9, .6][ph], ph >= 2); tg.restore(); }, false); }
+        else { const k = d === 0 ? rp.arms.length - 1 : 0, a = aimArms(rp, cx + (d === 0 ? 1 : -1) * 6, waist + 4), ang = rp.arms.map((_, j) => j === k ? a[j] : 0);
+          ok = drawRig(tg, L, d, ox0, oy0, ang, hs => { const [hx, hy] = hs[k]; tg.save(); tg.translate(hx, hy + 4); drawCan(tg, false, [0, .25, .9, .6][ph] * .6, ph >= 2); tg.restore(); }, d === 3); }
+      } else if (rp) {
+        if (side) {   // both arms move together; the tool runs on from the near hand
+          const ang = rp.arms.map(() => R(SWING.arm[ph]) * sg), near = rp.arms.length - 1;
+          ok = drawRig(tg, L, d, ox0, oy0, ang, hs => { const [hx, hy] = hs[near]; tg.save(); tg.translate(hx, hy); tg.rotate(R(SWING.tool[ph] - 180) * sg); drawTool(tg, t, len); tg.restore(); }, ph === 1);
+        } else {      // facing you or away: both hands meet on the handle
+          const tgt = [[cx, waist - 2], [cx, headTop - 6], [cx, waist + 10], [cx, waist + 4]][ph], ang = aimArms(rp, tgt[0], tgt[1]);
+          const rot = d === 0 ? [28, 0, 180, 165][ph] : [-28, 0, 180, 195][ph], behind = d === 0 ? ph === 1 : ph !== 1;
+          ok = drawRig(tg, L, d, ox0, oy0, ang, hs => { const hx = (hs[0][0] + hs[hs.length - 1][0]) / 2, hy = (hs[0][1] + hs[hs.length - 1][1]) / 2;
+            tg.save(); tg.translate(hx, hy); tg.rotate(R(rot)); if (ph >= 2) tg.scale(1, .72); drawTool(tg, t, len); tg.restore(); }, behind);
+        }
+      }
+      if (!ok) tg.drawImage(fig(d, 1), fx + left, fy + top);   // no rig for this outfit: just stand
       tg.restore();
     } });
     // portrait: the head from the front

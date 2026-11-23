@@ -323,9 +323,78 @@ for i, bd in enumerate(bodies):
         al = fr[..., 3] > 0; t = np.nonzero(al.any(1))[0][0]; xs = np.nonzero(al[t:t + 8].any(0))[0]
         nk = np.zeros_like(fr); x0, x1 = xs.min() + 1, xs.max(); nk[t:t + 44, x0:x1] = fr[t:t + 44, x0:x1]
         add(f'neck{i}_{f}', nk, 'body', 0, 0)
+# ---------- the tool rig (23 Nov 2026): for each outfit's standing pose in every direction, the arms are cut out (found
+# on its body type, where the arms are bare skin) so the game can swing them, tool in hand, from the shoulder. What's
+# left behind the arms is filled in from the clothes around it.
+import cv2
+def base_arms(B, d):
+    al = B[..., 3] > 0; ys, xs = np.nonzero(al); T, Bt = ys.min(), ys.max(); H = Bt - T
+    sk = skin_mask(B); yy = np.arange(B.shape[0])[:, None]
+    band = sk & (yy > T + .14 * H) & (yy < T + .62 * H); lb, n = ndi.label(band); out = []
+    if not n: return out
+    sz = ndi.sum(band, lb, range(1, n + 1)); order = np.argsort(-sz)
+    for j in [j + 1 for j in order[:2 if d in (0, 3) else 1] if sz[j] > .25 * sz[order[0]]]:
+        m = lb == j; ry, rx = np.nonzero(m); top = ry.min(); sh_y = int(T + .16 * H)
+        xt = rx[ry < top + 6]; x0, x1 = xt.min(), xt.max(); w = x1 - x0
+        reg = m.copy(); reg[sh_y:top + 6, max(0, x0 - int(.1 * w)):x1 + int(.1 * w) + 1] = True; reg &= al
+        reg = ndi.binary_dilation(reg, iterations=max(2, int(.12 * w))) & (yy <= ry.max() + 2)
+        hr = ry > ry.max() - .22 * (ry.max() - top)
+        out.append((reg, ((x0 + x1) / 2, sh_y + .25 * w), (rx[hr].mean(), ry[hr].mean())))
+    return out
+def rig_outfit(i, od):
+    rig = {}
+    for d in range(4):
+        f = d * 4 + 1; O = od['frames'][f]; B = bodies[od['body']]['frames'][f]; dx, dy = od['shift'][f]
+        arms = base_arms(B, d)
+        if not arms: continue
+        Os = resize(O, OUT_SCALE); Ms = mat_for(Os, 'outfit'); al = Os[..., 3] > 0; H0, W0 = al.shape
+        mv = lambda m: np.asarray(Image.fromarray((np.roll(np.roll(m, dy, 0), dx, 1) * 255).astype(np.uint8)).resize((W0, H0), Image.BILINEAR)) > 127
+        arms.sort(key=lambda t: t[1][0])                      # left to right on screen
+        regs = [mv(r) for r, _, _ in arms]; cut0 = np.any(regs, 0) & al
+        # the body is what's left once the arms are lifted off: its main piece, without thin outline scraps
+        rest = al & ~cut0; lb, n = ndi.label(ndi.binary_opening(rest, iterations=3))
+        main = lb == (1 + int(np.argmax(ndi.sum(lb > 0, lb, range(1, n + 1))))) if n else rest
+        body = rest & ndi.binary_dilation(main, iterations=2); armpix = al & ~body
+        # each arm pixel goes to the nearest arm
+        dist = np.stack([ndi.distance_transform_edt(~r) for r in regs]); own = dist.argmin(0)
+        parts = []
+        for k, (reg, piv, hand) in enumerate(arms):
+            m = armpix & (own == k); lbm, nm = ndi.label(m)
+            if nm > 1: m = lbm == (1 + int(np.argmax(ndi.sum(m, lbm, range(1, nm + 1)))))   # the arm itself, not stray outline scraps
+            ys, xs = np.nonzero(m)
+            if not len(ys): continue
+            y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+            a = Os[y0:y1, x0:x1].copy(); a[~m[y0:y1, x0:x1]] = 0; mt = Ms[y0:y1, x0:x1].copy(); mt[~m[y0:y1, x0:x1]] = 0
+            key = f'rig{i}_{d}_{len(parts)}'; items.append((key, a, mt, x0, y0))
+            S_ = lambda p: [round(float((p[0] + dx) * OUT_SCALE), 1), round(float((p[1] + dy) * OUT_SCALE), 1)]
+            parts.append(dict(k=key, piv=S_(piv), hand=S_(hand)))
+        # behind the arms: in each row, the gap the arm left between the body's own edges
+        span = np.zeros_like(body)
+        for y in np.nonzero(body.any(1))[0]: xs_ = np.nonzero(body[y])[0]; span[y, xs_[0]:xs_[-1] + 1] = True
+        hole = span & armpix & ~body
+        if d in (1, 2): hole = armpix.copy()   # side on, the arm lies over the body: all of it is body behind
+        T_ = Os.copy(); T_[~body] = 0; Mt = Ms.copy(); Mt[~body] = 0
+        if d in (1, 2):   # side on: the walking frames swing that arm forward and back, so the body behind it is drawn there
+            for f2 in (d * 4, d * 4 + 2):
+                O2 = resize(od['frames'][f2], OUT_SCALE); M2 = mat_for(O2, 'outfit'); dx2, dy2 = od['shift'][f2]
+                a2 = base_arms(bodies[od['body']]['frames'][f2], d)
+                if not a2: continue
+                arm2 = np.asarray(Image.fromarray((np.roll(np.roll(np.any([r for r, _, _ in a2], 0), dy2, 0), dx2, 1) * 255).astype(np.uint8)).resize((W0, H0), Image.BILINEAR)) > 127
+                arm2 = ndi.binary_dilation(arm2, iterations=2)
+                ok = hole & (O2[..., 3] > 0) & ~arm2
+                T_[ok] = O2[ok]; T_[ok, 3] = 255; Mt[ok] = M2[ok]; hole = hole & ~ok
+        if hole.any():
+            src = Os[..., :3].copy(); src[~body] = 0
+            rgb = cv2.inpaint(np.ascontiguousarray(src), (hole * 255).astype(np.uint8), 9, cv2.INPAINT_TELEA)
+            T_[hole, :3] = rgb[hole]; T_[hole, 3] = 255
+            _, (iy, ix) = ndi.distance_transform_edt(~body, return_indices=True); Mt[hole] = Ms[iy[hole], ix[hole]]
+        items.append((f'rig{i}_{d}_t', T_, Mt, 0, 0))
+        rig[d] = parts
+    return rig
 for i, od in enumerate(outfits):
     LEATHER_PX = None; LEATHER = leather_colours(od['frames']); LEATHER_PX = leather_pixels(od['frames']); CLOTH = cloth_hues(od['frames']); od['cloth'] = CLOTH
     for f, fr in enumerate(od['frames']): add(f'outfit{i}_{f}', fr, 'outfit', 0, 0)
+    od['rig'] = rig_outfit(i, od)   # arms cut out for the tool swings (23 Nov)
 CLOTH = None
 DIRV = {0: 0, 1: 1, 3: 2}   # direction -> head column
 for i, hv in enumerate(heads):
@@ -458,7 +527,7 @@ for n in HAIR_NAMES:
 import glob as _g
 for f in set(_g.glob(OUT + '*.webp') + _g.glob(OUT + '*.png')): os.remove(f)
 groups = {}
-for it in items: groups.setdefault(it[0].split('_')[0] if it[0].startswith('outfit') else 'shared', []).append(it)
+for it in items: groups.setdefault(it[0].split('_')[0] if it[0].startswith('outfit') else 'outfit' + it[0][3:].split('_')[0] if it[0].startswith('rig') else 'shared', []).append(it)
 meta = {}; sheets = []; tot = 0
 for sname in ['shared'] + sorted((g for g in groups if g != 'shared'), key=lambda g: int(g[6:])):
     its = sorted(groups[sname], key=lambda t: -t[1].shape[0]); W = 2048 if sname == 'shared' else 4 * max(t[1].shape[1] for t in its) + 8
@@ -477,7 +546,7 @@ for sname in ['shared'] + sorted((g for g in groups if g != 'shared'), key=lambd
 json.dump(dict(cell=round(CELL * OUT_SCALE), scale=OUT_SCALE, sheets=sheets, anchors=[[a[0] * OUT_SCALE, a[1] * OUT_SCALE] for a in anchors], pieces=meta,
                hair=HAIR_NAMES, heads=6, beards=4, bob=[round(4 * OUT_SCALE), 0, round(4 * OUT_SCALE), 0],
                bodies=[b['name'].replace('_', ' ') for b in bodies], mouths=[mouth_of(h[0]) for h in heads],
-               outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']], cloth=o['cloth']) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
+               outfits=[dict(name=o['name'], body=o['body'], offs=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['offs']], neck=[[v[0] * OUT_SCALE, v[1] * OUT_SCALE] for v in o['shift']], cloth=o['cloth'], rig=o.get('rig', {})) for o in outfits]), open(OUT + 'cc.json', 'w'), separators=(',', ':'))
 print('sheets', len(sheets), 'total', tot // 1024, 'KB')
 import subprocess, sys
 subprocess.run([sys.executable, 'tools/art/nudge_beards.py'], check=True)   # settle the beards onto the jaws
