@@ -1067,6 +1067,7 @@ function openMenu() {
     ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
     ['look', '👕', 'Wardrobe'],
+    ...(typeof mtMenuTile === 'function' ? mtMenuTile() : []),
     ...(vdFileCount() ? [['files', ICONS.files ? `<img src="${ICONS.files}" style="width:1.4em;height:1.4em;vertical-align:middle">` : '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
@@ -1085,6 +1086,7 @@ function openMenu() {
     if (a === 'map') openMap();
     if (a === 'files') openFiles();
     if (a === 'look') { closeModal(); openWardrobe(); }
+    if (a === 'mounts') mtOpen();
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
@@ -1327,7 +1329,7 @@ function houseTextures(sc) {
    ====================================================================== */
 class World extends Phaser.Scene {
   initWorld(mw, mh) { this.dressed = 0; this.mw = mw; this.mh = mh; this.paused = false; this.sleeping = false; scene = this; this.p = null; this.shadows = []; }
-  standF(dir) { return DIRS.indexOf(dir) * (this.walkCols || 4); }
+  standF(dir) { return DIRS.indexOf(dir) * (this.rideKey ? 4 : (this.walkCols || 4)); }   // (a ride sheet has 4 a row: mounts.js)
   /* soft ground shadows that follow their sprite, so things feel planted in the world */
   shadow(spr, w, h, dx = 0) { const e = this.add.ellipse(Math.round(spr.x + dx), Math.round(spr.y - 1), w, h || Math.max(3, Math.round(w * .34)), 0x1a1206, .32).setDepth(1.5); this.shadows.push({ spr, e, dx }); return e; }
   syncShadows() {
@@ -1480,8 +1482,9 @@ class World extends Phaser.Scene {
     tickWorkers(dt, this);
     if (p.busy > 0) { p.busy -= dt; if (p.busy <= 0 && p.queued) { const q = p.queued; p.queued = null; this.act(q); } return; }
     if (p.moving) {
-      const fast = this.fastAt && this.fastAt(p.x, p.y), sp = 5.2 * T * dt * (fast ? 1.25 : 1);
-      this.player.anims.timeScale = fast ? 1.25 : 1;
+      // running boots and mounts change the pace (mounts.js)
+      const fast = this.fastAt && this.fastAt(p.x, p.y), mm = this.moveMult = (typeof mtSpeed === 'function' ? mtSpeed(this, fast) : 1), sp = 5.2 * T * dt * (fast ? 1.25 : 1) * mm;
+      this.player.anims.timeScale = (fast ? 1.25 : 1) * Math.min(this.rideKey ? 1.5 : 1.3, mm);
       const tx = p.x * T + 8, ty = p.y * T + 8, dx = tx - p.px, dy = ty - p.py, d = Math.hypot(dx, dy);
       if (d <= sp) { p.px = tx; p.py = ty; p.moving = false; this.arrived(); }
       else { p.px += dx / d * sp; p.py += dy / d * sp; }
@@ -1524,8 +1527,8 @@ class World extends Phaser.Scene {
       if (p.px === undefined) { p.px = p.x * T + 8; p.py = p.y * T + 8; }
       this.followStep(p.x, p.y, next.x, next.y);
       p.x = next.x; p.y = next.y; p.moving = true; p.idleT = 0;
-      Sound.play('step', p.steps++);
-      if (this.player.anims.currentAnim?.key !== 'walk_' + p.dir || !this.player.anims.isPlaying) this.player.play('walk_' + p.dir);
+      Sound.play('step', p.steps++); if (typeof mtStep === 'function') mtStep(this, next.x, next.y);
+      const wk = (this.rideKey || 'walk_') + p.dir; if (this.player.anims.currentAnim?.key !== wk || !this.player.anims.isPlaying) this.player.play(wk);
     } else if (!p.moving) {
       if (this.player.anims.isPlaying) { this.player.stop(); this.player.setFrame(this.standF(p.dir)); }
       if ((this.keys.SPACE.isDown || this.keys.E.isDown || actHeld) && !(p.busy > 0)) this.actFacing();
@@ -1844,7 +1847,7 @@ Object.assign(World.prototype, {
     const f = this.fol; if (!f) return;
     // big Fablemon hang back an extra tile so they don't crowd you
     f.trail = f.trail || []; f.trail.push([ox, oy]);
-    const gap = f.spr.displayWidth > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    const gap = f.spr.displayWidth > 30 || this.rideKey ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
     if (f.trail.length < gap) return;
     [ox, oy] = f.trail[0];
     if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
@@ -1857,7 +1860,7 @@ Object.assign(World.prototype, {
   updateFollower(dt) {
     const f = this.fol; if (!f) return;
     if (f.moving) {
-      const tx = f.x * T + 8, ty = f.y * T + 8, dx = tx - f.px, dy = ty - f.py, d = Math.hypot(dx, dy), sp = 5.2 * T * 1.3 * dt * (d > 20 ? 1.8 : 1);
+      const tx = f.x * T + 8, ty = f.y * T + 8, dx = tx - f.px, dy = ty - f.py, d = Math.hypot(dx, dy), sp = 5.2 * T * 1.3 * dt * (d > 20 ? 1.8 : 1) * Math.max(1, this.moveMult || 1);
       if (d <= sp) { f.px = tx; f.py = ty; f.moving = false; } else { f.px += dx / d * sp; f.py += dy / d * sp; }
       this.drawFollower();
       f.bob = 0;

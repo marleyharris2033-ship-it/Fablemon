@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261123-114952">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261123-114952">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261123-114952">
+<link rel="manifest" href="manifest.webmanifest?v=20261123-125120">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261123-125120">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261123-125120">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-114952').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261123-125120').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -1708,6 +1708,7 @@ function openMenu() {
     ['friends', '💛', 'Friends'], ['cal', '📅', 'Calendar'], ['house', '🏡', 'House'],
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
     ['look', '👕', 'Wardrobe'],
+    ...(typeof mtMenuTile === 'function' ? mtMenuTile() : []),
     ...(vdFileCount() ? [['files', ICONS.files ? `<img src="${ICONS.files}" style="width:1.4em;height:1.4em;vertical-align:middle">` : '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
@@ -1726,6 +1727,7 @@ function openMenu() {
     if (a === 'map') openMap();
     if (a === 'files') openFiles();
     if (a === 'look') { closeModal(); openWardrobe(); }
+    if (a === 'mounts') mtOpen();
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
@@ -1968,7 +1970,7 @@ function houseTextures(sc) {
    ====================================================================== */
 class World extends Phaser.Scene {
   initWorld(mw, mh) { this.dressed = 0; this.mw = mw; this.mh = mh; this.paused = false; this.sleeping = false; scene = this; this.p = null; this.shadows = []; }
-  standF(dir) { return DIRS.indexOf(dir) * (this.walkCols || 4); }
+  standF(dir) { return DIRS.indexOf(dir) * (this.rideKey ? 4 : (this.walkCols || 4)); }   // (a ride sheet has 4 a row: mounts.js)
   /* soft ground shadows that follow their sprite, so things feel planted in the world */
   shadow(spr, w, h, dx = 0) { const e = this.add.ellipse(Math.round(spr.x + dx), Math.round(spr.y - 1), w, h || Math.max(3, Math.round(w * .34)), 0x1a1206, .32).setDepth(1.5); this.shadows.push({ spr, e, dx }); return e; }
   syncShadows() {
@@ -2121,8 +2123,9 @@ class World extends Phaser.Scene {
     tickWorkers(dt, this);
     if (p.busy > 0) { p.busy -= dt; if (p.busy <= 0 && p.queued) { const q = p.queued; p.queued = null; this.act(q); } return; }
     if (p.moving) {
-      const fast = this.fastAt && this.fastAt(p.x, p.y), sp = 5.2 * T * dt * (fast ? 1.25 : 1);
-      this.player.anims.timeScale = fast ? 1.25 : 1;
+      // running boots and mounts change the pace (mounts.js)
+      const fast = this.fastAt && this.fastAt(p.x, p.y), mm = this.moveMult = (typeof mtSpeed === 'function' ? mtSpeed(this, fast) : 1), sp = 5.2 * T * dt * (fast ? 1.25 : 1) * mm;
+      this.player.anims.timeScale = (fast ? 1.25 : 1) * Math.min(this.rideKey ? 1.5 : 1.3, mm);
       const tx = p.x * T + 8, ty = p.y * T + 8, dx = tx - p.px, dy = ty - p.py, d = Math.hypot(dx, dy);
       if (d <= sp) { p.px = tx; p.py = ty; p.moving = false; this.arrived(); }
       else { p.px += dx / d * sp; p.py += dy / d * sp; }
@@ -2165,8 +2168,8 @@ class World extends Phaser.Scene {
       if (p.px === undefined) { p.px = p.x * T + 8; p.py = p.y * T + 8; }
       this.followStep(p.x, p.y, next.x, next.y);
       p.x = next.x; p.y = next.y; p.moving = true; p.idleT = 0;
-      Sound.play('step', p.steps++);
-      if (this.player.anims.currentAnim?.key !== 'walk_' + p.dir || !this.player.anims.isPlaying) this.player.play('walk_' + p.dir);
+      Sound.play('step', p.steps++); if (typeof mtStep === 'function') mtStep(this, next.x, next.y);
+      const wk = (this.rideKey || 'walk_') + p.dir; if (this.player.anims.currentAnim?.key !== wk || !this.player.anims.isPlaying) this.player.play(wk);
     } else if (!p.moving) {
       if (this.player.anims.isPlaying) { this.player.stop(); this.player.setFrame(this.standF(p.dir)); }
       if ((this.keys.SPACE.isDown || this.keys.E.isDown || actHeld) && !(p.busy > 0)) this.actFacing();
@@ -2485,7 +2488,7 @@ Object.assign(World.prototype, {
     const f = this.fol; if (!f) return;
     // big Fablemon hang back an extra tile so they don't crowd you
     f.trail = f.trail || []; f.trail.push([ox, oy]);
-    const gap = f.spr.displayWidth > 30 ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    const gap = f.spr.displayWidth > 30 || this.rideKey ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
     if (f.trail.length < gap) return;
     [ox, oy] = f.trail[0];
     if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
@@ -2498,7 +2501,7 @@ Object.assign(World.prototype, {
   updateFollower(dt) {
     const f = this.fol; if (!f) return;
     if (f.moving) {
-      const tx = f.x * T + 8, ty = f.y * T + 8, dx = tx - f.px, dy = ty - f.py, d = Math.hypot(dx, dy), sp = 5.2 * T * 1.3 * dt * (d > 20 ? 1.8 : 1);
+      const tx = f.x * T + 8, ty = f.y * T + 8, dx = tx - f.px, dy = ty - f.py, d = Math.hypot(dx, dy), sp = 5.2 * T * 1.3 * dt * (d > 20 ? 1.8 : 1) * Math.max(1, this.moveMult || 1);
       if (d <= sp) { f.px = tx; f.py = ty; f.moving = false; } else { f.px += dx / d * sp; f.py += dy / d * sp; }
       this.drawFollower();
       f.bob = 0;
@@ -17386,6 +17389,457 @@ Farm.prototype.create = function () {
   _pqFarm.apply(this, arguments);
   if (S.mailRead && postUnread() && this.mailFlag) { this.mailFlag.setVisible(true); setTimeout(() => toast(`📬 ${postUnread() > 1 ? postUnread() + ' letters are' : 'A letter is'} waiting in your mailbox.`, 3000), 900); }
 };
+
+/* ============================================================ Mounts and running boots (23 Nov 2026)
+   Beat Mabel and she sends a pair of running boots: you walk 1.4x faster, everywhere, from then on.
+   Beat Granger and he gives you Ridgeram, a saddled Rambastion, to ride. Every mount is a special variant of a
+   Fablemon already in the game: a gift or a prize, never used in battle.
+
+   Each mount has four stats from 1 to 100, all with the same ceiling, so a mount you've had for ages can beat a new
+   one that only starts higher:
+     Speed   how fast it runs                      (rises as you ride along paths)
+     Footing how little rough ground slows it      (rises as you ride off the paths)
+     Stamina how much breath it has for its perk   (rises each time it uses its perk)
+     Bond    how strong its perk is                (rises with riding, and with feeding and brushing at the stable)
+   Each mount has one perk, a way of moving only it can do. Ridgeram's is Leap: two tiles ahead, clean over a fence,
+   rock, ledge or narrow stream (three tiles once its Bond reaches 50).
+
+   You ride outdoors only; you hop down by yourself indoors and back up when you step out again.
+   The rider is drawn in code: the farmer's top half (any outfit, any look) sits on the mount's own walk sheet,
+   with its saddle and blanket drawn over the join. When you're not riding, your mount waits at its post on the farm. */
+
+const MOUNTS = {
+  ridgeram: {
+    name: 'Ridgeram', sp: 'ramruff_2', perk: 'leap', from: 'Granger', scale: 1.2,
+    start: { spd: 20, foot: 40, sta: 25, bond: 10 },
+    tint: { hue: 172, sat: .5, glow: 1.15 },   // its hide turns slate and its runes teal; the pale fleece stays pale
+    tack: { cloth: '#2c6a5c', clothDk: '#1d4a40', trim: '#e9c35a', leather: '#6e4024', leatherDk: '#42240f', leatherLt: '#9a6238' },
+    // where the rider's waist sits (in the walk sheet's own pixels, a 120 frame): facing you, facing left, facing away
+    seat: { down: [60, 16], left: [78, 63], up: [60, 50] },
+    desc: 'A saddled Rambastion from the Quarrydown pits. Sure-footed on rock and scree, and it never met a fence it couldn\'t clear.',
+  },
+};
+const MT_PERKS = {
+  leap: { name: 'Leap', icon: '⤴', desc: 'Jump two tiles ahead, clean over a fence, rock, ledge or narrow stream. Three tiles once its Bond reaches 50.' },
+};
+const MT_STATS = [['spd', 'Speed', 'Rises as you ride along paths.'], ['foot', 'Footing', 'Rises as you ride over rough ground.'], ['sta', 'Stamina', 'Rises each time it uses its perk.'], ['bond', 'Bond', 'Rises as you ride, and when you feed and brush it at the stable.']];
+const MT = { st: 100, out: false, uiT: 0, cache: {} };   // st: the current mount's breath right now
+
+function mtS() { if (!S) return null; S.mt = S.mt || { boots: 0, list: [], ride: 0, cur: null }; if (S.mt.bootsOff === undefined) S.mt.bootsOff = 0; return S.mt; }
+const mtCur = () => { const M = S && S.mt; if (!M || !M.list.length) return null; return M.list.find(m => m.id === M.cur) || M.list[0]; };
+const mtMaxSt = m => Math.round(50 + m.sta / 2);
+const mtPerkCost = m => Math.round(40 - m.bond * .2);
+function mtRaise(m, k, n = 1, quiet) {
+  const was = m[k]; m[k] = Math.min(100, m[k] + n); if (m[k] === was) return;
+  if (!quiet && Math.floor(m[k] / 5) !== Math.floor(was / 5)) toast(`${MOUNTS[m.id].name}'s ${MT_STATS.find(s => s[0] === k)[1]} rose to ${m[k]}!`, 1800);
+}
+function mtGive(id) {
+  const M = mtS(), D = MOUNTS[id]; if (M.list.some(m => m.id === id)) return;
+  M.list.push({ id, ...D.start, rp: 0, rr: 0, uses: 0, fed: -1, brushed: -1 }); if (!M.cur) M.cur = id;
+}
+
+/* ---------- gifts: checked whenever a place opens, so saves from before mounts existed get theirs too */
+function mtGifts(sc) {
+  const M = mtS(); if (!M) return;
+  const cr = S.crests || {};
+  if (cr.root && !M.boots) {
+    M.boots = 1;
+    postSend('mt_boots', { from: 'Warden Mabel', subj: 'Something for your feet', body: n => `Dear ${n},\n\nYou fought well. Rootfolk who travel as far as you will need to cover ground, so I've sent you a pair of my running boots. They're broken in already: the leather's soft and the soles have plenty of spring.\n\nPut them on and you'll walk a good deal faster, wherever you go.\n\nWarden Mabel`, }, true);
+    sc.time.delayedCall(900, () => toast('👢 Mabel sent you her running boots! You walk faster now.', 3200));
+  }
+  if (cr.stone && !M.list.some(m => m.id === 'ridgeram')) {
+    mtGive('ridgeram');
+    postSend('mt_ridgeram', { from: 'Warden Granger', subj: 'A ram for the road', body: n => `${n},\n\nYou beat me fair. A Warden who can do that shouldn't be walking everywhere, so I've sent you Ridgeram. He's one of the pit rams, a Rambastion raised to the saddle, and he'll carry you anywhere outdoors.\n\nHe's waiting at a post by your house. Feed him and give him a brush when you're home, and the two of you will get on. Ride him plenty: he gets quicker and surer the more ground you cover together.\n\nOne more thing. He can leap. Fences, rocks, streams. Find out for yourself.\n\nGranger`, }, true);
+    sc.time.delayedCall(1500, () => toast('🐏 Granger sent you Ridgeram, a mount! Tap his button to ride.', 3800));
+  }
+}
+
+/* ---------- where you can ride: out in the open, not indoors, not at sea, not down a mine */
+function mtOutdoor(sc) {
+  if (!sc || !sc.p || sc.boatSpr || sc.halo) return false;
+  return (typeof Farm !== 'undefined' && sc instanceof Farm) || (typeof Town !== 'undefined' && sc instanceof Town) || (typeof Route !== 'undefined' && sc instanceof Route);
+}
+
+/* ---------- speed: called by World.update for each step */
+function mtSpeed(sc, fast) {
+  const M = S && S.mt; if (!M) return 1;
+  if (sc.rideKey) {
+    const m = mtCur(); if (!m) return 1;
+    const top = 1.75 + .85 * m.spd / 100, ground = fast ? 1.1 : .82 + .18 * m.foot / 100;   // 1.7x to 2.6x off the paths
+    return top * ground / (fast ? 1.25 : 1);
+  }
+  return M.boots && !M.bootsOff ? 1.4 : 1;
+}
+// each tile ridden trains it a little
+function mtStep(sc, x, y) {
+  if (!sc.rideKey) return; const m = mtCur(); if (!m) return;
+  const fast = sc.fastAt && sc.fastAt(x, y);
+  if (fast) { if (++m.rp >= 140) { m.rp = 0; mtRaise(m, 'spd'); } }
+  else if (++m.rr >= 140) { m.rr = 0; mtRaise(m, 'foot'); }
+  m.ridden = (m.ridden || 0) + 1; if (m.ridden % 260 === 0) mtRaise(m, 'bond');
+}
+
+/* ---------- pictures: the variant's colouring, its tack, and the rider */
+function mtTintCanvas(c, tint) {
+  const g = c.getContext('2d'), d = g.getImageData(0, 0, c.width, c.height), a = d.data, hs = tint.hue / 360;
+  for (let i = 0; i < a.length; i += 4) {
+    if (!a[i + 3]) continue;
+    const r = a[i] / 255, gg = a[i + 1] / 255, b = a[i + 2] / 255, mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), l = (mx + mn) / 2, dd = mx - mn;
+    if (dd < .001) continue;
+    const s = l > .5 ? dd / (2 - mx - mn) : dd / (mx + mn);
+    if (s < .2 || l > .62) continue;   // pale fleece and greys stay as they are
+    let h = mx === r ? (gg - b) / dd + (gg < b ? 6 : 0) : mx === gg ? (b - r) / dd + 2 : (r - gg) / dd + 4; h /= 6;
+    h = (h + hs) % 1; const s2 = Math.min(1, s * (s > .6 && l > .42 ? (tint.glow || 1) : (tint.sat || 1)));   // bright runes keep their glow
+    const q = l < .5 ? l * (1 + s2) : l + s2 - l * s2, p = 2 * l - q;
+    const f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < .5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+    a[i] = f(h + 1 / 3) * 255; a[i + 1] = f(h) * 255; a[i + 2] = f(h - 1 / 3) * 255;
+  }
+  g.putImageData(d, 0, 0); return c;
+}
+// the mount's walk sheet in its own colours (once per mount)
+function mtSheet(sc, id) {
+  const D = MOUNTS[id], k = 'tint:' + id; if (MT.cache[k]) return MT.cache[k];
+  const t = sc.textures.get('mon_' + D.sp), src = t.getSourceImage();
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0);
+  mtTintCanvas(c, D.tint);
+  // how high the top of each frame sits, for the walk bob
+  const fw = t.get(0).cutWidth, g = c.getContext('2d'), tops = [];
+  for (let n = 0; n < 16; n++) {
+    const fx = (n % 4) * fw, fy = Math.floor(n / 4) * fw, d = g.getImageData(fx, fy, fw, fw).data; let top = fw;
+    for (let y = 0; y < fw && top === fw; y++) for (let x = 0; x < fw; x++) if (d[(y * fw + x) * 4 + 3] > 100) { top = y; break; }
+    tops.push(top);
+  }
+  return MT.cache[k] = { c, fw, tops };
+}
+// saddle cloth along the back, with gold trim
+function mtBlanket(g, T, cx, cy, w, side, flip) {
+  g.save(); g.translate(cx, cy);
+  if (side) {
+    // seen from the side: a cloth draped over the back, hanging down the near flank
+    const pad = () => { g.beginPath(); g.moveTo(-w * .5, -w * .02); g.quadraticCurveTo(0, -w * .12, w * .5, -w * .02); g.quadraticCurveTo(w * .56, w * .3, w * .42, w * .44); g.quadraticCurveTo(0, w * .54, -w * .42, w * .44); g.quadraticCurveTo(-w * .56, w * .3, -w * .5, -w * .02); g.closePath(); };
+    g.fillStyle = T.clothDk; g.save(); g.translate(0, w * .03); pad(); g.fill(); g.restore();
+    g.fillStyle = T.cloth; pad(); g.fill();
+    g.save(); pad(); g.clip(); g.strokeStyle = T.trim; g.lineWidth = Math.max(2, w * .07); g.beginPath(); g.moveTo(-w * .6, w * .38); g.quadraticCurveTo(0, w * .5, w * .6, w * .38); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(-w * .6, -w * .2, w * 1.2, w * .1); g.restore();
+    // girth strap under the belly
+    g.fillStyle = T.leatherDk; g.fillRect(-w * .05, w * .4, w * .1, w * .32);
+  } else {
+    // from behind: the cloth falls over both flanks
+    const pad = () => { g.beginPath(); g.moveTo(-w * .46, -w * .04); g.quadraticCurveTo(0, -w * .16, w * .46, -w * .04); g.quadraticCurveTo(w * .6, w * .22, w * .5, w * .34); g.quadraticCurveTo(0, w * .44, -w * .5, w * .34); g.quadraticCurveTo(-w * .6, w * .22, -w * .46, -w * .04); g.closePath(); };
+    g.fillStyle = T.clothDk; g.save(); g.translate(0, w * .03); pad(); g.fill(); g.restore();
+    g.fillStyle = T.cloth; pad(); g.fill();
+    g.save(); pad(); g.clip(); g.strokeStyle = T.trim; g.lineWidth = Math.max(2, w * .07); g.beginPath(); g.moveTo(-w * .7, w * .28); g.quadraticCurveTo(0, w * .42, w * .7, w * .28); g.stroke(); g.restore();
+  }
+  g.restore();
+}
+// the saddle's seat: drawn over the rider's waist so the join never shows
+function mtSaddle(g, T, cx, cy, w, view, flip) {
+  g.save(); g.translate(cx, cy); if (flip) g.scale(-1, 1);
+  const lw = Math.max(1.5, w * .045);
+  g.lineJoin = 'round';
+  if (view === 'side') {
+    // seat, a raised pommel at the front (left, facing left) and cantle at the back, a flap and stirrup on the near side
+    g.fillStyle = T.leatherDk; g.beginPath(); g.moveTo(-w * .34, -w * .02); g.quadraticCurveTo(-w * .36, -w * .15, -w * .27, -w * .14); g.quadraticCurveTo(0, w * .02, w * .27, -w * .12); g.quadraticCurveTo(w * .38, -w * .14, w * .36, 0); g.quadraticCurveTo(0, w * .12, -w * .34, -w * .02); g.closePath(); g.fill();
+    g.fillStyle = T.leather; g.beginPath(); g.moveTo(-w * .31, -w * .02); g.quadraticCurveTo(-w * .33, -w * .11, -w * .26, -w * .1); g.quadraticCurveTo(0, w * .04, w * .26, -w * .08); g.quadraticCurveTo(w * .33, -w * .1, w * .32, -w * .01); g.quadraticCurveTo(0, w * .08, -w * .31, -w * .02); g.closePath(); g.fill();
+    // flap
+    g.fillStyle = T.leather; g.strokeStyle = T.leatherDk; g.lineWidth = lw; g.beginPath(); g.moveTo(-w * .16, w * .02); g.lineTo(w * .14, w * .02); g.quadraticCurveTo(w * .17, w * .24, w * .08, w * .3); g.lineTo(-w * .12, w * .3); g.quadraticCurveTo(-w * .2, w * .2, -w * .16, w * .02); g.closePath(); g.fill(); g.stroke();
+    g.fillStyle = T.leatherLt; g.fillRect(-w * .1, w * .06, w * .03, w * .18);
+    // stirrup strap and iron
+    g.strokeStyle = T.leatherDk; g.lineWidth = lw * 1.2; g.beginPath(); g.moveTo(-w * .02, w * .1); g.lineTo(-w * .02, w * .4); g.stroke();
+    g.strokeStyle = T.trim; g.lineWidth = lw * 1.2; g.beginPath(); g.moveTo(-w * .08, w * .4); g.lineTo(w * .04, w * .4); g.stroke();
+    // stud
+    g.fillStyle = T.trim; g.beginPath(); g.arc(w * .27, -w * .07, w * .03, 0, 7); g.fill();
+  } else if (view === 'up') {
+    // from behind: the cantle's curve over the rider's seat, flaps either side
+    g.fillStyle = T.leather; g.strokeStyle = T.leatherDk; g.lineWidth = lw;
+    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(s * w * .2, -w * .02); g.lineTo(s * w * .34, 0); g.quadraticCurveTo(s * w * .38, w * .2, s * w * .3, w * .26); g.lineTo(s * w * .18, w * .22); g.closePath(); g.fill(); g.stroke(); }
+    g.fillStyle = T.leatherDk; g.beginPath(); g.ellipse(0, w * .02, w * .27, w * .12, 0, 0, 7); g.fill();
+    g.fillStyle = T.leather; g.beginPath(); g.ellipse(0, 0, w * .25, w * .1, 0, Math.PI, 0); g.lineTo(w * .25, w * .03); g.quadraticCurveTo(0, w * .12, -w * .25, w * .03); g.closePath(); g.fill();
+    g.fillStyle = T.leatherLt; g.beginPath(); g.ellipse(0, -w * .02, w * .18, w * .045, 0, Math.PI, 0); g.fill();
+    g.fillStyle = T.trim; g.beginPath(); g.arc(0, w * .05, w * .028, 0, 7); g.fill();
+  }
+  g.restore();
+}
+// the rider's frame on the 'walk' texture: [image, sx, sy, sw, sh, displayed width, displayed height]
+function mtRiderFrame(sc, d) {
+  const tx = sc.textures.get('walk'), cols = (tx.frameTotal - 1) / 4, f = tx.get(d * cols);
+  return [f.source.image, f.cutX, f.cutY, f.cutWidth, f.cutHeight, f.width, f.height];
+}
+const MT_R = 3, MT_FW = 64, MT_FH = 76;   // ride frames: 64 x 76 in the world, drawn at 3x
+const MT_WAIST = .56, MT_RIDER = 1.2;                   // how far down the farmer's sprite the waist sits
+function mtCompose(sc, id, rider) {
+  const D = MOUNTS[id], T = D.tack, sh = mtSheet(sc, id), fw = sh.fw, R = MT_R, FW = MT_FW * R, FH = MT_FH * R;
+  const mw = 40 * D.scale * R, k = mw / fw, mx = (FW - mw) / 2, my = FH - mw;
+  const c = document.createElement('canvas'); c.width = FW * 4; c.height = FH * 4; const g = c.getContext('2d'); g.imageSmoothingQuality = 'high';
+  for (let d = 0; d < 4; d++) for (let col = 0; col < 4; col++) {
+    const n = d * 4 + col, ox = col * FW, oy = d * FH, bob = (sh.tops[n] - sh.tops[d * 4]) * k;
+    g.save(); g.beginPath(); g.rect(ox, oy, FW, FH); g.clip();
+    const mount = () => g.drawImage(sh.c, (n % 4) * fw + 1, Math.floor(n / 4) * fw + 1, fw - 2, fw - 2, ox + mx + k, oy + my + k, mw - 2 * k, mw - 2 * k);   // (1px in, so the next frame never bleeds in)
+    const view = d === 0 ? 'down' : d === 3 ? 'up' : 'side', flip = d === 2;
+    const st = view === 'side' ? D.seat.left : D.seat[view], sx = ox + mx + (flip ? fw - st[0] : st[0]) * k, sy = oy + my + st[1] * k + bob;
+    const riderDraw = () => {
+      if (!rider) return;
+      const [img, cx, cy, cw, ch, dw, dh] = mtRiderFrame(sc, d), rw = dw * R * MT_RIDER, rh = dh * R * MT_RIDER, cut = ch * MT_WAIST;
+      g.drawImage(img, cx, cy, cw, cut, sx - rw / 2, sy - rh * MT_WAIST, rw, rh * MT_WAIST);
+    };
+    const bw = mw * .3;
+    if (view === 'down') { riderDraw(); mount(); }
+    else if (view === 'up') { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw, false); riderDraw(); mtSaddle(g, T, sx, sy, bw, 'up'); }
+    else { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw * .9, true); riderDraw(); mtSaddle(g, T, sx, sy + bw * .04, bw, 'side', flip); }
+    g.restore();
+  }
+  return c;
+}
+// the ride sheet for the current look (rebuilt if your look changes)
+function mtRideTex(sc, id) {
+  const img = sc.textures.get('walk').getSourceImage(), C = MT.cache['ride:' + id];
+  if (C && C.img === img && sc.textures.exists(C.key)) return C.key;
+  MT.n = (MT.n || 0) + 1; const key = `ride_${id}_${MT.n}`;
+  sc.textures.addSpriteSheet(key, mtCompose(sc, id, true), { frameWidth: MT_FW * MT_R, frameHeight: MT_FH * MT_R });
+  try { sc.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR); } catch (e) { }
+  for (let r = 0; r < 4; r++) sc.anims.create({ key: `${key}_${DIRS[r]}`, frames: sc.anims.generateFrameNumbers(key, { frames: [r * 4 + 1, r * 4, r * 4 + 3, r * 4] }), frameRate: 9, repeat: -1 });
+  if (C) { try { for (let r = 0; r < 4; r++) sc.anims.remove(`${C.key}_${DIRS[r]}`); sc.textures.remove(C.key); } catch (e) { } }
+  MT.cache['ride:' + id] = { img, key }; return key;
+}
+// the saddled mount on its own, waiting at its post
+function mtTackTex(sc, id) {
+  const key = 'mtack_' + id; if (sc.textures.exists(key)) return key;
+  sc.textures.addSpriteSheet(key, mtCompose(sc, id, false), { frameWidth: MT_FW * MT_R, frameHeight: MT_FH * MT_R });
+  try { sc.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR); } catch (e) { }
+  return key;
+}
+// pictures for menus: the variant's battle art in its colours
+function mtPic(id, kind = 'front') {
+  const D = MOUNTS[id], k = 'pic:' + id + kind; if (MT.cache[k]) return MT.cache[k];
+  const src = monPic(D.sp, kind); if (!src) return '';
+  MT.cache[k] = src;   // the normal picture until the recolour is ready
+  const im = new Image(); im.onload = () => {
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; c.getContext('2d').drawImage(im, 0, 0);
+    MT.cache[k] = mtTintCanvas(c, D.tint).toDataURL(); if (im.naturalWidth > 64 && typeof HD_SMOOTH !== 'undefined') HD_SMOOTH.add(MT.cache[k]);
+    mtUI(true); if ($('mtList') && $('modal').classList.contains('show')) mtOpen();
+  };
+  im.src = src; return MT.cache[k];
+}
+
+/* ---------- getting on and off */
+function mtApply(sc, on) {
+  if (!sc.player || !sc.p) return;
+  const sh = (sc.shadows || []).find(s => s.spr === sc.player);
+  if (on) {
+    const m = mtCur(); if (!m) return;
+    const D = MOUNTS[m.id];
+    if (!monReady(sc, D.sp, () => { if (sc.sys && sc.sys.isActive()) sc.rideWant = null; })) return;   // its sheet is on the way
+    const key = mtRideTex(sc, m.id);
+    sc.rideKey = key + '_'; sc.rideId = m.id;
+    sc.player.stop(); sc.player.setTexture(key, DIRS.indexOf(sc.p.dir) * 4).setScale(1 / MT_R);
+    if (sh) { sh.e.width = 30; sh.e.height = 9; sh.e.setSize && sh.e.setSize(30, 9); }
+  } else {
+    sc.rideKey = null; sc.rideId = null;
+    sc.player.stop(); sc.player.setTexture('walk', sc.standF(sc.p.dir)).setScale(1);
+    if (sh) { sh.e.setSize && sh.e.setSize(14, 6); }
+  }
+  sc.placePlayer(); mtPost(sc);
+}
+function mtToggle() {
+  const sc = scene, M = S && S.mt, m = mtCur(); if (!sc || !M || !m || sc.paused || sc.sleeping || (sc.p && sc.p.busy > 0)) return;
+  if (!M.ride && !mtOutdoor(sc)) return toast('You can only ride outdoors.', 1800);
+  M.ride = M.ride ? 0 : 1; Sound.play(M.ride ? 'pop' : 'step', 0);
+  if (M.ride) MT.st = Math.min(MT.st, mtMaxSt(m));
+  sc.rideWant = null; mtUI(true);
+}
+
+/* ---------- Leap */
+function mtPerk() {
+  const sc = scene, m = mtCur(); if (!sc || !m || !sc.rideKey || sc.paused || sc.sleeping) return;
+  const p = sc.p; if (p.moving || p.busy > 0 || sc.hopping) return;
+  const D = MOUNTS[m.id], cost = mtPerkCost(m);
+  if (MT.st < cost) { toast(`${D.name} needs to catch its breath.`, 1500); return; }
+  if (D.perk === 'leap') return mtLeap(sc, m, cost);
+}
+function mtLeap(sc, m, cost) {
+  const p = sc.p, [dx, dy] = DV[p.dir], reach = m.bond >= 50 ? 3 : 2, farmHere = typeof Farm !== 'undefined' && sc instanceof Farm;
+  let land = null;
+  for (let n = 2; n <= reach && !land; n++) {
+    const x = p.x + dx * n, y = p.y + dy * n;
+    if (!sc.passable(x, y)) continue;
+    // anywhere you could also walk to (so a leap is a shortcut, never a way past something the story keeps shut);
+    // on your own farm, anywhere at all
+    if (!farmHere && !sc.path((a, b) => a === x && b === y)) continue;
+    land = { x, y };
+  }
+  if (!land) { toast('Nowhere to land there.', 1300); return; }
+  MT.st -= cost; if (++m.uses % 3 === 0) mtRaise(m, 'sta');
+  const x0 = p.px ?? p.x * T + 8, y0 = p.py ?? p.y * T + 8, x1 = land.x * T + 8, y1 = land.y * T + 8, H = 12 + 4 * Math.hypot(land.x - p.x, land.y - p.y);
+  const sh = (sc.shadows || []).find(s => s.spr === sc.player), ghost = { x: sc.player.x, y: sc.player.y, active: true, visible: true };
+  if (sh) sh.spr = ghost;
+  sc.hopping = true; p.path = []; p.pending = null; p.busy = 9; sc.player.stop(); sc.player.setFrame(DIRS.indexOf(p.dir) * 4 + 1);
+  Sound.play('pop', 0);
+  const o = { t: 0 };
+  sc.tweens.add({ targets: o, t: 1, duration: 300 + 50 * Math.hypot(land.x - p.x, land.y - p.y), ease: 'Sine.inOut',
+    onUpdate: () => {
+      p.px = x0 + (x1 - x0) * o.t; p.py = y0 + (y1 - y0) * o.t; sc.placePlayer();
+      ghost.x = sc.player.x; ghost.y = sc.player.y; sc.player.y -= Math.sin(Math.PI * o.t) * H; sc.player.setDepth(ghost.y + 20);
+    },
+    onComplete: () => {
+      if (sh) sh.spr = sc.player;
+      p.x = land.x; p.y = land.y; p.px = x1; p.py = y1; sc.placePlayer(); sc.player.setFrame(DIRS.indexOf(p.dir) * 4);
+      sc.hopping = false; p.busy = 0; Sound.play('step', 1); sc.cameras.main.shake(70, .003);
+      // your Fablemon catches up
+      const f = sc.fol; if (f) { const bx = land.x - dx, by = land.y - dy, ok = sc.passable(bx, by); f.x = ok ? bx : land.x; f.y = ok ? by : land.y; f.px = f.x * T + 8; f.py = f.y * T + 8; f.trail = []; f.moving = false; sc.drawFollower(); }
+      if (m.ridden !== undefined && ++m.ridden % 260 === 0) mtRaise(m, 'bond');
+      sc.arriveHook && sc.arriveHook(p.x, p.y);
+    } });
+}
+
+/* ---------- the post on the farm, where your mount waits */
+const MT_POST = { x: 60, y: 16 };
+function mtPostSpot(sc) {
+  const ok = (x, y) => sc._mtPass0.call(sc, x, y) && !(sc.p && sc.p.x === x && sc.p.y === y) && !(x === DOOR.x && y === DOOR.y) && !(S.tilled && S.tilled[x + ',' + y]) && !(S.paths && S.paths[x + ',' + y]);
+  for (let r = 0; r < 7; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+    if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+    const x = MT_POST.x + dx, y = MT_POST.y + dy; if (ok(x, y) && ok(x, y + 1)) return { x, y };
+  }
+  return null;
+}
+function mtPost(sc) {
+  if (typeof Farm === 'undefined' || !(sc instanceof Farm)) return;
+  const m = mtCur(), show = m && !sc.rideKey;
+  if (!show) { if (sc.mtSpr) { sc.mtSpr.destroy(); sc.mtSpr = null; } if (sc.mtShadow) { sc.mtShadow.destroy(); sc.mtShadow = null; } sc.mtAt = null; return; }
+  if (sc.mtSpr && sc.mtSpr.mid === m.id) return;
+  if (!monReady(sc, MOUNTS[m.id].sp, () => { if (sc.sys && sc.sys.isActive()) mtPost(sc); })) return;
+  if (sc.mtSpr) sc.mtSpr.destroy(); if (sc.mtShadow) sc.mtShadow.destroy();
+  sc._mtPass0 = sc._mtPass0 || Farm.prototype._mtPass;
+  const at = mtPostSpot(sc); if (!at) return; sc.mtAt = at;
+  const key = mtTackTex(sc, m.id), x = at.x * T + 8, y = at.y * T + 8 + 7;
+  sc.mtSpr = sc.add.sprite(x, y, key, 4).setOrigin(.5, 1).setScale(1 / MT_R).setDepth(y); sc.mtSpr.mid = m.id;
+  sc.mtShadow = sc.add.ellipse(x, y - 1, 30, 9, 0x1a1206, .32).setDepth(1.5);
+  // a slow breath
+  sc.tweens.add({ targets: sc.mtSpr, scaleY: { from: 1 / MT_R, to: 1.02 / MT_R }, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+}
+// hook the farm: the post blocks its tile, and you can tap it or face it to open the stable
+(function () {
+  if (typeof Farm === 'undefined') return;
+  const FP = Farm.prototype, pass = FP.passable, target = FP.targetAt, act = FP.act, face = FP.actFacing;
+  FP._mtPass = pass;
+  FP.passable = function (x, y) { const a = this.mtAt; if (a && x === a.x && y === a.y) return false; return pass.call(this, x, y); };
+  FP.targetAt = function (wx, wy) { if (this.mtSpr && this.mtAt && this.mtSpr.getBounds().contains(wx, wy)) return { type: 'mtpost', x: this.mtAt.x, y: this.mtAt.y }; return target.call(this, wx, wy); };
+  FP.act = function (t) { if (t && t.type === 'mtpost') { if (this.p.busy > 0) { this.p.queued = t; return; } this.face(t.x, t.y); return mtOpen(true); } return act.call(this, t); };
+  FP.actFacing = function () {
+    const p = this.p, a = this.mtAt; if (p && a && !p.moving && !this.paused) { const [dx, dy] = DV[p.dir]; if (p.x + dx === a.x && p.y + dy === a.y) return this.act({ type: 'mtpost', x: a.x, y: a.y }); }
+    return face.call(this);
+  };
+})();
+
+/* ---------- the stable screen: your mounts, their stats, and feeding and brushing */
+function mtMenuTile() { const M = S && S.mt; return M && (M.list.length || M.boots) ? [['mounts', M.list.length ? '🐏' : '👢', M.list.length ? 'Mounts' : 'Boots']] : []; }
+function mtOpen(atPost) {
+  const M = mtS(); if (!M) return;
+  if (atPost !== undefined) MT.atPost = !!atPost;
+  const here = MT.atPost && scene && typeof Farm !== 'undefined' && scene instanceof Farm;
+  const bar = (v, col) => `<div style="flex:1;height:10px;border-radius:5px;background:#0003;overflow:hidden"><div style="width:${v}%;height:100%;background:${col}"></div></div>`;
+  const cols = { spd: '#e0743a', foot: '#7a9a3a', sta: '#3a8ad0', bond: '#d04a7a' };
+  const cards = M.list.map(m => {
+    const D = MOUNTS[m.id], P = MT_PERKS[D.perk], cur = m.id === (mtCur() || {}).id;
+    const fedToday = m.fed === S.day, brushedToday = m.brushed === S.day;
+    return `<div class="mtcard${cur && M.list.length > 1 ? ' cur' : ''}">
+      <div style="display:flex;gap:10px;align-items:center">
+        <img src="${mtPic(m.id)}" style="width:84px;height:84px;object-fit:contain">
+        <div style="flex:1;min-width:0"><b style="font-size:17px">${D.name}</b><div class="hint" style="margin:2px 0 6px">${D.desc}</div></div>
+      </div>
+      ${MT_STATS.map(([k, n, why]) => `<div style="display:flex;align-items:center;gap:8px;margin:4px 0" title="${why}"><span style="width:64px">${n}</span>${bar(m[k], cols[k])}<b style="width:28px;text-align:right">${m[k]}</b></div>`).join('')}
+      <p style="margin:8px 0 4px"><b>${P.icon} ${P.name}</b>: ${P.desc} <span class="hint">Uses ${mtPerkCost(m)} of ${mtMaxSt(m)} breath.</span></p>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        ${M.list.length > 1 && !cur ? `<button class="btn" data-a="pick" data-d="${m.id}">Ride this one</button>` : ''}
+        ${here ? `<button class="btn${fedToday ? '' : ' gold'}" data-a="feed" data-d="${m.id}" ${fedToday ? 'disabled' : ''}>🌾 ${fedToday ? 'Fed today' : 'Feed'}</button>
+                  <button class="btn${brushedToday ? '' : ' gold'}" data-a="brush" data-d="${m.id}" ${brushedToday ? 'disabled' : ''}>🪮 ${brushedToday ? 'Brushed today' : 'Brush'}</button>` : ''}
+      </div>
+      ${here ? '' : `<p class="hint" style="margin:6px 0 0">Feed and brush it at its post on your farm, once a day each, to build your Bond.</p>`}
+    </div>`;
+  }).join('');
+  const boots = M.boots ? `<div class="mtcard" style="display:flex;align-items:center;gap:10px"><span style="font-size:30px">👢</span><div style="flex:1;min-width:0"><b>Running boots</b><div class="hint">From Warden Mabel. You walk 1.4 times as fast while you wear them.</div></div><button class="btn" data-a="boots">${M.bootsOff ? 'Put on' : 'Take off'}</button></div>` : '';
+  const ride = M.list.length ? `<div class="row" style="justify-content:center;margin-top:6px"><button class="btn gold" data-a="ride">${M.ride ? 'Get down' : 'Ride'}</button></div>` : '';
+  openModal(here ? 'Stable' : 'Mounts', `<div id="mtList">${boots}${cards}</div>${ride}`, (a, d) => {
+    const m = M.list.find(x => x.id === (d && d.d));
+    if (a === 'boots') { M.bootsOff = M.bootsOff ? 0 : 1; mtOpen(); }
+    if (a === 'pick' && m) { M.cur = m.id; if (scene) { scene.rideWant = null; if (scene.rideKey) mtApply(scene, true); mtPost(scene); } mtUI(true); mtOpen(); }
+    if (a === 'feed' && m && m.fed !== S.day) { m.fed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 0); toast(`${MOUNTS[m.id].name} munches happily. Bond +3`, 1800); mtCare(); mtOpen(); }
+    if (a === 'brush' && m && m.brushed !== S.day) { m.brushed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 1); toast(`${MOUNTS[m.id].name} leans into the brush. Bond +3`, 1800); mtCare(); mtOpen(); }
+    if (a === 'ride') { closeModal(); mtToggle(); }
+  });
+}
+// a little happy hop at the post
+function mtCare() { const sc = scene; if (!sc || !sc.mtSpr) return; sc.tweens.add({ targets: sc.mtSpr, y: sc.mtSpr.y - 5, duration: 120, yoyo: true, repeat: 1 }); }
+
+/* ---------- the buttons: saddle (get on and off) and the perk, with a breath ring */
+function mtButtons() {
+  if ($('mtRide')) return;
+  const st = document.createElement('style');
+  st.textContent = `.mtb{position:absolute;width:54px;height:54px;border-radius:50%;background:var(--cream);border:3px solid var(--gold2);box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 0 0 3px #fff1c6;display:none;align-items:center;justify-content:center;padding:0;font-size:26px;line-height:1;color:#5a3a1a;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  .mtcard{box-sizing:border-box;width:100%;padding:10px;margin:8px 0;border-radius:10px;background:rgba(90,60,20,.08);border:2px solid rgba(90,60,20,.18)}
+  .mtcard.cur{border-color:var(--gold2)}
+  .mtb img{width:40px;height:40px;object-fit:contain;pointer-events:none}
+  .mtb.on{background:#ffe9a8;border-color:#c98a1a}
+  .mtb:active{transform:translateY(2px)}
+  #mtPerk{--p:100}
+  #mtPerk::before{content:'';position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(#3a8ad0 calc(var(--p)*1%),#0002 0);-webkit-mask:radial-gradient(circle,transparent 30px,#000 31px);mask:radial-gradient(circle,transparent 30px,#000 31px)}
+  #mtPerk.low{filter:grayscale(.7);opacity:.75}
+  body.ctlEdit .mtb{display:none !important}`;
+  document.head.appendChild(st);
+  const host = $('actBtn').parentElement;
+  for (const [id, title, fn] of [['mtRide', 'Ride (R)', mtToggle], ['mtPerk', 'Perk (F)', mtPerk]]) {
+    const b = document.createElement('button'); b.id = id; b.className = 'mtb'; b.title = title;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); fn(); });
+    host.appendChild(b);
+  }
+  window.addEventListener('keydown', e => {
+    if (!S || !scene || $('modal').classList.contains('show') || (typeof Talk !== 'undefined' && Talk.open) || /INPUT|TEXTAREA/.test((e.target || {}).tagName || '')) return;
+    if (e.key === 'r' || e.key === 'R') mtToggle();
+    if (e.key === 'f' || e.key === 'F') mtPerk();
+  });
+  window.addEventListener('resize', () => mtUI(true));
+}
+function mtUI(force) {
+  const rb = $('mtRide'), pb = $('mtPerk'); if (!rb) return;
+  const sc = scene, M = S && S.mt, m = mtCur(), out = !!(sc && m && mtOutdoor(sc));
+  rb.style.display = out ? 'flex' : 'none'; pb.style.display = out && sc.rideKey ? 'flex' : 'none';
+  if (!out) return;
+  const D = MOUNTS[m.id], riding = !!sc.rideKey;
+  if (force || rb.dataset.k !== m.id + riding) {
+    rb.dataset.k = m.id + riding; rb.classList.toggle('on', riding);
+    const ic = HD[D.sp] && HD[D.sp].i ? mtPic(m.id, 'icon') : '';
+    rb.innerHTML = ic ? `<img src="${ic}">` : '🐏'; rb.title = riding ? 'Get down (R)' : `Ride ${D.name} (R)`;
+    pb.textContent = MT_PERKS[D.perk].icon; pb.title = MT_PERKS[D.perk].name + ' (F)';
+  }
+  pb.style.setProperty('--p', Math.round(100 * MT.st / mtMaxSt(m))); pb.classList.toggle('low', MT.st < mtPerkCost(m));
+  // sit them beside the action button (wherever you've moved it), or bottom right without one
+  const a = $('actBtn').getBoundingClientRect(), touch = a.width > 0;
+  const right = touch ? innerWidth - a.left + 14 : 18, bottom = touch ? innerHeight - a.top - 10 : 110;
+  rb.style.right = right + 'px'; rb.style.bottom = bottom + 'px';
+  pb.style.right = (touch ? innerWidth - a.right + 8 : 18) + 'px'; pb.style.bottom = (touch ? innerHeight - a.top + 16 : 176) + 'px';
+}
+
+/* ---------- hooks: each place checks gifts and puts you back in the saddle; each frame keeps it all in step */
+(function () {
+  const WP = World.prototype, mk = WP.makePlayer, upd = WP.update, sw = WP.swing;
+  WP.makePlayer = function (sp) {
+    this.rideKey = null; this.rideWant = null; this.hopping = false; this.mtSpr = this.mtShadow = this.mtAt = null;
+    mk.call(this, sp);
+    try { mtButtons(); mtGifts(this); mtPost(this); } catch (e) { console.warn('mounts', e); }
+  };
+  WP.update = function (time, dms) {
+    upd.call(this, time, dms);
+    const M = S && S.mt; if (!M || !this.p || !this.player) return;
+    const m = mtCur();
+    const want = !!(m && M.ride && mtOutdoor(this));
+    if (want !== !!this.rideKey && this.rideWant !== want && !this.hopping && !(this.p.busy > 0)) { this.rideWant = want; mtApply(this, want); }
+    // your look changed: the rider changes with it
+    if (this.rideKey && m && (MT.cache['ride:' + m.id] || {}).img !== this.textures.get('walk').getSourceImage()) mtApply(this, true);
+    if (m) MT.st = Math.min(mtMaxSt(m), MT.st + dms / 1000 * (this.rideKey ? 9 : 14));
+    MT.uiT -= dms; if (MT.uiT <= 0) { MT.uiT = 150; mtUI(); }
+  };
+  // tools need both hands: hop down first
+  if (sw) WP.swing = function (...a) { if (this.rideKey && S.mt) { S.mt.ride = 0; mtApply(this, false); this.rideWant = null; mtUI(true); } return sw.apply(this, a); };
+})();
 
 /* ============================================================ Art loaded per area (23 Nov 2026)
    The big town and indoor pictures used to be loaded at start, every one of them. Now the start-up loader only notes
