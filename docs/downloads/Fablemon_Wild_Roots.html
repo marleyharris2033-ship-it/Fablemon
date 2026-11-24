@@ -17428,7 +17428,7 @@ const MOUNTS = {
     start: { spd: 40, foot: 45, sta: 40, bond: 15 },
     tint: { hue: 190, sat: .45, glow: .7 },   // a deep-sea coat with coral fins
     tack: { cloth: '#e8e0c8', clothDk: '#b8ae94', trim: '#2f7fa8', leather: '#3e4a56', leatherDk: '#232b33', leatherLt: '#62707e' },
-    seat: { down: [60, 36], left: [72, 70], up: [60, 46] }, frontSeat: 'nopad',
+    seat: { down: [60, 50], left: [72, 70], up: [60, 46] }, frontLegs: { cut: 44, feet: [[37, 92], [80, 92]], flaps: [] },
     desc: 'A Brookstride raised on the Beaconreach tide-flats. Slow to get going, but once it\'s running it doesn\'t want to stop.',
   },
   galeheath: {
@@ -17627,6 +17627,21 @@ function mtCompose(sc, id, rider) {
     const bw = mw * .3;
     // facing you: the rider sits behind the head; for mounts whose head sits low (frontSeat) they sit up on its back, saddle and all
     if (view === 'down' && D.frontSeat) { mount(); if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
+    // facing you, with a big head in front: the rider sits behind it, and their boots, the saddle flaps and the reins show either side
+    else if (view === 'down' && D.frontLegs) {
+      // the rider sits in front of its ears but behind its face, with their boots and the saddle flaps showing either side
+      const L = D.frontLegs, P = ([x, y]) => [ox + mx + x * k, oy + my + y * k + bob], cutY = oy + my + L.cut * k + bob;
+      mount();
+      for (const f of L.flaps) { const [fx, fy] = P(f), w = bw * .26, left = fx < sx; g.fillStyle = T.leatherDk; g.beginPath(); g.roundRect(fx - (left ? w : 0) - 1.5, fy - w * .6 - 1.5, w + 3, w * 1.3 + 3, w * .3); g.fill(); g.fillStyle = T.leather; g.beginPath(); g.roundRect(fx - (left ? w : 0), fy - w * .6, w, w * 1.3, w * .26); g.fill(); }
+      if (rider) {
+        const [img, cx, cy, cw, ch, dw, dh] = mtRiderFrame(sc, d), rw = dw * R * MT_RIDER, rh = dh * R * MT_RIDER, fh = .16;
+        L.feet.forEach((f, i) => { const [fx, fy] = P(f), w = rw / 2, x0 = i ? fx : fx - w; g.drawImage(img, cx + (i ? cw / 2 : 0), cy + ch * (1 - fh), cw / 2, ch * fh, x0 + (i ? -w * .35 : w * .35), fy - rh * fh, w, rh * fh); });
+      }
+      riderDraw();
+      // and the head, back over the rider's lap
+      const sy0 = (L.cut + 1) * (fw / fw), srcY = Math.floor(n / 4) * fw + 1 + L.cut;
+      g.drawImage(sh.c, (n % 4) * fw + 1, srcY, fw - 2, fw - 1 - L.cut - 1, ox + mx + k, cutY + k, mw - 2 * k, (fw - L.cut - 2) * k);
+    }
     else if (view === 'down') { riderDraw(); mount(); }
     else if (view === 'up') { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw, false); riderDraw(); mtSaddle(g, T, sx, sy, bw, 'up'); }
     else { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw * .9, true); riderDraw(); mtSaddle(g, T, sx, sy + bw * .04, bw, 'side', flip); }
