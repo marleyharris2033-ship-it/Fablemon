@@ -37,7 +37,7 @@ const MOUNTS = {
     start: { spd: 35, foot: 30, sta: 30, bond: 15 },
     tint: { hue: 198, sat: .32, glow: 1.2 },   // a cold blue flame for a crest; the fleece stays white
     tack: { cloth: '#7a1f2a', clothDk: '#561520', trim: '#f2d27a', leather: '#5a3420', leatherDk: '#36200f', leatherLt: '#8a5a38' },
-    seat: { down: [60, 24], left: [64, 52], up: [60, 52] },
+    seat: { down: [60, 50], left: [64, 52], up: [60, 52] }, frontSeat: true,
     desc: 'The Derby\'s fastest Fleecebolt, its crest burning blue. Give it its head on a straight and it\'s gone.',
   },
   tidestrider: {
@@ -45,7 +45,7 @@ const MOUNTS = {
     start: { spd: 40, foot: 45, sta: 40, bond: 15 },
     tint: { hue: 190, sat: .45, glow: .7 },   // a deep-sea coat with coral fins
     tack: { cloth: '#e8e0c8', clothDk: '#b8ae94', trim: '#2f7fa8', leather: '#3e4a56', leatherDk: '#232b33', leatherLt: '#62707e' },
-    seat: { down: [60, 34], left: [72, 70], up: [60, 46] },
+    seat: { down: [60, 36], left: [72, 70], up: [60, 46] }, frontSeat: 'nopad',
     desc: 'A Brookstride raised on the Beaconreach tide-flats. Slow to get going, but once it\'s running it doesn\'t want to stop.',
   },
   galeheath: {
@@ -242,7 +242,9 @@ function mtCompose(sc, id, rider) {
       g.drawImage(img, cx, cy, cw, cut, sx - rw / 2, sy - rh * MT_WAIST, rw, rh * MT_WAIST);
     };
     const bw = mw * .3;
-    if (view === 'down') { riderDraw(); mount(); }
+    // facing you: the rider sits behind the head; for mounts whose head sits low (frontSeat) they sit up on its back, saddle and all
+    if (view === 'down' && D.frontSeat) { mount(); if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
+    else if (view === 'down') { riderDraw(); mount(); }
     else if (view === 'up') { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw, false); riderDraw(); mtSaddle(g, T, sx, sy, bw, 'up'); }
     else { mount(); mtBlanket(g, T, sx, sy + bw * .1, bw * .9, true); riderDraw(); mtSaddle(g, T, sx, sy + bw * .04, bw, 'side', flip); }
     g.restore();
