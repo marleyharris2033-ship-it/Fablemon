@@ -576,6 +576,8 @@ function ghBraskTalk(sc) {
 }
 
 /* ---------- Isolde: the lamp tower */
+// a Warden's or a director's third forms know their signature move, even below the level the line evolves at
+const ghSig = m => { const g = SIGNATURE[m.sp]; if (g && !m.moves.includes(g[1])) { if (m.moves.length < 4) m.moves.push(g[1]); else m.moves[m.moves.length - 1] = g[1]; } return m; };
 const ISOLDE_TEAM = [['moonspark', 70], ['clinkit_3', 71], ['vigilarach', 72], ['inkwick_3', 72], ['gloamfang', 73], ['carillion', 74]].filter(([s]) => SPECIES[s]);
 function ghIsolde(sc, id) {
   const G = gh();
@@ -602,7 +604,7 @@ function ghIsolde(sc, id) {
     closeModal(); if (a !== 'go') return;
     S.mons.forEach(restMon); refreshTeamBtn && refreshTeamBtn();
     Talk.say([GH.isolde("The light is back. The shadows have somewhere to fall again.", 0), GH.isolde('Now. Let us see what your light shows in the dark.', 0)], () => {
-      const tm = ISOLDE_TEAM.map(wardenMon);
+      const tm = ISOLDE_TEAM.map(([s, l]) => ghSig(wardenMon([s, l])));
       Battle.start(tm[0], { label: 'Warden', name: 'Isolde', team: tm, prize: 14000, boss: true, smart: true, heals: 2, lose: 'Mind the shadows on your way home. Come back when your lantern burns brighter.', onWin: () => {
         S.crests.shade = 1;
         setTimeout(() => { Sound.play('gotcha'); Talk.say([GH.isolde('There. Your lantern burns true.', 1),
@@ -703,7 +705,7 @@ function ghSiphon(sc, k) {
 
 /* ---------- Site G: Morwenna Vale, in two parts. She gets away. */
 const VALE_P1 = [['hollowbark_3', 72], ['bogbastion', 73], ['brimbramble_3', 73]].filter(([s]) => SPECIES[s]);
-const VALE_P2 = [['hydrarch', 74], ['ursylvane', 74], ['vesperax', 75]].filter(([s]) => SPECIES[s]);
+const VALE_P2 = [['hydrarch', 74], ['ursylvane', 74], ['vespereign', 75]].filter(([s]) => SPECIES[s]);
 async function ghVale(sc) {
   const G = gh(), D = (sc.ewSpr || {}).gh_drill, V = (sc.ewSpr || {}).gh_vale;
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
@@ -716,7 +718,7 @@ async function ghVale(sc) {
   });
   const fight = (list, phase, heal = true) => {
     if (heal) { S.mons.forEach(restMon); refreshTeamBtn && refreshTeamBtn(); }
-    const tm = list.map(([s, l]) => trainerMon(s, l));
+    const tm = list.map(([s, l]) => ghSig(trainerMon(s, l)));
     Battle.start(tm[0], { label: 'Director', name: 'Vale', team: tm, prize: phase === 2 ? 16000 : 6000, boss: true, smart: true, heals: phase === 2 ? 2 : 1,
       intro: [phase === 2 ? 'Morwenna Vale sends out her best!' : 'Director Vale wants to battle!'], lose: 'Mm. Run home, little farmer.',
       onWin: () => setTimeout(() => phase === 1 ? phase2() : ghValeWin(sc), 400) });

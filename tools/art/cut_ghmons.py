@@ -23,6 +23,7 @@ MONS = [
     ('lumispin', 32, 2), ('lanternweave', 40, 2), ('vigilarach', 46, 2),
     ('lintroll', 36, 0), ('cairnbrute', 44, 0), ('bridgegrim', 48, 0),
     ('jinglynx', 32, 2), ('knellynx', 40, 2), ('carillion', 46, 2),
+    ('vespereign', 48, 2),      # the bat line's third form (sent later the same day): its row comes last
 ]
 
 
