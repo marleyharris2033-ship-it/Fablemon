@@ -14623,7 +14623,10 @@ rollQuality = function (tile) {
 };
 const SEASON_WORD = ['spring', 'summer', 'autumn', 'winter'];
 for (const it of Object.values(ITEMS)) if (it.seed && CROPS[it.seed] && it.desc && !/Grows best/.test(it.desc)) {
-  const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
+  // every crop grows all year now: drop the old season words from the front, and anything about the season ending
+  it.desc = it.desc.replace(/^(Spring|Summer|Autumn|Fall|Winter)( and (spring|summer|autumn|fall|winter))?\. /, '')
+    .replace(': it never withers when the season changes', '').replace(' until the season ends', '');
+  const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows all year, best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
 }
 
 /* ---------- 2. moving in */
@@ -14668,7 +14671,7 @@ function itemSource(id) {
   if (typeof LV_KIND !== 'undefined') for (const K of Object.values(LV_KIND)) if (K.out === id || K.big === id) return `From a ${K.name} (${K.home === 'coop' ? 'Coop' : 'Barn'}, Hattie sells them)`;
   if (CROPS[id]) return "Grow it: seeds at Marigold's store";
   if (id === 'honey') return 'A Beehive on your farm';
-  if (id === 'berry') return 'Hearthberry bushes, or Willa sells them';
+  if (id === 'berry') return 'Marigold and Willa sell them, or a Shade Fablemon forages them at night';
   return '';
 }
 const sourceText = need => { const rows = Object.keys(need).filter(id => reqCount(id) < need[id]).map(id => [id, itemSource(id)]).filter(r => r[1]);

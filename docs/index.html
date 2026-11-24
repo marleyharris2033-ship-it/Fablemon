@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261124-105524">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261124-105524">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261124-105524">
+<link rel="manifest" href="manifest.webmanifest?v=20261124-111347">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261124-111347">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261124-111347">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-105524').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-111347').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -14632,7 +14632,10 @@ rollQuality = function (tile) {
 };
 const SEASON_WORD = ['spring', 'summer', 'autumn', 'winter'];
 for (const it of Object.values(ITEMS)) if (it.seed && CROPS[it.seed] && it.desc && !/Grows best/.test(it.desc)) {
-  const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
+  // every crop grows all year now: drop the old season words from the front, and anything about the season ending
+  it.desc = it.desc.replace(/^(Spring|Summer|Autumn|Fall|Winter)( and (spring|summer|autumn|fall|winter))?\. /, '')
+    .replace(': it never withers when the season changes', '').replace(' until the season ends', '');
+  const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows all year, best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
 }
 
 /* ---------- 2. moving in */
@@ -14677,7 +14680,7 @@ function itemSource(id) {
   if (typeof LV_KIND !== 'undefined') for (const K of Object.values(LV_KIND)) if (K.out === id || K.big === id) return `From a ${K.name} (${K.home === 'coop' ? 'Coop' : 'Barn'}, Hattie sells them)`;
   if (CROPS[id]) return "Grow it: seeds at Marigold's store";
   if (id === 'honey') return 'A Beehive on your farm';
-  if (id === 'berry') return 'Hearthberry bushes, or Willa sells them';
+  if (id === 'berry') return 'Marigold and Willa sell them, or a Shade Fablemon forages them at night';
   return '';
 }
 const sourceText = need => { const rows = Object.keys(need).filter(id => reqCount(id) < need[id]).map(id => [id, itemSource(id)]).filter(r => r[1]);
