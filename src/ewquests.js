@@ -227,7 +227,7 @@ ewDoorHook = (sc, id) => {
    6. The Harvester   Tansy brings word: Vale has ordered the Eldest Tree felled. At the tree: Haulmaster Stroud and the
                       Harvester. The herd leaders charge in; beat Stroud (64–66); the Harvester ends up in the log pond.
                       The camp shuts: the techs leave and the Fernwalk checkpoint opens.
-   7. The Wild Crest  Alder battles you (63–67) and gives you his horn: blow it on any route to ride the silver stag
+   7. The Wild Crest  Alder battles you (63–67) and gives you Elderhart of the Herd, a mount (mounts.js)
                       (faster, and no wild Fablemon while you ride). Tansy finds where the haul road really goes. */
 Object.assign(ITEMS, {
   elder_seed: { name: 'Elder Seed', stack: 999, seed: 'elder', sell: 0, desc: 'A winged seed from a felled elder tree. Plant it on your farm and water it: in 5 days it grows into an Elder Sapling.' },
@@ -323,23 +323,15 @@ ROUTES.eldest.actors = () => {
   return out;
 };
 
-/* ---------- riding the stag */
-const ewRiding = sc => !!(S.ewRide && sc && sc.scene && S.ewRide === sc.scene.key && !RC.town);
-const _ewFast = Route.prototype.fastAt;
-Route.prototype.fastAt = function (x, y) { return ewRiding(this) || (_ewFast ? _ewFast.call(this, x, y) : false); };
-const _ewOdds = vdEncOdds;
-vdEncOdds = function (sc) { return ewRiding(sc) ? 0 : _ewOdds(sc); };
-const _ewEat = eatHeld;
-eatHeld = function (slotIdx = S.sel) {
-  const s = inv.slots[slotIdx];
-  if (s && s.id === 'alders_horn') {
-    const sc = scene; if (!sc || !(sc instanceof Route) || RC.town || RC.sail) { toast('You can only call the stag on a route.', 1800); return true; }
-    if (S.ewRide === sc.scene.key) { S.ewRide = null; sc.player.clearTint(); toast('You slide off the stag. It trots back into the trees.', 2000); return true; }
-    S.ewRide = sc.scene.key; Sound.play('gust'); sc.player.setTint(0xe8f0ff);
-    toast("You blow Alder's horn. The silver stag bounds out of the trees and lets you climb on!", 2600); return true;
-  }
-  return _ewEat(slotIdx);
-};
+/* ---------- Alder's horn is gone (24 Nov 2026): he gives you Elderhart, a mount, instead (mounts.js).
+   Saves that have the horn lose it quietly, and anyone mid-ride gets down. The item stays defined so old bags load. */
+(function () {
+  const mk = World.prototype.makePlayer;
+  World.prototype.makePlayer = function (sp) {
+    mk.call(this, sp);
+    try { S.ewRide = null; if (inv.count('alders_horn')) { inv.remove('alders_horn', inv.count('alders_horn')); renderHotbar(); } } catch (e) { }
+  };
+})();
 
 /* ---------- the story's doors and people (chapters 4–7) */
 const _ewDoor1 = ewDoorHook;
@@ -362,9 +354,10 @@ ewDoorHook = (sc, id) => {
         Talk.say([EW.alder("The saws have stopped. The herds are home. Elderwood has a Warden again.", 0), EW.alder("So. Let's see what the forest thinks of you.", 0)], () => {
           const tm = ALDER_TEAM.map(wardenMon);
           Battle.start(tm[0], { label: 'Warden', name: 'Alder', team: tm, prize: 12000, boss: true, smart: true, heals: 2, lose: 'The forest is patient. Come back when you are.', onWin: () => {
-            S.crests.wild = 1; inv.add('alders_horn', 1); renderHotbar();
+            S.crests.wild = 1; if (typeof mtGive === 'function') { mtS(); mtGive('elderhart'); }
             setTimeout(() => { Sound.play('gotcha'); Talk.say([EW.alder("Ha! The herds would follow you. That's the highest thing I can say about anyone.", 1),
-              EW.alder("The Wild Crest. And take my horn. Blow it on any road and the silver stag will come and carry you. He likes you. Don't tell him I said.", 1),
+              EW.alder("The Wild Crest. And one more thing. The oldest of the herd who'll still carry a rider has chosen you. Elderhart. He'll be waiting at your farm.", 1),
+              EW.alder("He doesn't go round things. Briar, scrub, loose stone: he walks straight through. He likes you. Don't tell him I said.", 1),
               EW.tansy("Alder! Alder, I followed the haul road past the camp. It doesn't stop. It goes into the mountain, into an old miners' tunnel.", 0),
               EW.alder("The miners' tunnel. That comes out on the far side of the mountain, in the hollow. Gloamhollow.", 0),
               EW.alder("If anyone knows those tunnels, it's a miner. Your friend from the Old Mine. Brask. Find him.", 0)], () => toast('You received the Wild Crest! 🦌', 3200)); }, 400);
