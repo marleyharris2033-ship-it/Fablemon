@@ -1,7 +1,8 @@
 /* ============================================================ The Rootway (24 Nov 2026)
    Old travel gates grown from the roots of the mother tree, one in each town and one on your farm. Each sleeps until
-   you touch its rune; once two or more are awake, any awake shrine takes you to any other. Your farm's is awake from
-   the start, so the first shrine you wake already takes you home.
+   you touch its rune; once two or more are awake, any awake shrine takes you to any other. Your farm's wakes by itself,
+   so the first shrine you wake already takes you home. None of them stir until you've reached Beaconreach: until then
+   the train is how you get about.
 
    Also the loader for the user's sheet of 24 Nov (tools/art/cut_xart.py): atlas 'xa', 3x, shown at a third. It holds
    the shrines, the farm stable and its props (mounts.js), and Elderwood's trees, Eldest Tree and Harvester
@@ -42,7 +43,9 @@ const ROOTWAY = {
 };
 const ROOTWAY_ORDER = Object.keys(ROOTWAY);
 function rwS() { S.rootway = S.rootway || { awake: { farm: 1 }, at: {} }; S.rootway.at = S.rootway.at || {}; return S.rootway; }
-const rwAwake = k => !!rwS().awake[k];
+// the roots only stir once you've reached Beaconreach; until then the train is how you get about
+const rwOpen = () => !!(S.visited && S.visited.beaconreach);
+const rwAwake = k => rwOpen() && !!rwS().awake[k];
 
 // the tiles each kind of place keeps its walls in
 function rwBlock(sc, x, y, v) {
@@ -66,6 +69,13 @@ function rwPlace(sc) {
   const at = rwSpot(sc, key); if (!at) return;
   sc.rwAt = at; rwBlock(sc, at.x, at.y, 1); rwBlock(sc, at.x + 1, at.y, 1);
   rwDraw(sc);
+  // the first time in Beaconreach: the roots wake up all over the region
+  if (key === 'beaconreach') sc.time.delayedCall(900, () => {
+    const R = rwS(); if (!rwOpen() || R.opened || !sc.sys || !sc.sys.isActive()) return;
+    R.opened = 1; rwDraw(sc); save();
+    sc.cameras.main.flash(380, 220, 255, 150); Sound.play('levelup');
+    toast('🌿 Far below Beaconreach, old roots stir. The Rootway shrines can be woken now!', 4200);
+  });
 }
 function rwDraw(sc) {
   const at = sc.rwAt; if (!at) return;
@@ -90,6 +100,7 @@ const rwIsShrine = (sc, x, y) => { const a = sc.rwAt; return !!a && y === a.y &&
 function rwUse(sc) {
   const key = sc.scene.key, D = ROOTWAY[key]; if (!D || sc.paused || sc.sleeping) return;
   sc.face(sc.rwAt.x, sc.rwAt.y); sc.p.busy = .3;
+  if (!rwOpen()) return toast('An old gate of twisted roots. The rune is cold, and nothing answers your touch. Not yet.', 3200);
   if (!rwAwake(key)) return rwWake(sc);
   rwMenu(sc);
 }
@@ -109,12 +120,12 @@ function rwWake(sc) {
 function rwMenu(sc) {
   const here = sc.scene.key, R = rwS();
   const row = k => {
-    const D = ROOTWAY[k], on = R.awake[k], me = k === here, ic = xaPic('shr_icon', () => $('rwList') && rwMenu(sc));
+    const D = ROOTWAY[k], on = rwAwake(k), me = k === here, ic = xaPic('shr_icon', () => $('rwList') && rwMenu(sc));
     return `<button class="btn${on && !me ? ' gold' : ''}" data-a="go" data-k="${k}" ${on && !me ? '' : 'disabled'} style="display:flex;align-items:center;gap:8px;width:100%;margin:4px 0;text-align:left;${on ? '' : 'opacity:.55'}">
       ${ic ? `<img src="${ic}" style="width:26px;height:26px;${on ? '' : 'filter:grayscale(1)'}">` : '🌿'}<span style="flex:1">${on ? D.name : '???'}</span><small>${me ? 'You are here' : on ? '' : 'Still asleep'}</small></button>`;
   };
   openModal('Rootway', `<div id="rwList"><p class="hint" style="margin-top:0">Step through to any awake shrine.</p>${ROOTWAY_ORDER.map(row).join('')}</div>`, (a, d) => {
-    if (a !== 'go' || !d.k || !R.awake[d.k] || d.k === here) return;
+    if (a !== 'go' || !d.k || !rwAwake(d.k) || d.k === here) return;
     closeModal(); const at = R.at[d.k] || ROOTWAY[d.k];
     Sound.play('pop', 0); sc.cameras.main.flash(300, 220, 255, 150);
     travel(sc, d.k, { x: at.x, y: at.y + 1, dir: 'down' });

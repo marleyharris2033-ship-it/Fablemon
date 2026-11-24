@@ -500,10 +500,10 @@ function mtPost(sc) {
     // each in its own stall, looking out over the half-door; the trough is drawn back over their feet
     (M.list || []).forEach((m, n) => {
       if (n >= STB_STALL.length || (sc.rideKey && m.id === sc.rideId)) return;
-      const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 8, tx = Math.round((x - 8) / T);
-      const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale(.72 / MT_R).setDepth(stb.by * T + 15.4);
+      const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 10, tx = Math.round((x - 8) / T);
+      const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale(.66 / MT_R).setDepth(stb.by * T + 15.4);
       spr.mid = m.id; spr.at = { x: tx, y: stb.by, id: m.id }; sc.mtSprs.push(spr);
-      sc.tweens.add({ targets: spr, scaleY: { from: .72 / MT_R, to: .735 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      sc.tweens.add({ targets: spr, scaleY: { from: .66 / MT_R, to: .675 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     });
     return;
   }
@@ -516,7 +516,7 @@ function mtPost(sc) {
   });
 }
 /* ---------- the stable (the user's art): Granger had Robin build it; you choose where it stands, and can move it */
-const STB_STALL = [-57, -28.5, 0, 28.5, 57];   // stall middles, in px from the stable's middle
+const STB_STALL = [-57, -28.5, 0, 28.5, 57], STB_DOOR = .715;   // where the half-doors' tops sit, down the picture   // stall middles, in px from the stable's middle
 const stbFoot = (cx, by) => [cx - 6, by - 2, cx + 6, by];
 const stbIn = (x, y) => { const b = S && S.mt && S.mt.stable; if (!b) return false; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
 function stbBlock(b, v) { if (!b) return; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) farm.blocked[y * W + x] = v; }
@@ -528,9 +528,9 @@ function stbDraw(sc, b) {
   stbBlock(b, 1); sc.clearDebrisIn && sc.clearDebrisIn(...stbFoot(b.cx, b.by));
   const x = b.cx * T + 8, y = (b.by + 1) * T, d = b.by * T + 15;
   const im = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d); sc.stbImg = im; sc.stbObjs.push(im); if (sc.tall) sc.tall.push(im);
-  // the water trough again, in front of whoever's in the stalls
+  // the half-doors and the trough again, in front of whoever's in the stalls: they look out over the doors
   const tr = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d + .8), fr = tr.frame;
-  tr.setCrop(0, fr.realHeight * .855, fr.realWidth, fr.realHeight * .145); sc.stbObjs.push(tr);
+  tr.setCrop(0, fr.realHeight * STB_DOOR, fr.realWidth, fr.realHeight * (1 - STB_DOOR)); sc.stbObjs.push(tr);
   // hay to one side, tack to the other
   const prop = (f, px, py, dd = 0) => { if (!xaReady(sc, f)) return; const o = sc.add.image(px, py, 'xa', f).setOrigin(.5, 1).setDepth(py + dd); sc.stbObjs.push(o); };
   prop('stb_hay2', x - 92, y - 18); prop('stb_hay', x - 90, y - 1); prop('stb_saddle', x + 92, y - 17); prop('stb_bucket', x + 88, y - 1);
