@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261124-104128">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261124-104128">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261124-104128">
+<link rel="manifest" href="manifest.webmanifest?v=20261124-104837">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261124-104837">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261124-104837">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-104128').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-104837').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -17649,7 +17649,8 @@ function mtCompose(sc, id, rider) {
     };
     const bw = mw * .3;
     // facing you: the rider sits behind the head; for mounts whose head sits low (frontSeat) they sit up on its back, saddle and all
-    if (view === 'down' && D.frontSeat) { mount(); if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
+    if (view === 'down' && D.frontSeat) { mount(); if (!rider) { g.restore(); continue; }   // (no saddle facing you without a rider: it'd sit on its head)
+      if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
     // facing you, with a big head in front: the rider sits behind it, and their boots, the saddle flaps and the reins show either side
     else if (view === 'down' && D.frontLegs) {
       // the rider sits in front of its ears but behind its face, with their boots and the saddle flaps showing either side

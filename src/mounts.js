@@ -244,7 +244,8 @@ function mtCompose(sc, id, rider) {
     };
     const bw = mw * .3;
     // facing you: the rider sits behind the head; for mounts whose head sits low (frontSeat) they sit up on its back, saddle and all
-    if (view === 'down' && D.frontSeat) { mount(); if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
+    if (view === 'down' && D.frontSeat) { mount(); if (!rider) { g.restore(); continue; }   // (no saddle facing you without a rider: it'd sit on its head)
+      if (D.frontSeat !== 'nopad') mtBlanket(g, T, sx, sy + bw * .1, bw * .85, false); riderDraw(); mtSaddle(g, T, sx, sy, bw * (D.frontSeat === 'nopad' ? .8 : .9), 'up'); }
     // facing you, with a big head in front: the rider sits behind it, and their boots, the saddle flaps and the reins show either side
     else if (view === 'down' && D.frontLegs) {
       // the rider sits in front of its ears but behind its face, with their boots and the saddle flaps showing either side
