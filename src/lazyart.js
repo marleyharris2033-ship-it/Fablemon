@@ -4,7 +4,7 @@
    src/scene_tex.json: recorded by running every area in a test). Anything an area asks for that isn't here yet is
    fetched on the spot, with an invisible stand-in for that moment. After each load the usual high-detail swap runs
    (hdWorldSwap), which only touches pictures that haven't been swapped yet. */
-const LAZY_KEYS = new Set(['town', 'ewb', 'ewh', 'br', 'hm', 'qd', 'cove', 'sea', 'bh', 'bog', 'houses', 'gym_bh', 'gym_qd', 'gym_br', 'gym_hm',
+const LAZY_KEYS = new Set(['town', 'ewb', 'gh', 'ewh', 'br', 'hm', 'qd', 'cove', 'sea', 'bh', 'bog', 'houses', 'gym_bh', 'gym_qd', 'gym_br', 'gym_hm',
   'room_0', 'room_1', 'room_2', 'room_3', 'furn', 'int_coop', 'int_barn', 'lv', 'an_cow', 'an_goat', 'an_sheep', 'an_hen', 'an_duck', 'an_calf', 'an_chick', 'an_lamb', 'an_kid', 'an_duckling']);
 const lazyGroup = key => { const k = String(key).replace(/__hd$/, ''); return LAZY_KEYS.has(k) ? k : null; };
 let LAZY_REC = {};   // group -> [[method, args]] as the start-up loader was asked

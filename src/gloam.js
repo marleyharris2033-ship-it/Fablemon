@@ -35,6 +35,17 @@ const ghHas = t => team().some(m => m.hp > 0 && (SPECIES[m.sp].type === t || SPE
 const ghXa = f => !!(HDW.xa && HDW.xa.frames && HDW.xa.frames[f]);   // (rootway.js, which loads the xa atlas, comes after this file)
 const ghSay = (lines, cb) => { Talk.say(lines, cb); return true; };
 
+/* ---------- Gloamhollow's own art (the user's sheets, 24 Nov 2026; tools/art/cut_gharts.py): atlas 'gh', 3x, shown at a
+   third, loaded with each Gloamhollow area. ghA(frame, stand-in) falls back to the old stand-in if it's missing. */
+const ghA = (f, alt) => HDW.gh && HDW.gh.frames && HDW.gh.frames[f] ? ['gh', f] : alt;
+if (HDW.gh) {
+  ASSET.ghJson = { frames: Object.fromEntries(Object.entries(HDW.gh.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
+  const ld = hdWorldLoad; hdWorldLoad = function (loader, snow) { ld(loader, snow); if (!game.textures.exists('gh')) loader.image('gh', HDW.gh.img); };
+  const sw = hdWorldSwap; hdWorldSwap = function (sc) { sw(sc); const t = sc.textures.exists('gh') && sc.textures.get('gh'); if (t && !t._shrunk) { for (const [k, f] of Object.entries(HDW.gh.frames)) t.add(k, 0, f.x, f.y, f.w, f.h); hdShrinkTexture(t, 3); t._shrunk = 1; } };
+}
+// the painted grounds cut from the sheet (stones sit at a believable size)
+Object.assign(GPERIOD, { ghg_cobble: 4, ghg_moss: 6, ghg_rock: 5, ghg_crystal: 5, ghg_board: 4, ghg_planks: 4, ghg_rail: 4 });
+
 /* ---------- people (stand-in art: Isolde and Vale have their own; the villagers borrow other trades' looks) */
 // Gloamhollow folk borrow other trainers' looks, recoloured (hue-rotated), until they have art of their own
 const GH_FOLK = { wren: ['wispwatcher', 140], tobin: ['busker', 200], mags: ['allotment', 90], seeds: ['forager', 250], barter: ['reedcutter', 170] };
@@ -94,6 +105,14 @@ CROPS.noonbell = cvCrop('cranberry', 7, [0, 1, 2, 3], { item: 'noonbell', glow: 
 const _ghItems = hdItems;
 hdItems = async function () {
   await _ghItems();
+  // the Noonbell crop's four stages and some bag icons, from Gloamhollow's own sheet
+  if (HDW.gh) try {
+    const img = await loadImg(HDW.gh.img), F = HDW.gh.frames;
+    const piece = f => { const r = F[f], c = document.createElement('canvas'); c.width = r.w; c.height = r.h; c.getContext('2d').drawImage(img, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h); c._hdk = 3; return c; };
+    if (F.gh_nb1) { for (let i = 1; i <= 4; i++) SAP_CANVAS['noonbell' + i] = piece('gh_nb' + i); CROPS.noonbell.frames = [1, 2, 3, 4].map(i => 'cv:noonbell' + i); }
+    const icon = f => { const r = F[f], c = document.createElement('canvas'); c.width = c.height = 72; const k = Math.min(66 / r.w, 66 / r.h), w = r.w * k, h = r.h * k; c.getContext('2d').drawImage(img, r.x, r.y, r.w, r.h, (72 - w) / 2, (72 - h) / 2, w, h); return c; };
+    for (const [id, f] of [['brask_pick', 'gh_pick'], ['brask_lamp', 'gh_lamp'], ['brask_gauge', 'gh_gauge'], ['noonbell', 'gh_bloom_open']]) if (F[f]) { const c = icon(f), u = c.toDataURL(); ICONS[id] = u; ICON_CANVAS[id] = c; HD_SMOOTH.add(u); }
+  } catch (e) { console.warn('gh art', e); }
   for (const [id, f] of [['brask_pick', 'stone'], ['brask_lamp', 'lantern'], ['brask_gauge', 'stone'], ['noonbell_seed', 'lanterngourd_seeds'], ['noonbell', 'lantern_gourd']])
     if ((!ICONS[id] || ICONS[id] === ICONS.wood) && ICONS[f]) { ICONS[id] = ICONS[f]; ICON_CANVAS[id] = ICON_CANVAS[f]; }
 };
@@ -125,8 +144,8 @@ const ghTreeMere = (x, y) => {
 /* ---------- the maps */
 const GHM = GH_MAPS;
 const GH_ASC = { gh: true, crag: true, quiet: true, paths: [], ponds: [], bridge: null, open: [], clear: [], props: [] };
-const GH_DARK_PAL = { floor: 'crag_dirt@dull', path: 'crag_gravel@dull', rock: 'crag_rock@dull', wild: 'crag_dirt_grass@gloam', water: 'water@gloam' };
-const GH_DEEP_PAL = { floor: 'crag_dirt@gloam', path: 'crag_gravel@gloam', rock: 'crag_rock@gloam', wild: 'crag_dirt_grass@gloam', water: 'water@gloam' };
+const GH_DARK_PAL = { floor: ASSET.ground && ASSET.ground.ghg_rock ? 'ghg_rock' : 'crag_dirt@dull', path: ASSET.ground && ASSET.ground.ghg_planks ? 'ghg_planks' : 'crag_gravel@dull', rock: 'crag_rock@dull', wild: 'crag_dirt_grass@gloam', water: 'water@gloam' };
+const GH_DEEP_PAL = { floor: ASSET.ground && ASSET.ground.ghg_rock ? 'ghg_rock' : 'crag_dirt@gloam', path: ASSET.ground && ASSET.ground.ghg_crystal ? 'ghg_crystal' : 'crag_gravel@gloam', rock: 'crag_rock@gloam', wild: 'crag_dirt_grass@gloam', water: 'water@gloam' };
 const GH_TRAIL_STEPS = GHM.undercroft.trail;
 const GH_TOOL_IDS = ['brask_pick', 'brask_lamp', 'brask_gauge'];
 const GH_MIR0 = { A: '\\', B: '\\', C: '/', D: '/' };   // the mirrors as you find them: all wrong
@@ -153,7 +172,7 @@ Object.assign(ROUTES, {
   // the village: the lamp tower north of the square, the church west, the mill and its pool east, homes south
   gloamhollow: { ...EW_BASE, gh: true, phased: true, name: 'Gloamhollow', w: 64, h: 48, town: true, forest: .36, ghTree: ghTreeTown, treeTint: 0x9890d0,
     tint: () => ghNoon() ? [0x2a2448, .06] : [0x1a1838, ghFree() ? .2 : .34],
-    gpal: { floor: 'forest_moss@gloam', path: 'slab@gloam', wild: 'forest_floor_grass@gloam', mudk: 'mud@gloam', water: 'water@gloam', shallow: 'shallow@gloam' },
+    gpal: { floor: ASSET.ground && ASSET.ground.ghg_moss ? 'ghg_moss' : 'forest_moss@gloam', path: ASSET.ground && ASSET.ground.ghg_cobble ? 'ghg_cobble' : 'slab@gloam', wild: 'forest_floor_grass@gloam', mudk: 'mud@gloam', water: 'water@gloam', shallow: 'shallow@gloam' },
     paths: [[0, 22, 63, 24], [22, 17, 42, 30], [30, 8, 34, 17], [30, 30, 34, 47], [50, 16, 52, 22], [10, 14, 14, 22], [8, 36, 56, 38], [8, 44, 56, 45], [8, 24, 10, 45], [54, 24, 56, 45], [58, 0, 60, 24]],
     ponds: [[46, 19, 2.8, 1.9]],
     open: [[0, 21, 3, 25], [29, 44, 35, 47], [58, 0, 60, 3]], clear: [[4, 4, 61, 46], [0, 21, 4, 25]],
@@ -172,7 +191,7 @@ Object.assign(ROUTES, {
       { id: 'gh_h7', atlas: 'ewb', frame: 'ewb_hunters', cx: 41, by: 43, door: 0, name: 'Lamp-maker\'s house' },
       { id: 'gh_h8', atlas: 'ewb', frame: 'ewb_tree', cx: 49, by: 43, door: 1, name: 'Tree house' },
     ],
-    ewdecor: [['town', 'stall', 24, 19, 3], ['town', 'stall', 24, 27, 3], ['town', 'stall', 38, 19, 3], ['town', 'stall', 38, 27, 3],
+    ewdecor: [[...ghA('gh_stall_lamps', ['town', 'stall']), 24, 19, 3], [...ghA('gh_stall_crops', ['town', 'stall']), 24, 27, 3], [...ghA('gh_stall_crops', ['town', 'stall']), 38, 19, 3], [...ghA('gh_stall_lamps', ['town', 'stall']), 38, 27, 3],
       ['qd', 'qd_stone_lantern', 29, 18], ['qd', 'qd_stone_lantern', 35, 18], ['br', 'br_bench', 27, 29, 2], ['br', 'br_bench', 36, 29, 2], ['br', 'br_planter', 20, 20, 2],
       ['bog', 'dead_tree', 6, 30], ['bog', 'dead_tree', 59, 31], ['bog', 'dead_tree', 19, 6], ['bog', 'post', 43, 18], ['bog', 'post', 48, 18], ['bog', 'cattail', 44, 17], ['bog', 'cattail', 49, 20],
       ...(ghXa('ewt_birch') ? [['xa', 'ewt_birch', 5, 27], ['xa', 'ewt_pine2', 61, 28], ['xa', 'ewt_birch', 45, 8], ['xa', 'ewt_hollow', 24, 7], ['xa', 'ewt_pine2', 6, 41], ['xa', 'ewt_birch', 59, 41]] : [])],
@@ -188,14 +207,14 @@ Object.assign(ROUTES, {
   // the misty marsh: boardwalks out to the five great lanterns
   lanternmere: { ...EW_BASE, gh: true, phased: true, bog: true, name: 'Lanternmere', w: 56, h: 44, forest: .3, ghTree: ghTreeMere, treeTint: 0x8c9cc0,
     tint: () => [0x14243a, Math.max(.1, .3 - ghLit() * .04)],
-    gpal: { floor: 'moss@bog', path: 'board', wild: 'forest_floor_grass@gloam', mudk: 'peat', water: 'water@bog', shallow: 'shallow@bog' },
+    gpal: { floor: 'moss@bog', path: ASSET.ground && ASSET.ground.ghg_board ? 'ghg_board' : 'board', wild: 'forest_floor_grass@gloam', mudk: 'peat', water: 'water@bog', shallow: 'shallow@bog' },
     paths: [[26, 0, 29, 40], [4, 20, 52, 22], [8, 8, 12, 10], [10, 10, 11, 20], [44, 8, 47, 10], [45, 10, 46, 20], [9, 22, 10, 33], [8, 32, 12, 34], [45, 22, 46, 33], [44, 32, 48, 34], [24, 36, 32, 40]],
     ponds: [[18, 13, 4, 3], [38, 13, 4, 3], [18, 29, 3.6, 2.6], [38, 29, 3.6, 2.6], [15, 40, 3, 1.6], [42, 40, 3, 1.6]],
     open: [[26, 0, 29, 3]],
     zones: [[14, 3, 22, 7, 68, 70], [33, 3, 41, 7, 68, 70], [13, 23, 22, 25, 69, 70], [33, 23, 42, 25, 69, 70], [3, 36, 8, 41, 69, 70], [48, 36, 53, 41, 69, 70]],
     pickups: [{ id: 'lm1', x: 3, y: 9, item: 'tonic', n: 4 }, { id: 'lm2', x: 52, y: 15, gold: 10000 }, { id: 'lm3', x: 34, y: 39, item: 'starpetal_charm', n: 1 }],
     signs: { '25,2': "Lanternmere. Five great lanterns once kept the marsh calm: an ember, a spark, a gourd, a mirror and the moths. When they're out, the Shade Fablemon get restless." },
-    ewdecor: [['br', 'br_lens', 48, 31], ['bog', 'post', 25, 4], ['bog', 'post', 30, 4], ['bog', 'post', 25, 19], ['bog', 'post', 30, 19], ['bog', 'log', 6, 24], ['bog', 'stump', 50, 24]],
+    ewdecor: [...(HDW.gh ? [['gh', 'gh_reeds3', 14, 9], ['gh', 'gh_reeds2', 22, 16], ['gh', 'gh_reeds2', 34, 10], ['gh', 'gh_reeds3', 42, 16], ['gh', 'gh_reeds1', 15, 32], ['gh', 'gh_reeds2', 41, 26], ['gh', 'gh_lily2', 18, 13], ['gh', 'gh_lily1', 38, 12], ['gh', 'gh_lily1', 18, 29], ['gh', 'gh_lily2', 38, 30], ['gh', 'gh_moss2', 5, 12], ['gh', 'gh_moss1', 50, 13]] : [['br', 'br_lens', 48, 31]]), ['bog', 'post', 25, 4], ['bog', 'post', 30, 4], ['bog', 'post', 25, 19], ['bog', 'post', 30, 19], ['bog', 'log', 6, 24], ['bog', 'stump', 50, 24]],
     trainers: [
       { id: 'lm_t1', kind: 'wispwatcher', name: 'Ottilie', x: 29, y: 9, dir: 'left', sight: 4, team: [['lumispin', 69], ['solwick', 70]] },
       { id: 'lm_t2', kind: 'reedcutter', name: 'Haydn', x: 18, y: 20, dir: 'right', sight: 4, team: [['marshviper', 69], ['grubble', 70], ['lotveil_3', 70]] },
@@ -225,12 +244,16 @@ Object.assign(ROUTES, {
     zones: [],
     pickups: [{ id: 'sg1', x: 6, y: 5, item: 'tonic', n: 5 }, { id: 'sg2', x: 33, y: 27, gold: 12000 }, { id: 'sg3', x: 33, y: 5, item: 'heartwood_charm', n: 1 }],
     signs: { '17,28': '__heal', '22,28': "SITE G. TAPROOT ASSEMBLY. Hard hats. Hi-vis. 'Every beam brings the future closer.'" },
-    ewdecor: GHM.siteg.stacks.map(([x, y]) => ['bog', 'log', x, y]),
+    ewdecor: GHM.siteg.stacks.filter((p, i) => !HDW.gh || i % 3 === 0).map(([x, y]) => [...ghA('gh_beams', ['bog', 'log']), x, y]),
     trainers: [],
     exits: [{ r: [18, 31, 21, 31], to: () => ['gloamhollow', { x: 59, y: 1, dir: 'down' }] }],
     spawn: { x: 20, y: 29, dir: 'up' }, enc: NO_ENC },
 });
-if (!ASSET.ewbJson) for (const b of ROUTES.gloamhollow.buildings) if (b.atlas === 'ewb') { b.atlas = 'town'; b.frame = { ewb_inn: 'tavern', ewb_store: 'store' }[b.frame] || (b.by > 40 ? 'homeB' : 'homeA'); b.door = 0; }
+if (HDW.gh) {
+  const M = { gh_tower: ['gh_tower', 0], gh_church: ['gh_church', 0], gh_inn: ['gh_inn', 0], gh_store: ['gh_store', 0], gh_mill: ['gh_mill', -2],
+    gh_h1: ['gh_h1', 0], gh_h2: ['gh_h2', 0], gh_h3: ['gh_h3', 0], gh_h4: ['gh_h4', 1], gh_h5: ['gh_h5', 0], gh_h6: ['gh_h6', 0], gh_h7: ['gh_h7', 1], gh_h8: ['gh_h8', 0] };
+  for (const b of ROUTES.gloamhollow.buildings) { const m = M[b.id]; if (m) { b.atlas = 'gh'; b.frame = m[0]; b.door = m[1]; } }
+} else if (!ASSET.ewbJson) for (const b of ROUTES.gloamhollow.buildings) if (b.atlas === 'ewb') { b.atlas = 'town'; b.frame = { ewb_inn: 'tavern', ewb_store: 'store' }[b.frame] || (b.by > 40 ? 'homeB' : 'homeA'); b.door = 0; }
 // secrets bought from Gleam: things only there once you know where to look
 const GH_SECRET_PICKUPS = { undercroft: [0, { id: 'ghs0', x: 54, y: 7, item: 'heartwood_charm', n: 1 }], lanternmere: [1, { id: 'ghs1', x: 12, y: 34, gold: 9000 }] };
 for (const [key, [k, p]] of Object.entries(GH_SECRET_PICKUPS)) {
@@ -246,7 +269,7 @@ Object.assign(ROUTES.ewcamp, {
   blocks: [...(ROUTES.ewcamp.blocks || []), { area: [37, 14, 38, 17], ok: () => !!gh().met, f: 'crate' }],
 });
 ROUTES.ewcamp.open = [...ROUTES.ewcamp.open, [36, 13, 39, 18]];
-ROUTES.ewcamp.ewdecor = [...ROUTES.ewcamp.ewdecor, ['qd', 'qd_winch', 38, 12], ['qd', 'qd_stone_lantern', 36, 12]];
+ROUTES.ewcamp.ewdecor = [...ROUTES.ewcamp.ewdecor, [...ghA('gh_tunnel', ['qd', 'qd_winch']), 38, 12], ['qd', 'qd_stone_lantern', 36, 12]];
 ROUTES.ewcamp.signs['35,18'] = "The haul road runs straight into the mountain here: the old miners' tunnel. Boards are nailed across the mouth. 'GREENLINE TIMBER. CONVOYS ONLY.'";
 
 /* ---------- Verdance in the hollow: siphon guards and Site G's crews (they go once Site G is stopped) */
@@ -287,14 +310,14 @@ const GH_BELL_ORDER = ['key', 'owl', 'moon', 'lantern'];   // as the sun walks: 
 const GH_LANTERNS = { ember: [10, 9], spark: [45, 9], gourd: [9, 33], mirror: [46, 33], moth: [28, 38] };
 const GH_LANTERN_NAME = { ember: 'Ember Lantern', spark: 'Spark Lantern', gourd: 'Gourd Lantern', mirror: 'Mirror Lantern', moth: 'Moth Lantern' };
 const GH_SIPHONS = { lamp: ['gloamhollow', 45, 29, 'vd_gh1', [62, 88, 35]], church: ['gloamhollow', 19, 20, 'vd_gh2', [41, 17, 76]], deep: ['glimmerdeep', 45, 18, 'vd_gd1', [55, 91, 23]] };
-const ghSiphonImg = k => ['vd', gh().siph[k] ? 'vd_siphon_off' : 'vd_siphon'];
+const ghSiphonImg = k => gh().siph[k] ? ghA('gh_siphon_off', ['vd', 'vd_siphon_off']) : ghA('gh_siphon', ['vd', 'vd_siphon']);
 const ghBloomOut = key => (GH_BLOOMS[key] || []).map(([x, y], i) => ({ k: key + i, x, y })).filter(b => ghNoon() && !gh().blooms[b.k]);
 
 ROUTES.undercroft.actors = () => {
   const G = gh(), out = [];
   if (G.met && ghTrust() && !G.door) out.push({ id: 'gh_brask', x: 28, y: 13, tex: 'tr_brask', dir: 'down' });
   if (G.met && !ghTrust() && !G.toolsBack) {
-    GHM.undercroft.tools.forEach(([x, y], k) => { if (!G.tools[k]) out.push({ id: 'gh_tool' + k, x, y, img: ['qd', 'qd_tool_rack'], glow: true }); });
+    GHM.undercroft.tools.forEach(([x, y], k) => { if (!G.tools[k]) out.push({ id: 'gh_tool' + k, x, y, img: ghA(['gh_pick', 'gh_lamp', 'gh_gauge'][k], ['qd', 'qd_tool_rack']), glow: true }); });
     if (ghTools() >= 3) out.push({ id: 'gh_brask', x: 57, y: 16, tex: 'tr_brask', dir: 'left' });
   }
   if (G.lostAsk && !G.lostFound) {
@@ -310,36 +333,36 @@ ROUTES.gloamhollow.actors = () => {
   out.push({ id: 'gh_tobin', x: 37, y: 17, tex: ghFolkKey('tobin'), dir: 'down' });
   if (!G.lostHome) out.push({ id: 'gh_wren', x: 19, y: 39, tex: ghFolkKey('wren'), dir: 'down' });
   else out.push({ id: 'gh_pip', x: 20, y: 39, mon: 'jinglynx' });
-  GH_LAMPS.forEach(([x, y], k) => out.push({ id: 'gh_lamp' + k, x, y, lamp: true, lit: ghLampLit(k) }));
-  GH_BELLS.forEach(([b, x, y]) => out.push({ id: 'gh_bell_' + b, x, y, img: ['br', 'br_bell_frame'] }));
-  out.push({ id: 'gh_crypt', x: 4, y: 19, img: G.crypt ? ['qd', 'qd_rubble'] : ['qd', 'qd_column'] });
+  GH_LAMPS.forEach(([x, y], k) => out.push(HDW.gh ? { id: 'gh_lamp' + k, x, y, img: ['gh', ghLampLit(k) ? 'gh_streetlamp_lit' : 'gh_streetlamp'] } : { id: 'gh_lamp' + k, x, y, lamp: true, lit: ghLampLit(k) }));
+  GH_BELLS.forEach(([b, x, y]) => out.push({ id: 'gh_bell_' + b, x, y, img: ghA('gh_bell_' + b, ['br', 'br_bell_frame']) }));
+  out.push({ id: 'gh_crypt', x: 4, y: 19, img: G.crypt ? ghA('gh_crypt_open', ['qd', 'qd_rubble']) : ghA('gh_crypt', ['qd', 'qd_column']) });
   for (const [k, [key, x, y]] of Object.entries(GH_SIPHONS)) if (key === 'gloamhollow') out.push({ id: 'gh_siph_' + k, x, y, img: ghSiphonImg(k) });
-  out.push({ id: 'gh_well', x: 44, y: 21, img: ['br', 'br_well'] });
+  out.push({ id: 'gh_well', x: 44, y: 21, img: ghA('gh_well', ['br', 'br_well']) });
   if (ghNight()) out.push({ id: 'gh_stall_shop', x: 25, y: 21, tex: ghFolkKey('mags'), dir: 'down' }, { id: 'gh_stall_seed', x: 25, y: 29, tex: ghFolkKey('seeds'), dir: 'down' },
     { id: 'gh_stall_barter', x: 39, y: 21, tex: ghFolkKey('barter'), dir: 'down' }, { id: 'gh_gleam', x: 39, y: 29, tex: 'tr_gleam', dir: 'down' });
-  for (const b of ghBloomOut('gloamhollow')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ['objects', 'wildflowers'], glow: true });
+  for (const b of ghBloomOut('gloamhollow')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ghA('gh_bloom_open', ['objects', 'wildflowers']), glow: true });
   return out;
 };
 ROUTES.lanternmere.actors = () => {
   const out = [];
-  for (const [k, [x, y]] of Object.entries(GH_LANTERNS)) out.push({ id: 'gh_lan_' + k, x, y, img: ['br', 'br_lantern_post'], scale: 1.7 });
-  for (const b of ghBloomOut('lanternmere')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ['objects', 'wildflowers'], glow: true });
+  for (const [k, [x, y]] of Object.entries(GH_LANTERNS)) out.push({ id: 'gh_lan_' + k, x, y, ...(HDW.gh ? { img: ['gh', 'gh_lan_' + k + (gh().lit[k] ? '_lit' : '')] } : { img: ['br', 'br_lantern_post'], scale: 1.7 }) });
+  for (const b of ghBloomOut('lanternmere')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ghA('gh_bloom_open', ['objects', 'wildflowers']), glow: true });
   return out;
 };
 ROUTES.glimmerdeep.actors = () => {
   const M = GHM.glimmerdeep, out = [];
-  out.push({ id: 'gh_beamsrc', x: M.src[0], y: M.src[1], img: ['br', 'br_lantern_post'] });
-  for (const [k, [x, y]] of Object.entries(M.mirrors)) out.push({ id: 'gh_mir_' + k, x, y, img: ['br', 'br_lens'] });
-  out.push({ id: 'gh_beamcrystal', x: M.target[0], y: M.target[1], img: ['qd', 'qd_slate_spikes'] });
+  out.push({ id: 'gh_beamsrc', x: M.src[0], y: M.src[1], img: ghA('gh_beamlamp', ['br', 'br_lantern_post']) });
+  for (const [k, [x, y]] of Object.entries(M.mirrors)) out.push({ id: 'gh_mir_' + k, x, y, img: ghA(ghMirFrame(k), ['br', 'br_lens']) });
+  out.push({ id: 'gh_beamcrystal', x: M.target[0], y: M.target[1], img: ghA(gh().beam ? 'gh_crystal_lit' : 'gh_crystal', ['qd', 'qd_slate_spikes']) });
   out.push({ id: 'gh_siph_deep', x: M.siphon[0], y: M.siphon[1], img: ghSiphonImg('deep') });
-  out.push({ id: 'gh_legend', x: M.legend[0], y: M.legend[1], img: ['qd', 'qd_column'] });
+  out.push({ id: 'gh_legend', x: M.legend[0], y: M.legend[1], img: ghA(S.crests && S.crests.shade ? 'gh_door_open' : 'gh_door', ['qd', 'qd_column']) });
   if (S.crests && S.crests.shade && typeof ghLegendHere === 'function' && ghLegendHere('vespereign')) out.push({ id: 'gh_vespereign', x: 37, y: 4, mon: 'vespereign', scale: 1.7 });   // the alpha: drawn bigger
-  if (!gh().bridge) out.push({ id: 'gh_crystalgap', x: 24, y: 10, img: ['qd', 'qd_slate_spikes'] });
-  for (const b of ghBloomOut('glimmerdeep')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ['objects', 'wildflowers'], glow: true });
+  if (!gh().bridge) out.push({ id: 'gh_crystalgap', x: 24, y: 10, img: ghA('gh_xtal_b1', ['qd', 'qd_slate_spikes']) });
+  for (const b of ghBloomOut('glimmerdeep')) out.push({ id: 'gh_bloom_' + b.k, x: b.x, y: b.y, img: ghA('gh_bloom_open', ['objects', 'wildflowers']), glow: true });
   return out;
 };
 ROUTES.siteg.actors = () => {
-  const M = GHM.siteg, out = [{ id: 'gh_drill', x: M.drill[0], y: M.drill[1], img: ['vd', ghFree() ? 'vd_drill_off' : 'vd_drill'], scale: 1.3 }];
+  const M = GHM.siteg, out = [{ id: 'gh_drill', x: M.drill[0], y: M.drill[1], ...(HDW.gh ? { img: ['gh', ghFree() ? 'gh_drill_off' : 'gh_drill'] } : { img: ['vd', ghFree() ? 'vd_drill_off' : 'vd_drill'], scale: 1.3 }) }];
   if (!ghFree()) out.push({ id: 'gh_vale', x: M.vale[0], y: M.vale[1], tex: 'tr_vale', dir: 'down' });
   return out;
 };
@@ -353,7 +376,7 @@ const _ghBuild = buildRoute;
 buildRoute = function () {
   const R = _ghBuild();
   if (!RC.gh || !RC.ascii) return R;
-  for (const b of RC.ghBlocks || []) if (!b.ok()) { const [a, bb, c, d] = b.area; for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; R.blocked[i] = 1; R.grass[i] = -1; R.deco.push({ x, y, tex: 'qd', fr: b.fr || 'qd_barrier', gate: 1 }); } }
+  for (const b of RC.ghBlocks || []) if (!b.ok()) { const [a, bb, c, d] = b.area; for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; R.blocked[i] = 1; R.grass[i] = -1; const [tx, fr] = ghA('gh_mdoor', ['qd', b.fr || 'qd_barrier']); if (tx === 'qd' || (x === a && y === bb)) R.deco.push({ x, y, tex: tx, fr, gate: 1 }); } }
   return R;
 };
 
@@ -402,19 +425,22 @@ function ghAfter(sc) {
   for (const s of Object.values(sc.grassSpr || {})) s.setTint(RC.dark ? 0x9aa0d0 : 0xb8c0e0);
   ghDarkness(sc);
   if (RC.dark) for (const [tx, x, y] of RC.cgprops || []) if (tx === 'cg_lamp_post') ghGlow(sc, x * T + 12, y * T - 2, 14, 0xffc870, .22);
+  if (key === 'undercroft') ghFungi(sc);
   const A = sc.ewSpr || {};
   if (key === 'gloamhollow') {
-    for (const b of RC.buildings) if (b.id === 'gh_tower') ghGlow(sc, b.cx * T + 8, b.by * T - 150, 26, ghFree() ? 0xfff0b0 : 0xb0a0ff, ghFree() ? .45 : .2);
+    for (const [k, im] of Object.entries(A)) if (/^gh_lamp\d/.test(k) && im.texture.key === 'gh' && ghLampLit(+k.slice(7))) ghGlow(sc, im.x, im.y - 26, 15, 0xffd070, .3);
+    for (const b of RC.buildings) if (b.id === 'gh_tower') ghGlow(sc, b.cx * T + 8, b.by * T + 16 - (b.atlas === 'gh' ? 124 : 166), 26, ghFree() ? 0xfff0b0 : 0xb0a0ff, ghFree() ? .45 : .2);
     for (const k of ['lamp', 'church']) if (!gh().siph[k] && A['gh_siph_' + k]) vdHum(sc, A['gh_siph_' + k], {});
     if (ghNoon()) { const sun = sc.add.rectangle(0, 0, RW * T, RH * T, 0xfff0c0, .08).setOrigin(0).setDepth(9e6 - 30).setBlendMode(Phaser.BlendModes.ADD); sc.tweens.add({ targets: sun, alpha: .14, yoyo: true, repeat: -1, duration: 2400 }); }
   }
-  if (key === 'lanternmere') for (const k of Object.keys(GH_LANTERNS)) { const im = A['gh_lan_' + k]; if (!im) continue; if (gh().lit[k]) { ghGlow(sc, im.x, im.y - 38, 22, k === 'moth' ? 0xb8ffd0 : k === 'mirror' ? 0xfff6d0 : 0xffc060, .38); if (k === 'moth') ghMoths(sc, im.x, im.y - 34); } else im.setTint(0x6a6a80); }
+  if (key === 'lanternmere') for (const k of Object.keys(GH_LANTERNS)) { const im = A['gh_lan_' + k]; if (!im) continue; if (gh().lit[k]) { ghGlow(sc, im.x, im.y - (im.texture.key === 'gh' ? 48 : 38), 22, k === 'moth' ? 0xb8ffd0 : k === 'mirror' ? 0xfff6d0 : 0xffc060, .38); if (k === 'moth') ghMoths(sc, im.x, im.y - 34); } else if (im.texture.key !== 'gh') im.setTint(0x6a6a80); }
   if (key === 'glimmerdeep') {
-    ghCrystals(sc); ghBeamDraw(sc);
+    ghCrystals(sc); ghFungi(sc); ghBeamDraw(sc);
     if (!gh().siph.deep && A.gh_siph_deep) vdHum(sc, A.gh_siph_deep, {});
-    if (A.gh_beamcrystal) A.gh_beamcrystal.setTint(gh().beam ? 0xfff6c0 : 0x9adfff);
-    if (A.gh_crystalgap) A.gh_crystalgap.setTint(0x9adfff);
-    if (A.gh_legend) A.gh_legend.setTint(0x40305a);
+    if (A.gh_beamcrystal && A.gh_beamcrystal.texture.key !== 'gh') A.gh_beamcrystal.setTint(gh().beam ? 0xfff6c0 : 0x9adfff);
+    if (A.gh_beamcrystal && gh().beam) ghGlow(sc, A.gh_beamcrystal.x, A.gh_beamcrystal.y - 18, 26, 0xbfe8ff, .4);
+    if (A.gh_crystalgap && A.gh_crystalgap.texture.key !== 'gh') A.gh_crystalgap.setTint(0x9adfff);
+    if (A.gh_legend && A.gh_legend.texture.key !== 'gh') A.gh_legend.setTint(0x40305a);
     if (A.gh_beamsrc) ghGlow(sc, A.gh_beamsrc.x, A.gh_beamsrc.y - 22, 14, 0xfff0b0, .45);
   }
   if (key === 'siteg') {
@@ -434,8 +460,19 @@ function ghCrystals(sc) {
     if (R.kind[y * RW + x] !== '#') continue;
     const open = [[0, 1], [1, 0], [-1, 0]].some(([dx, dy]) => { const k = R.kind[(y + dy) * RW + x + dx]; return k && k !== '#'; });
     const h = hash(x * 17 + 5, y * 31 + 9); if (!open || h > .09) continue;
-    sc.add.image(x * T + 8, y * T + 16, 'qd', 'qd_slate_spikes').setOrigin(.5, 1).setDepth(y * T + 15).setTint(h < .045 ? 0x9adfff : 0xd0a0ff).setScale(.8);
+    if (HDW.gh && sc.textures.exists('gh')) sc.add.image(x * T + 8, y * T + 16, 'gh', (h < .045 ? 'gh_xtal_b' : 'gh_xtal_v') + (1 + Math.floor(h * 1000) % 3)).setOrigin(.5, 1).setDepth(y * T + 15);
+    else sc.add.image(x * T + 8, y * T + 16, 'qd', 'qd_slate_spikes').setOrigin(.5, 1).setDepth(y * T + 15).setTint(h < .045 ? 0x9adfff : 0xd0a0ff).setScale(.8);
     ghGlow(sc, x * T + 8, y * T + 6, 12, h < .045 ? 0x7ad0ff : 0xc090ff, .2);
+  }
+}
+function ghFungi(sc) {
+  if (!HDW.gh || !sc.textures.exists('gh')) return;
+  const R = sc.R;
+  for (let y = 1; y < RH - 1; y++) for (let x = 1; x < RW - 1; x++) {
+    const i = y * RW + x; if (R.blocked[i] || R.kind[i] === '#' || R.grass[i] > 0 || R.kind[(y - 1) * RW + x] !== '#') continue;
+    const h = hash(x * 29 + 3, y * 7 + 11); if (h > .07) continue;
+    sc.add.image(x * T + 8, y * T + 14, 'gh', 'gh_fungus' + (h < .015 ? 1 : h < .04 ? 2 : 3)).setOrigin(.5, 1).setDepth(y * T + 2);
+    ghGlow(sc, x * T + 8, y * T + 6, 10, 0x7ab8ff, .18);
   }
 }
 function ghMoths(sc, x, y) {
@@ -460,7 +497,7 @@ function ghConvoy(sc, dt) {
   if (!C.on) {
     C.t -= dt; if (C.t > 0) return;
     const x = C.dir > 0 ? -3 : RW + 2, carts = [];
-    for (let k = 0; k < 3; k++) carts.push(sc.add.image(0, GH_CV_ROW * T + 15, C.dir > 0 ? 'cg_cart_right' : 'cg_cart_left').setOrigin(.5, 1).setDepth(GH_CV_ROW * T + 14));
+    for (let k = 0; k < 3; k++) carts.push(HDW.gh && sc.textures.exists('gh') ? sc.add.image(0, GH_CV_ROW * T + 15, 'gh', 'gh_cart').setOrigin(.5, 1).setDepth(GH_CV_ROW * T + 14).setFlipX(C.dir < 0) : sc.add.image(0, GH_CV_ROW * T + 15, C.dir > 0 ? 'cg_cart_right' : 'cg_cart_left').setOrigin(.5, 1).setDepth(GH_CV_ROW * T + 14));
     const lamp = sc.add.graphics().setDepth(9e6 - 24).setBlendMode(Phaser.BlendModes.ADD);
     C.on = { x, carts, lamp, caught: 0 };
     Sound.play('thud'); sc.cameras.main.shake(300, .002);
@@ -468,7 +505,7 @@ function ghConvoy(sc, dt) {
     return;
   }
   const o = C.on; o.x += C.dir * 7 * dt;
-  o.carts.forEach((c, k) => c.setPosition((o.x - C.dir * k * 1.6) * T + 8, GH_CV_ROW * T + 15));
+  o.carts.forEach((c, k) => c.setPosition((o.x - C.dir * k * 2.4) * T + 8, GH_CV_ROW * T + 15));
   // the headlamp: a cone of light along both walkways
   const fx = (o.x + C.dir * .6) * T + 8, L = 5.5 * T * C.dir;
   o.lamp.clear(); o.lamp.fillStyle(0xfff0a0, .22); o.lamp.fillTriangle(fx, GH_CV_ROW * T + 8, fx + L, (GH_CV_ROW - 1.5) * T, fx + L, (GH_CV_ROW + 2.5) * T);
@@ -505,7 +542,7 @@ function ghLamp(sc, k) {
   if (R.day !== S.day) { R.day = S.day; R.lit = []; }
   if (R.lit.includes(k)) return ghSay([GH.sys('This one is already lit.')]);
   R.lit.push(k); Sound.play('pick');
-  const im = (sc.ewSpr || {})['gh_lamp' + k]; if (im) { im.clearTint(); ghGlow(sc, im.x, im.y - 20, 15, 0xffd070, .3); }
+  const im = (sc.ewSpr || {})['gh_lamp' + k]; if (im) { if (im.texture.key === 'gh') im.setFrame('gh_streetlamp_lit'); else im.clearTint(); ghGlow(sc, im.x, im.y - 26, 15, 0xffd070, .3); }
   if (R.lit.length < GH_LAMPS.length) { toast(`Lamp lit! (${R.lit.length}/${GH_LAMPS.length})`, 1400); return true; }
   R.done = S.day; gh().rounds = (gh().rounds || 0) + 1; S.gold += 1500; updateHUD(); Sound.play('levelup');
   toast('Every lamp in Gloamhollow is lit! Tobin pays you 1500g.', 3000); checkQuests(); return true;
@@ -708,16 +745,17 @@ function ghBeamDraw(sc) {
   const { pts } = ghTrace(sc), g = sc.ghBeam = sc.add.graphics().setDepth(9e6 - 23).setBlendMode(Phaser.BlendModes.ADD);
   for (const [w, a] of [[5, .18], [2, .7]]) { g.lineStyle(w, 0xfff2b0, a); g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x * T + 8, y * T + 8) : g.moveTo(x * T + 8, y * T + 8)); g.strokePath(); }
 }
+const ghMirFrame = k => (gh().mir[k] || GH_MIR0[k]) === '/' ? 'gh_mirror_r' : 'gh_mirror_l';
 function ghMirror(sc, k) {
   const G = gh();
   if (G.beam) return ghSay([GH.sys('The crystal mirror is locked in place by the light pouring through it.')]);
   G.mir[k] = (G.mir[k] || GH_MIR0[k]) === '/' ? '\\' : '/';
-  Sound.play('door'); const im = (sc.ewSpr || {})['gh_mir_' + k]; if (im) sc.tweens.add({ targets: im, scaleX: { from: -im.scaleX, to: im.scaleX }, duration: 200 });
+  Sound.play('door'); const im = (sc.ewSpr || {})['gh_mir_' + k]; if (im) { if (im.texture.key === 'gh') im.setFrame(ghMirFrame(k)); else sc.tweens.add({ targets: im, scaleX: { from: -im.scaleX, to: im.scaleX }, duration: 200 }); }
   ghBeamDraw(sc);
   if (ghTrace(sc).hit) {
     G.beam = 1; Sound.play('levelup'); sc.cameras.main.flash(500, 255, 246, 200);
     toast('The beam strikes the great crystal! It blazes, and a shaft of light shoots up through the cave roof, towards Lanternmere.', 4000);
-    const c = (sc.ewSpr || {}).gh_beamcrystal; if (c) c.setTint(0xfff6c0);
+    const c = (sc.ewSpr || {}).gh_beamcrystal; if (c) { if (c.texture.key === 'gh') c.setFrame('gh_crystal_lit'); else c.setTint(0xfff6c0); }
     checkQuests();
   }
   return true;

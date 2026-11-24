@@ -132,6 +132,7 @@
 "bh",
 "bog",
 "cove",
+"gh",
 "qd"
 ],
 "eldest": [
@@ -139,6 +140,7 @@
 ],
 "undercroft": [
 "bog",
+"gh",
 "qd"
 ],
 "gloamhollow": [
@@ -146,22 +148,26 @@
 "bog",
 "br",
 "ewb",
+"gh",
 "qd",
 "town"
 ],
 "lanternmere": [
 "bog",
 "br",
+"gh",
 "qd",
 "town"
 ],
 "glimmerdeep": [
 "bog",
 "br",
+"gh",
 "qd"
 ],
 "siteg": [
 "bog",
+"gh",
 "qd"
 ]
 }
