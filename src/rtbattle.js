@@ -13,6 +13,12 @@
    - When it ends, the classic battle screen takes over (Battle.resolveRT) for experience, level-ups, new moves,
      evolution, catching and blacking out, so all of that is exactly as before. */
 const RTB = (() => {
+  // a timer that can't freeze the game: an error in a battle timer (a fighter gone, the battle over) is logged, not thrown.
+  // (Phaser keeps a timer whose callback threw and throws again every frame, which stopped the whole scene.)
+  const later = (sc, ms, fn) => sc && sc.time ? sc.time.delayedCall(ms, () => { try { fn(); } catch (e) { console.warn('rtb timer', e); } }) : null;
+  // Phaser 4 dropped setTintFill: a solid-colour flash is a tint in FILL mode, put back to normal afterwards
+  const fillTint = (o, col) => { if (!o || !o.active) return o; if (o.setTintMode && Phaser.TintModes) o.setTint(col).setTintMode(Phaser.TintModes.FILL); else o.setTintFill(col); return o; };
+  const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); };
   let st = null;
   const ARENA_KEY = 'rtb';
   const css = document.createElement('style');
@@ -166,7 +172,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // a quick ghost of a fighter where it was (dodges and lunges)
   function ghost(f, col = 0xffffff, a = .5) {
     const sc = st && st.sc; if (!sc || !f.spr.active) return;
-    const g = sc.add.sprite(f.spr.x, f.spr.y, f.spr.texture.key, f.spr.frame.name).setOrigin(.5, 1).setScale(f.spr.scaleX, f.spr.scaleY).setDepth(f.spr.depth - .5).setAlpha(a); g.setTintFill(col);
+    const g = sc.add.sprite(f.spr.x, f.spr.y, f.spr.texture.key, f.spr.frame.name).setOrigin(.5, 1).setScale(f.spr.scaleX, f.spr.scaleY).setDepth(f.spr.depth - .5).setAlpha(a); fillTint(g, col);
     sc.tweens.add({ targets: g, alpha: 0, duration: 260, onComplete: () => g.destroy() });
   }
   // a zigzag of lightning between two points
@@ -209,7 +215,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function beam(f, tgt, id) {
     const sc = st.sc, M = MOVES[id], col = tcol(M.type), sx = f.x, sy = mid(f), tx = tgt.x, ty = mid(tgt);
     glowAt(sx, sy, col, 16, 260); burst(sx, sy, M.type, 6, { speed: -40, life: 260, size: .6 });
-    sc.time.delayedCall(240, () => {
+    later(sc, 240, () => {
       if (!st || st.over || f.m.hp <= 0) return;
       const a = Math.atan2(ty - sy, tx - sx), L = 200, ex = sx + Math.cos(a) * L, ey = sy + Math.sin(a) * L, g = sc.add.graphics().setDepth(9e5 + 2).setBlendMode(ADD());
       g.lineStyle(9, col, .45); g.lineBetween(sx, sy, ex, ey); g.lineStyle(3.5, 0xffffff, .95); g.lineBetween(sx, sy, ex, ey);
@@ -222,12 +228,12 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // rings that roll out from the attacker and hit anything close
   function nova(f, tgt, id, n) {
     const sc = st.sc, M = MOVES[id], col = tcol(M.type), R = 100;
-    for (let k = 0; k < n; k++) sc.time.delayedCall(k * 280, () => {
+    for (let k = 0; k < n; k++) later(sc, k * 280, () => {
       if (!st || st.over || f.m.hp <= 0) return;
       const r = sc.add.image(f.x, mid(f), 'fx_ring').setDepth(9e5 + 1).setTint(col).setBlendMode(ADD()).setScale(.15); glowAt(f.x, mid(f), col, 18, 200);
       sc.tweens.add({ targets: r, scale: R * 2 / 64, alpha: 0, duration: 420, ease: 'Quad.out', onComplete: () => r.destroy() }); Sound.play('pop');
       const d = Math.hypot(tgt.x - f.x, tgt.y - f.y);
-      sc.time.delayedCall(Math.min(400, d / R * 420), () => { if (st && !st.over && Math.hypot(tgt.x - f.x, tgt.y - f.y) <= R + tgt.r) hit(f, tgt, id, k === 0); });
+      later(sc, Math.min(400, d / R * 420), () => { if (st && !st.over && Math.hypot(tgt.x - f.x, tgt.y - f.y) <= R + tgt.r) hit(f, tgt, id, k === 0); });
     });
   }
   // shadows on the ground where you're standing, then it all comes down
@@ -252,7 +258,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const warn = sc.add.image(x, y - 2, 'fx_ring').setDepth(3).setTint(col).setScale(.55, .3).setAlpha(.9);
     sc.tweens.add({ targets: warn, alpha: .35, duration: 150, yoyo: true, repeat: 2 });
     burst(x, y - 2, M.type, 4, { speed: 20, life: 500, dir: -Math.PI / 2, cone: 1, size: .5 });
-    sc.time.delayedCall(620, () => {
+    later(sc, 620, () => {
       warn.destroy(); if (!st || st.over || f.m.hp <= 0) return;
       const col2 = sc.add.image(x, y, 'fx_dot').setOrigin(.5, 1).setDepth(9e5 + 1).setTint(col).setBlendMode(ADD()).setScale(.9, .1);
       sc.tweens.add({ targets: col2, scaleY: big ? 6 : 3.4, duration: 160, ease: 'Quad.out', onComplete: () => sc.tweens.add({ targets: col2, alpha: 0, scaleX: .4, duration: 380, onComplete: () => col2.destroy() }) });
@@ -264,7 +270,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // Hollow Host: ghostly bears rush the target
   function ghosts(f, tgt, id) {
     const sc = st.sc; let landed = 0;
-    for (let k = 0; k < 3; k++) sc.time.delayedCall(k * 150, () => {
+    for (let k = 0; k < 3; k++) later(sc, k * 150, () => {
       if (!st || st.over || !f.spr.active) return;
       const g = sc.add.sprite(f.x + (k - 1) * 14, f.y, f.spr.texture.key, f.spr.frame.name).setOrigin(.5, 1).setScale(f.spr.scaleX * .8, f.spr.scaleY * .8).setDepth(9e5).setAlpha(.6).setBlendMode(ADD()); g.setTint(0xb090ff);
       sc.tweens.add({ targets: g, x: tgt.x + (k - 1) * 8, y: tgt.y, duration: 380, ease: 'Quad.in', onComplete: () => { g.destroy(); if (!st || st.over) return; burst(tgt.x, mid(tgt), 'Shade', 10, { speed: 90 }); if (!landed && Math.hypot(tgt.x - g.x, tgt.y - g.y) < tgt.r + 16) { landed = 1; hit(f, tgt, id, true); } } });
@@ -297,20 +303,20 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     if (sty === 'erupt' || sty === 'geyser') { erupt(f, tgt, id, sty === 'geyser'); return true; }
     if (sty === 'ghosts') { ghosts(f, tgt, id); return true; }
     if (moveCat(id) === 'p' && !M.ranged) { lunge(f, tgt, id, n, sty); return true; }
-    for (let k = 0; k < n; k++) sc.time.delayedCall(k * 110, () => st && bolt(f, tgt, id, { spread: n > 1 ? (Math.random() - .5) * .25 : 0, wave: sty === 'wave' }));
+    for (let k = 0; k < n; k++) later(sc, k * 110, () => st && bolt(f, tgt, id, { spread: n > 1 ? (Math.random() - .5) * .25 : 0, wave: sty === 'wave' }));
     return true;
   }
   function lunge(f, tgt, id, n, sty) {
     const far = sty === 'dash' || sty === 'grove', sc = st.sc, dx = tgt.x - f.x, dy = tgt.y - f.y, d = Math.hypot(dx, dy) || 1, reach = Math.min(far ? 84 : 48, Math.max(0, d - tgt.r - 2));
     if (sty === 'spin') { const r = sc.add.image(f.x, mid(f), 'fx_ring').setDepth(9e5 + 1).setTint(tcol(MOVES[id].type)).setBlendMode(ADD()).setScale((f.r + 8) / 32, (f.r + 8) / 64); sc.tweens.add({ targets: r, angle: 720, alpha: 0, duration: 380, onUpdate: () => r.setPosition(f.x, mid(f)), onComplete: () => r.destroy() }); }
-    if (sty === 'grove') for (let k = 0; k < 6; k++) sc.time.delayedCall(k * 40, () => st && burst(f.x, mid(f), 'Leaf', 5, { speed: 70, life: 600, size: 1.1 }));
+    if (sty === 'grove') for (let k = 0; k < 6; k++) later(sc, k * 40, () => st && burst(f.x, mid(f), 'Leaf', 5, { speed: 70, life: 600, size: 1.1 }));
     const ux = dx / d, uy = dy / d, lt = far ? .24 : .18; f.lunge = { t: lt, vx: ux * reach / lt, vy: uy * reach / lt };
     Sound.play('swish'); face(f, dx, dy, true);
     burst(f.x, f.y - 2, 'Wild', 5, { tex: 'fx_smoke', tints: [0xd8c8a8, 0xc8b890], speed: 40, life: 380, dir: Math.atan2(-uy, -ux), cone: 1.6, size: .8, flat: 1 });
-    for (const t of [40, 90, 140]) sc.time.delayedCall(t, () => st && f.spr.active && ghost(f, Phaser.Display.Color.HexStringToColor(TYPES[MOVES[id].type] || '#fff').color, .35));
-    sc.time.delayedCall(190, () => {
+    for (const t of [40, 90, 140]) later(sc, t, () => st && f.spr.active && ghost(f, Phaser.Display.Color.HexStringToColor(TYPES[MOVES[id].type] || '#fff').color, .35));
+    later(sc, 190, () => {
       if (!st) return; f.lunge = null; face(f, dx, dy, false);
-      for (let k = 0; k < n; k++) sc.time.delayedCall(k * 120, () => { if (!st) return; const dd = Math.hypot(tgt.x - f.x, tgt.y - f.y); if (dd <= tgt.r + f.r + 8) hit(f, tgt, id, k === 0); else if (k === 0 && f.side === 'me') floatTxt(tgt, 'Miss', '#ddd'); });
+      for (let k = 0; k < n; k++) later(sc, k * 120, () => { if (!st) return; const dd = Math.hypot(tgt.x - f.x, tgt.y - f.y); if (dd <= tgt.r + f.r + 8) hit(f, tgt, id, k === 0); else if (k === 0 && f.side === 'me') floatTxt(tgt, 'Miss', '#ddd'); });
     });
   }
   function bolt(f, tgt, id, o = {}) {
@@ -338,7 +344,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     }
     const { dmg, e, crit } = damage(att, def, id), dealt = Math.min(dmg, def.m.hp);
     def.m.hp = Math.max(0, def.m.hp - dmg); Sound.play('hit');
-    def.spr.setTintFill(0xffffff); sc.time.delayedCall(70, () => def.spr && def.spr.active && def.spr.clearTint());
+    fillTint(def.spr, 0xffffff); later(sc, 70, () => unTint(def.spr));
     { const T0 = tfx(M.type), hx = def.x, hy = mid(def), big = e > 1 || crit > 1, ang = Math.atan2(def.y - att.y, def.x - att.x);   // the impact, by type
       burst(hx, hy, M.type, big ? 16 : 10, { speed: big ? 130 : 95, dir: ang, cone: 2.2, size: big ? 1.25 : 1 });
       flashRing(hx, hy, Phaser.Display.Color.HexStringToColor(TYPES[M.type] || '#fff').color, big ? 16 : 11, big ? 320 : 240); glowAt(hx, hy, 0xffffff, big ? 22 : 14, 140);
@@ -376,7 +382,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function healF(f, amt, quiet) { const h = Math.min(monStat(f.m, 'hp') - f.m.hp, Math.floor(amt)); if (h <= 0) return; f.m.hp += h; floatTxt(f, '+' + h, '#9ff0a8'); burst(f.x, f.y - 4, 'Leaf', 8, { tex: 'fx_plus', tints: [0x9ff0a8, 0xe8ffe8, 0x6fd88a], speed: 26, dir: -Math.PI / 2, cone: 1.6, life: 700, grav: -50, size: .9 }); glowAt(f.x, mid(f), 0x9ff0a8, 20, 400); if (!quiet) Sound.play('fill'); refresh(); }
   function ring(f, col) { const sc = st.sc, r = sc.add.circle(f.x, f.y - f.spr.displayHeight * .45, f.r + 6).setStrokeStyle(2, col, 1).setDepth(9e5); sc.tweens.add({ targets: r, scale: 1.8, alpha: 0, duration: 420, onComplete: () => r.destroy() }); }
   function floatTxt(f, t, col, size = 12) {
-    const sc = st.sc, x = f.x + (Math.random() - .5) * 8, y = f.y - f.spr.displayHeight - 2;
+    const sc = st && st.sc; if (!sc || !f || !f.spr || !f.spr.active) return;
+    const x = f.x + (Math.random() - .5) * 8, y = f.y - f.spr.displayHeight - 2;
     const tx = sc.add.text(x, y, t, { fontFamily: 'monospace', fontSize: size + 'px', fontStyle: 'bold', color: col, stroke: '#000', strokeThickness: 3 }).setOrigin(.5, 1).setDepth(9e5 + 5).setResolution(3);
     tx.setScale(.4); sc.tweens.add({ targets: tx, scale: size >= 15 ? 1.35 : 1.1, duration: 110, ease: 'Back.out', onComplete: () => sc.tweens.add({ targets: tx, scale: 1, duration: 90 }) });
     sc.tweens.add({ targets: tx, y: y - 16, alpha: 0, delay: 380, duration: 520, onComplete: () => tx.destroy() });
@@ -393,8 +400,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (me.dodgeT > 0 || me.stun > 0) return;
       let dx = inp.jx || ((inp.keys.d || inp.keys.arrowright ? 1 : 0) - (inp.keys.a || inp.keys.arrowleft ? 1 : 0)), dy = inp.jy || ((inp.keys.s || inp.keys.arrowdown ? 1 : 0) - (inp.keys.w || inp.keys.arrowup ? 1 : 0));
       if (!dx && !dy) { const fx = st.foe.x - me.x, fy = st.foe.y - me.y, d = Math.hypot(fx, fy) || 1; dx = -fy / d; dy = fx / d; }   // no direction held: sidestep
-      const d = Math.hypot(dx, dy) || 1; me.lunge = { t: .16, vx: dx / d * 260, vy: dy / d * 260 }; me.iframe = .35; me.dodgeT = 1.2; me.spr.setAlpha(.6); for (const t of [0, 50, 100, 150]) st.sc.time.delayedCall(t, () => st && ghost(me, 0xbfe8ff, .45)); burst(me.x, me.y - 2, 'Wild', 4, { tex: 'fx_smoke', speed: 30, life: 300, size: .6, flat: 1 });
-      st.sc.time.delayedCall(170, () => { if (st) { me.lunge = null; me.spr.setAlpha(1); } }); Sound.play('swish'); return;
+      const d = Math.hypot(dx, dy) || 1; me.lunge = { t: .16, vx: dx / d * 260, vy: dy / d * 260 }; me.iframe = .35; me.dodgeT = 1.2; me.spr.setAlpha(.6); for (const t of [0, 50, 100, 150]) later(st.sc, t, () => st && ghost(me, 0xbfe8ff, .45)); burst(me.x, me.y - 2, 'Wild', 4, { tex: 'fx_smoke', speed: 30, life: 300, size: .6, flat: 1 });
+      later(st.sc, 170, () => { if (st) { me.lunge = null; me.spr.setAlpha(1); } }); Sound.play('swish'); return;
     }
     if (a === 'auto') { opts.rtAuto = !opts.rtAuto; saveOpts(); autoUi(); say(opts.rtAuto ? 'Auto battle on: your Fablemon fights by itself.' : 'Auto battle off: you’re in control.', 1300); return; }
     if (a === 'charm' && st.T) return say("You can't catch someone else's Fablemon!");
@@ -433,7 +440,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function nextFoe(m) {   // the trainer sends out their next Fablemon from where they stand
     st.switching = true; for (const b of st.bolts.slice()) kill(b);
     const sc = st.sc, old = st.foe;
-    sc.time.delayedCall(900, () => {
+    later(sc, 900, () => {
       if (!st || st.over) return;
       if (old.ring) old.ring.destroy(); old.sh.destroy(); old.spr.destroy();
       st.foeMon = m; S.seen[m.sp] = 1;
@@ -463,11 +470,11 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       foe.spr.setVisible(false); foe.sh.setVisible(false); foe.stun = 9; st.catching = 1; Sound.play('pop');
       let k = 0; const wob = () => {
         if (!st) return;
-        if (k < Math.min(3, shakes)) { k++; Sound.play('wobble'); burst(img.x, img.y - 4, 'Glow', 3, { speed: 30, life: 380, size: .5 }); sc.tweens.add({ targets: img, angle: { from: -20, to: 20 }, duration: 160, yoyo: true, onComplete: () => sc.time.delayedCall(300, wob) }); return; }
-        if (shakes >= 4) { burst(img.x, img.y, 'Glow', 18, { speed: 110, life: 800, size: 1.1, tints: [0xfff27a, 0xffe0f4, 0x9ff0a8, 0x8fd8ff] }); flashRing(img.x, img.y, 0xfff27a, 16, 420); Sound.play('gotcha'); img.destroy(); return st.sc.time.delayedCall(450, () => end('caught')); }
+        if (k < Math.min(3, shakes)) { k++; Sound.play('wobble'); burst(img.x, img.y - 4, 'Glow', 3, { speed: 30, life: 380, size: .5 }); sc.tweens.add({ targets: img, angle: { from: -20, to: 20 }, duration: 160, yoyo: true, onComplete: () => later(sc, 300, wob) }); return; }
+        if (shakes >= 4) { burst(img.x, img.y, 'Glow', 18, { speed: 110, life: 800, size: 1.1, tints: [0xfff27a, 0xffe0f4, 0x9ff0a8, 0x8fd8ff] }); flashRing(img.x, img.y, 0xfff27a, 16, 420); Sound.play('gotcha'); img.destroy(); return later(st.sc, 450, () => end('caught')); }
         img.destroy(); foe.spr.setVisible(true); foe.sh.setVisible(true); foe.stun = .6; foe.iframe = .6; st.catching = 0; Sound.play('error');
         say(['Oh no! It broke free!', 'Aww! It almost chose you!', 'So close! It wriggled out!', 'Argh! Nearly had it!'][Math.min(3, shakes)], 1300);
-      }; sc.time.delayedCall(350, wob);
+      }; later(sc, 350, wob);
     } });
   }
 
@@ -490,7 +497,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     f.ai.dodgeT -= dt;
     if (f.ai.dodgeT <= 0) for (const b of st.bolts) if (b.f === me && !b.seen) {
       const rx = f.x - b.x, ry = f.y - 10 - b.y, along = (rx * b.vx + ry * b.vy) / Math.hypot(b.vx, b.vy);
-      if (along > 0 && along < 70) { b.seen = 1; if (Math.random() < skill) { const s = Math.random() < .5 ? 1 : -1; f.lunge = { t: .15, vx: -b.vy / 175 * 230 * s, vy: b.vx / 175 * 230 * s }; f.iframe = .2; f.ai.dodgeT = 1.4; st.sc.time.delayedCall(160, () => st && (f.lunge = null)); return [0, 0]; } }
+      if (along > 0 && along < 70) { b.seen = 1; if (Math.random() < skill) { const s = Math.random() < .5 ? 1 : -1; f.lunge = { t: .15, vx: -b.vy / 175 * 230 * s, vy: b.vx / 175 * 230 * s }; f.iframe = .2; f.ai.dodgeT = 1.4; later(st.sc, 160, () => st && (f.lunge = null)); return [0, 0]; } }
     }
     // pick a move
     f.ai.think -= dt;
@@ -581,7 +588,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     else say(st.foeMon.fab ? `✦ A Fabled ${SPECIES[st.foeMon.sp].name}! ✦` : `A wild ${SPECIES[st.foeMon.sp].name}!`, 1600);
     if (!S.flags.rtHelp || S.flags.rtHelp < 3) { S.flags.rtHelp = (S.flags.rtHelp || 0) + 1; const h = $r('rtbHelp'); h.style.display = ''; h.textContent = 'Steer with the stick. Tap a move when it has recharged: they aim themselves. Dodge to dash out of the way.' + (st.T ? '' : ' Weaken it, then tap Catch.'); setTimeout(() => h.style.display = 'none', 6000); }
     st.ready = st.T ? 1.8 : 1;   // a moment before the wild one acts
-    st.upd = (time, delta) => tick(time, delta); sc.events.on('update', st.upd);
+    st.upd = (time, delta) => { try { tick(time, delta); st && (st.errs = 0); } catch (e) { console.warn('rtb tick', e); if (st && (st.errs = (st.errs || 0) + 1) > 20) { st.errs = 0; say('Something went wrong in the battle: it was called off.', 1800); end('ran'); } } };
+    sc.events.on('update', st.upd);
   }
   function dxy(a, b) { const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 1; return [dx / d, dy / d]; }
   function stageDown(done) {
@@ -592,7 +600,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const was = st; st = done; clearStage(sc, false); st = was;
     if (done.plWas && sc.player && sc.player.active) sc.player.setPosition(done.plWas.x, done.plWas.y).setDepth(done.plWas.d);
     const cam = sc.cameras.main, fol = done.camWas && done.camWas.follow;
-    if (fol && fol.active) { cam.startFollow(fol, true, .12, .12); sc.time.delayedCall(700, () => { if (cam._follow === fol) cam.setLerp(done.camWas.lx, done.camWas.ly); }); }
+    if (fol && fol.active) { cam.startFollow(fol, true, .12, .12); later(sc, 700, () => { if (cam._follow === fol) cam.setLerp(done.camWas.lx, done.camWas.ly); }); }
   }
   function tick(time, delta) {
       if (!st || !st.me || st.choosing || st.switching) return; const sc = st.sc; st.fhT = (st.fhT || 0) - Math.min(.05, delta / 1000);
