@@ -529,8 +529,9 @@ function stbDraw(sc, b) {
   const x = b.cx * T + 8, y = (b.by + 1) * T, d = b.by * T + 15;
   const im = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d); sc.stbImg = im; sc.stbObjs.push(im); if (sc.tall) sc.tall.push(im);
   // the half-doors and the trough again, in front of whoever's in the stalls: they look out over the doors
-  const tr = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d + .8), fr = tr.frame;
-  tr.setCrop(0, fr.realHeight * STB_DOOR, fr.realWidth, fr.realHeight * (1 - STB_DOOR)); sc.stbObjs.push(tr);
+  const xt = sc.textures.get('xa');
+  if (!xt.has('stb_doors')) { const f = HDW.xa.frames.stb_stable, top = Math.round(f.h * STB_DOOR); hdShrinkFrame(xt.add('stb_doors', 0, f.x, f.y + top, f.w, f.h - top), 3); }
+  sc.stbObjs.push(sc.add.image(x, y, 'xa', 'stb_doors').setOrigin(.5, 1).setDepth(d + .8));
   // hay to one side, tack to the other
   const prop = (f, px, py, dd = 0) => { if (!xaReady(sc, f)) return; const o = sc.add.image(px, py, 'xa', f).setOrigin(.5, 1).setDepth(py + dd); sc.stbObjs.push(o); };
   prop('stb_hay2', x - 92, y - 18); prop('stb_hay', x - 90, y - 1); prop('stb_saddle', x + 92, y - 17); prop('stb_bucket', x + 88, y - 1);
