@@ -17429,7 +17429,7 @@ const MOUNTS = {
     desc: 'A saddled Rambastion from the Quarrydown pits. Sure-footed on rock and scree, and it never met a fence it couldn\'t clear.',
   },
   blazemane: {
-    name: 'Blazemane', sp: 'fleecebolt', perk: 'boost', from: 'Monty', scale: 1.3, stallUp: 11,   // its face sits low: lift it over the stall door
+    name: 'Blazemane', sp: 'fleecebolt', perk: 'boost', from: 'Monty', scale: 1.3, stallUp: 12, stallScale: .55,   // its face sits low under a tall crest: lifted so its face clears the stall door (the crest tucks under the roof)
     start: { spd: 35, foot: 30, sta: 30, bond: 15 },
     tint: { hue: 198, sat: .32, glow: 1.2 },   // a cold blue flame for a crest; the fleece stays white
     tack: { cloth: '#7a1f2a', clothDk: '#561520', trim: '#f2d27a', leather: '#5a3420', leatherDk: '#36200f', leatherLt: '#8a5a38' },
@@ -17898,9 +17898,9 @@ function mtPost(sc) {
     (M.list || []).forEach((m, n) => {
       if (n >= STB_STALL.length || (sc.rideKey && m.id === sc.rideId)) return;
       const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 10 - (MOUNTS[m.id].stallUp || 0), tx = Math.round((x - 8) / T);
-      const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale(.66 / MT_R).setDepth(stb.by * T + 15.4);
+      const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale((MOUNTS[m.id].stallScale || .66) / MT_R).setDepth(stb.by * T + 15.4); const ss = (MOUNTS[m.id].stallScale || .66) / MT_R;
       spr.mid = m.id; spr.at = { x: tx, y: stb.by, id: m.id }; sc.mtSprs.push(spr);
-      sc.tweens.add({ targets: spr, scaleY: { from: .66 / MT_R, to: .675 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      sc.tweens.add({ targets: spr, scaleY: { from: ss, to: ss * 1.02 }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     });
     return;
   }
@@ -17913,7 +17913,7 @@ function mtPost(sc) {
   });
 }
 /* ---------- the stable (the user's art): Granger had Robin build it; you choose where it stands, and can move it */
-const STB_STALL = [-57, -28.5, 0, 28.5, 57], STB_DOOR = .715;   // where the half-doors' tops sit, down the picture   // stall middles, in px from the stable's middle
+const STB_STALL = [-57, -28.5, 0, 28.5, 57], STB_DOOR = .715, STB_EAVE = .525;   // where the half-doors' tops sit, down the picture   // stall middles, in px from the stable's middle
 const stbFoot = (cx, by) => [cx - 6, by - 2, cx + 6, by];
 const stbIn = (x, y) => { const b = S && S.mt && S.mt.stable; if (!b) return false; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
 function stbBlock(b, v) { if (!b) return; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) farm.blocked[y * W + x] = v; }
@@ -17929,6 +17929,9 @@ function stbDraw(sc, b) {
   const xt = sc.textures.get('xa');
   if (!xt.has('stb_doors')) { const f = HDW.xa.frames.stb_stable, top = Math.round(f.h * STB_DOOR); hdShrinkFrame(xt.add('stb_doors', 0, f.x, f.y + top, f.w, f.h - top), 3); }
   sc.stbObjs.push(sc.add.image(x, y, 'xa', 'stb_doors').setOrigin(.5, 1).setDepth(d + .8));
+  // and the roof's edge, so tall horns and crests tuck in under it: they're inside, looking out
+  if (!xt.has('stb_eave')) { const f = HDW.xa.frames.stb_stable; hdShrinkFrame(xt.add('stb_eave', 0, f.x, f.y, f.w, Math.round(f.h * STB_EAVE)), 3); }
+  sc.stbObjs.push(sc.add.image(x, y - 76 * (1 - STB_EAVE), 'xa', 'stb_eave').setOrigin(.5, 1).setDepth(d + .8));
   // hay to one side, tack to the other
   const prop = (f, px, py, dd = 0) => { if (!xaReady(sc, f)) return; const o = sc.add.image(px, py, 'xa', f).setOrigin(.5, 1).setDepth(py + dd); sc.stbObjs.push(o); };
   prop('stb_hay2', x - 92, y - 18); prop('stb_hay', x - 90, y - 1); prop('stb_saddle', x + 92, y - 17); prop('stb_bucket', x + 88, y - 1);
