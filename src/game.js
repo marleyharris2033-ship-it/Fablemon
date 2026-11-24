@@ -4704,9 +4704,9 @@ class Route extends World {
     this.tall = [];
     const BOGSWAP = { tree_pine: ['bog', 'dead_tree'], tree_oak: ['bog', 'dead_tree'], tree_apple: ['bog', 'dead_tree'], bush_round: ['bog', 'cattail'], rock_large: ['bog', 'stump'], wildflowers: ['bog', 'tuft'] };
     const art = (f, x, y) => RC.bog && BOGSWAP[f] && !(f === 'tree_pine' && hash(x, y * 3) < .45) ? BOGSWAP[f] : ['objects', f];
-    for (const b of R.border) { const [a, f] = art(b.kind, b.x, b.y); const im = this.add.image(b.x * T + 8, b.y * T + 15, a, f).setOrigin(.5, 1).setDepth(b.y * T + 15).setTint(RC.bog ? 0xa8b8a0 : 0xb8c8b0); this.tall.push(im); }
+    for (const b of R.border) { const [a, f] = b.tex ? [b.tex, b.fr] : art(b.kind, b.x, b.y); const im = this.add.image(b.x * T + 8, b.y * T + 15, a, f).setOrigin(.5, 1).setDepth(b.y * T + 15).setTint(RC.bog ? 0xa8b8a0 : 0xb8c8b0); this.tall.push(im); }
     this.gateSpr = [];
-    for (const d of R.deco) { const [a, f] = d.tex ? [d.tex, undefined] : d.gate ? ['objects', d.f] : art(d.f, d.x, d.y); const im = this.add.image(d.x * T + 8, d.y * T + 15, a, f).setOrigin(.5, 1).setDepth(d.flat ? 2 : d.y * T + 15); if (d.tall) this.tall.push(im); if (d.gate) this.gateSpr.push(im); }
+    for (const d of R.deco) { const [a, f] = d.tex ? [d.tex, d.fr] : d.gate ? ['objects', d.f] : art(d.f, d.x, d.y); const im = this.add.image(d.x * T + 8, d.y * T + 15, a, f).setOrigin(.5, 1).setDepth(d.flat ? 2 : d.y * T + 15); if (d.tall) this.tall.push(im); if (d.gate) this.gateSpr.push(im); }
     if (RC.bog) bogDressing(this, R);
     // a murky green haze over the bog until its own art arrives
     if (RC.murk && !RC.bog) { this.add.rectangle(0, 0, RW * T, RH * T, 0x2e4a2a, .22).setOrigin(0).setDepth(9e6 - 30); for (let i = 0; i < 14; i++) { const m = this.add.ellipse(hash(i, 3) * RW * T, hash(i, 9) * RH * T, 120, 40, 0xe8f0e0, .10).setDepth(9e6 - 29); this.tweens.add({ targets: m, x: m.x + 60, alpha: .04, duration: 6000 + i * 400, yoyo: true, repeat: -1, ease: 'Sine.inOut' }); } }

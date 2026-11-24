@@ -20,6 +20,13 @@ ROUTES.quarrydown.gate = { area: [46, 11, 47, 12], sign: [45, 13], ok: ewOpen, o
 
 /* ---------- the forest: more trees, stumps where it's been clear-felled, things that block a path until earned */
 const EW_KEYS = ['fernwalk', 'eldglade', 'elderwood', 'ewcamp', 'eldest'];
+// Elderwood's own ancient trees (the user's art, 24 Nov 2026; atlas 'xa', rootway.js loads it): pines and birches
+// mostly, with a great oak, an old elder or a hollow tree here and there
+const EWT = !!(HDW.xa && HDW.xa.frames && HDW.xa.frames.ewt_oak1);
+function ewTree(x, y) {
+  const h = hash(x * 13 + 5, y * 29 + 11);
+  return h < .22 ? 'ewt_pine1' : h < .44 ? 'ewt_pine2' : h < .58 ? 'ewt_birch' : h < .68 ? 'ewt_elder' : h < .76 ? 'ewt_oak1' : h < .84 ? 'ewt_oak2' : h < .92 ? 'ewt_oak3' : 'ewt_hollow';
+}
 const _ewBuild = buildRoute;
 buildRoute = function () {
   const R = _ewBuild();
@@ -40,14 +47,20 @@ buildRoute = function () {
   for (let y = 2; y < RH - 2; y++) for (let x = 2; x < RW - 2; x++) {
     const i = y * RW + x; if (keep[i] || R.blocked[i]) continue;
     const h = hash(x * 31 + 7, y * 17 + 3), c = cut.find(c => inR(x, y, c.r));
-    if (c) { if (h < .2) { R.blocked[i] = 1; R.deco.push({ x, y, f: h < .15 ? 'stump' : 'rock_flat' }); } continue; }
+    if (c) { if (h < .2) { R.blocked[i] = 1; R.deco.push(EWT && h < .04 ? { x, y, tex: 'xa', fr: 'ewt_log', f: 'log' } : { x, y, f: h < .15 ? 'stump' : 'rock_flat' }); } continue; }
     if ((RC.clear || []).some(r => inR(x, y, r))) continue;
-    if (!near(x, y) && h < (RC.forest || 0)) { R.blocked[i] = 1; R.deco.push({ x, y, f: h < RC.forest * .55 ? 'tree_oak' : 'tree_pine', tall: true }); }
+    if (!near(x, y) && h < (RC.forest || 0)) { R.blocked[i] = 1; R.deco.push(EWT ? { x, y, tex: 'xa', fr: ewTree(x, y), f: 'tree', tall: true } : { x, y, f: h < RC.forest * .55 ? 'tree_oak' : 'tree_pine', tall: true }); }
     else if (h > .96) R.deco.push({ x, y, f: 'wildflowers', flat: true });
+    else if (EWT && h > .935) R.deco.push({ x, y, tex: 'xa', fr: h > .95 ? 'ewt_fern' : 'ewt_shrooms', f: 'fern' });   // undergrowth you walk through
   }
   for (const [a, bb, c, d] of RC.walls || []) for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; if (R.blocked[i] && !R.waterish[i]) continue; R.blocked[i] = 1; R.grass[i] = -1; if (!R.waterish[i] && (x + y) % 2 === 0) R.deco.push({ x, y, f: hash(x, y) < .5 ? 'tree_pine' : 'tree_oak', tall: true }); }
   for (const b of RC.blocks || []) if (!b.ok()) { const [a, bb, c, d] = b.area; for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; R.blocked[i] = 1; R.grass[i] = -1; R.deco.push({ x, y, f: b.f || 'bush_round', gate: 1 }); } }
   for (const [, , x, y, w] of RC.ewdecor || []) for (let k = 0; k < (w || 1); k++) { R.blocked[y * RW + x + k] = 1; R.grass[y * RW + x + k] = -1; }
+  // the meadow's own trees, and the border, become Elderwood's
+  if (EWT) {
+    for (const d of R.deco) if (!d.tex && (d.f === 'tree_oak' || d.f === 'tree_pine')) { d.tex = 'xa'; d.fr = ewTree(d.x, d.y); }
+    for (const b of R.border) if (/^tree_/.test(b.kind)) { b.tex = 'xa'; b.fr = ewTree(b.x, b.y); }
+  }
   // story actors: snapped to the nearest open tile; people and things you can talk to block their tile
   R.actors = [];
   if (RC.actors) {
@@ -209,7 +222,7 @@ Object.assign(ROUTES, {
   eldest: { ...EW_BASE, name: 'The Eldest Tree', w: 32, h: 30, quiet: true, forest: .5, murk: true,
     paths: [[10, 14, 32, 16], [8, 8, 22, 24]],
     open: [[28, 13, 31, 17]], clear: [[6, 4, 24, 26]],
-    ewdecor: [['town', 'hearth4', 15, 9]],
+    ewdecor: HDW.xa && HDW.xa.frames && HDW.xa.frames.ew_eldest ? [['xa', 'ew_eldest', 13, 9, 5]] : [['town', 'hearth4', 15, 9]],
     signs: { '12,18': "Carvings run round the roots: herds, owls, a great stag, and a tree with a light inside it." },
     trainers: [],
     right: y => ['eldglade', { x: 1, y: 19, dir: 'right' }],

@@ -319,7 +319,7 @@ ROUTES.elderwood.actors = () => {
 const _ewTreeActors = ROUTES.eldest.actors;
 ROUTES.eldest.actors = () => {
   const W = ew(), out = _ewTreeActors();
-  if (W.alarm && !W.stroud) out.push({ id: 'ew_harvester', x: 21, y: 15, img: ['qd', 'qd_crane'], scale: .9 }, { id: 'ew_stroud', x: 18, y: 17, tex: 'tr_' + trArt('stroud'), dir: 'left' });
+  if (W.alarm && !W.stroud) out.push({ id: 'ew_harvester', x: 21, y: 15, ...(HDW.xa && HDW.xa.frames && HDW.xa.frames.ew_harvester ? { img: ['xa', 'ew_harvester'] } : { img: ['qd', 'qd_crane'], scale: .9 }) }, { id: 'ew_stroud', x: 18, y: 17, tex: 'tr_' + trArt('stroud'), dir: 'left' });
   return out;
 };
 
@@ -403,7 +403,7 @@ ewDoorHook = (sc, id) => {
     EW.tansy("She told Stroud, the Haulmaster, to take the Eldest Tree. Today. And they've started up the Harvester!", 0),
     EW.tansy("It's a machine as big as a house. On legs. It walks to a tree and just... eats it.", 0),
     EW.tansy("It's heading for the Eldest Tree right now. West of the Glade. Please hurry!", 0)], () => { W.alarm = 1; checkQuests(); });
-  if (id === 'ew_harvester') return say([{ ...vdSys(''), t: "The Harvester towers over the clearing: steel legs, a cab full of levers, and a great toothed saw arm reaching for the Eldest Tree's roots." }]);
+  if (id === 'ew_harvester') return say([{ ...vdSys(''), t: "The Harvester towers over the clearing: steel tracks, a cab full of levers, and a great toothed saw arm reaching for the Eldest Tree's roots." }]);
   if (id === 'ew_stroud') { ewHarvester(sc); return true; }
   return _ewDoor1(sc, id);
 };

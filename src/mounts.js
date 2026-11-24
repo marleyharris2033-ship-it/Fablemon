@@ -100,9 +100,10 @@ function mtGifts(sc) {
   }
   if (cr.stone && !M.list.some(m => m.id === 'ridgeram')) {
     mtGive('ridgeram');
-    postSend('mt_ridgeram', { from: 'Warden Granger', subj: 'A ram for the road', body: n => `${n},\n\nYou beat me fair. A Warden who can do that shouldn't be walking everywhere, so I've sent you Ridgeram. He's one of the pit rams, a Rambastion raised to the saddle, and he'll carry you anywhere outdoors.\n\nHe's waiting at a post by your house. Feed him and give him a brush when you're home, and the two of you will get on. Ride him plenty: he gets quicker and surer the more ground you cover together.\n\nOne more thing. He can leap. Fences, rocks, streams. Find out for yourself.\n\nGranger`, }, true);
+    postSend('mt_ridgeram', { from: 'Warden Granger', subj: 'A ram for the road', body: n => `${n},\n\nYou beat me fair. A Warden who can do that shouldn't be walking everywhere, so I've sent you Ridgeram. He's one of the pit rams, a Rambastion raised to the saddle, and he'll carry you anywhere outdoors.\n\nRobin's built you a stable for him; tap him at his post by your house to choose where it goes. Feed him and give him a brush when you're home, and the two of you will get on. Ride him plenty: he gets quicker and surer the more ground you cover together.\n\nOne more thing. He can leap. Fences, rocks, streams. Find out for yourself.\n\nGranger`, }, true);
     sc.time.delayedCall(1500, () => toast('🐏 Granger sent you Ridgeram, a mount! Tap his button to ride.', 3800));
   }
+  if (M.list.length && !M.stable && !M.stbTold && HDW.xa && typeof Farm !== 'undefined' && sc instanceof Farm) { M.stbTold = 1; sc.time.delayedCall(2600, () => toast('🐴 Robin has built you a stable! Tap your mount to choose where it goes.', 3800)); }
   if (!cr.stone) return;   // the rest come once you can ride
   const gift = (id, ok, L, note) => { if (!ok || M.list.some(m => m.id === id)) return; mtGive(id); postSend('mt_' + id, L, true); sc.time.delayedCall(2100, () => toast(note, 3800)); };
   gift('blazemane', typeof derbyWon === 'function' && derbyWon('quarry'), { from: 'Monty', subj: 'Your Quarry Cup prize (the real one)', body: n => `${n}!\n\nWhat a race. I've seen a lot of cups won on that gravel and not many like that.\n\nThe purse was the official prize. This is mine. Blazemane's the quickest Fleecebolt I've ever had in the stables, and he's wasted standing about waiting for race days. He wants to run, and you clearly know how to let a Fablemon run.\n\nHe'll be at your farm. Give him a straight and see what happens.\n\nMonty\nSmallroot Derby` }, '🔥 Monty sent you Blazemane, a mount! Switch mounts in the Stable.');
@@ -488,11 +489,24 @@ function mtPostSpot(sc, taken = []) {
 function mtPost(sc) {
   if (typeof Farm === 'undefined' || !(sc instanceof Farm)) return;
   const M = S && S.mt, ids = (M && M.list || []).map(m => m.id).filter(id => !(sc.rideKey && id === sc.rideId)), key = ids.join(',');
-  if (sc.mtKey === key) return;
+  const stb = M && M.stable && xaReady(sc, 'stb_stable') ? M.stable : null; stbDraw(sc, stb);
+  const fullKey = key + (stb ? '@' + stb.cx + ',' + stb.by : '');
+  if (sc.mtKey === fullKey) return;
   const need = ids.map(id => MOUNTS[id].sp).filter(sp => !sc.textures.exists('mon_' + sp));
   if (need.length) { if (!sc.mtWait) { sc.mtWait = 1; monFetchAll(sc, need).then(() => { sc.mtWait = 0; if (sc.sys && sc.sys.isActive() && sc.p) mtPost(sc); }); } return; }
-  for (const o of sc.mtSprs || []) o.destroy(); sc.mtSprs = []; sc.mtAts = []; sc.mtKey = key;
+  for (const o of sc.mtSprs || []) o.destroy(); sc.mtSprs = []; sc.mtAts = []; sc.mtKey = fullKey;
   sc._mtPass0 = sc._mtPass0 || Farm.prototype._mtPass;
+  if (stb) {
+    // each in its own stall, looking out over the half-door; the trough is drawn back over their feet
+    (M.list || []).forEach((m, n) => {
+      if (n >= STB_STALL.length || (sc.rideKey && m.id === sc.rideId)) return;
+      const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 8, tx = Math.round((x - 8) / T);
+      const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale(.72 / MT_R).setDepth(stb.by * T + 15.4);
+      spr.mid = m.id; spr.at = { x: tx, y: stb.by, id: m.id }; sc.mtSprs.push(spr);
+      sc.tweens.add({ targets: spr, scaleY: { from: .72 / MT_R, to: .735 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+    });
+    return;
+  }
   ids.forEach((id, n) => {
     const at = mtPostSpot(sc, sc.mtAts); if (!at) return; at.id = id; sc.mtAts.push(at);
     const tex = mtTackTex(sc, id), x = at.x * T + 8, y = at.y * T + 8 + 7;
@@ -501,16 +515,73 @@ function mtPost(sc) {
     sc.tweens.add({ targets: spr, scaleY: { from: 1 / MT_R, to: 1.02 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });   // a slow breath
   });
 }
+/* ---------- the stable (the user's art): Granger had Robin build it; you choose where it stands, and can move it */
+const STB_STALL = [-57, -28.5, 0, 28.5, 57];   // stall middles, in px from the stable's middle
+const stbFoot = (cx, by) => [cx - 6, by - 2, cx + 6, by];
+const stbIn = (x, y) => { const b = S && S.mt && S.mt.stable; if (!b) return false; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); return x >= x0 && x <= x1 && y >= y0 && y <= y1; };
+function stbBlock(b, v) { if (!b) return; const [x0, y0, x1, y1] = stbFoot(b.cx, b.by); for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) farm.blocked[y * W + x] = v; }
+function stbDraw(sc, b) {
+  const key = b ? b.cx + ',' + b.by : '';
+  if (sc.stbKey === key) return; sc.stbKey = key;
+  for (const o of sc.stbObjs || []) o.destroy(); sc.stbObjs = []; sc.stbImg = null;
+  if (!b) return;
+  stbBlock(b, 1); sc.clearDebrisIn && sc.clearDebrisIn(...stbFoot(b.cx, b.by));
+  const x = b.cx * T + 8, y = (b.by + 1) * T, d = b.by * T + 15;
+  const im = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d); sc.stbImg = im; sc.stbObjs.push(im); if (sc.tall) sc.tall.push(im);
+  // the water trough again, in front of whoever's in the stalls
+  const tr = sc.add.image(x, y, 'xa', 'stb_stable').setOrigin(.5, 1).setDepth(d + .8), fr = tr.frame;
+  tr.setCrop(0, fr.realHeight * .855, fr.realWidth, fr.realHeight * .145); sc.stbObjs.push(tr);
+  // hay to one side, tack to the other
+  const prop = (f, px, py, dd = 0) => { if (!xaReady(sc, f)) return; const o = sc.add.image(px, py, 'xa', f).setOrigin(.5, 1).setDepth(py + dd); sc.stbObjs.push(o); };
+  prop('stb_hay2', x - 92, y - 18); prop('stb_hay', x - 90, y - 1); prop('stb_saddle', x + 92, y - 17); prop('stb_bucket', x + 88, y - 1);
+  prop('stb_sign', x - 70, y + 14);
+}
+// the nearest clear spot to the house, to start the plot on
+function stbFreeSpot() {
+  const hard = (x, y) => { const k = x + ',' + y, i = y * W + x; return x < 3 || y < 3 || x > W - 4 || y > H - 4 || !!(S.tilled[k] || S.fences[k] || S.paths[k] || S.objs[k] || farm.waterish[i] || farm.dirtish[i] || farm.blocked[i]); };
+  const ok = (cx, by) => { const [x0, y0, x1, y1] = stbFoot(cx, by); for (let y = y0; y <= y1 + 1; y++) for (let x = x0; x <= x1; x++) if (hard(x, y)) return false; return true; };
+  const c0 = { cx: DOOR.x + 12, by: DOOR.y + 6 };
+  for (let r = 0; r < 30; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; if (ok(c0.cx + dx, c0.by + dy)) return { cx: c0.cx + dx, by: c0.by + dy }; }
+  return c0;
+}
+function stbPlace(moving) {
+  const sc = scene, M = mtS(); if (!sc || !(sc instanceof Farm)) return toast('Go out onto your farm to choose where your stable goes.', 2400);
+  closeModal(); const old = M.stable;
+  if (old) stbBlock(old, 0);   // so it can move over its own old spot
+  let done = false;
+  sc.buildPreview({
+    name: moving ? 'Move your stable' : 'Your stable', desc: 'Room for five mounts. Granger paid Robin to build it.', at: old ? { cx: old.cx, by: old.by } : stbFreeSpot(),
+    areaFor: a => { const [x0, y0, x1, y1] = stbFoot(a.cx, a.by); return [x0, y0, x1, y1 + 1]; },
+    ghostKey: 'xa', ghostFrame: 'stb_stable', ghostAt: a => [a.cx * T + 8, (a.by + 1) * T],
+    cost: {}, gold: 0,
+    onBuild: at => {
+      done = true; M.stable = { cx: at.cx, by: at.by }; sc.stbKey = null; sc.mtKey = null; mtPost(sc); Sound.play('place'); save();
+      toast(moving ? 'Your stable is in its new spot.' : '🐴 Your stable is up! Your mounts have moved in.', 3000);
+    },
+  });
+  // cancelled: put the old one back as it was
+  const chk = () => { if (done) return; if ($('buildbar') && $('buildbar').innerHTML && sc.paused) return setTimeout(chk, 300); if (old && !done) stbBlock(old, 1); };
+  setTimeout(chk, 300);
+}
+
 // hook the farm: the post blocks its tile, and you can tap it or face it to open the stable
 (function () {
   if (typeof Farm === 'undefined') return;
   const FP = Farm.prototype, pass = FP.passable, target = FP.targetAt, act = FP.act, face = FP.actFacing;
   FP._mtPass = pass;
   FP.passable = function (x, y) { if (this.mtAts && this.mtAts.some(a => a.x === x && a.y === y)) return false; return pass.call(this, x, y); };
-  FP.targetAt = function (wx, wy) { for (const o of this.mtSprs || []) if (o.at && o.getBounds().contains(wx, wy)) return { type: 'mtpost', x: o.at.x, y: o.at.y, id: o.mid }; return target.call(this, wx, wy); };
+  FP.targetAt = function (wx, wy) {
+    for (const o of this.mtSprs || []) if (o.at && o.getBounds().contains(wx, wy)) return { type: 'mtpost', x: o.at.x, y: o.at.y, id: o.mid };
+    const b = S.mt && S.mt.stable;
+    if (b && this.stbImg && this.stbImg.getBounds().contains(wx, wy)) { const tx = Math.max(b.cx - 6, Math.min(b.cx + 6, Math.floor(wx / T))); return { type: 'mtpost', x: tx, y: b.by }; }
+    return target.call(this, wx, wy);
+  };
   FP.act = function (t) { if (t && t.type === 'mtpost') { if (this.p.busy > 0) { this.p.queued = t; return; } this.face(t.x, t.y); return mtOpen(true, t.id); } return act.call(this, t); };
   FP.actFacing = function () {
-    const p = this.p; if (p && this.mtAts && !p.moving && !this.paused) { const [dx, dy] = DV[p.dir], a = this.mtAts.find(a => p.x + dx === a.x && p.y + dy === a.y); if (a) return this.act({ type: 'mtpost', x: a.x, y: a.y, id: a.id }); }
+    const p = this.p; if (p && !p.moving && !this.paused) {
+      const [dx, dy] = DV[p.dir], a = (this.mtAts || []).find(a => p.x + dx === a.x && p.y + dy === a.y); if (a) return this.act({ type: 'mtpost', x: a.x, y: a.y, id: a.id });
+      if (stbIn(p.x + dx, p.y + dy)) return this.act({ type: 'mtpost', x: p.x + dx, y: p.y + dy });
+    }
     return face.call(this);
   };
 })();
@@ -538,11 +609,14 @@ function mtOpen(atPost, focus) {
         ${here ? `<button class="btn${fedToday ? '' : ' gold'}" data-a="feed" data-d="${m.id}" ${fedToday ? 'disabled' : ''}>🌾 ${fedToday ? 'Fed today' : 'Feed'}</button>
                   <button class="btn${brushedToday ? '' : ' gold'}" data-a="brush" data-d="${m.id}" ${brushedToday ? 'disabled' : ''}>🪮 ${brushedToday ? 'Brushed today' : 'Brush'}</button>` : ''}
       </div>
-      ${here ? '' : `<p class="hint" style="margin:6px 0 0">Feed and brush it at its post on your farm, once a day each, to build your Bond.</p>`}
+      ${here ? '' : `<p class="hint" style="margin:6px 0 0">Feed and brush it at the ${M.stable ? 'stable' : 'its post'} on your farm, once a day each, to build your Bond.</p>`}
     </div>`;
   }).join('');
   const boots = M.boots ? `<div class="mtcard" style="display:flex;align-items:center;gap:10px"><span style="font-size:30px">👢</span><div style="flex:1;min-width:0"><b>Running boots</b><div class="hint">From Warden Mabel. You walk 1.4 times as fast while you wear them.</div></div><button class="btn" data-a="boots">${M.bootsOff ? 'Put on' : 'Take off'}</button></div>` : '';
-  const ride = M.list.length ? `<div class="row" style="justify-content:center;margin-top:6px"><button class="btn gold" data-a="ride">${M.ride ? 'Get down' : 'Ride'}</button></div>` : '';
+  const onFarm = scene && typeof Farm !== 'undefined' && scene instanceof Farm && HDW.xa;
+  const stable = M.list.length && onFarm ? (M.stable ? `<div class="row" style="justify-content:center;margin-top:6px"><button class="btn" data-a="stbmove">Move the stable</button></div>`
+    : `<div class="mtcard" style="display:flex;align-items:center;gap:10px"><span style="font-size:30px">🐴</span><div style="flex:1;min-width:0"><b>Your stable is ready</b><div class="hint">Granger paid Robin to build your mounts a stable. Choose where it goes.</div></div><button class="btn gold" data-a="stbplace">Place it</button></div>`) : '';
+  const ride = (M.list.length ? `<div class="row" style="justify-content:center;margin-top:6px"><button class="btn gold" data-a="ride">${M.ride ? 'Get down' : 'Ride'}</button></div>` : '') + stable;
   openModal(here ? 'Stable' : 'Mounts', `<div id="mtList">${boots}${cards}</div>${ride}`, (a, d) => {
     const m = M.list.find(x => x.id === (d && d.d));
     if (a === 'boots') { M.bootsOff = M.bootsOff ? 0 : 1; mtOpen(); }
@@ -550,6 +624,8 @@ function mtOpen(atPost, focus) {
     if (a === 'feed' && m && m.fed !== S.day) { m.fed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 0); toast(`${mtName(m.id)} munches happily. Bond +3`, 1800); mtCare(m.id); mtOpen(undefined, m.id); }
     if (a === 'brush' && m && m.brushed !== S.day) { m.brushed = S.day; mtRaise(m, 'bond', 3, true); Sound.play('pop', 1); toast(`${mtName(m.id)} leans into the brush. Bond +3`, 1800); mtCare(m.id); mtOpen(undefined, m.id); }
     if (a === 'ride') { closeModal(); mtToggle(); }
+    if (a === 'stbplace') stbPlace(false);
+    if (a === 'stbmove') stbPlace(true);
   });
   if (focus) { const el = $('mtc_' + focus); if (el) el.scrollIntoView({ block: 'nearest' }); }
 }
@@ -611,7 +687,7 @@ function mtUI(force) {
   const WP = World.prototype, mk = WP.makePlayer, upd = WP.update, sw = WP.swing;
   WP.makePlayer = function (sp) {
     if (MT.charge) mtChargeEnd(); MT.boost = 0; MT.mom = null;
-    this.rideKey = null; this.rideWant = null; this.hopping = false; this.mtSprs = null; this.mtAts = null; this.mtKey = null;
+    this.rideKey = null; this.rideWant = null; this.hopping = false; this.mtSprs = null; this.mtAts = null; this.mtKey = null; this.stbKey = null; this.stbObjs = null; this.stbImg = null;
     mk.call(this, sp);
     try { mtButtons(); mtGifts(this); mtPost(this); } catch (e) { console.warn('mounts', e); }
   };
