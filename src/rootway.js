@@ -40,7 +40,7 @@ const ROOTWAY = {
   beaconreach: { name: 'Beaconreach', x: 18, y: 29 },
   highmoor: { name: 'Highmoor', x: 19, y: 36 },
   elderwood: { name: 'Elderwood', x: 50, y: 67 },
-  gloamhollow: { name: 'Gloamhollow', x: 18, y: 26 },
+  gloamhollow: { name: 'Gloamhollow', x: 25, y: 36 },
 };
 const ROOTWAY_ORDER = Object.keys(ROOTWAY);
 function rwS() { S.rootway = S.rootway || { awake: { farm: 1 }, at: {} }; S.rootway.at = S.rootway.at || {}; return S.rootway; }
