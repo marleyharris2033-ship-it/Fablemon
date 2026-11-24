@@ -64,12 +64,13 @@ GTWEAK.gloam = (r, g, b) => { const l = (r + g + b) / 3; return [l * .42 + r * .
 EGRASS_TINT.gloam = (r, g, b) => { const l = (r + g + b) / 3; return [l * .45 + 26, l * .55 + 30, l * .55 + 52]; };
 
 /* ---------- wild Fablemon: existing species until the user's six Gloamhollow lines arrive */
-const UNDER_ENC = ewEnc([['inkwick_2', 14], ['duskcloak', 14], ['clinkit_2', 12], ['cobblerollie', 10], ['flintburrow', 10], ['hollowbark', 8], ['snarlwisp', 8], ['duskwick', 6], ['nipshade_2', 6], ['murkhowl', 4]],
-  [['duskcloak', 16], ['inkwick_2', 14], ['snarlwisp', 12], ['clinkit_2', 10], ['nipshade_2', 8], ['murkhowl', 6], ['duskwick', 8]]);
-const MERE_ENC = ewEnc([['fenfang', 12], ['marshviper', 10], ['logloom', 10], ['inkwick_2', 10], ['wickveil', 8], ['lotveil', 8], ['wishling_2', 6], ['hollowbark_3', 3]],
-  [['snarlwisp', 14], ['murkhowl', 10], ['inkwick_2', 12], ['wickveil', 10], ['duskcloak', 8], ['marshviper', 8], ['fenfang', 6], ['nipshade_2', 6]]);
-const DEEP_ENC = ewEnc([['clinkit_2', 12], ['wishling_2', 12], ['floecalf_2', 10], ['flurrowl_2', 8], ['wickveil', 8], ['inkwick_2', 8], ['glimmerjel', 6], ['clinkit_3', 4], ['moonspark', 4]],
-  [['clinkit_2', 12], ['wishling_2', 10], ['inkwick_2', 10], ['wickveil', 10], ['moonspark', 6], ['flurrowl_2', 8], ['glimmerjel', 6], ['clinkit_3', 4]]);
+// the Gloamhollow lines (ghmons.js) first, then the darker Fablemon from elsewhere that would live down here
+const UNDER_ENC = ewEnc([['vespyre', 16], ['tricoil', 14], ['duskwyrm', 8], ['flintcairn', 8], ['mortarmour', 6], ['murkhowl', 6], ['clinkit_3', 5], ['inkwick_3', 4], ['lintroll', 4], ['hollowbark_3', 4]],
+  [['vespyre', 20], ['tricoil', 14], ['murkhowl', 8], ['duskwyrm', 8], ['inkwick_3', 6], ['flintcairn', 6], ['clinkit_3', 4], ['hollowbark_3', 4]]);
+const MERE_ENC = ewEnc([['grubble', 16], ['lumispin', 10], ['marshviper', 10], ['hollowbark_3', 8], ['lotveil_3', 8], ['mirebellows_3', 6], ['solwick', 6], ['yawnox_3', 5], ['brimbramble_3', 4], ['tricoil', 4]],
+  [['lumispin', 16], ['grubble', 12], ['marshviper', 10], ['murkhowl', 8], ['duskwyrm', 8], ['inkwick_3', 8], ['solwick', 8], ['brimbramble_3', 6], ['jinglynx', 4], ['nipshade_3', 3]]);
+const DEEP_ENC = ewEnc([['lintroll', 16], ['jinglynx', 12], ['craglet_3', 10], ['clinkit_3', 10], ['floecalf_2', 8], ['mirebellows_3', 6], ['flurrowl_3', 6], ['wishling_3', 6], ['lumispin', 4]],
+  [['lintroll', 14], ['jinglynx', 14], ['clinkit_3', 10], ['inkwick_3', 8], ['moonspark', 8], ['floecalf_2', 8], ['craglet_3', 6], ['mirebellows_3', 6], ['flurrowl_3', 4]]);
 
 /* ---------- trees: Elderwood's ancient trees recoloured for the dusk, and the bog's dead trees */
 const ghTreeTown = (x, y) => {
@@ -102,9 +103,9 @@ Object.assign(ROUTES, {
     signs: { '4,13': "The Undercroft: the old miners' haul tunnel under the mountain. Greenline's convoys still run the rails. When you hear one coming, duck into a side alcove!",
       '57,13': 'East: Gloamhollow.', '26,17': "Old miners' gallery. Flooded in places. 'NO ENTRY WITHOUT A LAMP.'" },
     trainers: [
-      { id: 'uc_t1', kind: 'miner', name: 'Gethin', x: 10, y: 7, dir: 'down', sight: 3, team: [['clinkit_2', 67], ['cobblerollie', 67], ['duskcloak', 68]] },
-      { id: 'uc_t2', kind: 'climber', name: 'Nia', x: 46, y: 9, dir: 'left', sight: 3, team: [['inkwick_2', 68], ['flintburrow', 68]] },
-      { id: 'uc_t3', kind: 'miner', name: 'Dewi', x: 26, y: 23, dir: 'right', sight: 3, team: [['mortarmour', 68], ['hollowbark', 68], ['clinkit_3', 69]] },
+      { id: 'uc_t1', kind: 'miner', name: 'Gethin', x: 10, y: 7, dir: 'down', sight: 3, team: [['lintroll', 67], ['flintcairn', 67], ['clinkit_3', 68]] },
+      { id: 'uc_t2', kind: 'climber', name: 'Nia', x: 46, y: 9, dir: 'left', sight: 3, team: [['vespyre', 68], ['duskwyrm', 68]] },
+      { id: 'uc_t3', kind: 'miner', name: 'Dewi', x: 26, y: 23, dir: 'right', sight: 3, team: [['mortarmour', 68], ['tricoil', 68], ['cairnbrute', 69]] },
     ],
     cgprops: [['cg_lamp_post', 5, 13], ['cg_lamp_post', 17, 13], ['cg_lamp_post', 39, 13], ['cg_lamp_post', 51, 13], ['cg_lamp_post', 32, 17], ['cg_crate', 3, 17], ['cg_cart_broken', 22, 13], ['cg_crate', 56, 17]],
     ghBlocks: [{ area: [30, 9, 31, 9], ok: () => !!gh().door, fr: 'qd_barrier' }],
@@ -158,10 +159,10 @@ Object.assign(ROUTES, {
     signs: { '25,2': "Lanternmere. Five great lanterns once kept the marsh calm: an ember, a spark, a gourd, a mirror and the moths. When they're out, the Shade Fablemon get restless." },
     ewdecor: [['br', 'br_lens', 48, 31], ['bog', 'post', 25, 4], ['bog', 'post', 30, 4], ['bog', 'post', 25, 19], ['bog', 'post', 30, 19], ['bog', 'log', 6, 24], ['bog', 'stump', 50, 24]],
     trainers: [
-      { id: 'lm_t1', kind: 'wispwatcher', name: 'Ottilie', x: 29, y: 9, dir: 'left', sight: 4, team: [['wickveil', 69], ['inkwick_2', 70]] },
-      { id: 'lm_t2', kind: 'reedcutter', name: 'Haydn', x: 18, y: 20, dir: 'right', sight: 4, team: [['marshviper', 69], ['logloom', 70], ['fenfang', 70]] },
-      { id: 'lm_t3', kind: 'ponddipper', name: 'Bryn', x: 38, y: 22, dir: 'left', sight: 4, team: [['lotveil', 70], ['wishling_2', 70]] },
-      { id: 'lm_t4', kind: 'forager', name: 'Mabyn', x: 26, y: 30, dir: 'right', sight: 3, team: [['hollowbark_3', 70], ['snarlwisp', 70], ['murkhowl', 71]] },
+      { id: 'lm_t1', kind: 'wispwatcher', name: 'Ottilie', x: 29, y: 9, dir: 'left', sight: 4, team: [['lumispin', 69], ['solwick', 70]] },
+      { id: 'lm_t2', kind: 'reedcutter', name: 'Haydn', x: 18, y: 20, dir: 'right', sight: 4, team: [['marshviper', 69], ['grubble', 70], ['lotveil_3', 70]] },
+      { id: 'lm_t3', kind: 'ponddipper', name: 'Bryn', x: 38, y: 22, dir: 'left', sight: 4, team: [['clutchtoad', 70], ['mirebellows_3', 70]] },
+      { id: 'lm_t4', kind: 'forager', name: 'Mabyn', x: 26, y: 30, dir: 'right', sight: 3, team: [['hollowbark_3', 70], ['lanternweave', 70], ['gloamfang', 71]] },
     ],
     up: x => ['gloamhollow', { x: Math.max(30, Math.min(34, x + 4)), y: 46, dir: 'up' }],
     spawn: { x: 27, y: 1, dir: 'down' }, enc: MERE_ENC },
@@ -171,11 +172,11 @@ Object.assign(ROUTES, {
   glimmerdeep: { ...GH_ASC, phased: true, name: 'Glimmerdeep', w: 48, h: 36, gpal: GH_DEEP_PAL, egrass: 'gloam', dark: { r: 88, a: .74 }, crystals: true,
     get ascii() { const rows = GHM.glimmerdeep.rows.slice(); if (S && S.gh && S.gh.bridge) rows[11] = rows[11].slice(0, 24) + '.' + rows[11].slice(25); return rows; },
     zones: [[], [], [], [], [0, 0, 0, 0, 70, 71], [0, 0, 0, 0, 70, 72], [0, 0, 0, 0, 71, 72, 'isle'], [0, 0, 0, 0, 71, 72]],
-    isle: [['moonspark', 20], ['wishling_3', 4], ['solwick', 4]].filter(([s]) => SPECIES[s]),
+    isle: [['moonspark', 16], ['knellynx', 6], ['wishling_3', 6], ['solwick', 4]].filter(([s]) => SPECIES[s]),
     signs: { '21,3': '__heal', '27,3': "Glimmerdeep. The crystals here drink light and give it back. Somewhere south, a beam of it once ran all the way up to the marsh." },
     trainers: [
-      { id: 'gd_t1', kind: 'climber', name: 'Ceri', x: 12, y: 8, dir: 'right', sight: 4, team: [['flurrowl_2', 71], ['floecalf_2', 72]] },
-      { id: 'gd_t2', kind: 'miner', name: 'Idris', x: 43, y: 25, dir: 'up', sight: 3, team: [['clinkit_3', 72], ['mortarmour', 72]] },
+      { id: 'gd_t1', kind: 'climber', name: 'Ceri', x: 12, y: 8, dir: 'right', sight: 4, team: [['flurrowl_3', 71], ['craglet_3', 72], ['knellynx', 72]] },
+      { id: 'gd_t2', kind: 'miner', name: 'Idris', x: 43, y: 25, dir: 'up', sight: 3, team: [['cairnbrute', 72], ['clinkit_3', 72]] },
     ],
     exits: [{ r: [23, 1, 24, 1], to: () => ['gloamhollow', { x: 44, y: 22, dir: 'down' }] }],
     spawn: { x: 23, y: 2, dir: 'down' }, enc: DEEP_ENC },
@@ -213,14 +214,14 @@ ROUTES.ewcamp.signs['35,18'] = "The haul road runs straight into the mountain he
 /* ---------- Verdance in the hollow: siphon guards and Site G's crews (they go once Site G is stopped) */
 Object.assign(VD_REGION, { gloamhollow: 'gloam', glimmerdeep: 'gloam', siteg: 'gloam' });
 Object.assign(VD_PLACES, {
-  gloamhollow: [{ k: 'tech', id: 'vd_gh1', kind: 'vtech', name: 'Lyle', at: [44, 27], team: vdTeam(['duskcloak', 70], ['clinkit_2', 70], ['nipshade_2', 71]) },
-    { k: 'tech', id: 'vd_gh2', kind: 'vtech2', name: 'Fay', at: [17, 19], team: vdTeam(['hollowbark', 70], ['inkwick_2', 71], ['cobblerollie', 71]) },
+  gloamhollow: [{ k: 'tech', id: 'vd_gh1', kind: 'vtech', name: 'Lyle', at: [44, 27], team: vdTeam(['duskwyrm', 70], ['clinkit_3', 70], ['nipshade_3', 71]) },
+    { k: 'tech', id: 'vd_gh2', kind: 'vtech2', name: 'Fay', at: [17, 19], team: vdTeam(['hollowbark_3', 70], ['inkwick_3', 71], ['mortarmour', 71]) },
     { k: 'board', at: [40, 31], text: "<b>VERDANCE ENERGY</b><br><i>Clean power, naturally™</i><br><br>Gloamhollow Light Efficiency Scheme. Your lamps, managed for you." }],
-  glimmerdeep: [{ k: 'tech', id: 'vd_gd1', kind: 'vtech2', name: 'Rook', at: [44, 20], team: vdTeam(['floecalf_2', 71], ['wishling_2', 72], ['clinkit_3', 72]) }],
-  siteg: [{ k: 'tech', id: 'vd_sg1', kind: 'vtech', name: 'Marsh', at: [10, 25], team: vdTeam(['mortarmour', 71], ['duskcloak', 72]) },
-    { k: 'tech', id: 'vd_sg2', kind: 'vtech2', name: 'Dee', at: [29, 25], team: vdTeam(['tanglebruin', 72], ['clinkit_3', 72]) },
-    { k: 'tech', id: 'vd_sg3', kind: 'vtech', name: 'Holt', at: [10, 15], team: vdTeam(['nipshade_3', 72], ['inkwick_3', 73]) },
-    { k: 'tech', id: 'vd_sg4', kind: 'vtech2', name: 'Sable', at: [29, 15], team: vdTeam(['ursylvane', 72], ['hollowbark_3', 73]) },
+  glimmerdeep: [{ k: 'tech', id: 'vd_gd1', kind: 'vtech2', name: 'Rook', at: [44, 20], team: vdTeam(['floecalf_2', 71], ['wishling_3', 72], ['tricoil', 72]) }],
+  siteg: [{ k: 'tech', id: 'vd_sg1', kind: 'vtech', name: 'Marsh', at: [10, 25], team: vdTeam(['mortarmour', 71], ['vespyre', 72]) },
+    { k: 'tech', id: 'vd_sg2', kind: 'vtech2', name: 'Dee', at: [29, 25], team: vdTeam(['ursylvane', 72], ['cairnbrute', 72]) },
+    { k: 'tech', id: 'vd_sg3', kind: 'vtech', name: 'Holt', at: [10, 15], team: vdTeam(['nipshade_3', 72], ['hydrarch', 73]) },
+    { k: 'tech', id: 'vd_sg4', kind: 'vtech2', name: 'Sable', at: [29, 15], team: vdTeam(['lanternweave', 72], ['hollowbark_3', 73]) },
     { k: 'memo', id: 'gh_drill', at: [7, 7] }, { k: 'memo', id: 'gh_light', at: [32, 7] }],
 });
 Object.assign(VD_MEMOS, {
@@ -260,7 +261,7 @@ ROUTES.undercroft.actors = () => {
   }
   if (G.lostAsk && !G.lostFound) {
     GH_TRAIL_STEPS.forEach(([x, y], k) => out.push({ id: 'gh_paw' + k, x, y, print: true, walk: true }));
-    out.push({ id: 'gh_lost', x: GHM.undercroft.lost[0], y: GHM.undercroft.lost[1], mon: 'nipshade' });
+    out.push({ id: 'gh_lost', x: GHM.undercroft.lost[0], y: GHM.undercroft.lost[1], mon: 'jinglynx' });
   }
   return out;
 };
@@ -270,7 +271,7 @@ ROUTES.gloamhollow.actors = () => {
   if (G.town) out.push({ id: 'gh_brask', x: 27, y: 18, tex: 'tr_brask', dir: 'down' });
   out.push({ id: 'gh_tobin', x: 37, y: 17, tex: 'tr_busker', dir: 'down' });
   if (!G.lostHome) out.push({ id: 'gh_wren', x: 19, y: 39, tex: 'tr_wispwatcher', dir: 'down' });
-  else out.push({ id: 'gh_pip', x: 20, y: 39, mon: 'nipshade' });
+  else out.push({ id: 'gh_pip', x: 20, y: 39, mon: 'jinglynx' });
   GH_LAMPS.forEach(([x, y], k) => out.push({ id: 'gh_lamp' + k, x, y, lamp: true, lit: ghLampLit(k) }));
   GH_BELLS.forEach(([b, x, y]) => out.push({ id: 'gh_bell_' + b, x, y, img: ['br', 'br_bell_frame'] }));
   out.push({ id: 'gh_crypt', x: 4, y: 19, img: G.crypt ? ['qd', 'qd_rubble'] : ['qd', 'qd_column'] });
@@ -304,7 +305,7 @@ ROUTES.siteg.actors = () => {
   return out;
 };
 // the lost Nipshade's sheet comes with the area
-const GH_MON_NEED = { undercroft: ['nipshade'], gloamhollow: ['nipshade'] };
+const GH_MON_NEED = { undercroft: ['jinglynx'], gloamhollow: ['jinglynx'] };
 const _ghNeed = monNeed;
 monNeed = function (key) { const o = _ghNeed(key); for (const sp of GH_MON_NEED[key] || []) if (SPECIES[sp]) o.add(walkSp(sp)); return o; };
 
@@ -442,7 +443,7 @@ function ghConvoy(sc, dt) {
 function ghCaught(sc) {
   sc.p.path = []; sc.p.pending = null; Sound.play('error');
   if (!team().some(m => m.hp > 0)) { toast('The convoy guards shout at you to clear the tracks, and thunder past.', 2600); return; }
-  const lv = 67 + (Math.random() < .5 ? 1 : 0), pool = [['cobblerollie', lv], ['clinkit_2', lv], ['duskcloak', lv + 1], ['flintburrow', lv]];
+  const lv = 67 + (Math.random() < .5 ? 1 : 0), pool = [['mortarmour', lv], ['clinkit_3', lv], ['duskwyrm', lv + 1], ['flintcairn', lv]];
   const tm = [pool[Math.floor(Math.random() * 2)], pool[2 + Math.floor(Math.random() * 2)]].map(([s, l]) => { const m = trainerMon(s, l); m.collar = 1; return m; });
   sc.paused = true;
   Talk.say([GH.tech("OI! What are you doing on the line? Nobody's allowed in the tunnel!", 0), GH.tech("Right. You're coming with me. After I've dealt with your team.", 0)], async () => {
@@ -480,8 +481,8 @@ function ghDoor(sc, id) {
     toast(`You found ${ITEMS[GH_TOOL_IDS[k]].name}! (${ghTools()}/3)`, 2400); checkQuests(); ewRefresh(sc); return true;
   }
   if (id.startsWith('gh_paw')) return true;
-  if (id === 'gh_lost') return ghSay([{ who: 'trainer', name: 'A lost Nipshade', img: monPic('nipshade', 'front'), t: "A little Nipshade is curled up in the dark, shivering. It sniffs your hand... then hops up onto your shoulder and won't get down." }],
-    () => { G.lostFound = 1; Sound.play('gotcha'); toast('You found the lost Nipshade! Take it home to Wren in Gloamhollow.', 3000); ewRefresh(sc); });
+  if (id === 'gh_lost') return ghSay([{ who: 'trainer', name: 'A lost Jinglynx', img: monPic('jinglynx', 'front'), t: "A little Jinglynx is curled up in the dark, shivering. It sniffs your hand... then hops up onto your shoulder and won't get down." }],
+    () => { G.lostFound = 1; Sound.play('gotcha'); toast('You found the lost Jinglynx! Take it home to Wren in Gloamhollow.', 3000); ewRefresh(sc); });
   if (id === 'gh_brask') return ghBraskTalk(sc);
   if (id === 'gh_isolde' || id === 'gh_tower') return ghIsolde(sc, id);
   if (id === 'gh_tobin') return ghSay(ghEve() ? [GH.tobin("Evening! Eight lamps and three hours to light them, and my knees aren't what they were.", 0), GH.tobin(`Light every one before nine and I'll pay you 1500g. ${(G.round.day === S.day ? (G.round.lit || []).length : 0)} lit so far.`, 1)]
@@ -525,7 +526,7 @@ function ghDoor(sc, id) {
   if (id === 'gh_mill') return ghSay([GH.sys("The Old Mill. The wheel turns slowly in the Mill Pool. Inside, the miller is grinding barley by lamplight.")]);
   const homes = { gh_h1: 'A moss-roofed house. A row of lanterns hangs from the gutter.', gh_h2: 'An old cottage. Someone is singing to a Shade Fablemon to get it to sleep.',
     gh_h3: 'A stone house. Through the window: a family playing cards by candlelight.', gh_h4: "A tall house with a lamp in every window. 'We'll not be the house that goes dark,' says a sign.",
-    gh_h5: 'A timber house. Smells of woodsmoke and toast.', gh_h6: "Wren's house. Paper lanterns and a little drawing of a Nipshade on the door.",
+    gh_h5: 'A timber house. Smells of woodsmoke and toast.', gh_h6: "Wren's house. Paper lanterns and a little drawing of a Jinglynx on the door.",
     gh_h7: "The lamp-maker's house. Glass shades of every colour in the window.", gh_h8: 'A house built into an old tree. The roots hold up the porch.' };
   if (homes[id]) return ghSay([GH.sys(homes[id])]);
   return false;
@@ -575,7 +576,7 @@ function ghBraskTalk(sc) {
 }
 
 /* ---------- Isolde: the lamp tower */
-const ISOLDE_TEAM = [['moonspark', 70], ['clinkit_3', 71], ['duskwyrm', 72], ['wishling_3', 72], ['gloamfang', 73], ['inkwick_3', 74]].filter(([s]) => SPECIES[s]);
+const ISOLDE_TEAM = [['moonspark', 70], ['clinkit_3', 71], ['vigilarach', 72], ['inkwick_3', 72], ['gloamfang', 73], ['carillion', 74]].filter(([s]) => SPECIES[s]);
 function ghIsolde(sc, id) {
   const G = gh();
   if (S.crests && S.crests.shade) return ghSay([GH.isolde(ghNoon() ? "Noon. My favourite hour. Not because of the light: because of the shadows it makes." : 'The tower burns bright again. Thank you, farmer.', 1)]);
@@ -701,8 +702,8 @@ function ghSiphon(sc, k) {
 }
 
 /* ---------- Site G: Morwenna Vale, in two parts. She gets away. */
-const VALE_P1 = [['hollowbark_3', 72], ['mortarmour', 73], ['brimbramble_3', 73]].filter(([s]) => SPECIES[s]);
-const VALE_P2 = [['solwick', 74], ['ursylvane', 74], ['duskwyrm', 75]].filter(([s]) => SPECIES[s]);
+const VALE_P1 = [['hollowbark_3', 72], ['bogbastion', 73], ['brimbramble_3', 73]].filter(([s]) => SPECIES[s]);
+const VALE_P2 = [['hydrarch', 74], ['ursylvane', 74], ['vesperax', 75]].filter(([s]) => SPECIES[s]);
 async function ghVale(sc) {
   const G = gh(), D = (sc.ewSpr || {}).gh_drill, V = (sc.ewSpr || {}).gh_vale;
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
@@ -746,11 +747,11 @@ function ghValeWin(sc) {
 function ghWren(sc, id) {
   const G = gh();
   if (G.lostHome) return ghSay([GH.wren("Pip hasn't left my side since. Look at him! He's sleeping on my feet.", 1)]);
-  if (G.lostFound) return ghSay([GH.wren('PIP!', 1), GH.sys('The Nipshade leaps off your shoulder and into Wren\'s arms.'),
+  if (G.lostFound) return ghSay([GH.wren('PIP!', 1), GH.sys('Pip leaps off your shoulder and into Wren\'s arms.'),
     GH.wren("You found him! Thank you, thank you! He's terrified of the convoys. Here: my savings. And these: Pip loves them, so they must be good.", 1)],
     () => { G.lostHome = 1; S.gold += 3000; inv.add('mon_treat', 5); updateHUD(); renderHotbar(); Sound.play('levelup'); toast('Wren gave you 3000g and 5 Treats!', 2800); checkQuests(); ewRefresh(sc); });
   if (G.lostAsk) return ghSay([GH.wren("Pip ran into the tunnel when the last convoy went through. He leaves glowing pawprints when he's scared. Down in the old galleries, maybe?", 0)]);
-  return ghSay([GH.wren('Have you seen a Nipshade? Little, black, with a white tip on his tail? His name\'s Pip.', 0),
+  return ghSay([GH.wren('Have you seen a Jinglynx? Little, purple, with a bell on his tail? His name\'s Pip.', 0),
     GH.wren('A convoy came through and he bolted. Into the Undercroft! I\'m not allowed in there.', 0),
     GH.wren("When he's scared his paws glow. If you go back through the tunnel, look for glowing pawprints. Please?", 0)],
     () => { G.lostAsk = 1; checkQuests(); });
@@ -835,7 +836,7 @@ const GH_Q = [
 const GH_SIDE = [
   ewTask('gh_round', "The Lamplighter's Round", "Help Tobin light Gloamhollow's 8 street lamps between 6pm and 9pm. He pays every evening you finish.", () => (gh().rounds || 0) >= 1, { gold: 1000 }, 'gloamhollow'),
   ewTask('gh_market', 'Visit the Night Market', "After 7pm, stalls open in Gloamhollow's square: charms, lamps, a rare seed every night, and crops bartered for goods.", () => gh().market, {}, 'gloamhollow'),
-  ewTask('gh_lost', 'Lost in the Undercroft', "Wren's Nipshade, Pip, bolted into the tunnel. Follow his glowing pawprints through the old galleries.", () => gh().lostHome, {}, 'undercroft'),
+  ewTask('gh_lost', 'Lost in the Undercroft', "Wren's Jinglynx, Pip, bolted into the tunnel. Follow his glowing pawprints through the old galleries.", () => gh().lostHome, {}, 'undercroft'),
   ewTask('gh_noon', () => `Noon Bloom (${Math.min(GH_BLOOM_KEYS.length, Object.keys(gh().blooms).length)}/${GH_BLOOM_KEYS.length})`, 'Rare flowers that only open from noon till one: three round Gloamhollow, two in Lanternmere, one in Glimmerdeep.', () => Object.keys(gh().blooms).length >= GH_BLOOM_KEYS.length, { gold: 3000 }, 'gloamhollow'),
   ewTask('gh_bells', 'The Old Church bells', 'Ring the four churchyard bells in the order the carvings on the church show.', () => !!gh().cryptLoot, {}, 'gloamhollow'),
   ewTask('gh_gossip', () => `Gleam's gossip (${Object.keys(gh().secrets).length}/3)`, 'Tobias Gleam has a stall at the Night Market. He sells Verdance secrets.', () => Object.keys(gh().secrets).length >= 3, {}, 'gloamhollow'),

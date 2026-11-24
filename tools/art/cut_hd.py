@@ -39,6 +39,9 @@ for sid, base, F in cut_starters.MONS:      # the new starters (15 Nov 2026)
 import cut_ewmons
 for sid, F, edge in cut_ewmons.MONS:      # Elderwood (16 Nov 2026): battle pairs, then walk sheets (step, stand, step, stand)
     MONS[sid] = dict(b=(cut_ewmons.A + sid + '.png', 0, 1), w=(cut_ewmons.A + f'walk_{sid}.png', 1, 0, 4, 0), order=[1, 0, 3, 2], edge=edge)
+import cut_ghmons
+for sid, F, edge in cut_ghmons.MONS:      # Gloamhollow (24 Nov 2026): battle pairs and walk sheets (step, stand, step, stand)
+    MONS[sid] = dict(b=(cut_ghmons.A + sid + '.png', 0, 1), w=(cut_ghmons.A + f'walk_{sid}.png', 1, 0, 4, 0), order=[1, 0, 3, 2], edge=edge)
 MONS['cirrovale'] = dict(b=('art_incoming/cirrovale/cirrovale.png', 0, 1), w=('art_incoming/cirrovale/walk_cirrovale.png', 1, 0, 4, 0))
 
 # the earlier Fablemon, from originals re-sent in Nov 2026. Three-frame walk rows are step, stand, step.
