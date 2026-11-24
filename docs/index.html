@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261124-164911">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261124-164911">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261124-164911">
+<link rel="manifest" href="manifest.webmanifest?v=20261124-165722">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261124-165722">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261124-165722">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-164911').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-165722').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -17679,6 +17679,8 @@ hdItems = async function () {
 };
 // the hollow's colours: a cold violet dusk on the ground and the long grass
 GTWEAK.gloam = (r, g, b) => { const l = (r + g + b) / 3; return [l * .42 + r * .16 + 12, l * .42 + g * .18 + 14, l * .5 + b * .24 + 34]; };
+// the town's cobbles, lifted so they stand out from the dark moss round them (same purple, lighter)
+GTWEAK.ghlift = (r, g, b) => [Math.min(255, r * 1.22 + 26), Math.min(255, g * 1.22 + 24), Math.min(255, b * 1.18 + 26)];
 EGRASS_TINT.gloam = (r, g, b) => { const l = (r + g + b) / 3; return [l * .45 + 26, l * .55 + 30, l * .55 + 52]; };
 
 /* ---------- wild Fablemon: existing species until the user's six Gloamhollow lines arrive */
@@ -17734,7 +17736,7 @@ Object.assign(ROUTES, {
   // 24 Nov: rebuilt at 80 x 64 so every building has room round it
   gloamhollow: { ...EW_BASE, gh: true, phased: true, name: 'Gloamhollow', w: 80, h: 64, town: true, forest: .36, ghTree: ghTreeTown, treeTint: 0x9890d0,
     tint: () => ghNoon() ? [0x2a2448, .06] : [0x1a1838, ghFree() ? .2 : .34],
-    gpal: { floor: ASSET.ground && ASSET.ground.ghg_moss ? 'ghg_moss' : 'forest_moss@gloam', path: ASSET.ground && ASSET.ground.ghg_cobble ? 'ghg_cobble' : 'slab@gloam', wild: 'forest_floor_grass@gloam', mudk: 'mud@gloam', water: 'water@gloam', shallow: 'shallow@gloam' },
+    gpal: { floor: ASSET.ground && ASSET.ground.ghg_moss ? 'ghg_moss' : 'forest_moss@gloam', path: ASSET.ground && ASSET.ground.ghg_cobble ? 'ghg_cobble@ghlift' : 'slab@gloam', wild: 'forest_floor_grass@gloam', mudk: 'mud@gloam', water: 'water@gloam', shallow: 'shallow@gloam' },
     paths: [[0, 30, 79, 32], [30, 24, 50, 40], [26, 21, 54, 23], [38, 15, 42, 23], [38, 40, 42, 63], [12, 19, 15, 30], [65, 19, 67, 30], [74, 0, 76, 30],
       [5, 44, 75, 46], [5, 56, 75, 58], [5, 32, 6, 58], [74, 32, 75, 58]],
     ponds: [[60, 24, 2.8, 1.9]],
