@@ -952,6 +952,83 @@ DERBY_CUPS.push({ id: 'elderwood', name: 'Elderwood Cup', icon: '🦌', track: '
     [R_('Tansy', 'bristlecone_3', 70, 1.18, 10, 'swift_feather'), R_('Bea', 'flurrowl_3', 70, .97), R_('Ollie', 'riftshear_3', 70, .97)],
   ], champ: 'Tansy', champLine: "Alder's apprentice has entered! Tansy knows every root on the Rootway, and she's been practising on the old haul road." });
 
+/* ============================================================ the forest's legendaries (ghmons.js)
+   Samaradrake, the seed-dragon, waits at the Eldest Tree once the replanted Glade has grown back (after the Wild
+   Crest): level 70, catch it like Cirrovale. Knocked out, it's back the next day.
+   Weavewyrm, the Rootweave serpent, wakes when the drill head goes down the bore (Site G): it rises once at the Eldest
+   Tree, Tansy writes about the Glade, and the farm shakes. It turns the finale and is caught after Rowan (not built). */
+const SD_LV = 70;
+const sdHere = () => SPECIES.samaradrake && MON_ORDER.includes('samaradrake') && S.ew && S.ew.regrow >= 2 && S.crests && S.crests.wild && !S.flags.sdCaught && S.flags.sdDay !== S.day;
+GH_MON_NEED.eldest = ['samaradrake', 'weavewyrm'];
+{
+  const prev = ROUTES.eldest.actors;
+  ROUTES.eldest.actors = () => { const out = prev(); if (sdHere()) out.push({ id: 'gh_samara', x: 19, y: 12, mon: 'samaradrake', scale: 1.4 }); return out; };
+  const enter = ROUTES.eldest.onEnter;
+  ROUTES.eldest.onEnter = sc => { if (enter) enter(sc); if (ghFree() && !S.flags.wwSeen && SPECIES.weavewyrm && sc.textures.exists('mon_weavewyrm')) setTimeout(() => ghWyrmRise(sc), 600); };
+}
+function ghSamara(sc) {
+  if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
+  const img = monPic('samaradrake', 'front'), L = t => ({ who: 'trainer', name: '???', img, t });
+  S.seen.samaradrake = 1;
+  Talk.say([L('Seeds are spinning down out of nowhere, hundreds of them, settling in the new grass round the Eldest Tree.'),
+    L('High in the branches, something unfolds two great wings shaped like maple seeds...'),
+    L('Samaradrake spirals down! A sapling grows from its back. It has been planting the Glade all along.')], () => {
+    const m = wildMon('samaradrake', SD_LV); m.iv = { hp: 9, atk: 9, def: 9, eatk: 9, edef: 9, spd: 9 }; m.hp = monStat(m, 'hp');
+    sc.ghLeg = { m, at: Date.now() }; sc.cameras.main.shake(300, .006); Battle.start(m);
+  });
+  return true;
+}
+function ghLegendDone(sc) {
+  const { m } = sc.ghLeg; sc.ghLeg = null;
+  const caught = S.mons.some(q => q.sp === 'samaradrake');
+  if (!caught && m.hp > 0) return toast('Samaradrake is still circling the Eldest Tree.', 2400);
+  if (caught) S.flags.sdCaught = 1; else S.flags.sdDay = S.day;
+  toast(caught ? 'Samaradrake has joined your team! As it lands on your shoulder, the whole Glade seems to breathe out.' : 'Samaradrake spirals up into the canopy in a storm of seeds. It may come back to the Eldest Tree tomorrow.', 4000);
+  ewRefresh(sc);
+}
+// the legend battles are checked once the battle is over (this scene's clock stops during it, so time it by the wall clock)
+{
+  const fh = Route.prototype.frameHook;
+  Route.prototype.frameHook = function (dt) { fh.call(this, dt); if (this.ghLeg && !Battle.active && !this.paused && Date.now() - this.ghLeg.at > 1500) ghLegendDone(this); };
+  const bd = bhDoor;
+  bhDoor = function (sc, id) { return id === 'gh_samara' ? ghSamara(sc) : bd(sc, id); };
+}
+function ghWyrmRise(sc) {
+  S.flags.wwSeen = 1; S.seen.weavewyrm = 1;
+  csMoment(sc, async () => {
+    const x = 15 * T + 8, y = 16 * T + 16;
+    await csPan(sc, x, y - 30, 700);
+    sc.cameras.main.shake(1400, .01); Sound.play('thud');
+    const glow = sc.add.circle(x, y - 6, 30, 0x8aff6a, 0).setBlendMode(Phaser.BlendModes.ADD).setDepth(y + 1);
+    sc.tweens.add({ targets: glow, fillAlpha: .35, duration: 900 });
+    const w = hdSpr(sc.add.sprite(x, y + 40, 'mon_weavewyrm', 0).setOrigin(.5, 1).setScale(2).setAlpha(0).setDepth(y + 2), 'weavewyrm');
+    sc.tweens.add({ targets: w, y, alpha: 1, duration: 1600, ease: 'Sine.out' });
+    await csWait(1700);
+    await csSay([GH.sys('The ground round the Eldest Tree splits open. Roots as thick as a house heave up out of the earth, glowing green...'),
+      GH.sys("...and they're not roots. It's a serpent, made of them. It rears up over the Glade, and every tree in the forest shivers."),
+      GH.sys('It turns its head south, towards Smallroot, and lets out a long, grinding cry, like a tree splitting in a storm.'),
+      GH.sys('Then it sinks back down into the Rootweave, and the ground closes over it.')]);
+    sc.cameras.main.shake(800, .006);
+    sc.tweens.add({ targets: [w, glow], y: '+=40', alpha: 0, duration: 1400, ease: 'Sine.in' });
+    await csWait(1500); w.destroy(); glow.destroy();
+  }).then(() => { toast("Something ancient is awake under the valley. The drill head must have woken it...", 3600); });
+}
+const GH_TANSY_ROOTS = { from: 'Tansy, Elderwood', subj: 'The Glade split open', body: n => `${n},\n\nThe ground at the Eldest Tree split open last night. Alder says he saw roots rise up out of it, glowing, as tall as the Lodge. Then they went back down.\n\nHe says it isn't roots. He says it's the thing the carvings are about, the one at the very bottom, under the stag and the bear and the wolf. The one that holds the whole valley together.\n\nHe says Verdance's drill must have woken it. He's never looked so frightened.\n\nTansy` };
+(function () {
+  const mk = World.prototype.makePlayer;
+  World.prototype.makePlayer = function (sp) {
+    mk.call(this, sp);
+    try {
+      if (!ghFree()) return;
+      postSend('gh_tansy_roots', GH_TANSY_ROOTS);
+      if (this.scene.key === 'farm' && !S.flags.wwFarm && S.day > (S.vd.shut.gloam || 0)) {
+        S.flags.wwFarm = 1;
+        setTimeout(() => { this.cameras.main.shake(1200, .008); Sound.play('thud'); toast('The ground under the farm rolls like a wave... something huge moved, deep under the fields. The Hearthroot\'s glow flickers.', 4200); }, 1200);
+      }
+    } catch (e) { }
+  };
+})();
+
 var EXTRA_SCENES = (typeof EXTRA_SCENES !== 'undefined' ? EXTRA_SCENES : []).concat(GH_KEYS.map(k => {
   const C = k !== 'gloamhollow' && k !== 'lanternmere' ? class extends Crag { constructor() { super(k); } } : class extends Route { constructor() { super(k); } }; C.KEY = k; return C;
 }));

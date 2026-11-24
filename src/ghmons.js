@@ -77,3 +77,28 @@ Object.assign(EXTRA_HABITAT, {
   vespyre: 'The Undercroft, the tunnel under the mountain', tricoil: "The Undercroft's old galleries", grubble: 'Lanternmere, in the marsh grass',
   lumispin: 'Lanternmere, mostly at night', lintroll: 'Glimmerdeep, round the black lake', jinglynx: 'Glimmerdeep, and Lanternmere at night',
 });
+
+/* ---------- the two legendaries of the forest (the user's art, 24 Nov 2026)
+   Samaradrake: the seed-dragon that has been regrowing the Elder Glade. Found at the Eldest Tree once the replanted
+     clear-cut has grown back (gloam.js), level 70, like Cirrovale on Windcrown Peak.
+   Weavewyrm: the serpent that sleeps in the Rootweave under the valley. Verdance's drill head wakes it after Site G:
+     you see it rise at the Eldest Tree and feel it under the farm. It turns the finale (down the bore, under
+     Smallroot), and is caught after Rowan. Not catchable yet: see claude/finale-plan.md. */
+Object.assign(SPECIES, {
+  samaradrake: { name: 'Samaradrake', title: 'Seed Dragon Fablemon', type: 'Leaf', type2: 'Gale', legend: true, base: { hp: 100, atk: 104, def: 96, eatk: 120, edef: 104, spd: 112 }, exp: 300, rate: 8,
+    desc: 'The Seed Dragon Fablemon. A sapling grows from the cracked acorn of its body, and its wings are two great maple seeds. Wherever it spirals down to land, a new wood begins. Elderwood folk say it planted the Elder Glade in the first place.' },
+  weavewyrm: { name: 'Weavewyrm', title: 'Rootweave Fablemon', type: 'Leaf', type2: 'Shade', legend: true, base: { hp: 112, atk: 122, def: 106, eatk: 110, edef: 108, spd: 88 }, exp: 310, rate: 5,
+    desc: "The Rootweave Fablemon. It sleeps coiled through the roots under the whole valley, and the green light of the Rootweave runs in its veins. When it stirs, every tree from Elderwood to Smallroot shivers." },
+});
+Object.assign(MOVES, {
+  samarastorm: { name: 'Samara Storm', type: 'Leaf', pow: 95, acc: 95, boost: ['self', 'spd', 1, 30], pp: 5 },
+  rootweavecoil: { name: 'Rootweave Coil', type: 'Leaf', pow: 110, acc: 90, drain: .3, pp: 5 },
+});
+Object.assign(MOVE_CAT, { samarastorm: 'e' });
+LEARN.samaradrake = [[1, 'gust'], [1, 'leafflick'], [1, 'seedsquall'], [1, 'updraft'], [50, 'thornvolley'], [55, 'galeforce'], [60, 'samarastorm'], [64, 'hedgecrash'], [68, 'tempestwing'], [72, 'bloomburst']];
+LEARN.weavewyrm = [[1, 'leafflick'], [1, 'shadownip'], [1, 'bramblecurl'], [1, 'gloomgrip'], [55, 'rootdrain'], [60, 'hedgecrash'], [65, 'rootweavecoil'], [70, 'grimroots'], [74, 'eclipse'], [78, 'dreamsip']];
+for (const sp of ['samaradrake', 'weavewyrm']) LEARN[sp] = LEARN[sp].filter(([, id]) => MOVES[id]);
+MON_ORDER.push('samaradrake', 'weavewyrm');
+Object.assign(MON_STAGE, { samaradrake: 3, weavewyrm: 3 });
+Object.assign(MON_BIG, { samaradrake: 48, weavewyrm: 48 });
+Object.assign(EXTRA_HABITAT, { samaradrake: 'The Eldest Tree, once the Elder Glade has grown back', weavewyrm: 'Asleep in the Rootweave, deep under the valley' });
