@@ -368,15 +368,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261124-111347">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261124-111347">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261124-111347">
+<link rel="manifest" href="manifest.webmanifest?v=20261124-112043">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261124-112043">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261124-112043">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-111347').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261124-112043').catch(() => {}));</script>
 </head>
 <body>
 <div id="game"></div>
@@ -747,7 +747,7 @@ const ITEMS = {
   tomato: { name: 'Tomato', stack: 999, sell: 125, desc: 'Sun-ripened and juicy. Sells for 125g.' },
   corn_seeds: { name: 'Corn Seeds', stack: 999, seed: 'corn', sell: 40, desc: 'Summer and fall. Ready in 10 days.' },
   corn: { name: 'Corn', stack: 999, sell: 220, desc: 'Golden sweetcorn. Sells for 220g.' },
-  pumpkin_seeds: { name: 'Pumpkin Seeds', stack: 999, seed: 'pumpkin', sell: 50, desc: 'Fall. Ready in 12 days.' },
+  pumpkin_seeds: { name: 'Pumpkin Seeds', stack: 999, seed: 'pumpkin', sell: 50, desc: 'Fall. Ready in 10 days.' },
   pumpkin: { name: 'Pumpkin', stack: 999, sell: 380, desc: 'A proper prize pumpkin. Sells for 380g.' },
 };
 const needOf = r => (r.out && S.town && S.town.done.carpenter && r.need.wood) ? { ...r.need, wood: Math.max(1, Math.ceil(r.need.wood * .75)) } : r.need;
@@ -758,7 +758,7 @@ const RECIPES = [
   { out: 'path', n: 1, need: { stone: 1 } },
   { out: 'dirt_path', n: 2, need: { fiber: 1 } },
   { out: 'chest', n: 1, need: { wood: 40 } },
-  { out: 'sprinkler', n: 1, need: { stone: 25, wood: 10 } },
+  { out: 'sprinkler', n: 1, need: { stone: 15, wood: 5 } },
   { out: 'scarecrow', n: 1, need: { wood: 15, fiber: 15 } },
   { out: 'lantern', n: 1, need: { wood: 8, stone: 4 } },
   { out: 'barrel', n: 1, need: { wood: 10 } },
@@ -786,7 +786,7 @@ const RECIPES = [
   { out: 'apple_sapling', n: 1, need: { wood: 10, fiber: 10 } },
 ];
 const crop = (id, days, seasons) => ({ days, item: id, seasons, frames: [1, 2, 3, 4].map(n => `${id}_stage${n}`) });
-const CROPS = { turnip: crop('turnip', 4, [0]), carrot: crop('carrot', 5, [0]), potato: crop('potato', 6, [0]), tomato: crop('tomato', 7, [1]), corn: crop('corn', 10, [1, 2]), pumpkin: crop('pumpkin', 12, [2]) };
+const CROPS = { turnip: crop('turnip', 4, [0]), carrot: crop('carrot', 5, [0]), potato: crop('potato', 6, [0]), tomato: crop('tomato', 7, [1]), corn: crop('corn', 10, [1, 2]), pumpkin: crop('pumpkin', 10, [2]) };
 const cropDays = c => c.need || CROPS[c.type].days;
 function cropStage(c) { const d = cropDays(c); if (c.g >= d) return 3; return Math.min(2, Math.floor(c.g * 3 / d)); }
 function cropRipe(c) { return c && !c.dead && c.g >= cropDays(c); }
@@ -13764,7 +13764,7 @@ jobInterval = function (m) { return _lvInterval(m) * (1 - .06 * jobLv(m)); };
    S.requests = { list: [{ who, item, n, gold, due, line }], day, done } */
 const REQ_MAX = 3, REQ_FP = 80;
 const reqState = () => (S.requests = S.requests || { list: [], day: 0, done: 0 });
-const reqCount = id => [id, ...(QUAL[id] || [])].reduce((a, i) => a + inv.count(i), 0);
+const reqCount = id => inv.count(id);   // (inv.count already counts Silver and Gold as the plain crop: winter.js)
 function reqTake(id, n) { for (const i of [id, ...(QUAL[id] || [])]) { const k = Math.min(n, inv.count(i)); if (k) { inv.remove(i, k); n -= k; } } }
 const REQ_LINES = {
   crop: ['for a big pot of stew', 'for the market stall', "for my sister's visit", 'to try a new recipe', 'for a harvest supper'],
@@ -14638,6 +14638,10 @@ for (const it of Object.values(ITEMS)) if (it.seed && CROPS[it.seed] && it.desc 
   const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows all year, best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
 }
 
+/* ---------- 1b. tomatoes and corn keep cropping (24 Nov 2026): after the first harvest, again every 4 days, like Moorberries */
+for (const k of ['tomato', 'corn']) if (CROPS[k]) CROPS[k].regrow = 4;
+for (const k of ['tomato_seeds', 'corn_seeds']) if (ITEMS[k] && !/again every/.test(ITEMS[k].desc)) ITEMS[k].desc = ITEMS[k].desc.replace(/Ready in (\d+) days\./, 'Ready in $1 days, then crops again every 4 days.');
+
 /* ---------- 2. moving in */
 const SETTLE = {
   homeA: { who: ['poppy', 'finn'], need: { turnip: 5, carrot: 5, potato: 3 }, ask: "We've got a roof, but the cupboards are bare! Could you spare a welcome basket? Some turnips, carrots and potatoes would see us through.", thanks: "A proper welcome basket! Finn, look! We're home." },
@@ -14822,10 +14826,37 @@ openBoard = function () {
     const w = waitingIn();
     $('mBody').insertAdjacentHTML('afterbegin', `${w.length ? `<div class="proj" id="settleBox" style="border-left:4px solid #e0a040"><b>🏡 Moving in</b>${w.map(id => `<div style="margin-top:4px"><b>${PROJECTS[id].name}</b> <small>(${SETTLE[id].who.map(v => VILL[v].name).join(' and ')})</small><div style="display:flex;flex-wrap:wrap;gap:4px;margin:3px 0">${needText(SETTLE[id].need)}</div><button class="btn sm gold" data-settle="${id}">${haveAll(SETTLE[id].need) ? 'Help them settle in' : 'See what they need'}</button></div>`).join('')}</div>` : ''}
       <button class="btn gold" id="feastBtn" style="width:100%;margin-bottom:8px">🍲 The ${seasonDay().season} Feast (${feast().n} dish${feast().n === 1 ? '' : 'es'})</button>`);
+    const plan = plantPlan(w);
+    if (plan) $('feastBtn').insertAdjacentHTML('beforebegin', plan);
     $('feastBtn').onclick = () => openFeast();
     document.querySelectorAll('[data-settle]').forEach(b => b.onclick = () => openSettle(b.dataset.settle));
   });
 };
+// what still needs growing for everyone waiting to move in: dishes broken down into their crops, minus what you
+// already have and what's already in the ground
+function plantPlan(w) {
+  if (!w.length) return '';
+  const want = {};
+  for (const id of w) for (const [k, n] of Object.entries(SETTLE[id].need)) want[k] = (want[k] || 0) + n;
+  // dishes you're short of, worked out into ingredients; plus anything asked for as it is; minus what you hold
+  const total = {};
+  for (const [k, n] of Object.entries(want)) {
+    const r = COOKING.find(c => c.out === k);
+    if (r && !CROPS[k]) { const short = Math.max(0, n - reqCount(k)); for (const [i, m] of Object.entries(r.need)) total[i] = (total[i] || 0) + m * short; }
+    else total[k] = (total[k] || 0) + n;
+  }
+  const cropOf = Object.fromEntries(Object.entries(CROPS).map(([t, c]) => [c.item, t]));
+  const growing = {}; for (const t of Object.values(S.tilled || {})) if (t.crop && !t.crop.dead && CROPS[t.crop.type]) { const it = CROPS[t.crop.type].item; growing[it] = (growing[it] || 0) + 1; }
+  const rows = Object.entries(total).map(([k, n]) => [k, Math.max(0, n - reqCount(k))]).filter(([, n]) => n > 0);
+  if (!rows.length) return '';
+  const crops = rows.filter(([k]) => cropOf[k]).sort((a, b) => CROPS[cropOf[b[0]]].days - CROPS[cropOf[a[0]]].days);
+  const other = rows.filter(([k]) => !cropOf[k] && k !== 'fiber');
+  const line = ([k, n]) => { const C = cropOf[k] && CROPS[cropOf[k]], g = growing[k] || 0;
+    return `<div class="shoprow" style="padding:3px 6px"><img src="${iconFor(k)}"><div class="g"><b>${ITEMS[k].name} ×${n}</b><small>${C ? `${C.days} days to grow${C.regrow ? `, then every ${C.regrow}` : ''}${g ? ` · ${g} growing now` : ''}` : (typeof itemSource === 'function' ? itemSource(k) || '' : '')}</small></div></div>`; };
+  return `<div class="proj" id="plantBox" style="border-left:4px solid #6aa040"><b>🌱 What to plant</b>
+    <div class="hint" style="margin:2px 0 4px">Everything still needed for the new residents above, with dishes worked out into their crops. The slowest first.</div>
+    ${crops.map(line).join('')}${other.length ? `<div class="hint" style="margin-top:4px">And:</div>${other.map(line).join('')}` : ''}</div>`;
+}
 // growing in season, and the feast itself, happen overnight
 const _t2Nightly = nightly;
 nightly = function (passedOut) {
@@ -14880,6 +14911,17 @@ brambleLines = function () {
   }
   return _t2Bramble();
 };
+
+/* ---------- a nudge towards letting your Fablemon farm (24 Nov 2026): once your ranch is up, a letter about jobs */
+(function () {
+  const mk = World.prototype.makePlayer;
+  World.prototype.makePlayer = function (sp) {
+    mk.call(this, sp);
+    if (!S || S.ranch !== 2 || (S.flags && S.flags.jobTip) || typeof postSend !== 'function') return;
+    S.flags.jobTip = 1;
+    postSend('job_tip', { from: 'Elder Bramble', subj: 'Many hands make light work', body: n => `Dear ${n},\n\nI hear your ranch is up. Splendid! Now, a word from an old farmer: you needn't do all the work yourself.\n\nLeave a Fablemon at the ranch and give it a job, and it'll work a patch of your farm seven tiles across:\n\n• A Tide Fablemon waters every dry tile in its patch.\n• A Leaf Fablemon plants seeds from a chest in its patch.\n• A Gale Fablemon picks whatever's ripe and puts it in that chest.\n\nPut those three together and a field more or less looks after itself. And if you'd rather, a Sprinkler only takes 15 stone and 5 wood now, and waters the eight tiles round it every morning.\n\nElder Bramble`, }, true);
+  };
+})();
 
 /* ============================================================ Elderwood Fablemon (the user's art, 16 Nov 2026)
    Six lines for Fernwalk and the Elder Glade. Late-game lines, so like Highmoor's they evolve late and turn up in the

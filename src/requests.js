@@ -4,7 +4,7 @@
    S.requests = { list: [{ who, item, n, gold, due, line }], day, done } */
 const REQ_MAX = 3, REQ_FP = 80;
 const reqState = () => (S.requests = S.requests || { list: [], day: 0, done: 0 });
-const reqCount = id => [id, ...(QUAL[id] || [])].reduce((a, i) => a + inv.count(i), 0);
+const reqCount = id => inv.count(id);   // (inv.count already counts Silver and Gold as the plain crop: winter.js)
 function reqTake(id, n) { for (const i of [id, ...(QUAL[id] || [])]) { const k = Math.min(n, inv.count(i)); if (k) { inv.remove(i, k); n -= k; } } }
 const REQ_LINES = {
   crop: ['for a big pot of stew', 'for the market stall', "for my sister's visit", 'to try a new recipe', 'for a harvest supper'],

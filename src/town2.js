@@ -29,6 +29,10 @@ for (const it of Object.values(ITEMS)) if (it.seed && CROPS[it.seed] && it.desc 
   const h = CROPS[it.seed].home; if (h.length < 4) it.desc += ` Grows all year, best in ${h.map(i => SEASON_WORD[i]).join(' and ')}.`;
 }
 
+/* ---------- 1b. tomatoes and corn keep cropping (24 Nov 2026): after the first harvest, again every 4 days, like Moorberries */
+for (const k of ['tomato', 'corn']) if (CROPS[k]) CROPS[k].regrow = 4;
+for (const k of ['tomato_seeds', 'corn_seeds']) if (ITEMS[k] && !/again every/.test(ITEMS[k].desc)) ITEMS[k].desc = ITEMS[k].desc.replace(/Ready in (\d+) days\./, 'Ready in $1 days, then crops again every 4 days.');
+
 /* ---------- 2. moving in */
 const SETTLE = {
   homeA: { who: ['poppy', 'finn'], need: { turnip: 5, carrot: 5, potato: 3 }, ask: "We've got a roof, but the cupboards are bare! Could you spare a welcome basket? Some turnips, carrots and potatoes would see us through.", thanks: "A proper welcome basket! Finn, look! We're home." },
@@ -213,10 +217,37 @@ openBoard = function () {
     const w = waitingIn();
     $('mBody').insertAdjacentHTML('afterbegin', `${w.length ? `<div class="proj" id="settleBox" style="border-left:4px solid #e0a040"><b>🏡 Moving in</b>${w.map(id => `<div style="margin-top:4px"><b>${PROJECTS[id].name}</b> <small>(${SETTLE[id].who.map(v => VILL[v].name).join(' and ')})</small><div style="display:flex;flex-wrap:wrap;gap:4px;margin:3px 0">${needText(SETTLE[id].need)}</div><button class="btn sm gold" data-settle="${id}">${haveAll(SETTLE[id].need) ? 'Help them settle in' : 'See what they need'}</button></div>`).join('')}</div>` : ''}
       <button class="btn gold" id="feastBtn" style="width:100%;margin-bottom:8px">🍲 The ${seasonDay().season} Feast (${feast().n} dish${feast().n === 1 ? '' : 'es'})</button>`);
+    const plan = plantPlan(w);
+    if (plan) $('feastBtn').insertAdjacentHTML('beforebegin', plan);
     $('feastBtn').onclick = () => openFeast();
     document.querySelectorAll('[data-settle]').forEach(b => b.onclick = () => openSettle(b.dataset.settle));
   });
 };
+// what still needs growing for everyone waiting to move in: dishes broken down into their crops, minus what you
+// already have and what's already in the ground
+function plantPlan(w) {
+  if (!w.length) return '';
+  const want = {};
+  for (const id of w) for (const [k, n] of Object.entries(SETTLE[id].need)) want[k] = (want[k] || 0) + n;
+  // dishes you're short of, worked out into ingredients; plus anything asked for as it is; minus what you hold
+  const total = {};
+  for (const [k, n] of Object.entries(want)) {
+    const r = COOKING.find(c => c.out === k);
+    if (r && !CROPS[k]) { const short = Math.max(0, n - reqCount(k)); for (const [i, m] of Object.entries(r.need)) total[i] = (total[i] || 0) + m * short; }
+    else total[k] = (total[k] || 0) + n;
+  }
+  const cropOf = Object.fromEntries(Object.entries(CROPS).map(([t, c]) => [c.item, t]));
+  const growing = {}; for (const t of Object.values(S.tilled || {})) if (t.crop && !t.crop.dead && CROPS[t.crop.type]) { const it = CROPS[t.crop.type].item; growing[it] = (growing[it] || 0) + 1; }
+  const rows = Object.entries(total).map(([k, n]) => [k, Math.max(0, n - reqCount(k))]).filter(([, n]) => n > 0);
+  if (!rows.length) return '';
+  const crops = rows.filter(([k]) => cropOf[k]).sort((a, b) => CROPS[cropOf[b[0]]].days - CROPS[cropOf[a[0]]].days);
+  const other = rows.filter(([k]) => !cropOf[k] && k !== 'fiber');
+  const line = ([k, n]) => { const C = cropOf[k] && CROPS[cropOf[k]], g = growing[k] || 0;
+    return `<div class="shoprow" style="padding:3px 6px"><img src="${iconFor(k)}"><div class="g"><b>${ITEMS[k].name} ×${n}</b><small>${C ? `${C.days} days to grow${C.regrow ? `, then every ${C.regrow}` : ''}${g ? ` · ${g} growing now` : ''}` : (typeof itemSource === 'function' ? itemSource(k) || '' : '')}</small></div></div>`; };
+  return `<div class="proj" id="plantBox" style="border-left:4px solid #6aa040"><b>🌱 What to plant</b>
+    <div class="hint" style="margin:2px 0 4px">Everything still needed for the new residents above, with dishes worked out into their crops. The slowest first.</div>
+    ${crops.map(line).join('')}${other.length ? `<div class="hint" style="margin-top:4px">And:</div>${other.map(line).join('')}` : ''}</div>`;
+}
 // growing in season, and the feast itself, happen overnight
 const _t2Nightly = nightly;
 nightly = function (passedOut) {
@@ -271,3 +302,14 @@ brambleLines = function () {
   }
   return _t2Bramble();
 };
+
+/* ---------- a nudge towards letting your Fablemon farm (24 Nov 2026): once your ranch is up, a letter about jobs */
+(function () {
+  const mk = World.prototype.makePlayer;
+  World.prototype.makePlayer = function (sp) {
+    mk.call(this, sp);
+    if (!S || S.ranch !== 2 || (S.flags && S.flags.jobTip) || typeof postSend !== 'function') return;
+    S.flags.jobTip = 1;
+    postSend('job_tip', { from: 'Elder Bramble', subj: 'Many hands make light work', body: n => `Dear ${n},\n\nI hear your ranch is up. Splendid! Now, a word from an old farmer: you needn't do all the work yourself.\n\nLeave a Fablemon at the ranch and give it a job, and it'll work a patch of your farm seven tiles across:\n\n• A Tide Fablemon waters every dry tile in its patch.\n• A Leaf Fablemon plants seeds from a chest in its patch.\n• A Gale Fablemon picks whatever's ripe and puts it in that chest.\n\nPut those three together and a field more or less looks after itself. And if you'd rather, a Sprinkler only takes 15 stone and 5 wood now, and waters the eight tiles round it every morning.\n\nElder Bramble`, }, true);
+  };
+})();

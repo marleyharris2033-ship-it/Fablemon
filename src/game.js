@@ -106,7 +106,7 @@ const ITEMS = {
   tomato: { name: 'Tomato', stack: 999, sell: 125, desc: 'Sun-ripened and juicy. Sells for 125g.' },
   corn_seeds: { name: 'Corn Seeds', stack: 999, seed: 'corn', sell: 40, desc: 'Summer and fall. Ready in 10 days.' },
   corn: { name: 'Corn', stack: 999, sell: 220, desc: 'Golden sweetcorn. Sells for 220g.' },
-  pumpkin_seeds: { name: 'Pumpkin Seeds', stack: 999, seed: 'pumpkin', sell: 50, desc: 'Fall. Ready in 12 days.' },
+  pumpkin_seeds: { name: 'Pumpkin Seeds', stack: 999, seed: 'pumpkin', sell: 50, desc: 'Fall. Ready in 10 days.' },
   pumpkin: { name: 'Pumpkin', stack: 999, sell: 380, desc: 'A proper prize pumpkin. Sells for 380g.' },
 };
 const needOf = r => (r.out && S.town && S.town.done.carpenter && r.need.wood) ? { ...r.need, wood: Math.max(1, Math.ceil(r.need.wood * .75)) } : r.need;
@@ -117,7 +117,7 @@ const RECIPES = [
   { out: 'path', n: 1, need: { stone: 1 } },
   { out: 'dirt_path', n: 2, need: { fiber: 1 } },
   { out: 'chest', n: 1, need: { wood: 40 } },
-  { out: 'sprinkler', n: 1, need: { stone: 25, wood: 10 } },
+  { out: 'sprinkler', n: 1, need: { stone: 15, wood: 5 } },
   { out: 'scarecrow', n: 1, need: { wood: 15, fiber: 15 } },
   { out: 'lantern', n: 1, need: { wood: 8, stone: 4 } },
   { out: 'barrel', n: 1, need: { wood: 10 } },
@@ -145,7 +145,7 @@ const RECIPES = [
   { out: 'apple_sapling', n: 1, need: { wood: 10, fiber: 10 } },
 ];
 const crop = (id, days, seasons) => ({ days, item: id, seasons, frames: [1, 2, 3, 4].map(n => `${id}_stage${n}`) });
-const CROPS = { turnip: crop('turnip', 4, [0]), carrot: crop('carrot', 5, [0]), potato: crop('potato', 6, [0]), tomato: crop('tomato', 7, [1]), corn: crop('corn', 10, [1, 2]), pumpkin: crop('pumpkin', 12, [2]) };
+const CROPS = { turnip: crop('turnip', 4, [0]), carrot: crop('carrot', 5, [0]), potato: crop('potato', 6, [0]), tomato: crop('tomato', 7, [1]), corn: crop('corn', 10, [1, 2]), pumpkin: crop('pumpkin', 10, [2]) };
 const cropDays = c => c.need || CROPS[c.type].days;
 function cropStage(c) { const d = cropDays(c); if (c.g >= d) return 3; return Math.min(2, Math.floor(c.g * 3 / d)); }
 function cropRipe(c) { return c && !c.dead && c.g >= cropDays(c); }
