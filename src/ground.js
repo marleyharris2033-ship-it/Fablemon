@@ -304,6 +304,7 @@ function asciiKind(mode, k) {
   const zone = k >= '0' && k <= '9';
   if (mode === 'beach') return k === '#' || k === ';' ? 'grass' : zone && !RC.sail ? 'grass' : 'sand';
   if (mode === 'moor') { if (k === '#' || k === 'C') return 'rock'; if (RC.snow) return 'snow'; return k === ',' || k === 'H' ? 'dirt' : 'heather'; }
+  if (k === '~' && RC.gpal && RC.gpal.water) return 'water';   // Gloamhollow's flooded galleries and the black lake
   return k === '#' ? 'rock' : k === ',' || RAILS.includes(k) ? 'path' : zone ? 'wild' : 'floor';
 }
 // the crags and Quarrydown use their own textures from the user's second ground pack (17 Nov)
@@ -312,7 +313,7 @@ for (const [name, mode] of [['cragGround', 'crag'], ['beachGround', 'beach'], ['
   const wrapped = function (sc, R) {
     let P = null;
     if (GROUND.ready) try {
-      const pal = mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : /quarry|qd/.test(sc.scene.key) ? GPAL_QUARRY : GPAL_CRAG;
+      const pal = RC.gpal ? RC.gpal : mode === 'beach' ? GPAL_BEACH : mode === 'moor' ? GPAL_MOOR : RC.mine ? GPAL_MINE : /quarry|qd/.test(sc.scene.key) ? GPAL_QUARRY : GPAL_CRAG;
       P = groundFromCells(sc, RW, RH, (x, y) => asciiKind(mode, R.kind[y * RW + x]), pal);
     } catch (e) { console.warn('ground', e); P = null; }
     sc.groundP = P; GP_UNDER = !!P;
@@ -330,7 +331,7 @@ function ewGround(sc, R) {
   const key = sc.scene.key, inR = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   const road = key === 'fernwalk' ? [[17, 0, 21, 64]] : key === 'eldglade' ? [[26, 30, 56, 33], [26, 30, 30, 48]] : [];
   const cut = (RC.clearcut || []).filter(c => !c.ok || !c.ok()).map(c => c.r);
-  const pal = key === 'elderwood' ? GPAL_EWTOWN : key === 'ewcamp' ? GPAL_CAMP : GPAL_FOREST;
+  const pal = RC.gpal ? RC.gpal : key === 'elderwood' ? GPAL_EWTOWN : key === 'ewcamp' ? GPAL_CAMP : GPAL_FOREST;
   return groundFromCells(sc, RW, RH, (x, y) => {
     const i = y * RW + x;
     if (R.waterish[i]) return 'water';
@@ -351,7 +352,7 @@ const EGRASS_TINT = {
   moor: (r, g, b) => { const l = (r + g + b) / 3; return [l * .78 + 70, l * .64 + 42, l * .3 + 14]; },
   snow: (r, g, b) => { const l = (r + g + b) / 3; return [l * .45 + 128, l * .5 + 132, l * .45 + 144]; },
 };
-const egrassRegion = sc => RC.ew ? 'forest' : RC.moor ? (RC.snow ? 'snow' : 'moor') : RC.beach ? 'beach' : RC.ascii ? (/quarry|qd/.test(sc.scene.key) ? 'quarry' : 'crag') : 'meadow';
+const egrassRegion = sc => RC.egrass ? RC.egrass : RC.ew ? 'forest' : RC.moor ? (RC.snow ? 'snow' : 'moor') : RC.beach ? 'beach' : RC.ascii ? (/quarry|qd/.test(sc.scene.key) ? 'quarry' : 'crag') : 'meadow';
 let EGRASS_IMG = null;
 async function egrassLoad() { if (!EGRASS_IMG && ASSET.ground && ASSET.ground.encounter_grass) EGRASS_IMG = await loadImg(ASSET.ground.encounter_grass); }
 const _egBoot = bootGame;

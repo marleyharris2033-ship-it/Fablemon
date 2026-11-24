@@ -30,7 +30,7 @@ function ewTree(x, y) {
 const _ewBuild = buildRoute;
 buildRoute = function () {
   const R = _ewBuild();
-  if (!RC.ew) return R;
+  if (!RC.ew) return RC.gh ? ewActors(R) : R;   // Gloamhollow's tunnels and caves (ascii maps) have story actors too
   const N = RW * RH, inR = (x, y, r) => x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
   const keep = new Uint8Array(N);   // never fill: paths, grass, water, people, signs, pickups, decor
   for (let i = 0; i < N; i++) if (R.dirtish[i] || R.waterish[i] || R.grass[i] >= 0 || R.blocked[i]) keep[i] = 1;
@@ -49,7 +49,8 @@ buildRoute = function () {
     const h = hash(x * 31 + 7, y * 17 + 3), c = cut.find(c => inR(x, y, c.r));
     if (c) { if (h < .2) { R.blocked[i] = 1; R.deco.push(EWT && h < .04 ? { x, y, tex: 'xa', fr: 'ewt_log', f: 'log' } : { x, y, f: h < .15 ? 'stump' : 'rock_flat' }); } continue; }
     if ((RC.clear || []).some(r => inR(x, y, r))) continue;
-    if (!near(x, y) && h < (RC.forest || 0)) { R.blocked[i] = 1; R.deco.push(EWT ? { x, y, tex: 'xa', fr: ewTree(x, y), f: 'tree', tall: true } : { x, y, f: h < RC.forest * .55 ? 'tree_oak' : 'tree_pine', tall: true }); }
+    if (!near(x, y) && h < (RC.forest || 0)) { R.blocked[i] = 1; R.deco.push(RC.ghTree ? { x, y, ...RC.ghTree(x, y), tall: true } : EWT ? { x, y, tex: 'xa', fr: ewTree(x, y), f: 'tree', tall: true } : { x, y, f: h < RC.forest * .55 ? 'tree_oak' : 'tree_pine', tall: true }); }
+    else if (RC.gh) continue;
     else if (h > .96) R.deco.push({ x, y, f: 'wildflowers', flat: true });
     else if (EWT && h > .935) R.deco.push({ x, y, tex: 'xa', fr: h > .95 ? 'ewt_fern' : 'ewt_shrooms', f: 'fern' });   // undergrowth you walk through
   }
@@ -57,11 +58,18 @@ buildRoute = function () {
   for (const b of RC.blocks || []) if (!b.ok()) { const [a, bb, c, d] = b.area; for (let y = bb; y <= d; y++) for (let x = a; x <= c; x++) { const i = y * RW + x; R.blocked[i] = 1; R.grass[i] = -1; R.deco.push({ x, y, f: b.f || 'bush_round', gate: 1 }); } }
   for (const [, , x, y, w] of RC.ewdecor || []) for (let k = 0; k < (w || 1); k++) { R.blocked[y * RW + x + k] = 1; R.grass[y * RW + x + k] = -1; }
   // the meadow's own trees, and the border, become Elderwood's
-  if (EWT) {
+  if (RC.ghTree) {
+    for (const d of R.deco) if (!d.tex && (d.f === 'tree_oak' || d.f === 'tree_pine')) Object.assign(d, RC.ghTree(d.x, d.y));
+    for (const b of R.border) if (/^tree_/.test(b.kind)) { const t = RC.ghTree(b.x, b.y); b.tex = t.tex; b.fr = t.fr; }
+  } else if (EWT) {
     for (const d of R.deco) if (!d.tex && (d.f === 'tree_oak' || d.f === 'tree_pine')) { d.tex = 'xa'; d.fr = ewTree(d.x, d.y); }
     for (const b of R.border) if (/^tree_/.test(b.kind)) { b.tex = 'xa'; b.fr = ewTree(b.x, b.y); }
   }
-  // story actors: snapped to the nearest open tile; people and things you can talk to block their tile
+  return ewActors(R);
+};
+// story actors: snapped to the nearest open tile; people and things you can talk to block their tile
+function ewActors(R) {
+  if (RC.ascii) for (const [, , x, y, w] of RC.ewdecor || []) for (let k = 0; k < (w || 1); k++) { R.blocked[y * RW + x + k] = 1; R.grass[y * RW + x + k] = -1; }
   R.actors = [];
   if (RC.actors) {
     if (ROUTE_SIGNS === RC.signs) ROUTE_SIGNS = { ...ROUTE_SIGNS };
@@ -74,12 +82,12 @@ buildRoute = function () {
     }
   }
   return R;
-};
+}
 // decor from any atlas (stand-ins until Elderwood's own art), drawn like the town's buildings
 const _ewDeco = Route.prototype.create;
 Route.prototype.create = function () {
   _ewDeco.call(this);
-  if (!RC.ew) return;
+  if (!RC.ew && !RC.gh) return;
   for (const [at, f, x, y, w] of RC.ewdecor || []) { const [k2, f2] = at === 'obj' ? Farm.prototype.objTex.call(this, f) : [at, f]; if (!this.textures.exists(k2)) continue; const im = this.add.image(x * T + (w || 1) * 8, y * T + 16, k2, f2).setOrigin(.5, 1).setDepth(y * T + 15); this.tall.push(im); }
   for (const [kind, x, y] of RC.critters || []) {   // farm animals graze and amble about
     const key = 'an_' + kind; if (!this.textures.exists(key)) continue;
@@ -99,7 +107,8 @@ Route.prototype.create = function () {
     if (im) { this.ewSpr[a.id] = im; if (!a.print) this.tall.push(im); }
   }
   if (RC.onEnter) RC.onEnter(this);
-  if (RC.tint) this.add.rectangle(0, 0, RW * T, RH * T, RC.tint[0], RC.tint[1]).setOrigin(0).setDepth(9e6 - 31);
+  const tint = typeof RC.tint === 'function' ? RC.tint() : RC.tint;
+  if (tint) this.tintRect = this.add.rectangle(0, 0, RW * T, RH * T, tint[0], tint[1]).setOrigin(0).setDepth(9e6 - 31);
 };
 
 /* ---------- wild Fablemon: existing woodland species until Elderwood's own arrive */
@@ -279,8 +288,8 @@ function ewDoor(sc, id) {
 }
 const _ewArrive = Route.prototype.arriveHook;
 Route.prototype.arriveHook = function (x, y) {
-  if (RC.ew && this.R.actors) { const a = this.R.actors.find(a => a.walk && a.x === x && a.y === y); if (a && a.onStep) { a.onStep(this, a); } }
-  if (RC.ew && RC.onWalk) RC.onWalk(this, x, y);
+  if ((RC.ew || RC.gh) && this.R.actors) { const a = this.R.actors.find(a => a.walk && a.x === x && a.y === y); if (a && a.onStep) { a.onStep(this, a); } }
+  if ((RC.ew || RC.gh) && RC.onWalk) RC.onWalk(this, x, y);
   return _ewArrive.call(this, x, y);
 };
 const ewRefresh = sc => { const p = sc.p; sc.time.delayedCall(250, () => travel(sc, sc.scene.key, { x: p.x, y: p.y, dir: p.dir })); };

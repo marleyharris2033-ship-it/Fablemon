@@ -136,5 +136,32 @@
 ],
 "eldest": [
 "town"
+],
+"undercroft": [
+"bog",
+"qd"
+],
+"gloamhollow": [
+"bh",
+"bog",
+"br",
+"ewb",
+"qd",
+"town"
+],
+"lanternmere": [
+"bog",
+"br",
+"qd",
+"town"
+],
+"glimmerdeep": [
+"bog",
+"br",
+"qd"
+],
+"siteg": [
+"bog",
+"qd"
 ]
 }
