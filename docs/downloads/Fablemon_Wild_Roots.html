@@ -17429,7 +17429,7 @@ const MOUNTS = {
     desc: 'A saddled Rambastion from the Quarrydown pits. Sure-footed on rock and scree, and it never met a fence it couldn\'t clear.',
   },
   blazemane: {
-    name: 'Blazemane', sp: 'fleecebolt', perk: 'boost', from: 'Monty', scale: 1.3,
+    name: 'Blazemane', sp: 'fleecebolt', perk: 'boost', from: 'Monty', scale: 1.3, stallUp: 11,   // its face sits low: lift it over the stall door
     start: { spd: 35, foot: 30, sta: 30, bond: 15 },
     tint: { hue: 198, sat: .32, glow: 1.2 },   // a cold blue flame for a crest; the fleece stays white
     tack: { cloth: '#7a1f2a', clothDk: '#561520', trim: '#f2d27a', leather: '#5a3420', leatherDk: '#36200f', leatherLt: '#8a5a38' },
@@ -17897,7 +17897,7 @@ function mtPost(sc) {
     // each in its own stall, looking out over the half-door; the trough is drawn back over their feet
     (M.list || []).forEach((m, n) => {
       if (n >= STB_STALL.length || (sc.rideKey && m.id === sc.rideId)) return;
-      const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 10, tx = Math.round((x - 8) / T);
+      const x = stb.cx * T + 8 + STB_STALL[n], y = (stb.by + 1) * T - 10 - (MOUNTS[m.id].stallUp || 0), tx = Math.round((x - 8) / T);
       const spr = sc.add.sprite(x, y, mtTackTex(sc, m.id), 0).setOrigin(.5, 1).setScale(.66 / MT_R).setDepth(stb.by * T + 15.4);
       spr.mid = m.id; spr.at = { x: tx, y: stb.by, id: m.id }; sc.mtSprs.push(spr);
       sc.tweens.add({ targets: spr, scaleY: { from: .66 / MT_R, to: .675 / MT_R }, duration: 1400 + n * 170, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
