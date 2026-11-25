@@ -9,7 +9,7 @@
    (elderwood.js, ewquests.js). */
 
 const _xaLoad = hdWorldLoad;
-hdWorldLoad = function (loader, snow) { _xaLoad(loader, snow); if (HDW.xa && !game.textures.exists('xa')) loader.image('xa', HDW.xa.img); };
+hdWorldLoad = function (loader, snow) { _xaLoad(loader, snow); if (HDW.xa && !(loader.textureManager || game.textures).exists('xa')) loader.image('xa', HDW.xa.img); };
 const _xaSwap = hdWorldSwap;
 hdWorldSwap = function (sc) {
   _xaSwap(sc);

@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261125-093007">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261125-093007">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261125-093007">
+<link rel="manifest" href="manifest.webmanifest?v=20261125-094237">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261125-094237">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261125-094237">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-093007').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-094237').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -15490,7 +15490,7 @@ if (HDW.ewb) {   // frame, and the door's tile offset from the centre
 }
 if (HDW.ewb) ASSET.ewbJson = { frames: Object.fromEntries(Object.entries(HDW.ewb.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
 const _ewhLoad = hdWorldLoad;
-hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !game.textures.exists('ewh')) loader.image('ewh', HDW.ewhall.img); if (HDW.ewb && !game.textures.exists('ewb')) loader.image('ewb', HDW.ewb.img); };
+hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !(loader.textureManager || game.textures).exists('ewh')) loader.image('ewh', HDW.ewhall.img); if (HDW.ewb && !(loader.textureManager || game.textures).exists('ewb')) loader.image('ewb', HDW.ewb.img); };
 const _ewhSwap = hdWorldSwap;
 hdWorldSwap = function (sc) {
   _ewhSwap(sc);
@@ -17697,7 +17697,7 @@ const ghSay = (lines, cb) => { Talk.say(lines, cb); return true; };
 const ghA = (f, alt) => HDW.gh && HDW.gh.frames && HDW.gh.frames[f] ? ['gh', f] : alt;
 if (HDW.gh) {
   ASSET.ghJson = { frames: Object.fromEntries(Object.entries(HDW.gh.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
-  const ld = hdWorldLoad; hdWorldLoad = function (loader, snow) { ld(loader, snow); if (!game.textures.exists('gh')) loader.image('gh', HDW.gh.img); };
+  const ld = hdWorldLoad; hdWorldLoad = function (loader, snow) { ld(loader, snow); if (!(loader.textureManager || game.textures).exists('gh')) loader.image('gh', HDW.gh.img); };
   const sw = hdWorldSwap; hdWorldSwap = function (sc) { sw(sc); const t = sc.textures.exists('gh') && sc.textures.get('gh'); if (t && !t._shrunk) { for (const [k, f] of Object.entries(HDW.gh.frames)) t.add(k, 0, f.x, f.y, f.w, f.h); hdShrinkTexture(t, 3); t._shrunk = 1; } };
 }
 // the painted grounds cut from the sheet (stones sit at a believable size)
@@ -19544,7 +19544,7 @@ function mtUI(force) {
    (elderwood.js, ewquests.js). */
 
 const _xaLoad = hdWorldLoad;
-hdWorldLoad = function (loader, snow) { _xaLoad(loader, snow); if (HDW.xa && !game.textures.exists('xa')) loader.image('xa', HDW.xa.img); };
+hdWorldLoad = function (loader, snow) { _xaLoad(loader, snow); if (HDW.xa && !(loader.textureManager || game.textures).exists('xa')) loader.image('xa', HDW.xa.img); };
 const _xaSwap = hdWorldSwap;
 hdWorldSwap = function (sc) {
   _xaSwap(sc);

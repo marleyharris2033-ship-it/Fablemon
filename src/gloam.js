@@ -40,7 +40,7 @@ const ghSay = (lines, cb) => { Talk.say(lines, cb); return true; };
 const ghA = (f, alt) => HDW.gh && HDW.gh.frames && HDW.gh.frames[f] ? ['gh', f] : alt;
 if (HDW.gh) {
   ASSET.ghJson = { frames: Object.fromEntries(Object.entries(HDW.gh.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
-  const ld = hdWorldLoad; hdWorldLoad = function (loader, snow) { ld(loader, snow); if (!game.textures.exists('gh')) loader.image('gh', HDW.gh.img); };
+  const ld = hdWorldLoad; hdWorldLoad = function (loader, snow) { ld(loader, snow); if (!(loader.textureManager || game.textures).exists('gh')) loader.image('gh', HDW.gh.img); };
   const sw = hdWorldSwap; hdWorldSwap = function (sc) { sw(sc); const t = sc.textures.exists('gh') && sc.textures.get('gh'); if (t && !t._shrunk) { for (const [k, f] of Object.entries(HDW.gh.frames)) t.add(k, 0, f.x, f.y, f.w, f.h); hdShrinkTexture(t, 3); t._shrunk = 1; } };
 }
 // the painted grounds cut from the sheet (stones sit at a believable size)

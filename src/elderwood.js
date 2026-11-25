@@ -343,7 +343,7 @@ if (HDW.ewb) {   // frame, and the door's tile offset from the centre
 }
 if (HDW.ewb) ASSET.ewbJson = { frames: Object.fromEntries(Object.entries(HDW.ewb.frames).map(([k, f]) => [k, { frame: { x: 0, y: 0, w: Math.round(f.w / 3), h: Math.round(f.h / 3) } }])) };
 const _ewhLoad = hdWorldLoad;
-hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !game.textures.exists('ewh')) loader.image('ewh', HDW.ewhall.img); if (HDW.ewb && !game.textures.exists('ewb')) loader.image('ewb', HDW.ewb.img); };
+hdWorldLoad = function (loader, snow) { _ewhLoad(loader, snow); if (HDW.ewhall && !(loader.textureManager || game.textures).exists('ewh')) loader.image('ewh', HDW.ewhall.img); if (HDW.ewb && !(loader.textureManager || game.textures).exists('ewb')) loader.image('ewb', HDW.ewb.img); };
 const _ewhSwap = hdWorldSwap;
 hdWorldSwap = function (sc) {
   _ewhSwap(sc);
