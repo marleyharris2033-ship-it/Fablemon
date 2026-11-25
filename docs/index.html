@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>/* 25 Nov 2026: if the game hits an error it can't recover from (often on one particular phone), say so on screen,
+   so a screenshot shows what happened instead of the game just sitting there. Tap it to hide. */
+(function () {
+  var shown = 0;
+  function show(msg, where) {
+    if (shown++ > 2 || !msg || /^Script error\.?$/.test(msg) || /ResizeObserver/.test(msg)) return;
+    var d = document.getElementById('fmErr');
+    if (!d) { d = document.createElement('div'); d.id = 'fmErr'; d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:99999;background:#5a1e14;color:#fff;font:600 12px/1.35 system-ui,sans-serif;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.5);word-break:break-word';
+      d.onclick = function () { d.remove(); }; (document.body || document.documentElement).appendChild(d); }
+    d.innerHTML = '<b>Something went wrong.</b> A screenshot of this helps fix it. (Tap to hide)<br><span style="opacity:.85">' + String(msg).replace(/</g, '&lt;').slice(0, 300) + (where ? ' @ ' + String(where).replace(/</g, '&lt;').slice(-60) : '') + '</span><br><span style="opacity:.6">' + navigator.userAgent.replace(/</g, '&lt;').slice(0, 140) + '</span>';
+  }
+  addEventListener('error', function (e) { if (e && e.message) show(e.message, (e.filename ? e.filename.split('/').pop() : '') + ':' + (e.lineno || '') + ':' + (e.colno || '')); });
+  addEventListener('unhandledrejection', function (e) { var r = e && e.reason; show(r && (r.message || r) ? (r.message || String(r)) : 'a task failed', r && r.stack ? r.stack.split('\n')[1] : ''); });
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fablemon: Wild Roots</title>
@@ -368,15 +383,17 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261125-090656">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261125-090656">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261125-090656">
+<link rel="manifest" href="manifest.webmanifest?v=20261125-093007">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261125-093007">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261125-093007">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-090656').catch(() => {}));</script>
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-093007').catch(() => {}));
+  // a new version took over: on the title screen, load it now; mid-game, leave it for next time
+  let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
 <body>
 <div id="game"></div>

@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>/* 25 Nov 2026: if the game hits an error it can't recover from (often on one particular phone), say so on screen,
+   so a screenshot shows what happened instead of the game just sitting there. Tap it to hide. */
+(function () {
+  var shown = 0;
+  function show(msg, where) {
+    if (shown++ > 2 || !msg || /^Script error\.?$/.test(msg) || /ResizeObserver/.test(msg)) return;
+    var d = document.getElementById('fmErr');
+    if (!d) { d = document.createElement('div'); d.id = 'fmErr'; d.style.cssText = 'position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:99999;background:#5a1e14;color:#fff;font:600 12px/1.35 system-ui,sans-serif;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.5);word-break:break-word';
+      d.onclick = function () { d.remove(); }; (document.body || document.documentElement).appendChild(d); }
+    d.innerHTML = '<b>Something went wrong.</b> A screenshot of this helps fix it. (Tap to hide)<br><span style="opacity:.85">' + String(msg).replace(/</g, '&lt;').slice(0, 300) + (where ? ' @ ' + String(where).replace(/</g, '&lt;').slice(-60) : '') + '</span><br><span style="opacity:.6">' + navigator.userAgent.replace(/</g, '&lt;').slice(0, 140) + '</span>';
+  }
+  addEventListener('error', function (e) { if (e && e.message) show(e.message, (e.filename ? e.filename.split('/').pop() : '') + ':' + (e.lineno || '') + ':' + (e.colno || '')); });
+  addEventListener('unhandledrejection', function (e) { var r = e && e.reason; show(r && (r.message || r) ? (r.message || String(r)) : 'a task failed', r && r.stack ? r.stack.split('\n')[1] : ''); });
+})();
+</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Fablemon: Wild Roots</title>

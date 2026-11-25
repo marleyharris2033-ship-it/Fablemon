@@ -30,11 +30,13 @@ if shutil.which('node'):
 open(os.path.join(DOCS, 'downloads', 'Fablemon_Wild_Roots.html'), 'w').write(single)
 # 23 Nov 2026: the web app and itch get the game with its art as separate files (docs/a/), so a phone only fetches and
 # holds what it needs. The one-file download above stays whole, for playing offline from a file.
+try: PREV = set(json.load(open(os.path.join(DOCS, 'a', 'files.json'))))   # the last build's art: kept a while, for phones still running it
+except Exception: PREV = set()
 subprocess.run(['python3', 'build.py', 'PHASER_INLINE', tmp], cwd=SRC, check=True, env={**os.environ, 'FABLE_ASSETS': DOCS})
 split = open(tmp).read().replace(tag, '<script>' + phaser + '</script>'); os.remove(tmp)
 ART = json.load(open(os.path.join(DOCS, 'a', 'files.json')))
-for f in os.listdir(os.path.join(DOCS, 'a')):   # art no longer used
-    if f != 'files.json' and 'a/' + f not in ART: os.remove(os.path.join(DOCS, 'a', f))
+for f in os.listdir(os.path.join(DOCS, 'a')):   # art no longer used (by this build or the one before it)
+    if f != 'files.json' and 'a/' + f not in ART and 'a/' + f not in PREV: os.remove(os.path.join(DOCS, 'a', f))
 with zipfile.ZipFile(os.path.join(DOCS, 'downloads', 'Fablemon_itch.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
     z.writestr('index.html', split)
     for f in ART: z.write(os.path.join(DOCS, f), f, compress_type=zipfile.ZIP_STORED)   # already compressed pictures
@@ -48,7 +50,9 @@ head = f'''<link rel="manifest" href="manifest.webmanifest?v={version}">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js?v={version}').catch(() => {{}}));</script>
+<script>if ('serviceWorker' in navigator) {{ addEventListener('load', () => navigator.serviceWorker.register('sw.js?v={version}').catch(() => {{}}));
+  // a new version took over: on the title screen, load it now; mid-game, leave it for next time
+  let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => {{ if (!had) {{ had = true; return; }} if (typeof S === 'undefined' || !S) location.reload(); }}); }}</script>
 '''
 app = split.replace('</head>', head + '</head>', 1)
 open(os.path.join(DOCS, 'index.html'), 'w').write(app)
@@ -65,10 +69,13 @@ const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png',
 self.addEventListener('install', e => {{ e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); }});
 self.addEventListener('activate', e => {{
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== ART).map(k => caches.delete(k))))); self.clients.claim();
-  // tidy art this version no longer uses, then quietly fetch the rest so the game also works offline
-  fetch('a/files.json').then(r => r.json()).then(async list => {{
-    const c = await caches.open(ART), want = new Set(list.map(f => new URL(f, self.registration.scope).href));
-    for (const q of await c.keys()) if (!want.has(q.url)) await c.delete(q);
+  // tidy art that neither this version nor the one before uses (a game still open may be the one before),
+  // then quietly fetch the rest so the game also works offline
+  fetch('a/files.json', {{ cache: 'no-store' }}).then(r => r.json()).then(async list => {{
+    const c = await caches.open(ART), abs = f => new URL(f, self.registration.scope).href, want = new Set(list.map(abs)), PREV = abs('a/prev-list.json');
+    const old = await c.match(PREV).then(r => r ? r.json() : []).catch(() => []), keep = new Set([...want, ...old.map(abs), PREV]);
+    for (const q of await c.keys()) if (!keep.has(q.url)) await c.delete(q);
+    await c.put(PREV, new Response(JSON.stringify(list), {{ headers: {{ 'Content-Type': 'application/json' }} }}));
     for (const u of want) if (!(await c.match(u))) {{ try {{ const r = await fetch(u); if (r.ok) await c.put(u, r); }} catch (err) {{ return; }} }}
   }}).catch(() => {{}});
 }});
