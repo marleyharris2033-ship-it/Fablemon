@@ -321,9 +321,9 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 .slot.locked::after{content:'🔒';position:absolute;left:1px;top:0;font-size:11px;line-height:1;z-index:2}
 .slot.locked img{opacity:.55}.slot.dim{opacity:.35}
 /* menu tiles and settings */
-.mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px}
-.mtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:1.15;background:#fffaea;border:3px solid var(--green);box-shadow:inset 0 -4px 0 rgba(31,77,43,.15),3px 3px 0 #173a20;font:700 14px var(--pix);color:var(--green);cursor:pointer;padding:4px}
-.mtile span{font-size:28px;line-height:1}
+.mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:2px 0 10px}
+.mtile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;aspect-ratio:1.45;min-height:0;overflow:hidden;line-height:1.1;text-align:center;background:#fffaea;border:3px solid var(--green);box-shadow:inset 0 -4px 0 rgba(31,77,43,.15),3px 3px 0 #173a20;font:700 13px var(--pix);color:var(--green);cursor:pointer;padding:2px 4px}
+.mtile span{font-size:24px;line-height:1}.mtile span img{width:1em!important;height:1em!important}
 .ctile{position:relative;font-size:12.5px;text-align:center;line-height:1.15;gap:5px}.ctile img{width:40px;height:40px;object-fit:contain;image-rendering:pixelated}
 .ctile i span,.ctile span.num{font-size:inherit!important;line-height:inherit}.ctile i{position:absolute;top:4px;right:4px;font:800 10px var(--ui);font-style:normal;background:#2f6b3a;color:#fff;border-radius:8px;padding:1px 6px}
 .ctitle{margin:2px 0 6px;font:800 13px var(--ui);color:var(--green);text-transform:uppercase;letter-spacing:.06em;opacity:.8}
