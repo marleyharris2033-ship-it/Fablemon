@@ -189,7 +189,7 @@ function svcHall() {
       R(`And a Warden of Smallroot answers to Smallroot. Bring the whole town back to life: every repair on the notice board. ${rd} of ${all} done.`),
       R("Do both, and I'll be waiting right here with everything I've got.", 1)]);
   }
-  if (S.crests.hearth) return Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan1, t: "The Hearth Crest suits you. Smallroot is in good hands." }]);
+  if (S.crests.hearth) return typeof gauntletOffer === 'function' ? gauntletOffer() : Talk.say([{ who: 'rowan', name: VILL.rowan.name, img: VPIC.rowan1, t: "The Hearth Crest suits you. Smallroot is in good hands." }]);   // the Warden Gauntlet (gauntlet.js)
   openModal("Warden's Hall", `<p>This is the last Warden battle. Rowan's Ember Fablemon are around <b>level 76–80</b>. Your team will be fully healed before the battle.</p><div class="row"><button class="btn gold" data-a="go">Challenge Warden Rowan</button><button class="btn" data-a="no">Not yet</button></div>`, a => {
     closeModal(); if (a !== 'go') return;
     S.mons.forEach(restMon);

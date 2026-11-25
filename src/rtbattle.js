@@ -21,6 +21,13 @@ const RTB = (() => {
   const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); };
   let st = null;
   const ARENA_KEY = 'rtb';
+  // 2-vs-1 (25 Nov, the Warden Gauntlet): a partner Fablemon (st.ally, side 'ally') fights beside yours, and the
+  // foe picks between you (st.foe.tgt). The run hands its own teams in (st.myTeam / st.allyTeam), so saves never change.
+  const tm = () => (st && st.myTeam) || team();
+  const alive = o => !!o && o.m.hp > 0 && !o.out;
+  const foesOf = f => f.side === 'foe' ? [st.me, st.ally].filter(alive) : [st.foe];
+  const opp = f => f.side !== 'foe' ? st.foe : (alive(f.tgt) ? f.tgt : (foesOf(f)[0] || st.me));
+  const fs = () => [st.me, st.foe, st.ally].filter(Boolean);
   const css = document.createElement('style');
   css.textContent = `
 #rtb{position:fixed;inset:0;z-index:44;pointer-events:none;display:none;font-family:var(--pix,inherit)}
@@ -28,7 +35,7 @@ const RTB = (() => {
 body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.rtb-on #quest,body.rtb-on #topbtns,body.rtb-on #clock,body.rtb-on #energy,body.rtb-on #toast{visibility:hidden}
 #rtb .rbox{position:absolute;pointer-events:none;background:rgba(255,250,234,.94);border:3px solid #2c4a2c;border-radius:8px;padding:3px 8px;min-width:150px;font-size:13px;color:#2a2a1a;box-shadow:0 2px 0 rgba(0,0,0,.25)}
 #rtb .rbox b{font-size:13px}#rtb .rbox small{opacity:.8;font-family:var(--ui);font-weight:700}
-#rtbFoe{left:8px;top:calc(8px + env(safe-area-inset-top))}#rtbMe{right:8px;top:calc(8px + env(safe-area-inset-top))}
+#rtbFoe{left:8px;top:calc(8px + env(safe-area-inset-top))}#rtbMe{right:8px;top:calc(8px + env(safe-area-inset-top))}#rtbAlly{right:8px;top:calc(60px + env(safe-area-inset-top));display:none}#rtb.duo #rtbAlly{display:block}#rtb.duo #rtbTeam{top:calc(118px + env(safe-area-inset-top))}#rtb .rbox .who{font:800 9px var(--ui);color:#7a5a20;letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:-1px}
 #rtb .rhp{height:7px;background:#3a2e26;border-radius:3px;overflow:hidden;margin-top:3px}#rtb .rhp i{display:block;height:100%;transition:width .2s}
 #rtb .rchip{display:inline-block;font-size:10px;color:#fff;border-radius:4px;padding:0 4px;margin-left:3px}
 #rtbTeam{position:absolute;right:8px;top:calc(70px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:4px;pointer-events:auto}
@@ -58,7 +65,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 #rtbHelp{position:absolute;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translateX(-50%);background:rgba(20,30,20,.8);color:#fff;font-size:12px;padding:6px 10px;border-radius:8px;max-width:86vw;text-align:center;pointer-events:none}`;
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
-  ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
+  ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div class="rbox" id="rtbAlly"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
     <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">🤖 Auto</button><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
@@ -75,7 +82,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const k = e.key.toLowerCase(); if (['1', '2', '3', '4'].includes(k)) useMoveBtn(+k - 1); if (k === ' ' || k === 'shift') act('dodge'); if (k === 'c') act('charm'); if (k === 'h') act('heal'); if (k === 'escape') act('run'); });
   addEventListener('keyup', e => { inp.keys[e.key.toLowerCase()] = 0; });
   ui.addEventListener('pointerdown', e => { const b = e.target.closest('button'); if (!b || !st) return; e.preventDefault();
-    if (b.dataset.pk !== undefined) { const m = team()[+b.dataset.pk]; if (st.choosing && m && m.hp > 0) { $r('rtbPick').classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; } return; }
+    if (b.dataset.pk !== undefined) { const m = tm()[+b.dataset.pk]; if (st.choosing && m && m.hp > 0) { $r('rtbPick').classList.remove('show'); st.choosing = false; swapIn(m); st.me.iframe = 1.2; } return; }
     if (st.choosing) return;
     if (b.dataset.mv !== undefined) useMoveBtn(+b.dataset.mv); else if (b.dataset.sw !== undefined) switchTo(+b.dataset.sw); else if (b.dataset.a) act(b.dataset.a); });
 
@@ -98,9 +105,9 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // ---------- the fighters
   function fighter(sc, m, side, x, y) {
     const wid = walkId(sc, m); monAnims(sc, wid);
-    const spr = hdSpr(sc.add.sprite(x, y, 'mon_' + wid, side === 'me' ? 12 : 0).setOrigin(.5, 1), wid);
+    const spr = hdSpr(sc.add.sprite(x, y, 'mon_' + wid, side !== 'foe' ? 12 : 0).setOrigin(.5, 1), wid);
     const sh = sc.add.ellipse(x, y - 1, Math.max(12, spr.displayWidth * .55), 5, 0x1a1206, .35).setDepth(1);
-    return { m, side, wid, spr, sh, x, y, dir: side === 'me' ? 'up' : 'down', cd: {}, stg: {}, dodgeT: 0, iframe: 0, stun: 0, protect: 0, dotT: 2, lunge: null, ai: { strafe: Math.random() < .5 ? 1 : -1, t: 0, dodgeT: 0, think: 0 }, r: Math.max(7, spr.displayWidth * .32) };
+    return { m, side, wid, spr, sh, x, y, dir: side !== 'foe' ? 'up' : 'down', cd: {}, stg: {}, dodgeT: 0, iframe: 0, stun: 0, protect: 0, dotT: 2, lunge: null, ai: { strafe: Math.random() < .5 ? 1 : -1, t: 0, dodgeT: 0, think: 0 }, r: Math.max(7, spr.displayWidth * .32) };
   }
   function place(f) {
     f.spr.setPosition(Math.round(f.x), Math.round(f.y)); f.spr.setDepth(f.y + 24);   // in a fight they stand clear of the long grass in front, so you can always see them f.sh.setPosition(f.x, f.y - 1);
@@ -108,6 +115,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     if (f.aura) f.aura.setPosition(f.x, f.y - 1);
   }
   function face(f, dx, dy, moving) {
+    if (!f.spr || !f.spr.active || !f.spr.anims) return;   // (a timer can outlive a fighter that was swapped out)
     const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
     if (moving) { if (f.dir !== d || !f.spr.anims.isPlaying) { f.dir = d; f.spr.anims.play(`${f.wid}_${d}`, true); } }
     else { f.dir = d; f.spr.anims.stop(); f.spr.setFrame(DIRS.indexOf(d) * 4); }
@@ -226,14 +234,14 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     });
   }
   // rings that roll out from the attacker and hit anything close
-  function nova(f, tgt, id, n) {
+  function nova(f, tgt, id, n, wide) {
     const sc = st.sc, M = MOVES[id], col = tcol(M.type), R = 100;
     for (let k = 0; k < n; k++) later(sc, k * 280, () => {
       if (!st || st.over || f.m.hp <= 0) return;
       const r = sc.add.image(f.x, mid(f), 'fx_ring').setDepth(9e5 + 1).setTint(col).setBlendMode(ADD()).setScale(.15); glowAt(f.x, mid(f), col, 18, 200);
       sc.tweens.add({ targets: r, scale: R * 2 / 64, alpha: 0, duration: 420, ease: 'Quad.out', onComplete: () => r.destroy() }); Sound.play('pop');
-      const d = Math.hypot(tgt.x - f.x, tgt.y - f.y);
-      later(sc, Math.min(400, d / R * 420), () => { if (st && !st.over && Math.hypot(tgt.x - f.x, tgt.y - f.y) <= R + tgt.r) hit(f, tgt, id, k === 0); });
+      for (const t of wide || [tgt]) { const d = Math.hypot(t.x - f.x, t.y - f.y);
+        later(sc, Math.min(400, d / R * 420), () => { if (st && !st.over && Math.hypot(t.x - f.x, t.y - f.y) <= R + t.r) hit(f, t, id, k === 0); }); }
     });
   }
   // shadows on the ground where you're standing, then it all comes down
@@ -278,9 +286,9 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
   // ---------- doing moves
   function useMove(f, id) {
-    const sc = st.sc, M = MOVES[id], tgt = f.side === 'me' ? st.foe : st.me;
+    const sc = st.sc, M = MOVES[id], tgt = opp(f);
     if (!M || f.stun > 0 || f.lunge || (f.cd[id] || 0) > 0) return false;
-    f.cd[id] = cdOf(id) * (f.m.status === 'par' ? 1.4 : 1);
+    f.cd[id] = cdOf(id) * (f.m.status === 'par' ? 1.4 : 1) * (st.duo && f.side === 'foe' ? st.duo.foeCd : 1);
     const dx = tgt.x - f.x, dy = tgt.y - f.y; face(f, dx, dy, false);
     if (f.side === 'me') say(M.name, 700);
     if (M.protect) { f.protect = 1.4; ring(f, 0x9fd8ff); Sound.play('pop'); fxTex(sc);
@@ -288,7 +296,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       sc.tweens.add({ targets: bub, alpha: .35, duration: 180, yoyo: true, repeat: 3, onUpdate: () => bub.setPosition(f.x, mid(f)), onComplete: () => bub.destroy() }); return true; }
     if (M.heal && !M.pow) { healF(f, monStat(f.m, 'hp') * M.heal); return true; }
     if (M.rest) { f.m.hp = monStat(f.m, 'hp'); f.m.status = 'slp'; f.stun = 3; Sound.play('fill'); floatTxt(f, 'Zzz', '#9ab8ff'); refresh(); return true; }
-    if (M.haze) { st.me.stg = {}; st.foe.stg = {}; Sound.play('swish'); say('Every stat change blown away!'); refresh(); return true; }
+    if (M.haze) { for (const o of fs()) o.stg = {}; Sound.play('swish'); say('Every stat change blown away!'); refresh(); return true; }
     if (M.cure) { f.m.status = null; Sound.play('fill'); refresh(); return true; }
     if (M.critUp) { f.critUp = Math.min(2, (f.critUp || 0) + M.critUp); ring(f, 0xffd060); Sound.play('pop'); return true; }
     if (M.weather || M.hazard) { buff(f, f, ['self', moveCat(id) === 'e' ? 'eatk' : 'atk', 1]); return true; }
@@ -296,11 +304,12 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     if (selfOnly) { for (const s of M.stats || [M.stat]) buff(f, f, s); return true; }
     if (!M.pow) { bolt(f, tgt, id, { slow: true }); return true; }   // status and stat-lowering moves fly at the target
     const n = M.hits ? M.hits[0] + Math.floor(Math.random() * (M.hits[1] - M.hits[0] + 1)) : 1;
-    const sty = moveStyle(id);
+    const sty = moveStyle(id), wide = st.duo && f.side === 'foe' ? foesOf(f) : null;   // a Warden's big moves come down on both of you
+    if (wide && wide.length > 1 && ['nova', 'rain', 'mortar', 'erupt', 'geyser'].includes(sty)) say(`${MOVES[id].name}! Spread out!`, 900);
     if (sty === 'beam') { beam(f, tgt, id); return true; }
-    if (sty === 'nova') { nova(f, tgt, id, n); return true; }
-    if (sty === 'rain' || sty === 'mortar') { rain(f, tgt, id, n, sty === 'mortar'); return true; }
-    if (sty === 'erupt' || sty === 'geyser') { erupt(f, tgt, id, sty === 'geyser'); return true; }
+    if (sty === 'nova') { nova(f, tgt, id, n, wide); return true; }
+    if (sty === 'rain' || sty === 'mortar') { for (const t of wide || [tgt]) rain(f, t, id, n, sty === 'mortar'); return true; }
+    if (sty === 'erupt' || sty === 'geyser') { for (const t of wide || [tgt]) erupt(f, t, id, sty === 'geyser'); return true; }
     if (sty === 'ghosts') { ghosts(f, tgt, id); return true; }
     if (moveCat(id) === 'p' && !M.ranged) { lunge(f, tgt, id, n, sty); return true; }
     for (let k = 0; k < n; k++) later(sc, k * 110, () => st && bolt(f, tgt, id, { spread: n > 1 ? (Math.random() - .5) * .25 : 0, wave: sty === 'wave' }));
@@ -342,7 +351,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (M.seed) { def.seed = att; floatTxt(def, 'Seeded', '#7ac74c'); }
       return;
     }
-    const { dmg, e, crit } = damage(att, def, id), dealt = Math.min(dmg, def.m.hp);
+    let { dmg, e, crit } = damage(att, def, id); if (st.duo && def.side === 'foe') dmg = Math.max(1, Math.round(dmg * st.duo.foeTake));
+    const dealt = Math.min(dmg, def.m.hp);
     def.m.hp = Math.max(0, def.m.hp - dmg); Sound.play('hit');
     fillTint(def.spr, 0xffffff); later(sc, 70, () => unTint(def.spr));
     { const T0 = tfx(M.type), hx = def.x, hy = mid(def), big = e > 1 || crit > 1, ang = Math.atan2(def.y - att.y, def.x - att.x);   // the impact, by type
@@ -390,14 +400,15 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
 
   // ---------- the player's buttons
-  function useMoveBtn(i) { if (!st || st.over) return; const id = st.me.m.moves[i]; if (id && !useMove(st.me, id) && (st.me.cd[id] || 0) > 0) Sound.play('error'); }
+  function useMoveBtn(i) { if (!st || st.over || st.meOut) return; const id = st.me.m.moves[i]; if (id && !useMove(st.me, id) && (st.me.cd[id] || 0) > 0) Sound.play('error'); }
   function charmId() { const p = (S.rtSlots || {}).charm; if (p && inv.count(p) > 0) return p; return RT_CHARMS.find(c => inv.count(c) > 0) || null; }
   function healId() { const p = (S.rtSlots || {}).heal; if (p && ITEMS[p] && inv.count(p) > 0) return p; const me = st && st.me && st.me.m; if (me && me.status && inv.count('tonic') > 0) return 'tonic'; return ['mon_treat', 'berry_crumble', 'honey', 'berry', 'hearth_elixir'].find(c => ITEMS[c] && inv.count(c) > 0) || null; }
   function act(a) {
     if (!st || st.over) return;
     const me = st.me;
+    if (st.noItems && (a === 'heal' || a === 'charm')) return say('No items in the Gauntlet: the rest stops are your healing.');
     if (a === 'dodge') {
-      if (me.dodgeT > 0 || me.stun > 0) return;
+      if (st.meOut || me.dodgeT > 0 || me.stun > 0) return;
       let dx = inp.jx || ((inp.keys.d || inp.keys.arrowright ? 1 : 0) - (inp.keys.a || inp.keys.arrowleft ? 1 : 0)), dy = inp.jy || ((inp.keys.s || inp.keys.arrowdown ? 1 : 0) - (inp.keys.w || inp.keys.arrowup ? 1 : 0));
       if (!dx && !dy) { const fx = st.foe.x - me.x, fy = st.foe.y - me.y, d = Math.hypot(fx, fy) || 1; dx = -fy / d; dy = fx / d; }   // no direction held: sidestep
       const d = Math.hypot(dx, dy) || 1; me.lunge = { t: .16, vx: dx / d * 260, vy: dy / d * 260 }; me.iframe = .35; me.dodgeT = 1.2; me.spr.setAlpha(.6); for (const t of [0, 50, 100, 150]) later(st.sc, t, () => st && ghost(me, 0xbfe8ff, .45)); burst(me.x, me.y - 2, 'Wild', 4, { tex: 'fx_smoke', speed: 30, life: 300, size: .6, flat: 1 });
@@ -426,14 +437,14 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     }
   }
   function switchTo(i) {
-    if (!st || st.over) return; const m = team()[i]; if (!m || m.hp <= 0 || m === st.me.m || (st.swT || 0) > 0) return;
+    if (!st || st.over || st.meOut) return; const m = tm()[i]; if (!m || m.hp <= 0 || m === st.me.m || (st.swT || 0) > 0) return;
     swapIn(m); st.swT = 3;
   }
   function choose(me) {
     st.choosing = true; me.spr.setTint(0x777777).setAlpha(.5); inp.jx = inp.jy = 0;
     for (const b of st.bolts.slice()) kill(b);
     const P = $r('rtbPick'); P.querySelector('h3').textContent = `${monName(me.m)} fainted! Who's next?`;
-    P.querySelector('.pl').innerHTML = team().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
+    P.querySelector('.pl').innerHTML = tm().map((m, i) => m.hp > 0 ? `<button data-pk="${i}"><img src="${monPicOf(m)}">${monName(m)} <small>Lv ${m.lv} · ${m.hp}/${monStat(m, 'hp')}</small></button>` : '').join('');
     P.classList.add('show');
   }   // (18 Nov: you always pick who goes next, even on Auto)
   function autoUi() { const b = $r('rtbAuto'); if (b) b.classList.toggle('on', !!opts.rtAuto); }
@@ -454,6 +465,16 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     old.spr.destroy(); old.sh.destroy();
     st.me = fighter(sc, m, 'me', x, y); st.me.iframe = .8; st.used.add(m.uid); place(st.me); buildMoves(); refresh();
     say(`Go, ${monName(m)}!`, 900); Sound.play('pop');
+  }
+  function swapAlly(m) {   // the partner sends out its next Fablemon where the last one stood
+    const sc = st.sc, old = st.ally, x = old.x, y = old.y;
+    old.spr.destroy(); old.sh.destroy();
+    st.ally = fighter(sc, m, 'ally', x, y); st.ally.iframe = 1; place(st.ally); refresh();
+    say(`${st.allyName || 'Partner'} sent out ${monName(m)}!`, 1000); Sound.play('pop');
+  }
+  function bowOut(f, line) {   // a side with nobody left steps off the field; the other fights on
+    f.out = true; f.spr.setVisible(false); f.sh.setVisible(false); if (f.aura) f.aura.setVisible(false);
+    if (st.foe.tgt === f) st.foe.tgt = null; say(line, 1600); refresh();
   }
   function throwCharm(cid) {
     const sc = st.sc, me = st.me, foe = st.foe, img = sc.add.image(me.x, me.y - 16, 'objects', 'stone').setDepth(9e5);
@@ -480,7 +501,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
 
   // ---------- the foe's mind
   // the brain: the wild one or the trainer's Fablemon, and yours too on Auto (opts.rtAuto, 18 Nov)
-  function think(dt, f = st.foe, me = st.me, auto = false) {
+  function think(dt, f = st.foe, me = opp(st.foe), auto = false) {
     const M0 = f.m.moves.map(id => MOVES[id]).filter(Boolean), skill = auto ? .7 : st.dodgeSkill, aggr = auto ? .95 : st.aggr;
     if (f.stun > 0 || f.lunge || st.catching) return [0, 0];
     if (!auto && st.T && st.T.boss && (st.T.heals ?? 2) > 0 && f.m.hp > 0 && f.m.hp < monStat(f.m, 'hp') * .3 && !(st.fhT > 0)) {   // a Warden patches their Fablemon up, like in a classic battle
@@ -495,7 +516,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     }
     // dodge bolts coming at it
     f.ai.dodgeT -= dt;
-    if (f.ai.dodgeT <= 0) for (const b of st.bolts) if (b.f === me && !b.seen) {
+    if (f.ai.dodgeT <= 0) for (const b of st.bolts) if (b.tgt === f && !b.seen) {
       const rx = f.x - b.x, ry = f.y - 10 - b.y, along = (rx * b.vx + ry * b.vy) / Math.hypot(b.vx, b.vy);
       if (along > 0 && along < 70) { b.seen = 1; if (Math.random() < skill) { const s = Math.random() < .5 ? 1 : -1; f.lunge = { t: .15, vx: -b.vy / 175 * 230 * s, vy: b.vx / 175 * 230 * s }; f.iframe = .2; f.ai.dodgeT = 1.4; later(st.sc, 160, () => st && (f.lunge = null)); return [0, 0]; } }
     }
@@ -571,6 +592,15 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     if (st.foeMon.alpha) { st.dodgeSkill = Math.min(.6, st.dodgeSkill + .1); st.aggr = Math.min(.95, st.aggr + .15); }
     st.me = fighter(sc, st.first, 'me', px, py); st.foe = fighter(sc, st.foeMon, 'foe', fx, fy);
     place(st.me); place(st.foe); face(st.me, dx, dy, false); face(st.foe, -dx, -dy, false);
+    if (st.allyFirst) {   // your partner's Fablemon comes out a few steps to the side
+      let ax = px, ay = py;
+      for (const s0 of [1, -1]) { const [tx, ty] = into(px - dy / d * 34 * s0, py + dx / d * 34 * s0); if (!solid(tx, ty)) { ax = tx; ay = ty; break; } }
+      st.ally = fighter(sc, st.allyFirst, 'ally', ax, ay); place(st.ally); face(st.ally, fx - ax, fy - ay, false);
+      st.ally.spr.setScale(st.ally.spr.scaleX * .3, st.ally.spr.scaleY * .3); sc.tweens.add({ targets: st.ally.spr, scaleX: st.ally.spr.scaleX / .3, scaleY: st.ally.spr.scaleY / .3, duration: 260, delay: 120, ease: 'Back.out' });
+      st.foe.tgt = st.me;
+    }
+    if (st.me.m.hp <= 0 && st.ally) { st.meOut = true; bowOut(st.me, `You're out of Fablemon! ${st.allyName || 'Your partner'} fights on!`); }
+    if (st.boost) { if (st.boost.me) Object.assign(st.me.stg, st.boost.me); if (st.boost.ally && st.ally) Object.assign(st.ally.stg, st.boost.ally); for (const f of [st.me, st.ally]) if (f && Object.keys(f.stg).length) ring(f, 0xffd060); }
     const M0 = st.me, F0 = st.foe; sc.tweens.add({ targets: M0, x: mx, y: my, duration: 260, ease: 'Quad.out', onUpdate: () => { if (M0.spr.active) place(M0); } });
     st.me.spr.setScale(st.me.spr.scaleX * .3, st.me.spr.scaleY * .3); sc.tweens.add({ targets: st.me.spr, scaleX: st.me.spr.scaleX / .3, scaleY: st.me.spr.scaleY / .3, duration: 260, ease: 'Back.out' });
     // and the wild one backs off a few steps to give you room
@@ -595,8 +625,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function stageDown(done) {
     const sc = done.sc; if (!sc || !sc.sys || !sc.sys.isActive()) return;
     sc.events.off('update', done.upd);
-    sc.tweens.killTweensOf([done.me, done.foe].filter(Boolean));
-    for (const f of [done.me, done.foe]) if (f) { if (f.ring) f.ring.destroy(); if (f.aura) f.aura.destroy(); f.sh.destroy(); f.spr.destroy(); }
+    sc.tweens.killTweensOf([done.me, done.foe, done.ally].filter(Boolean));
+    for (const f of [done.me, done.foe, done.ally]) if (f) { if (f.ring) f.ring.destroy(); if (f.aura) f.aura.destroy(); f.sh.destroy(); f.spr.destroy(); }
     const was = st; st = done; clearStage(sc, false); st = was;
     if (done.plWas && sc.player && sc.player.active) sc.player.setPosition(done.plWas.x, done.plWas.y).setDepth(done.plWas.d);
     const cam = sc.cameras.main, fol = done.camWas && done.camWas.follow;
@@ -607,14 +637,14 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       const dt = Math.min(.05, delta / 1000), me = st.me, foe = st.foe;
       if (st.over) return;
       if (st.hold > 0) { st.hold -= dt; return; }   // hit-stop: a big hit freezes everything for a beat
-      for (const f of [me, foe]) if (f.m.status && f.m.hp > 0 && (f.ambT = (f.ambT || 0) - dt) <= 0) {   // burns smoulder, poison bubbles, paralysis crackles, sleep drifts
+      for (const f of fs()) if (!f.out && f.m.status && f.m.hp > 0 && (f.ambT = (f.ambT || 0) - dt) <= 0) {   // burns smoulder, poison bubbles, paralysis crackles, sleep drifts
         const s0 = f.m.status; f.ambT = s0 === 'slp' ? .7 : .28;
         if (s0 === 'slp') floatTxt(f, 'z', '#cfe0ff', 10);
         else burst(f.x + (Math.random() - .5) * f.r * 1.4, f.y - Math.random() * f.spr.displayHeight * .7, STATUS_FX[s0] || 'Shade', s0 === 'par' ? 2 : 1, { speed: 18, dir: -Math.PI / 2, cone: .8, life: 520, size: .55, tints: s0 === 'psn' ? [0xb070e0, 0x8a40c0] : undefined });
         if (s0 === 'par' && Math.random() < .25) zap(f.x - 8, mid(f) - 6, f.x + 8, mid(f) + 4);
       }
       st.ready -= dt;
-      for (const f of [me, foe]) {
+      for (const f of fs()) {
         for (const k in f.cd) if (f.cd[k] > 0) f.cd[k] -= dt;
         f.dodgeT -= dt; f.iframe -= dt; f.protect -= dt;
         if (f.stun > 0) { f.stun -= dt; if (f.stun <= 0 && f.m.status === 'slp') { f.m.status = null; floatTxt(f, 'Woke up!', '#fff'); refresh(); } }
@@ -628,15 +658,24 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       st.charmT -= dt; st.healT -= dt; st.swT -= dt;
       // you
       let mx = 0, my = 0;
-      if (!st.catching && me.stun <= 0) {
+      if (!st.catching && me.stun <= 0 && !st.meOut) {
         mx = inp.jx || ((inp.keys.d || inp.keys.arrowright ? 1 : 0) - (inp.keys.a || inp.keys.arrowleft ? 1 : 0));
         my = inp.jy || ((inp.keys.s || inp.keys.arrowdown ? 1 : 0) - (inp.keys.w || inp.keys.arrowup ? 1 : 0));
       }
-      if (opts.rtAuto && !mx && !my && !st.catching && me.stun <= 0 && st.ready <= 0) [mx, my] = think(dt, me, foe, true);   // Auto: your Fablemon fights on its own; touching the stick takes over
+      if (opts.rtAuto && !st.meOut && !mx && !my && !st.catching && me.stun <= 0 && st.ready <= 0) [mx, my] = think(dt, me, foe, true);   // Auto: your Fablemon fights on its own; touching the stick takes over
       if (st.over) return;
-      move(me, mx, my, dt, true);
+      if (!st.meOut) move(me, mx, my, dt, true);
+      // your partner: always the Auto brain
+      const ally = st.ally;
+      if (alive(ally)) { const [ax, ay] = st.ready > 0 || ally.stun > 0 ? [0, 0] : think(dt, ally, foe, true); if (st.over) return; move(ally, ax, ay, dt, true); }
+      // who the foe goes after: whoever's weaker or nearer, changing its mind every few seconds
+      if (st.duo) { const live = foesOf(foe); foe.ai.tg = (foe.ai.tg || 0) - dt;
+        if (live.length && (!live.includes(foe.tgt) || foe.ai.tg <= 0)) { foe.ai.tg = 2.5 + Math.random() * 3.5;
+          const sc0 = o => o.m.hp / monStat(o.m, 'hp') * 60 + Math.hypot(o.x - foe.x, o.y - foe.y) / 4 + Math.random() * 35, was = foe.tgt;
+          foe.tgt = live.slice().sort((a, b) => sc0(a) - sc0(b))[0];
+          if (was && foe.tgt !== was && foe.tgt.spr.active) floatTxt(foe.tgt, '!', '#ff6a4a', 15); } }
       // the wild one
-      const [fx, fy] = st.ready > 0 ? [0, 0] : think(dt); if (st.over) return;
+      const [fx, fy] = st.ready > 0 ? [0, 0] : think(dt, foe, opp(foe)); if (st.over) return;
       move(foe, fx, fy, dt, false);
       // bolts
       for (const b of st.bolts.slice()) {
@@ -646,7 +685,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
             sc.tweens.add({ targets: im, alpha: 0, scale: im.scale * (T0.trail === 'fx_smoke' ? 1.8 : .3), y: im.y + T0.grav * .12, duration: 320, onComplete: () => im.destroy() }); }
           if (T0.zap && Math.random() < dt * 14) zap(b.x, b.y, b.x - b.vx * .08 + (Math.random() - .5) * 10, b.y - b.vy * .08 + (Math.random() - .5) * 10); }
         const t = b.tgt;
-        if (Math.hypot(b.x - t.x, b.y - (t.y - t.spr.displayHeight * .45)) < t.r + (b.wide || 5) && t.m.hp > 0 && st[t.side] === t) { hit(b.f, t, b.id, true); kill(b, true); continue; }
+        if (Math.hypot(b.x - t.x, b.y - (t.y - t.spr.displayHeight * .45)) < t.r + (b.wide || 5) && t.m.hp > 0 && !t.out && st[t.side] === t) { hit(b.f, t, b.id, true); kill(b, true); continue; }
         if (b.life <= 0 || b.x < st.B.x0 - 30 || b.y < st.B.y0 - 30 || b.x > st.B.x1 + 30 || b.y > st.B.y1 + 30) kill(b);
       }
       // faints
@@ -655,11 +694,16 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         if (st.T) { st.beaten.push(foe.m); const next = st.T.team.find(m => m.hp > 0); if (next) return nextFoe(next); }
         return end('win');
       }
-      if (me.m.hp <= 0) {
-        Sound.play('faint'); burst(me.x, mid(me), 'Wild', 10, { tex: 'fx_smoke', tints: [0xe8e0d0, 0xc8c0b0], speed: 45, life: 650, grav: -40, size: 1.1, flat: 1 }); me.m.status = null; const next = team().find(m => m.hp > 0);
-        if (!next) return end('lose');
+      if (ally && !ally.out && ally.m.hp <= 0) {
+        Sound.play('faint'); burst(ally.x, mid(ally), 'Wild', 10, { tex: 'fx_smoke', tints: [0xe8e0d0, 0xc8c0b0], speed: 45, life: 650, grav: -40, size: 1.1, flat: 1 }); ally.m.status = null;
+        const next = st.allyTeam.find(m => m.hp > 0);
+        if (next) swapAlly(next); else { if (st.meOut) return end('lose'); bowOut(ally, `${st.allyName || 'Your partner'} is out of Fablemon! It's up to you!`); }
+      }
+      if (!st.meOut && me.m.hp <= 0) {
+        Sound.play('faint'); burst(me.x, mid(me), 'Wild', 10, { tex: 'fx_smoke', tints: [0xe8e0d0, 0xc8c0b0], speed: 45, life: 650, grav: -40, size: 1.1, flat: 1 }); me.m.status = null; const next = tm().find(m => m.hp > 0);
+        if (!next) { if (!alive(st.ally)) return end('lose'); st.meOut = true; return bowOut(me, `You're out of Fablemon! ${st.allyName || 'Your partner'} fights on!`); }
         say(`${monName(me.m)} fainted!`, 1200);
-        if (team().filter(m => m.hp > 0).length > 1) return choose(me);   // pause and pick who goes next
+        if (tm().filter(m => m.hp > 0).length > 1) return choose(me);   // pause and pick who goes next
         swapIn(next);
       }
       if ((st.uiT = (st.uiT || 0) - dt) <= 0) { st.uiT = .08; cdUi(); }
@@ -671,7 +715,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
       const v = speedOf(f) * (isMe ? 1 : st.foeSpeed); f.x += mx * v * dt; f.y += my * v * dt;
       if (isMe) face(f, mx, my, l > .2); else face(f, mx, my, true);
-    } else if (!f.lunge) { const o = f.side === 'me' ? st.foe : st.me; face(f, o.x - f.x, o.y - f.y, false); }
+    } else if (!f.lunge) { const o = opp(f); face(f, o.x - f.x, o.y - f.y, false); }
     f.x = Math.max(st.B.x0, Math.min(st.B.x1, f.x)); f.y = Math.max(st.B.y0, Math.min(st.B.y1, f.y));
     if (solid(f.x, f.y) && !solid(ox, oy)) { if (!solid(f.x, oy)) f.y = oy; else if (!solid(ox, f.y)) f.x = ox; else { f.x = ox; f.y = oy; } if (f.lunge) f.lunge.t = 0; }
     place(f);
@@ -686,12 +730,12 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function hpBox(f, el) {
     const m = f.m, mx = monStat(m, 'hp'), pc = Math.max(0, m.hp) / mx;
     const chips = (m.status ? `<span class="rchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '') + Object.entries(f.stg).filter(([, n]) => n).map(([k, n]) => `<span class="rchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k]}${n > 0 ? '▲' : '▼'}</span>`).join('');
-    el.innerHTML = `<b>${f.side === 'foe' && S.caught[m.sp] ? '<span style="color:#c0392b">♥</span> ' : ''}${monName(m)}</b> <small>Lv ${m.lv}</small>${chips}<div class="rhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d0402a'}"></i></div>${f.side === 'me' ? `<small>${Math.max(0, Math.ceil(m.hp))}/${mx}</small>` : ''}`;
+    el.innerHTML = `${f.side === 'ally' ? `<span class="who">${st.allyName || 'Partner'}</span>` : ''}<b>${f.side === 'foe' && S.caught[m.sp] ? '<span style="color:#c0392b">♥</span> ' : ''}${monName(m)}</b> <small>Lv ${m.lv}</small>${chips}<div class="rhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d0402a'}"></i></div>${f.side !== 'foe' ? `<small>${Math.max(0, Math.ceil(m.hp))}/${mx}</small>` : ''}`;
   }
   function refresh() {
     if (!st || !st.me) return;
-    hpBox(st.foe, $r('rtbFoe')); hpBox(st.me, $r('rtbMe'));
-    $r('rtbTeam').innerHTML = team().map((m, i) => `<button data-sw="${i}" class="${m === st.me.m ? 'on' : ''} ${m.hp <= 0 ? 'ko' : ''}"><img src="${monPicOf(m)}"><i style="width:${Math.max(0, 100 * m.hp / monStat(m, 'hp'))}%"></i></button>`).join('');
+    hpBox(st.foe, $r('rtbFoe')); hpBox(st.me, $r('rtbMe')); if (st.ally) hpBox(st.ally, $r('rtbAlly'));
+    $r('rtbTeam').innerHTML = tm().map((m, i) => `<button data-sw="${i}" class="${m === st.me.m ? 'on' : ''} ${m.hp <= 0 ? 'ko' : ''}"><img src="${monPicOf(m)}"><i style="width:${Math.max(0, 100 * m.hp / monStat(m, 'hp'))}%"></i></button>`).join('');
     const c = charmId(), h = healId();
     $r('rtbCharm').querySelector('small').textContent = c ? `${inv.count(c)} left` : 'None';
     $r('rtbHeal').querySelector('small').textContent = h ? `${inv.count(h)} left` : 'None';
@@ -710,18 +754,20 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
 
   // ---------- start and end
-  function start(sc, foe, at, T, keep) {
-    const first = team().find(m => m.hp > 0); if (!first) return;
+  function start(sc, foe, at, T, keep, o = {}) {
+    const mine = o.myTeam || team(), first = mine.find(m => m.hp > 0) || (o.allyTeam && o.allyTeam.some(m => m.hp > 0) ? mine[0] : null); if (!first) return;   // (in 2-vs-1 your partner can carry on alone)
     // every walk sheet the fight could need, fetched first (they load when needed since 23 Nov)
-    const need = [foe, ...team(), ...((T && T.team) || [])].map(m => m && walkSp(m.sp)).filter(n => n && ASSET['mon_' + n] && !sc.textures.exists('mon_' + n));
-    if (need.length && !start.waited) { sc.paused = true; start.waited = 1; monFetchAll(sc, need).then(() => { start.waited = 0; start(sc, foe, at, T, keep); }); return; }
+    const need = [foe, ...mine, ...(o.allyTeam || []), ...((T && T.team) || [])].map(m => m && walkSp(m.sp)).filter(n => n && ASSET['mon_' + n] && !sc.textures.exists('mon_' + n));
+    if (need.length && !start.waited) { sc.paused = true; start.waited = 1; monFetchAll(sc, need).then(() => { start.waited = 0; start(sc, foe, at, T, keep, o); }); return; }
     start.waited = 0;
     sc.paused = true; S.seen[foe.sp] = 1;
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
     st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
-      dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme };
+      dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme,
+      myTeam: o.myTeam || null, allyTeam: o.allyTeam || null, allyFirst: o.allyTeam ? o.allyTeam.find(m => m.hp > 0) : null, allyName: o.allyName || '', duo: o.duo || null, noItems: !!o.noItems, onEnd: o.onEnd || null, boost: o.boost || null };
+    if (st.duo) { st.dodgeSkill = Math.min(.6, st.dodgeSkill + .08); st.aggr = Math.min(.97, st.aggr + .12); st.foeSpeed = 1; }
     Sound.hushRain(true); Sound.theme('battle'); autoUi();
-    document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1;
+    document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T || o.noItems ? 'none' : ''; $r('rtbHeal').style.display = o.noItems ? 'none' : ''; $r('rtbRun').style.display = o.onEnd ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1; ui.classList.toggle('duo', !!(o.allyTeam && o.allyTeam.some(m => m.hp > 0)));
     const here = at || (sc.player ? { x: sc.player.x, y: sc.player.y - 40 } : { x: 0, y: 0 });
     setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe, T ? Object.assign({}, T, { classic: true }) : undefined); } } }, 120);
   }
@@ -734,6 +780,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       stageDown(done);
       st = null; inp.jx = inp.jy = 0; inp.keys = {};
       for (const m of S.mons) { if (m.status === 'slp') m.status = null; }
+      if (done.onEnd) { Sound.hushRain(false); Sound.theme(done.prevTheme || 'field'); if (done.from) done.from.paused = false; return done.onEnd(out); }
       if (out === 'ran' || out === 'fled') { Sound.hushRain(false); Sound.theme(done.prevTheme || 'field'); for (const m of S.mons) { m.status = null; m.slp = 0; } if (done.from) { done.from.paused = false; if (done.from.p) done.from.p.busy = .4; if (done.from.refreshFollower) done.from.refreshFollower(); } return; }
       Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);

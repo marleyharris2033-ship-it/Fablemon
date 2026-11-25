@@ -54,7 +54,7 @@ class ArenaScene extends World {
   constructor() { super('arena'); }
   preload() { const g = ARENA_GO; if (g && !this.textures.exists('arena_' + g.A.k)) this.load.image('arena_' + g.A.k, ASSET['arena_' + g.A.k]); }
   create() {
-    this.initWorld(AR_W, AR_H); this.dressed = 1;   // (no seasonal props in here)
+    this.initWorld(AR_W, AR_H); this.dressed = 1; this.started = 0; this.gone = 0;   // (the Gauntlet restarts this scene for each Warden)   // (no seasonal props in here)
     const g = ARENA_GO, cam = this.cameras.main;
     this.add.rectangle(-600, -600, 512 + 1200, 768 + 1200, 0x050505).setOrigin(0).setDepth(-20);
     if (!g) {   // a save from the middle of a fight: back to where it started
@@ -74,8 +74,8 @@ class ArenaScene extends World {
     this.paused = true;
     this.time.delayedCall(450, () => toast(A.title, 1800));
     this.time.delayedCall(900, () => {
-      if (!team().some(m => m.hp > 0)) return this.leave();
-      this.started = 1; RTB.start(this, g.foe, { x: A.at[0], y: A.at[1] + 40 }, g.T, this.boss);
+      if (![...((g.rt && g.rt.myTeam) || team()), ...((g.rt && g.rt.allyTeam) || [])].some(m => m.hp > 0)) return this.leave();
+      this.started = 1; RTB.start(this, g.foe, { x: A.at[0], y: A.at[1] + 40 }, g.T, this.boss, g.rt);
       if (!RTB.active) { this.started = 0; this.leave(); }
     });
   }
@@ -89,7 +89,7 @@ class ArenaScene extends World {
     if (this.started && !this.sleeping && !RTB.active && !Battle.active) this.leave();
   }
   leave() {
-    if (this.sleeping || this.gone) return; this.gone = 1;
+    if (this.sleeping || this.gone || (this.g && this.g.gauntlet)) return; this.gone = 1;   // (a Gauntlet run decides where you go next)
     const r = S.arenaRet || { scene: 'house', x: 2, y: 3, dir: 'down' }, g = this.g; delete S.arenaRet; ARENA_GO = null;
     travel(this, r.scene, { x: r.x, y: r.y, dir: r.dir });
     if (g && g.win) {   // home again: now the Warden hands over the Crest
