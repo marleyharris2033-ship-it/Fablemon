@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261125-094237">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261125-094237">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261125-094237">
+<link rel="manifest" href="manifest.webmanifest?v=20261125-100934">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261125-100934">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261125-100934">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-094237').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-100934').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -21683,7 +21683,72 @@ const LinkNet = (() => {
     await pc.setRemoteDescription({ type: 'answer', sdp: o.sdp });
   }
   function bye() { send({ t: 'bye' }); setTimeout(reset, 150); }
-  return Object.assign(st, { host, join, accept, send, bye, listen: f => onMsg.push(f), kindOf: c => (unpack(c) || {}).kind, _pack: pack, _unpack: unpack });
+
+  // ---------- rooms (25 Nov 2026): a 6-character code instead of swapping two long ones.
+  // A free public PeerJS server (only a go-between: it passes the two phones' first hello and their addresses,
+  // then the phones talk directly and the room closes). The host's room is the server id 'fablemon-room-<CODE>'.
+  // Protocol: wss://host/peerjs?key&id&token; server says OPEN / ID-TAKEN / ERROR / EXPIRE; OFFER, ANSWER and
+  // CANDIDATE {type, payload, dst} are passed on to dst with src added; HEARTBEAT every 5 s keeps it open.
+  const ROOM_AB = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I
+  let ws = null, wsHb = null;
+  const roomCode = () => Array.from({ length: 6 }, () => ROOM_AB[Math.floor(Math.random() * ROOM_AB.length)]).join('');
+  function sigClose() { clearInterval(wsHb); if (ws) { try { ws.onclose = null; ws.close(); } catch (e) { } } ws = null; }
+  function sigOpen(id) {
+    const S0 = window.LINK_SIGNAL || { url: 'wss://0.peerjs.com:443/peerjs', key: 'peerjs' };
+    return new Promise((res, rej) => {
+      sigClose();
+      const w = ws = new WebSocket(`${S0.url}?key=${S0.key}&id=${encodeURIComponent(id)}&token=${Math.random().toString(36).slice(2)}&version=1.5.4`);
+      const t = setTimeout(() => { rej(new Error('server')); sigClose(); }, 9000);
+      w.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+        if (m.type === 'OPEN') { clearTimeout(t); wsHb = setInterval(() => w.readyState === 1 && w.send(JSON.stringify({ type: 'HEARTBEAT' })), 5000); res(w); }
+        else if (m.type === 'ID-TAKEN') { clearTimeout(t); rej(new Error('taken')); }
+        else if (m.type === 'ERROR') { clearTimeout(t); rej(new Error('server')); }
+        else if (w.onsig) w.onsig(m); };
+      w.onerror = () => { clearTimeout(t); rej(new Error('server')); };
+    });
+  }
+  const sig = (type, payload, dst) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type, payload, dst })); };
+  const trickle = (c, dst) => { c.onicecandidate = e => { if (e.candidate) sig('CANDIDATE', { candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }, dst()); }; };
+  const addCand = (c, p) => p && p.candidate && c.addIceCandidate(p.candidate).catch(() => { });
+  // host: open a room and wait for a friend
+  async function hostRoom(onCode) {
+    reset(); let code, tries = 0;
+    for (;;) { code = roomCode(); try { await sigOpen('fablemon-room-' + code); break; } catch (e) { if (e.message !== 'taken' || ++tries > 4) throw e; } }
+    role = 'host'; onCode(code);
+    let guest = null; const early = [];
+    ws.onsig = async m => {
+      if (m.type === 'OFFER' && !pc) {
+        guest = m.src; pc = new RTCPeerConnection({ iceServers: ICE }); pc.ondatachannel = e => { wire(e.channel); e.channel.addEventListener('open', sigClose); };
+        trickle(pc, () => guest);
+        await pc.setRemoteDescription({ type: 'offer', sdp: m.payload.sdp });
+        await pc.setLocalDescription(await pc.createAnswer()); sig('ANSWER', { sdp: pc.localDescription.sdp }, guest);
+        for (const p of early.splice(0)) addCand(pc, p);
+      } else if (m.type === 'CANDIDATE' && m.src === guest) { if (pc && pc.remoteDescription) addCand(pc, m.payload); else early.push(m.payload); }
+      else if (m.type === 'CANDIDATE' && !guest) early.push(m.payload);
+    };
+    return code;
+  }
+  // guest: join with the code
+  async function joinRoom(code) {
+    code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) throw new Error('code');
+    reset(); await sigOpen('fablemon-g-' + Math.random().toString(36).slice(2, 12)); role = 'guest';
+    const room = 'fablemon-room-' + code;
+    pc = new RTCPeerConnection({ iceServers: ICE }); const ch = pc.createDataChannel('fablemon', { ordered: true }); wire(ch); ch.addEventListener('open', sigClose);
+    trickle(pc, () => room);
+    return new Promise(async (res, rej) => {
+      const t = setTimeout(() => { if (!st.on) { rej(new Error('noroom')); sigClose(); reset(); } }, 15000);
+      ws.onsig = async m => {
+        if (m.type === 'ANSWER') { await pc.setRemoteDescription({ type: 'answer', sdp: m.payload.sdp }); }
+        else if (m.type === 'CANDIDATE') addCand(pc, m.payload);
+        else if (m.type === 'EXPIRE' || m.type === 'LEAVE') { clearTimeout(t); rej(new Error('noroom')); sigClose(); reset(); }
+      };
+      ch.addEventListener('open', () => { clearTimeout(t); res(); });
+      await pc.setLocalDescription(await pc.createOffer()); sig('OFFER', { sdp: pc.localDescription.sdp, type: 'data' }, room);
+    });
+  }
+  const _reset = reset; reset = function () { _reset(); sigClose(); };
+  return Object.assign(st, { hostRoom, joinRoom, cancelRoom: () => { sigClose(); if (!st.on) reset(); }, host, join, accept, send, bye, listen: f => onMsg.push(f), kindOf: c => (unpack(c) || {}).kind, _pack: pack, _unpack: unpack });
 })();
 
 // ---------- QR codes: draw one, and read one with the camera where the browser can
@@ -21711,11 +21776,49 @@ function linkConnect() {
   stopScan(); LINK_PANEL = false;
   if (LinkNet.on) return openModal('Playing with a friend', `<p>🔗 You're linked with <b>${LinkNet.peer.n}</b>.</p><p style="font-size:13px">Meet in the Link Hall in Smallroot to see each other. Codes for trades, ghost runs and teams can be sent straight across.</p>
     <div class="row"><button class="btn" data-a="x">Close</button><button class="btn" data-a="bye">Unlink</button></div>`, a => { if (a === 'bye') { LinkNet.bye(); toast('Unlinked.'); } closeModal(); });
-  openModal('Play with a friend', `<p>Link your game with a friend's, phone to phone. You'll swap two codes, by scanning a QR code or pasting text.</p>
-    <p style="font-size:13px;opacity:.8">One of you hosts, the other joins. Being on the same Wi-Fi works best.</p>
-    <button class="btn gold" data-a="host" style="width:100%;margin:3px 0">📡 Host: show my code</button>
-    <button class="btn" data-a="join" style="width:100%;margin:3px 0">🤝 Join: my friend is hosting</button>
-    <div class="row"><button class="btn" data-a="x">Not now</button></div>`, a => { if (a === 'host') return linkHostFlow(); if (a === 'join') return linkJoinFlow(); closeModal(); });
+  openModal('Play with a friend', `<p>One of you hosts a room and gets a 6-letter code. The other joins with it.</p>
+    <button class="btn gold" data-a="host" style="width:100%;margin:3px 0">📡 Host a room</button>
+    <button class="btn gold" data-a="join" style="width:100%;margin:3px 0">🤝 Join with a code</button>
+    <p style="font-size:12px;opacity:.7;margin:8px 0 2px">Can't connect? <a href="#" data-a="old" style="color:inherit">Link by QR code instead</a></p>
+    <div class="row"><button class="btn" data-a="x">Not now</button></div>`, a => {
+    if (a === 'host') return linkRoomHost(); if (a === 'join') return linkRoomJoin();
+    if (a === 'old') return openModal('Link by QR code', `<p>The longer way: swap two codes by QR or text. Works without the room server.</p>
+      <button class="btn gold" data-a="host" style="width:100%;margin:3px 0">📡 Host: show my code</button><button class="btn" data-a="join" style="width:100%;margin:3px 0">🤝 Join: my friend is hosting</button>
+      <div class="row"><button class="btn" data-a="back">Back</button></div>`, b => b === 'host' ? linkHostFlow() : b === 'join' ? linkJoinFlow() : linkConnect());
+    closeModal(); });
+}
+const linkRoomErr = e => ({ server: "Couldn't reach the room service. Check you're online, or use Link by QR code.", noroom: "No room with that code. Check it with your friend (they need to keep the Host screen open).", code: 'Room codes are 6 letters and numbers.' }[e && e.message] || `Couldn't link (${(e && e.message) || e}).`);
+async function linkRoomHost() {
+  LINK_PANEL = true; let handoff = false;
+  openModal('Host a room', '<p>Opening a room…</p>', null, () => { if (handoff) return; LINK_PANEL = false; if (!LinkNet.on) LinkNet.cancelRoom(); });
+  try {
+    await LinkNet.hostRoom(code => {
+      if (!LINK_PANEL) return LinkNet.cancelRoom();
+      handoff = true; const nice = code.slice(0, 3) + ' ' + code.slice(3);
+      openModal('Host a room', `<p>Tell your friend this code. They tap <b>Play with a friend → Join with a code</b>.</p>
+        <div style="text-align:center;font:900 40px/1.2 ui-monospace,monospace;letter-spacing:4px;color:#3a2a14;background:#fffaea;border:3px solid #5a3a1e;border-radius:12px;padding:10px 4px;margin:6px 0;user-select:all">${nice}</div>
+        <p style="text-align:center;font-size:13px">⏳ Waiting for your friend… keep this open.</p>
+        <div class="row">${navigator.share ? '<button class="btn" data-a="share">Share code</button>' : ''}<button class="btn" data-a="x">Cancel</button></div>`,
+        a => { if (a === 'share') return navigator.share({ text: `Join my Fablemon room: ${code}` }).catch(() => { }); closeModal(); },
+        () => { LINK_PANEL = false; if (!LinkNet.on) LinkNet.cancelRoom(); });
+      LINK_PANEL = true;
+    });
+  } catch (e) { LINK_PANEL = false; openModal('Host a room', `<p>${linkRoomErr(e)}</p><div class="row"><button class="btn" data-a="b">Back</button></div>`, () => linkConnect()); }
+}
+function linkRoomJoin() {
+  LINK_PANEL = true;
+  openModal('Join with a code', `<p>Type the code from your friend's screen.</p>
+    <input data-a="code" maxlength="7" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABC 123" style="width:100%;box-sizing:border-box;text-align:center;font:900 32px ui-monospace,monospace;letter-spacing:4px;text-transform:uppercase;padding:8px;border:3px solid #5a3a1e;border-radius:12px">
+    <p id="lkMsg" style="font-size:13px;margin:4px 0;min-height:1.2em"></p>
+    <div class="row"><button class="btn" data-a="back">Back</button><button class="btn gold" data-a="go">Join</button></div>`, async a => {
+    if (a === 'back') { LINK_PANEL = false; return linkConnect(); }
+    if (a !== 'go' || linkRoomJoin.busy) return;
+    const v = document.querySelector('#mBody input').value; linkRoomJoin.busy = 1; linkMsg('🔗 Linking…');
+    try { await LinkNet.joinRoom(v); } catch (e) { linkMsg('❌ ' + linkRoomErr(e)); }
+    linkRoomJoin.busy = 0;
+  }, () => { LINK_PANEL = false; });
+  const inp = document.querySelector('#mBody input'); inp.focus();
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.querySelector('#mBody [data-a=go]').click(); });
 }
 function linkCodeView(title, intro, code, after) {
   LINK_PANEL = true;
