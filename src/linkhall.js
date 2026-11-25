@@ -194,7 +194,9 @@ function linkMenu() {
     <button class="btn" data-a="race" style="width:100%;margin:3px 0">🏁 Time trials and ghost races</button>
     <button class="btn" data-a="share" style="width:100%;margin:3px 0">📤 Share my team as a code</button>
     <button class="btn" data-a="rec" style="width:100%;margin:3px 0">🏆 Records</button>
-    <p style="font-size:12px;opacity:.75;margin-top:6px">Coming soon: playing live with a friend.</p>`, a => {
+    <button class="btn" data-a="link" style="width:100%;margin:3px 0">🔗 ${typeof LinkNet !== 'undefined' && LinkNet.on ? `Linked with ${LinkNet.peer.n}` : 'Play with a friend (link up)'}</button>
+    <p style="font-size:12px;opacity:.75;margin-top:6px">Coming soon: live races and battles with a linked friend.</p>`, a => {
+    if (a === 'link') return linkConnect();
     if (a === 'trade') return linkTrade();
     if (a === 'race') return linkRaces();
     if (a === 'battle') return linkSetup();
@@ -215,7 +217,7 @@ function linkShare(pre) {
     const chosen = all.filter(m => pick.has(m.uid)), code = chosen.length ? linkTeamCode(chosen) : '';
     openModal('Share my team', `<p>Pick up to 6, then send the code to a friend (WhatsApp, a message, anything). They paste it at their Link Hall to battle a copy of your team. Nothing leaves your save.</p>
       <div style="max-height:30vh;overflow:auto">${all.map(m => linkRow(m, pick.has(m.uid) ? 'In' : '')).join('')}</div>
-      <textarea readonly style="width:100%;height:64px;font-size:11px;margin-top:6px" onclick="this.select()">${code}</textarea>
+      ${code ? linkCodeBox(code) : ''}
       <div class="row"><button class="btn" data-a="back">Back</button><button class="btn gold" data-a="copy" ${code ? '' : 'disabled'}>Copy code</button></div>`, (a, d) => {
       if (a === 't') { const u = linkUid(d.u); if (pick.has(u)) pick.delete(u); else if (pick.size < 6) pick.add(u); return draw(); }
       if (a === 'back') return linkMenu();
@@ -305,7 +307,7 @@ const b64d = s => JSON.parse(decodeURIComponent(escape(atob(s))));
 const linkSum = str => { let h = 7; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return (h % 46656).toString(36).padStart(3, '0'); };
 const linkId = () => Math.random().toString(36).slice(2, 10);
 const linkCopyBtn = code => { const tx = document.querySelector('#mBody textarea'); if (tx) tx.select(); (navigator.clipboard ? navigator.clipboard.writeText(code) : Promise.reject()).then(() => toast('Code copied!'), () => { try { document.execCommand('copy'); toast('Code copied!'); } catch (e) { toast('Select the code and copy it.'); } }); };
-const linkCodeBox = code => `<textarea readonly style="width:100%;height:70px;font-size:11px;margin-top:6px" onclick="this.select()">${code}</textarea>`;
+let linkCodeBox = code => `<textarea readonly style="width:100%;height:70px;font-size:11px;margin-top:6px" onclick="this.select()">${code}</textarea>`;
 
 // ---------- trading
 const LINK_SKIP = ['uid', 'loc', 'out', 'status', 'slp', 'pp', 'job', 'hp'];

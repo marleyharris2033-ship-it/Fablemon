@@ -1068,6 +1068,7 @@ function openMenu() {
     ['move', '✋', 'Move things'], ['settings', '⚙️', 'Settings'], ['export', '💾', 'Back up'],
     ['look', '👕', 'Wardrobe'],
     ...(typeof mtMenuTile === 'function' ? mtMenuTile() : []),
+    ...(typeof linkMenuTile === 'function' ? linkMenuTile() : []),
     ...(vdFileCount() ? [['files', ICONS.files ? `<img src="${ICONS.files}" style="width:1.4em;height:1.4em;vertical-align:middle">` : '🗂️', 'Files']] : []),
   ];
   const saveNote = Cloud.ok() ? 'Saves are backed up to your claude.ai account.' : 'Saves are kept on this device. Back up now and then to keep them safe.';
@@ -1087,6 +1088,7 @@ function openMenu() {
     if (a === 'files') openFiles();
     if (a === 'look') { closeModal(); openWardrobe(); }
     if (a === 'mounts') mtOpen();
+    if (a === 'link') linkConnect();
     if (a === 'title') { openModal('Quit to title?', '<p>Anything since you last saved will be lost.</p><div class="row"><button class="btn gold" data-a="yes">Quit</button><button class="btn" data-a="no">Keep playing</button></div>', b => { if (b === 'yes') location.reload(); else closeModal(); }); }
   });
 }
