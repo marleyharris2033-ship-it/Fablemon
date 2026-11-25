@@ -289,6 +289,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const sc = st.sc, M = MOVES[id], tgt = opp(f);
     if (!M || f.stun > 0 || f.lunge || (f.cd[id] || 0) > 0) return false;
     f.cd[id] = cdOf(id) * (f.m.status === 'par' ? 1.4 : 1) * (st.duo && f.side === 'foe' ? st.duo.foeCd : 1);
+    if (st.net && f === st.me) st.net.send({ t: 'b.m', id });   // a live battle: the other phone plays the same move from your Fablemon
     const dx = tgt.x - f.x, dy = tgt.y - f.y; face(f, dx, dy, false);
     if (f.side === 'me') say(M.name, 700);
     if (M.protect) { f.protect = 1.4; ring(f, 0x9fd8ff); Sound.play('pop'); fxTex(sc);
@@ -343,11 +344,14 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   function hit(att, def, id, first) {
     const M = MOVES[id], sc = st.sc;
     if (def.m.hp <= 0) return;
+    if (st.net && def === st.foe) return;   // a live battle: your friend's phone decides whether it hit them (and tells you)
+    const net = st.net && att === st.foe, tell = o => net && st.net.send(Object.assign({ t: 'b.d', id }, o));
+    if (net && def.iframe > 0) tell({ miss: 'Dodged!' }); if (net && def.iframe <= 0 && def.protect > 0) tell({ miss: 'Blocked' });
     if (def.iframe > 0) { floatTxt(def, 'Dodged!', '#bfe8ff'); return; }
     if (def.protect > 0) { floatTxt(def, 'Blocked', '#9fd8ff'); Sound.play('pick'); return; }
     if (!M.pow) {
       if (M.st && !M.pow) inflict(def, M.st[0], true);
-      for (const s of M.stats || (M.stat ? [M.stat] : [])) buff(att, s[0] === 'self' ? att : def, s);
+      for (const s of M.stats || (M.stat ? [M.stat] : [])) { if (net && s[0] === 'self') tell({ buff: s }); else buff(att, s[0] === 'self' ? att : def, s); }
       if (M.seed) { def.seed = att; floatTxt(def, 'Seeded', '#7ac74c'); }
       return;
     }
@@ -369,14 +373,18 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     floatTxt(def, (crit > 1 ? '✦' : '') + dmg, e > 1 ? '#ffe066' : e < 1 ? '#bbbbbb' : '#ffffff', e > 1 ? 16 : 13);
     if (first && e > 1) say("It's super effective!", 900); else if (first && e < 1 && e > 0) say("It's not very effective...", 900); else if (e === 0) say("It doesn't affect it...", 900);
     if (crit > 1) floatTxt(def, 'Critical!', '#ffd060', 11);
+    if (net) tell({ dmg, dealt, e, crit });   // (they show the numbers and take any drain or recoil themselves)
+    else {
     if (M.drain && att.m.hp > 0) healF(att, dealt * M.drain, true);
     if (M.recoil) { att.m.hp = Math.max(0, att.m.hp - Math.max(1, Math.floor(dealt / M.recoil))); floatTxt(att, 'Recoil', '#ffb0a0'); }
+    }
     if (def.m.hp > 0) {
       if (M.st && Math.random() * 100 < M.st[1]) inflict(def, M.st[0]);
       if (M.flinch && Math.random() * 100 < M.flinch) def.stun = Math.max(def.stun, .45);
     }
-    if (M.boost && Math.random() * 100 < M.boost[3]) buff(att, M.boost[0] === 'self' ? att : def, M.boost);
+    if (M.boost && Math.random() * 100 < M.boost[3]) { if (net && M.boost[0] === 'self') tell({ buff: M.boost }); else buff(att, M.boost[0] === 'self' ? att : def, M.boost); }
     refresh();
+    if (net) netSend(true);
   }
   function inflict(f, s, loud) {
     if (f.m.status || f.m.hp <= 0) { if (loud) floatTxt(f, 'No effect', '#ddd'); return; }
@@ -428,6 +436,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (ITEMS[h].cure && me.m.status) { me.m.status = null; me.stun = 0; refresh(); }
       if (ITEMS[h].heal) healF(me, healAmt(h, me.m)); say(`${monName(me.m)} ${ITEMS[h].heal ? 'ate' : 'drank'} the ${ITEMS[h].name}!`); return;
     }
+    if (a === 'run' && st.net) { if (!st.forfeit) { st.forfeit = 1; return say('Tap Run again to give up the battle.', 1600); } st.net.send({ t: 'b.end' }); say('You gave up.', 1200); return end('lose'); }
     if (a === 'run' && st.T) return say("You can't run from a trainer battle!");
     if (a === 'run') {
       const d = Math.hypot(st.foe.x - me.x, st.foe.y - me.y);
@@ -586,6 +595,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     // the wild one where it stood; yours hops out beside you, towards it
     const into = (x, y) => [Math.max(st.B.x0, Math.min(st.B.x1, x)), Math.max(st.B.y0, Math.min(st.B.y1, y))];
     let [fx, fy] = into(at.x, at.y);
+    if (st.net && st.net.flip) [px, py, fx, fy] = [fx, fy, px, py];   // a live battle: the guest starts where the host's opponent would
     const dx = fx - px, dy = fy - py, d = Math.hypot(dx, dy) || 1;
     let [mx, my] = into(px + dx / d * 14, py + dy / d * 14); if (solid(mx, my)) [mx, my] = into(px, py);
     st.home = { x: fx, y: fy };
@@ -647,6 +657,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       for (const f of fs()) {
         for (const k in f.cd) if (f.cd[k] > 0) f.cd[k] -= dt;
         f.dodgeT -= dt; f.iframe -= dt; f.protect -= dt;
+        if (st.net && f === st.foe) continue;   // (their own phone runs their burns, sleep and knockback)
         if (f.stun > 0) { f.stun -= dt; if (f.stun <= 0 && f.m.status === 'slp') { f.m.status = null; floatTxt(f, 'Woke up!', '#fff'); refresh(); } }
         // burns, poison and seeds hurt over time
         f.dotT -= dt;
@@ -662,7 +673,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         mx = inp.jx || ((inp.keys.d || inp.keys.arrowright ? 1 : 0) - (inp.keys.a || inp.keys.arrowleft ? 1 : 0));
         my = inp.jy || ((inp.keys.s || inp.keys.arrowdown ? 1 : 0) - (inp.keys.w || inp.keys.arrowup ? 1 : 0));
       }
-      if (opts.rtAuto && !st.meOut && !mx && !my && !st.catching && me.stun <= 0 && st.ready <= 0) [mx, my] = think(dt, me, foe, true);   // Auto: your Fablemon fights on its own; touching the stick takes over
+      if (opts.rtAuto && !st.net && !st.meOut && !mx && !my && !st.catching && me.stun <= 0 && st.ready <= 0) [mx, my] = think(dt, me, foe, true);   // Auto: your Fablemon fights on its own; touching the stick takes over
       if (st.over) return;
       if (!st.meOut) move(me, mx, my, dt, true);
       // your partner: always the Auto brain
@@ -674,9 +685,10 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
           const sc0 = o => o.m.hp / monStat(o.m, 'hp') * 60 + Math.hypot(o.x - foe.x, o.y - foe.y) / 4 + Math.random() * 35, was = foe.tgt;
           foe.tgt = live.slice().sort((a, b) => sc0(a) - sc0(b))[0];
           if (was && foe.tgt !== was && foe.tgt.spr.active) floatTxt(foe.tgt, '!', '#ff6a4a', 15); } }
-      // the wild one
-      const [fx, fy] = st.ready > 0 ? [0, 0] : think(dt, foe, opp(foe)); if (st.over) return;
-      move(foe, fx, fy, dt, false);
+      // the wild one (or, in a live battle, your friend's Fablemon where their phone says it is)
+      if (st.net) { netPuppet(dt); netSend(false, dt, mx || my || me.lunge); }
+      else { const [fx, fy] = st.ready > 0 ? [0, 0] : think(dt, foe, opp(foe)); if (st.over) return;
+      move(foe, fx, fy, dt, false); }
       // bolts
       for (const b of st.bolts.slice()) {
         b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; b.g.setPosition(b.x, b.y); b.glow.setPosition(b.x, b.y);
@@ -689,7 +701,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
         if (b.life <= 0 || b.x < st.B.x0 - 30 || b.y < st.B.y0 - 30 || b.x > st.B.x1 + 30 || b.y > st.B.y1 + 30) kill(b);
       }
       // faints
-      if (foe.m.hp <= 0) {
+      if (st.net && st.foe.m.hp <= 0) { const pf = st.foe; if (!pf.down) { pf.down = 1; pf.spr.setTint(0x777777); sc.tweens.add({ targets: pf.spr, alpha: .35, duration: 400 }); Sound.play('faint'); } }
+      else if (foe.m.hp <= 0) {
         foe.spr.setTint(0x777777); sc.tweens.add({ targets: foe.spr, alpha: 0, y: foe.spr.y + 6, duration: 500 }); Sound.play('faint'); burst(foe.x, mid(foe), 'Wild', 12, { tex: 'fx_smoke', tints: [0xe8e0d0, 0xc8c0b0], speed: 50, life: 700, grav: -40, size: 1.2, flat: 1 }); burst(foe.x, mid(foe), 'Glow', 8, { speed: 70, life: 600, size: .7 }); hitStop(120);
         if (st.T) { st.beaten.push(foe.m); const next = st.T.team.find(m => m.hp > 0); if (next) return nextFoe(next); }
         return end('win');
@@ -701,7 +714,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       }
       if (!st.meOut && me.m.hp <= 0) {
         Sound.play('faint'); burst(me.x, mid(me), 'Wild', 10, { tex: 'fx_smoke', tints: [0xe8e0d0, 0xc8c0b0], speed: 45, life: 650, grav: -40, size: 1.1, flat: 1 }); me.m.status = null; const next = tm().find(m => m.hp > 0);
-        if (!next) { if (!alive(st.ally)) return end('lose'); st.meOut = true; return bowOut(me, `You're out of Fablemon! ${st.allyName || 'Your partner'} fights on!`); }
+        if (!next) { if (st.net) { netSend(true); st.net.send({ t: 'b.end' }); return end('lose'); } if (!alive(st.ally)) return end('lose'); st.meOut = true; return bowOut(me, `You're out of Fablemon! ${st.allyName || 'Your partner'} fights on!`); }
         say(`${monName(me.m)} fainted!`, 1200);
         if (tm().filter(m => m.hp > 0).length > 1) return choose(me);   // pause and pick who goes next
         swapIn(next);
@@ -725,6 +738,47 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     else { const T0 = tfx(b.type); burst(b.x, b.y, b.type, 5, { speed: 40, life: 300, size: .6 }); if (T0.zap) zap(b.x, b.y, b.x + 6, b.y + 6); }
     b.g.destroy(); b.glow.destroy(); st.bolts = st.bolts.filter(q => q !== b);
   }
+
+  // ---------- live battles (25 Nov 2026): each phone runs its own Fablemon and decides the hits on it; the other
+  // phone's Fablemon is a puppet, moved and switched by its state ({t:'b.s'} up to 12 times a second), its moves
+  // replayed ({t:'b.m'}), and the numbers when your hits land on it come back ({t:'b.d'}). {t:'b.end'}: they're out.
+  function netSend(now, dt = 0, moving) {
+    if (!st || !st.net || !st.me) return; st.netT -= dt; if (!now && st.netT > 0) return; st.netT = 1 / 12;
+    const me = st.me; st.net.send({ t: 'b.s', x: Math.round(me.x), y: Math.round(me.y), d: me.dir, mv: moving ? 1 : 0, hp: me.m.hp, st: me.m.status || 0, stg: me.stg, u: me.m.uid, ifr: me.iframe > 0 ? 1 : 0 });
+  }
+  function netPuppet(dt) {
+    const P = st.pup, sc = st.sc; let f = st.foe; if (!P) return;
+    if (P.u !== f.m.uid) {   // they sent out someone else
+      const m = st.T.team.find(q => q.uid === P.u); if (!m) return;
+      if (f.ring) f.ring.destroy(); if (f.aura) f.aura.destroy(); f.sh.destroy(); f.spr.destroy();
+      st.foeMon = m; f = st.foe = fighter(sc, m, 'foe', P.x, P.y); place(f); buildMoves(); refresh(); Sound.play('pop'); say(`${st.net.name} sent out ${monName(m)}!`, 1200);
+    }
+    const ox = f.x, oy = f.y, k = Math.min(1, dt * 12);
+    f.x += (P.x - f.x) * k; f.y += (P.y - f.y) * k; if (Math.hypot(P.x - f.x, P.y - f.y) > 90) { f.x = P.x; f.y = P.y; }
+    if (P.mv) face(f, f.x - ox || (P.d === 'left' ? -1 : P.d === 'right' ? 1 : 0), f.y - oy || (P.d === 'up' ? -1 : P.d === 'down' ? 1 : 0), true); else if (f.dir !== P.d || f.spr.anims.isPlaying) face(f, P.d === 'left' ? -1 : P.d === 'right' ? 1 : 0, P.d === 'up' ? -1 : P.d === 'down' ? 1 : 0, false);
+    f.spr.setAlpha(P.ifr ? .6 : f.down ? .35 : 1); place(f);
+    const was = f.m.hp; f.m.hp = P.hp; f.m.status = P.st || null; f.stg = P.stg || {}; f.iframe = P.ifr ? 1 : 0;
+    if (was !== P.hp || (st.pupR = (st.pupR || 0) - dt) <= 0) { st.pupR = .5; if (P.hp > 0 && f.down) { f.down = 0; f.spr.clearTint(); } refresh(); }
+  }
+  function netIn(m) {
+    if (!st || !st.net || st.over || !m) return;
+    if (m.t === 'b.s') { st.pup = m; return; }
+    const f = st.foe; if (!f || !f.spr || !f.spr.active) return;
+    if (m.t === 'b.m' && MOVES[m.id] && f.m.hp > 0) { f.cd[m.id] = 0; f.stun = 0; f.lunge = null; useMove(f, m.id); return; }
+    if (m.t === 'b.d') {   // your hit, as their phone saw it
+      if (m.miss) return floatTxt(f, m.miss, m.miss === 'Blocked' ? '#9fd8ff' : '#bfe8ff');
+      if (m.buff) return buff(st.me, st.me, m.buff);
+      const M = MOVES[m.id] || {};
+      fillTint(f.spr, 0xffffff); later(st.sc, 70, () => unTint(f.spr)); Sound.play('hit'); burst(f.x, mid(f), M.type || 'Wild', m.e > 1 ? 14 : 9, { speed: 100, size: 1 });
+      floatTxt(f, (m.crit > 1 ? '✦' : '') + m.dmg, m.e > 1 ? '#ffe066' : m.e < 1 ? '#bbbbbb' : '#ffffff', m.e > 1 ? 16 : 13);
+      if (m.e > 1) say("It's super effective!", 900); else if (m.e < 1 && m.e > 0) say("It's not very effective...", 900); else if (m.e === 0) say("It doesn't affect it...", 900);
+      if (M.drain && st.me.m.hp > 0) healF(st.me, m.dealt * M.drain, true);
+      if (M.recoil) { st.me.m.hp = Math.max(0, st.me.m.hp - Math.max(1, Math.floor(m.dealt / M.recoil))); floatTxt(st.me, 'Recoil', '#ffb0a0'); refresh(); }
+      return;
+    }
+    if (m.t === 'b.end') { say(`${st.net.name} is out of Fablemon!`, 1400); return end('win'); }
+  }
+  function netGone() { if (st && st.net && !st.over) { say('The link dropped: the battle was called off.', 1800); end('ran'); } }
 
   // ---------- the panels
   function hpBox(f, el) {
@@ -764,11 +818,11 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     Sound.play('encounter'); const fl = $('flash'); fl.style.opacity = .9; setTimeout(() => fl.style.opacity = 0, 140);
     st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
       dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme,
-      myTeam: o.myTeam || null, allyTeam: o.allyTeam || null, allyFirst: o.allyTeam ? o.allyTeam.find(m => m.hp > 0) : null, allyName: o.allyName || '', duo: o.duo || null, noItems: !!o.noItems, onEnd: o.onEnd || null, boost: o.boost || null };
+      myTeam: o.myTeam || null, allyTeam: o.allyTeam || null, allyFirst: o.allyTeam ? o.allyTeam.find(m => m.hp > 0) : null, allyName: o.allyName || '', duo: o.duo || null, noItems: !!o.noItems, onEnd: o.onEnd || null, boost: o.boost || null, net: o.net || null, netT: 0, pup: null };
     if (o.skill) { st.dodgeSkill = o.skill[0]; st.aggr = o.skill[1]; }
     if (st.duo) { st.dodgeSkill = Math.min(.6, st.dodgeSkill + .08); st.aggr = Math.min(.97, st.aggr + .12); st.foeSpeed = 1; }
     Sound.hushRain(true); Sound.theme('battle'); autoUi();
-    document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T || o.noItems ? 'none' : ''; $r('rtbHeal').style.display = o.noItems ? 'none' : ''; $r('rtbRun').style.display = o.onEnd ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1; ui.classList.toggle('duo', !!(o.allyTeam && o.allyTeam.some(m => m.hp > 0)));
+    document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T || o.noItems ? 'none' : ''; $r('rtbHeal').style.display = o.noItems ? 'none' : ''; $r('rtbRun').style.display = o.onEnd && !o.net ? 'none' : ''; $r('rtbAuto').style.display = o.net ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1; ui.classList.toggle('duo', !!(o.allyTeam && o.allyTeam.some(m => m.hp > 0)));
     const here = at || (sc.player ? { x: sc.player.x, y: sc.player.y - 40 } : { x: 0, y: 0 });
     setTimeout(() => { if (st && !st.me) { try { stageUp(sc, here); } catch (e) { console.warn('rtb', e); const d = st; st = null; ui.classList.remove('show'); document.body.classList.remove('rtb-on'); if (d) stageDown(d); sc.paused = false; Battle.start(foe, T ? Object.assign({}, T, { classic: true }) : undefined); } } }, 120);
   }
@@ -786,6 +840,6 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);
   }
-  return { start, get active() { return !!st; }, get st() { return st; } };
+  return { start, netIn, netGone, get active() { return !!st; }, get st() { return st; } };
 })();
 
