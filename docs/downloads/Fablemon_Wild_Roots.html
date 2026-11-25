@@ -19860,7 +19860,7 @@ const _lhTownCreate = Town.prototype.create;
 Town.prototype.create = function () {
   _lhTownCreate.call(this);
   const put = () => {
-    if (!this.sys || !this.sys.isActive()) return;
+    if (!this.sys || this.sys.settings.status > Phaser.Scenes.RUNNING) return;   // (still creating counts: the picture may already be loaded)
     this.textures.get('link_ext').setFilter(Phaser.Textures.FilterMode.LINEAR);
     const im = this.add.image(LINK_DOOR[0] * T + 8, LINK_DOOR[1] * T + 17, 'link_ext').setOrigin(.5, 1);
     im.setDisplaySize(140, 140 * im.height / im.width).setDepth(LINK_DOOR[1] * T + 15); this.linkImg = im; (this.tall || []).push(im);
