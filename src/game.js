@@ -181,9 +181,14 @@ class Inventory {
     this.emit();
   }
   find(id) { return this.slots.findIndex(s => s && s.id === id); }
-  canCraft(r) { return Object.entries(needOf(r)).every(([k, v]) => this.has(k, v)); }
+  canCraft(r) { return Object.entries(needOf(r)).every(([k, v]) => this === inv ? stock(k) >= v : this.has(k, v)); }
   craft(r) {
     if (!this.canCraft(r)) return false;
+    if (this === inv) {   // (the farm's chests count too)
+      const parts = Object.entries(needOf(r)).map(([k, v]) => useStock(k, v)), left = this.add(r.out, r.n);
+      if (left) { if (left < r.n) this.remove(r.out, r.n - left); unuseStock(parts); this.emit(); return 'full'; }
+      return true;
+    }
     const snapshot = JSON.stringify(this.slots);
     Object.entries(needOf(r)).forEach(([k, v]) => this.remove(k, v));
     const left = this.add(r.out, r.n);
@@ -886,22 +891,22 @@ const COOKING = [
 ];
 function openCooking() {
   const render = () => COOKING.map((r, k) => [r, k]).filter(([r]) => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest)).map(([r, k]) => {
-    const it = ITEMS[r.out], need = { ...r.need, wood: 1 }, ok = Object.entries(need).every(([id, n]) => inv.count(id) >= n);
-    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${inv.count(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${n}</span>`).join('');
+    const it = ITEMS[r.out], need = { ...r.need, wood: 1 }, ok = Object.entries(need).every(([id, n]) => stock(id) >= n);
+    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${stock(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${n}</span>`).join('');
     return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : it.heal ? `♥ Heals ${it.heal}% of a Fablemon` : '✚ Cures status problems'}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
   }).join('');
-  openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire. Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
+  openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire.${farmChests().length ? ' Ingredients in your farm\'s chests count too.' : ''} Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
     if (a === 'refresh') { $('mBody').querySelector('.mlist').innerHTML = render(); return; }
     if (a !== 'cook') return;
     const r = COOKING[+d.k], need = { ...r.need, wood: 1 };
-    const most = Math.min(99, ...Object.entries(need).map(([id, n]) => Math.floor(inv.count(id) / n)));
+    const most = Math.min(99, ...Object.entries(need).map(([id, n]) => Math.floor(stock(id) / n)));
     if (most < 1) return Sound.play('error');
     const cook = times => {
       let made = 0;
       for (let i = 0; i < times; i++) {
-        if (!Object.entries(need).every(([id, n]) => inv.count(id) >= n)) break;
-        for (const [id, n] of Object.entries(need)) inv.remove(id, n);
-        const left = inv.add(r.out, 1); if (left) { for (const [id, n] of Object.entries(need)) inv.add(id, n); toast('Your backpack is full!'); break; }
+        if (!Object.entries(need).every(([id, n]) => stock(id) >= n)) break;
+        const parts = Object.entries(need).map(([id, n]) => useStock(id, n));
+        const left = inv.add(r.out, 1); if (left) { unuseStock(parts); toast('Your backpack is full!'); break; }
         made++;
       }
       if (made) { S.flags.cooked = 1; Sound.play('fill'); setTimeout(() => Sound.play('coin'), 350); renderHotbar(); toast(`You cooked ${made > 1 ? made + ' ' : ''}${ITEMS[r.out].name}!`, 1500); }
@@ -924,13 +929,13 @@ function openTrough(o) {
   o.food = o.food || 0;
   const out = () => S.mons.filter(m => m.loc === 'ranch' && m.out).length;
   const render = () => {
-    const rows = (o.lv ? ['premium_feed', 'feed'] : CROP_ITEMS()).filter(id => inv.count(id)).map(id => `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}</b><small>You have ${inv.count(id)}</small></div><button class="btn gold" data-a="add" data-id="${id}" data-n="1">Add 1</button><button class="btn" data-a="add" data-id="${id}" data-n="all">All</button></div>`).join('');
+    const rows = (o.lv ? ['premium_feed', 'feed'] : CROP_ITEMS()).filter(id => stock(id)).map(id => `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}</b><small>You have ${stock(id)}${stockNote(id)}</small></div><button class="btn gold" data-a="add" data-id="${id}" data-n="1">Add 1</button><button class="btn" data-a="add" data-id="${id}" data-n="all">All</button></div>`).join('');
     return `<p>Food in the trough: <b>${o.food}</b>${o.prem ? ` + <b>${o.prem}</b> Premium` : ''}. Each night, every Fablemon out on your farm eats 1 and grows closer to you.</p>
       <p><small>${S.ranch === 2 ? `${out()} Fablemon are out on your farm right now.` : 'Build a ranch so your Fablemon can live on the farm.'}</small></p><div class="mlist">${rows || (o.lv ? '<p>A Deluxe Trough only takes Fablemon Feed. Hattie sells it at the ranch in town.</p>' : '<p>You have no crops to add. Grow some first!</p>')}</div>`;
   };
   openModal(o.lv ? 'Deluxe Trough' : 'Feeding Trough', render(), (a, d) => {
     if (a !== 'add') return;
-    const n = d.n === 'all' ? inv.count(d.id) : 1; if (!inv.remove(d.id, n)) return;
+    const n = d.n === 'all' ? stock(d.id) : 1; if (n < 1 || stock(d.id) < n) return; useStock(d.id, n);
     if (d.id === 'premium_feed') o.prem = (o.prem || 0) + n; else o.food += n; Sound.play('plant'); renderHotbar(); $('mBody').innerHTML = render();
   });
 }
@@ -987,19 +992,19 @@ function openCraft() {
     const rows = RECIPES.map((r, k) => [r, k]).filter(([r]) => CRAFT_TABS[craftTab][1].includes(r.out)).map(([r, k]) => {
       if (recipeLocked(r)) return `<div class="recipe" style="opacity:.55"><img src="${iconFor(r.out)}" style="filter:grayscale(1)"><div class="g"><b>${ITEMS[r.out].name}</b><small>${r.crest ? `🔒 After your ${['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'][r.crest]} Crest` : `🌳 Unlocks at Hearthroot stage ${r.stage + 1}`}</small></div></div>`;
       const can = inv.canCraft(r);
-      const need = Object.entries(needOf(r)).map(([id, v]) => `${v} ${ITEMS[id].name} (${inv.count(id)})`).join(', ');
+      const need = Object.entries(needOf(r)).map(([id, v]) => `${v} ${ITEMS[id].name} (${stock(id)})`).join(', ');
 
       return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${ITEMS[r.out].name}${r.n > 1 ? ' ×' + r.n : ''}</b><small>${need}</small></div>
         <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button></div>`;
     }).join('');
-    return `${tabs}<div class="mlist">${rows}</div><p><small>Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
+    return `${tabs}<div class="mlist">${rows}</div><p><small>${farmChests().length ? 'Materials in your farm\'s chests count too. ' : ''}Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
   };
   openModal('Crafting', render(), (a, d) => {
     if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
     if (a === 'cats') { craftTab = -1; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
     if (a === 'craft') {
       const r = RECIPES[+d.k]; if (!r || recipeLocked(r)) return;
-      const most = Math.min(99, ...Object.entries(needOf(r)).map(([id, v]) => Math.floor(inv.count(id) / v)));
+      const most = Math.min(99, ...Object.entries(needOf(r)).map(([id, v]) => Math.floor(stock(id) / v)));
       const make = times => { let made = 0; for (let i = 0; i < times; i++) { const ok = inv.craft(r); if (ok === 'full') { toast('Your backpack is full.'); break; } if (!ok) break; made++; } if (made) Sound.play('place'); refreshModal(); };
       if (most <= 1) make(1); else askQty({ title: `Craft ${ITEMS[r.out].name}`, icon: iconFor(r.out), max: most, start: 1, verb: 'Craft', note: k => 'Uses ' + Object.entries(needOf(r)).map(([id, v]) => `${v * k} ${ITEMS[id].name}`).join(', ') }, make);
     }
@@ -2097,6 +2102,22 @@ function jobTargets(m, area) {
 const toStore0 = (id, n) => { S.workStore = S.workStore || {}; S.workStore[id] = (S.workStore[id] || 0) + n; };
 let jobChests = [];   // chests in the area of the Fablemon currently working; their finds go there first
 const toStore = (id, n) => { const left = jobChests.length ? chestPut(jobChests, id, n) : n; if (left) toStore0(id, left); };
+/* ---------- farm stock (25 Nov 2026): on the farm (and in the farmhouse, barn and coop), your workstations use what's
+   in your chests as well as your backpack: the cooking pot, crafting, the compost bin and the troughs. The backpack goes
+   first, then the chests (farm chests, then the house's chest furniture). Chest locks are for helper Fablemon only. */
+const FARM_SCENES = ['farm', 'house', 'barn', 'coop'];
+function farmChests() {
+  if (typeof scene === 'undefined' || !scene || !scene.scene || !FARM_SCENES.includes(scene.scene.key)) return [];
+  const out = chestsIn([-1e9, -1e9, 1e9, 1e9]);
+  for (const f of S.furn || []) if (f.items && Array.isArray(f.items)) out.push({ k: 'furn', o: f });
+  return out;
+}
+const stock = id => inv.count(id) + chestCount(farmChests(), id);
+const inChests = id => chestCount(farmChests(), id);
+// take n: backpack first, then chests; returns where it came from, so it can be put back
+function useStock(id, n) { const a = Math.min(inv.count(id), n); if (a) inv.remove(id, a); const rest = n - a; if (rest > 0) chestTake(farmChests(), id, rest); return { id, bag: a, chest: rest }; }
+function unuseStock(parts) { for (const p of parts) { if (p.bag) inv.add(p.id, p.bag); if (p.chest) { const left = chestPut(farmChests(), p.id, p.chest); if (left) inv.add(p.id, left); } } }
+const stockNote = id => { const c = inChests(id); return c ? ` · ${c} in chests` : ''; };
 /* ---------- chests near a work area */
 function chestsIn([x0, y0, x1, y1]) { const out = []; for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'chest' || o.part || !o.items) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) out.push({ k, o }); } return out; }
 function potIn([x0, y0, x1, y1]) { for (const [k, o] of Object.entries(S.objs || {})) { if (o.t !== 'pot' || o.part) continue; const [x, y] = k.split(',').map(Number); if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return { x, y }; } return null; }
@@ -2804,7 +2825,7 @@ class Farm extends World {
           <div class="row"><button class="btn gold" data-a="build" ${mustClear ? 'disabled' : ''}>Move here</button><button class="btn" data-a="close">Cancel</button></div>`;
         return;
       }
-      const needs = Object.entries(def.cost).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
+      const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
       const blocked = mustClear ? `<b style="color:#b03a2e">${mustClear} red tile${mustClear > 1 ? 's' : ''} in the way.</b> Clear them or move the plot.` : '<b style="color:var(--green2)">The plot is ready.</b>';
       $('buildbar').innerHTML = `<div class="bt"><b>${def.name}</b> <small>${x1 - x0 + 1}×${y1 - y0 + 1} tiles</small></div><small>${def.fixed ? def.desc : 'Drag the plot on the map, or use the arrows, to choose where it goes.'}</small>
         <div class="legend"><i style="background:#7cf27a"></i>Free <i style="background:#ffb03a"></i>Cleared for you <i style="background:#ff4a3a"></i>In the way</div>
@@ -2823,8 +2844,8 @@ class Farm extends World {
       if (a === 'build' && def.zone) { close(); def.onBuild(at); return; }
       if (a === 'build' && def.move) { if (mustClear) return Sound.play('error'); const [x0, y0, x1, y1] = def.areaFor(at); close(); this.clearDebrisIn(x0, y0, x1, y1); Sound.play('place'); def.onBuild(at); return; }
       if (a === 'build') {
-        if (mustClear || S.gold < def.gold || Object.entries(def.cost).some(([k, n]) => inv.count(k) < n)) return Sound.play('error');
-        for (const [k, n] of Object.entries(def.cost)) inv.remove(k, n);
+        if (mustClear || S.gold < def.gold || Object.entries(def.cost).some(([k, n]) => stock(k) < n)) return Sound.play('error');
+        for (const [k, n] of Object.entries(def.cost)) useStock(k, n);
         S.gold -= def.gold; updateHUD(); renderHotbar(); Sound.play('coin'); close(); def.onBuild(at);
       }
     };
@@ -2847,8 +2868,8 @@ class Farm extends World {
       this.floatText(`+${out - left} Fertiliser`, x * T + 8, y * T); o.n = 0; o.boost = 0; Sound.play('pop'); renderHotbar(); this.drawObj(x, y); return;
     }
     if (o.n) { const d = o.doneDay - S.day; return toast(`It's breaking down nicely. Ready in ${d} day${d > 1 ? 's' : ''}.`, 2000); }
-    if (inv.count('fiber') < 10) return toast('Put in 10 fiber to make compost. Cut weeds with your scythe to get fiber.', 2600);
-    inv.remove('fiber', 10); o.n = 1; o.doneDay = S.day + compostDays(o); renderHotbar(); Sound.play('plant'); this.chips(x * T + 8, y * T + 6, 0x6b8a3a);
+    if (stock('fiber') < 10) return toast('Put in 10 fiber to make compost. Cut weeds with your scythe to get fiber.', 2600);
+    useStock('fiber', 10); o.n = 1; o.doneDay = S.day + compostDays(o); renderHotbar(); Sound.play('plant'); this.chips(x * T + 8, y * T + 6, 0x6b8a3a);
     toast(`You filled the compost bin. Fertiliser in ${compostDays(o)} days.`, 2000); this.drawObj(x, y);
   }
   objTex(t) {

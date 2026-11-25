@@ -231,7 +231,7 @@ svcCarpenter = SERVICE.carpenter = function () {
     const rows = ['coop', 'barn'].map(k => {
       const H0 = LV_HOUSE[k], h = S[k], c = !h ? H0.build : h.lv < 2 ? H0.up : null;
       if (!c) return `<div class="shoprow" id="lvB_${k}"><img src="${iconFor('wood')}"><div class="g"><b>Big ${H0.name.toLowerCase()}</b><small>Fully upgraded. Room for ${H0.cap[1]} animals.</small></div></div>`;
-      const ok = S.gold >= c.gold && Object.entries(c.cost).every(([i, n]) => inv.count(i) >= n);
+      const ok = S.gold >= c.gold && Object.entries(c.cost).every(([i, n]) => stock(i) >= n);
       return `<div class="shoprow"><img src="${iconFor('wood')}"><div class="g"><b>${h ? 'Upgrade to a big ' + H0.name.toLowerCase() : 'Build a ' + H0.name.toLowerCase()}</b><small>${h ? `Room for ${H0.cap[1]} animals and a bigger trough.` : `Houses ${k === 'coop' ? 'hens and ducks' : 'goats, sheep and cows'}. Room for ${H0.cap[0]}.`} ${c.gold.toLocaleString()}g, ${c.cost.wood} wood and ${c.cost.stone} stone.</small></div><button class="btn gold" id="lvB_${k}" ${ok ? '' : 'disabled'}>${h ? 'Upgrade' : 'Build'}</button></div>`;
     }).join('');
     const list = b.querySelector('.mlist'); (list || b).insertAdjacentHTML('beforeend', rows);
@@ -240,8 +240,8 @@ svcCarpenter = SERVICE.carpenter = function () {
 };
 function upgradeLvHouse(k) {
   const c = LV_HOUSE[k].up;
-  if (S.gold < c.gold || Object.entries(c.cost).some(([i, n]) => inv.count(i) < n)) return Sound.play('error');
-  for (const [i, n] of Object.entries(c.cost)) inv.remove(i, n);
+  if (S.gold < c.gold || Object.entries(c.cost).some(([i, n]) => stock(i) < n)) return Sound.play('error');
+  for (const [i, n] of Object.entries(c.cost)) useStock(i, n);
   S.gold -= c.gold; S[k].lv = 2; updateHUD(); renderHotbar(); Sound.play('levelup'); closeModal(); save();
   toast(`Robin upgrades your ${LV_HOUSE[k].name.toLowerCase()}. Room for ${lvCap(k)} animals now!`, 3000);
   if (scene && scene.scene.key === 'farm') scene.lvDraw();
@@ -461,12 +461,12 @@ class AnimalHouse extends World {
   openTrough() {
     const k = this.kind, h = S[k], max = lvTroughMax(k), feeds = k === 'coop' ? ['hay', 'grain'] : ['hay'];
     const render = () => `<p>Trough: <b>${h.trough || 0}/${max}</b>. Each animal eats one a night${h.open ? ', unless it grazed outside that day' : ''}.</p>
-      <div class="mlist">${feeds.map(id => `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}</b><small>You have ${inv.count(id)}.</small></div><button class="btn gold" data-a="fill" data-id="${id}" ${inv.count(id) && (h.trough || 0) < max ? '' : 'disabled'}>Fill</button></div>`).join('')}</div>
-      ${feeds.every(id => !inv.count(id)) ? '<p class="hint">Hattie at the ranch sells hay' + (k === 'coop' ? ' and grain' : '') + '.</p>' : ''}`;
+      <div class="mlist">${feeds.map(id => `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}</b><small>You have ${stock(id)}${stockNote(id)}.</small></div><button class="btn gold" data-a="fill" data-id="${id}" ${stock(id) && (h.trough || 0) < max ? '' : 'disabled'}>Fill</button></div>`).join('')}</div>
+      ${feeds.every(id => !stock(id)) ? '<p class="hint">Hattie at the ranch sells hay' + (k === 'coop' ? ' and grain' : '') + '.</p>' : ''}`;
     openModal(k === 'coop' ? 'Feed trough' : 'Hay trough', render(), (a, d) => {
       if (a !== 'fill') return;
-      const n = Math.min(inv.count(d.id), max - (h.trough || 0)); if (n <= 0) return;
-      inv.remove(d.id, n); h.trough = (h.trough || 0) + n; renderHotbar(); Sound.play('plant');
+      const n = Math.min(stock(d.id), max - (h.trough || 0)); if (n <= 0) return;
+      useStock(d.id, n); h.trough = (h.trough || 0) + n; renderHotbar(); Sound.play('plant');
       $('mBody').innerHTML = render();
     });
   }
