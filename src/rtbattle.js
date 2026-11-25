@@ -456,7 +456,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       if (old.ring) old.ring.destroy(); old.sh.destroy(); old.spr.destroy();
       st.foeMon = m; S.seen[m.sp] = 1;
       st.foe = fighter(sc, m, 'foe', st.home.x, st.home.y); place(st.foe); face(st.foe, st.me.x - st.foe.x, st.me.y - st.foe.y, false); st.foe.iframe = .8;
-      say(`${st.T.label} ${st.T.name} sent out ${SPECIES[m.sp].name}!`, 1400); Sound.play('pop');
+      say(`${st.T.label} ${st.T.name} sent out ${SPECIES[m.sp].name}!`.trim(), 1400); Sound.play('pop');
       buildMoves(); refresh(); st.switching = false; st.ready = .9;
     });
   }
@@ -765,6 +765,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     st = { from: sc, foeMon: foe, first, used: new Set([first.uid]), bolts: [], over: false, T: T || null, keep: keep || null, beaten: [], mood: T ? 'calm' : typeof roamMood === 'function' ? roamMood(foe) : 'calm', runs: 0, charmT: 0, healT: 0, swT: 0,
       dodgeSkill: Math.min(.5, .12 + foe.lv / 260 + (T && T.boss ? .08 : 0)), aggr: .55 + Math.min(.3, foe.lv / 250), foeSpeed: .92, prevTheme: Sound.currentTheme,
       myTeam: o.myTeam || null, allyTeam: o.allyTeam || null, allyFirst: o.allyTeam ? o.allyTeam.find(m => m.hp > 0) : null, allyName: o.allyName || '', duo: o.duo || null, noItems: !!o.noItems, onEnd: o.onEnd || null, boost: o.boost || null };
+    if (o.skill) { st.dodgeSkill = o.skill[0]; st.aggr = o.skill[1]; }
     if (st.duo) { st.dodgeSkill = Math.min(.6, st.dodgeSkill + .08); st.aggr = Math.min(.97, st.aggr + .12); st.foeSpeed = 1; }
     Sound.hushRain(true); Sound.theme('battle'); autoUi();
     document.body.classList.add('rtb-on'); ui.classList.add('show'); $r('rtbPick').classList.remove('show'); $r('rtbCharm').style.display = T || o.noItems ? 'none' : ''; $r('rtbHeal').style.display = o.noItems ? 'none' : ''; $r('rtbRun').style.display = o.onEnd ? 'none' : ''; $r('rtbRun').style.opacity = T ? .45 : 1; ui.classList.toggle('duo', !!(o.allyTeam && o.allyTeam.some(m => m.hp > 0)));

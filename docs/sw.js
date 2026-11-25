@@ -1,6 +1,6 @@
-// Fablemon offline cache, build 20261125-072530. The page: network first, so players always get the newest version.
+// Fablemon offline cache, build 20261125-081736. The page: network first, so players always get the newest version.
 // The art (a/, named by content so a file never changes): kept in its own cache across updates, fetched once.
-const CACHE = 'fablemon-20261125-072530', ART = 'fablemon-art';
+const CACHE = 'fablemon-20261125-081736', ART = 'fablemon-art';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
 self.addEventListener('activate', e => {

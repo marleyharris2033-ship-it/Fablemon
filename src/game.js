@@ -3357,19 +3357,19 @@ function buildTown() {
   // [frame, left tile, row, width in tiles]; nothing may sit on paving
   const props = [
     ['board', 35, 26, 3], ['stall', 26, 12, 3], ['planter', 17, 12, 3], ['planter', 54, 12, 3],
-    ['bench', 20, 17, 3], ['flowerbed', 20, 20, 3], ['bench', 50, 17, 3], ['flowerbed', 50, 20, 3],
+    ['bench', 50, 17, 3],   // (the top-left lawn's bench and flowerbed made way for the Link Hall, linkhall.js) ['flowerbed', 50, 20, 3],
     ['flowerbed', 20, 31, 3], ['bench', 20, 35, 3], ['flowerbed', 50, 31, 3], ['bench', 50, 35, 3],
     ['bench', 6, 27, 3], ['bench', 26, 47, 3], ['bench', 58, 47, 3],
   ];
   const trees = [
-    ['tree_oak', 18, 20], ['tree_apple', 24, 18], ['bush_round', 18, 17], ['tree_pine', 54, 20], ['tree_apple', 48, 18], ['bush_round', 54, 17],
+    ['tree_pine', 54, 20], ['tree_apple', 48, 18], ['bush_round', 54, 17],
     ['tree_pine', 18, 30], ['tree_apple', 24, 32], ['bush_wide', 17, 34], ['tree_oak', 54, 30], ['tree_apple', 48, 32], ['bush_wide', 54, 34],
     ['tree_oak', 4, 6], ['tree_pine', 14, 5], ['tree_oak', 27, 6], ['tree_apple', 52, 5], ['tree_pine', 58, 6], ['tree_oak', 66, 5], ['bush_round', 18, 9], ['bush_round', 55, 9],
     ['tree_oak', 3, 28], ['tree_apple', 11, 30], ['tree_pine', 6, 34], ['bush_round', 8, 32],
     ['bush_round', 68, 16], ['tree_oak', 65, 40], ['tree_pine', 68, 38], ['bush_round', 64, 37], ['tree_pine', 19, 40],
     ['tree_apple', 10, 47], ['tree_oak', 36, 47], ['tree_pine', 64, 47], ['bush_wide', 47, 47],
   ];
-  const lamps = [[25, 21], [47, 21], [25, 29], [47, 29], [32, 24], [40, 24], [5, 22], [5, 26], [12, 22], [12, 26], [59, 21], [61, 28], [68, 28],
+  const lamps = [[47, 21], [25, 29], [47, 29], [32, 24], [40, 24], [5, 22], [5, 26], [12, 22], [12, 26], [59, 21], [61, 28], [68, 28],
     [30, 12], [45, 12], [60, 16], [20, 46], [44, 46], [52, 46]];
   const approach = new Set(Object.values(BUILDINGS).map(b => (b.cx + b.door) + ',' + (b.by + 1)));
   const claim = (x, y, what) => {

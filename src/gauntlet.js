@@ -155,6 +155,6 @@ function gauntletFinish(clear) {
   const body = clear
     ? `<p><b>All eight Wardens beaten, back to back!</b> Time: ${gauntTime(ms)}${g.fastest === ms && g.clears > 1 ? ' (a new fastest!)' : ''}.</p><p>You earned <b>${gold.toLocaleString()}g</b>${gift ? ` and ${gift}` : ''}.</p>`
     : `<p>You beat <b>${G.beaten} of ${GAUNT_ORDER.length}</b> Wardens${newBest && G.beaten ? ' (a new best!)' : ''}.</p>${gold ? `<p>You earned <b>${gold.toLocaleString()}g</b>.</p>` : '<p>Rowan says the first Warden is always the hardest. Try again any time.</p>'}`;
-  const home = () => { const sc = scene; if (sc && sc.scene.key === 'arena' && sc.g) { sc.g.gauntlet = 0; sc.leave(); } };
+  const home = () => { const sc = scene; if (sc && sc.scene.key === 'arena' && sc.g) { sc.g.gauntlet = sc.g.hold = 0; sc.leave(); } };
   openModal(clear ? '🏅 Gauntlet cleared!' : 'The Gauntlet is over', body + '<div class="row"><button class="btn gold" data-a="ok">Head home</button></div>', () => closeModal(), home);
 }

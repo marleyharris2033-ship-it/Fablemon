@@ -89,7 +89,7 @@ class ArenaScene extends World {
     if (this.started && !this.sleeping && !RTB.active && !Battle.active) this.leave();
   }
   leave() {
-    if (this.sleeping || this.gone || (this.g && this.g.gauntlet)) return; this.gone = 1;   // (a Gauntlet run decides where you go next)
+    if (this.sleeping || this.gone || (this.g && (this.g.gauntlet || this.g.hold))) return; this.gone = 1;   // (a Gauntlet run decides where you go next)
     const r = S.arenaRet || { scene: 'house', x: 2, y: 3, dir: 'down' }, g = this.g; delete S.arenaRet; ARENA_GO = null;
     travel(this, r.scene, { x: r.x, y: r.y, dir: r.dir });
     if (g && g.win) {   // home again: now the Warden hands over the Crest
