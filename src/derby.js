@@ -352,11 +352,14 @@ function racerFrom(m, st, track, i, who, sk) {
   };
 }
 
-function derbyRace(cup, mine, rivals, raceNo) {
+// o (Link Hall, 25 Nov 2026): { trial: no rivals and no Derby records; seed; rec: {} to record your path;
+//   ghost: { pts, dt, who, sp, ms } to race a see-through replay of someone's run }
+const GHOST_DT = .125;   // a run is recorded 8 times a second
+function derbyRace(cup, mine, rivals, raceNo, o = {}) {
   return new Promise(async resolve => {
-    const d = derby(), seed = (cup.id.charCodeAt(0) * 977 + raceNo * 131 + d.races * 7) | 0;
+    const d = derby(), seed = o.seed ?? ((cup.id.charCodeAt(0) * 977 + raceNo * 131 + d.races * 7) | 0);
     const field = rivals.map(r => ({ r, m: { sp: r.sp, lv: r.lv, iv: { hp: 5, atk: 5, def: 5, spd: r.iv }, held: r.held } }));
-    await derbyImages([mine.sp, ...field.map(f => f.m.sp)], cup.track);
+    await derbyImages([mine.sp, ...field.map(f => f.m.sp), ...(o.ghost ? [o.ghost.sp] : [])], cup.track);
     const tr = buildTrack(cup.track, seed), bg = drawTrackBG(tr), LAPS = tr.def.laps || DERBY_LAPS;
     const RT = r => (tr.alt && r.lap >= tr.floodLap ? tr.alt : tr);   // the route a racer is on this lap
     let flood = tr.alt ? 0 : null, floodT = 0;   // the bog: 0 dry, then 1 once the leader starts the flood lap
@@ -365,6 +368,9 @@ function derbyRace(cup, mine, rivals, raceNo) {
     const grid = raceNo === 0 ? [3, 0, 1, 2] : [2, 0, 1, 3];
     const R = order.map((o, i) => racerFrom(o.m, raceStats(o.m, cup.cap), tr, grid[i], o.who, o.sk));
     const me = R[0]; window._derbyR = R;
+    const GH = o.ghost ? { ...o.ghost, img: DERBY_IMG['mon_' + walkSp(o.ghost.sp)] } : null;
+    if (GH) { GH.fw = GH.img.width / 4; GH.fh = GH.img.height / 4; const k = WALK_HD[walkSp(GH.sp)] || (HD[walkSp(GH.sp)] && HD[walkSp(GH.sp)].w ? HD_WALK : 1); GH.dw = GH.fw / k; GH.dh = GH.fh / k; GH.hd = k > 1; }
+    if (o.rec) { o.rec.pts = []; o.rec.t = 0; o.rec.seed = seed; }
 
     // ---- the overlay
     const el = document.createElement('div'); el.id = 'derby';
@@ -496,6 +502,10 @@ function derbyRace(cup, mine, rivals, raceNo) {
         const push = (12 - dd) / 2, wa = b.st.def / (a.st.def + b.st.def);
         a.x -= dx / dd * push * 2 * wa; a.y -= dy / dd * push * 2 * wa; b.x += dx / dd * push * 2 * (1 - wa); b.y += dy / dd * push * 2 * (1 - wa);
       }
+      if (o.rec && clock >= 0 && !o.rec.ms) {   // your run, for a ghost code
+        while (o.rec.t <= clock) { o.rec.pts.push([Math.round(me.x), Math.round(me.y)]); o.rec.t += GHOST_DT; }
+        if (me.done) { o.rec.pts.push([Math.round(me.x), Math.round(me.y)]); o.rec.ms = Math.round(me.done); }
+      }
       if (over) overT += dt;
       if (flood) floodT = Math.min(1, floodT + dt / 5);
     }
@@ -516,9 +526,19 @@ function derbyRace(cup, mine, rivals, raceNo) {
       }
       const t = performance.now() / 1000;
       for (const b of tr.boosts) { g.save(); g.translate(b.x, b.y); g.rotate(b.ang); for (let k = 0; k < 3; k++) { g.fillStyle = `rgba(255,${200 + 40 * Math.sin(t * 6 - k)},60,${.65 + .35 * Math.sin(t * 6 - k)})`; g.beginPath(); g.moveTo(-8 + k * 5, -6); g.lineTo(-3 + k * 5, 0); g.lineTo(-8 + k * 5, 6); g.lineTo(-6 + k * 5, 6); g.lineTo(-1 + k * 5, 0); g.lineTo(-6 + k * 5, -6); g.fill(); } g.restore(); }
-      const ob = DERBY_IMG.objects, things = [...tr.obstacles.map(o => ({ y: o.y, o })), ...R.map(r => ({ y: r.y, r }))].sort((a, b) => a.y - b.y);
+      let ghq = null;
+      if (GH && GH.pts.length) {   // where the ghost was at this moment of its run
+        const fi = Math.max(0, clock) / GH.dt, i0 = Math.min(GH.pts.length - 1, Math.floor(fi)), i1 = Math.min(GH.pts.length - 1, i0 + 1), f = Math.min(1, fi - i0);
+        const [x0, y0] = GH.pts[i0], [x1, y1] = GH.pts[i1], vx = x1 - x0, vy = y1 - y0;
+        if (Math.hypot(vx, vy) > .5) GH.dir = Math.abs(vx) > Math.abs(vy) ? (vx > 0 ? 'right' : 'left') : (vy > 0 ? 'down' : 'up');
+        ghq = { y: y0 + vy * f, g: { x: x0 + vx * f, y: y0 + vy * f, moving: Math.hypot(vx, vy) > 1 } };
+      }
+      const ob = DERBY_IMG.objects, things = [...tr.obstacles.map(o => ({ y: o.y, o })), ...R.map(r => ({ y: r.y, r })), ...(ghq ? [ghq] : [])].sort((a, b) => a.y - b.y);
       for (const q of things) {
         if (q.o) { const f = OBJ(q.o.kind), hf = DERBY_IMG.objHD && (ASSET.hdWorld.objects.frames[q.o.kind] || {}).frame; if (hf) { g.imageSmoothingEnabled = true; g.drawImage(DERBY_IMG.objHD, hf.x, hf.y, hf.w, hf.h, q.o.x - f.w / 2, q.o.y + 4 - f.h, f.w, f.h); g.imageSmoothingEnabled = false; } else g.drawImage(ob, f.x, f.y, f.w, f.h, Math.round(q.o.x - f.w / 2), Math.round(q.o.y + 4 - f.h), f.w, f.h); continue; }
+        if (q.g) { const G = q.g, row = DIRS.indexOf(GH.dir || 'up'), col = G.moving ? [1, 0, 3, 0][Math.floor(t * 8) % 4] : 0;
+          g.globalAlpha = .5; g.imageSmoothingEnabled = GH.hd; g.drawImage(GH.img, col * GH.fw, row * GH.fh, GH.fw, GH.fh, Math.round(G.x - GH.dw / 2), Math.round(G.y + 2 - GH.dh), GH.dw, GH.dh); g.imageSmoothingEnabled = false; g.globalAlpha = 1;
+          g.font = 'bold 6px system-ui, sans-serif'; g.textAlign = 'center'; const ly = Math.round(G.y - GH.dh - 1); g.fillStyle = '#2a1e1a'; g.fillText('👻 ' + GH.who, G.x + .5, ly + .5); g.fillStyle = '#cfe8ff'; g.fillText('👻 ' + GH.who, G.x, ly); continue; }
         const r = q.r, row = DIRS.indexOf(r.dir), moving = Math.hypot(r.vx, r.vy) > 8, col = moving ? [1, 0, 3, 0][Math.floor(r.anim) % 4] : 0;
         g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(r.x, r.y + 1, r.dw * .28, 3, 0, 0, 7); g.fill();
         if (r.dash > 0 || r.boost > 0) { g.fillStyle = r.boost > 0 ? 'rgba(255,210,80,.5)' : 'rgba(255,255,255,.45)'; for (let k = 1; k <= 3; k++) g.fillRect(Math.round(r.x - r.vx * .02 * k) - 1, Math.round(r.y - r.vy * .02 * k) - 2, 2, 2); }
@@ -534,12 +554,13 @@ function derbyRace(cup, mine, rivals, raceNo) {
       mini.setTransform(1, 0, 0, 1, 0, 0); mini.clearRect(0, 0, 120, 90); const ms = Math.min(110 / tr.W, 80 / tr.H), ox = (120 - tr.W * ms) / 2, oy = (90 - tr.H * ms) / 2;
       const mroute = (ln, col) => { mini.strokeStyle = col; mini.lineWidth = 4; mini.lineJoin = 'round'; mini.beginPath(); ln.forEach(([x, y], i) => i ? mini.lineTo(ox + x * ms, oy + y * ms) : mini.moveTo(ox + x * ms, oy + y * ms)); mini.closePath(); mini.stroke(); };
       if (tr.alt) { const onB = RT(me) === tr.alt; mroute(onB ? tr.line : tr.alt.line, 'rgba(70,120,130,.8)'); mroute(onB ? tr.alt.line : tr.line, '#a8865a'); } else mroute(tr.line, '#a8865a');
+      if (ghq) { mini.fillStyle = '#9ad0ff'; mini.beginPath(); mini.arc(ox + ghq.g.x * ms, oy + ghq.g.y * ms, 2.5, 0, 7); mini.fill(); }
       for (const r of R) { mini.fillStyle = r.you ? '#ffe35a' : '#d0405a'; mini.beginPath(); mini.arc(ox + r.x * ms, oy + r.y * ms, r.you ? 3.5 : 2.5, 0, 7); mini.fill(); }
     }
     const rk = r => r.lap * 1e6 + r.lp, rank = () => [...finished, ...R.filter(r => !r.done).sort((a, b) => rk(b) - rk(a))];
     function hud() {
       $d('dlap').textContent = `Lap ${Math.min(LAPS, Math.max(1, me.lap + 1))}/${LAPS}`;
-      $d('dpos').textContent = `${PLACE[rank().indexOf(me)]} of ${R.length}`;
+      $d('dpos').textContent = GH ? (clock * 1000 >= GH.ms ? '👻 Ghost home!' : '👻 vs ' + GH.who) : R.length === 1 ? 'Time trial' : `${PLACE[rank().indexOf(me)]} of ${R.length}`;
       $d('dtime').textContent = fmtLap(Math.max(0, clock * 1000));
       $d('dstam').style.width = me.stam + '%'; $d('dstam').style.background = me.stam >= 35 ? '#7ec85a' : '#c0602a';
       if (clock < 0) { const c = Math.ceil(-clock); if (c !== lastCount && c <= 3) { lastCount = c; $d('dbig').textContent = c; Sound.play('click'); } }
@@ -560,8 +581,8 @@ function derbyRace(cup, mine, rivals, raceNo) {
       const times = {}, sp = {}; for (const r of R) { times[r.who] = r.done; sp[r.who] = r.sp; }
       bestLap = me.laps.length ? Math.min(...me.laps) : 0;
       let record = false;
-      if (bestLap) { const b = d.best[tr.key]; if (!b || bestLap < b.ms) { d.best[tr.key] = { ms: Math.round(bestLap), who: monName(mine) }; record = true; } }
-      return { order: finished.map(r => r.who), times, sp, bestLap, record };
+      if (bestLap && !o.trial) { const b = d.best[tr.key]; if (!b || bestLap < b.ms) { d.best[tr.key] = { ms: Math.round(bestLap), who: monName(mine) }; record = true; } }
+      return { order: finished.map(r => r.who), times, sp, bestLap, record, ms: me.done, seed };
     }
     function frame(now) {
       if (!document.body.contains(el)) return;
