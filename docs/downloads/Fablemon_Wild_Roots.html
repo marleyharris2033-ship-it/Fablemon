@@ -21606,8 +21606,10 @@ return (text, level = "M") => { const q = new QRCode(-1, EC[level]); q.addData(t
    Messages are small JSON: hello {n, look}, pos {s, x, y, d, m}, emo {i}, code {c}, ping, bye. */
 const LinkNet = (() => {
   const ICE = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
-  let pc = null, dc = null, role = null, peer = null, last = 0, hb = null, onMsg = [];
-  const st = { get on() { return !!(dc && dc.readyState === 'open' && peer); }, get role() { return role; }, get peer() { return peer; } };
+  let pc = null, dc = null, role = null, peer = null, last = 0, hb = null, onMsg = [], relay = null;
+  const direct = () => !!(dc && dc.readyState === 'open');
+  const mkPC = () => new RTCPeerConnection({ iceServers: ICE, ...(window.LINK_NO_DIRECT ? { iceTransportPolicy: 'relay' } : {}) });   // (tests: LINK_NO_DIRECT blocks the direct link)
+  const st = { get on() { return !!((direct() || relay) && peer); }, get role() { return role; }, get peer() { return peer; }, get relayed() { return !!relay && !direct(); } };
 
   // ---------- squeezing a session description into a short code, and back
   const hex2b = h => btoa(String.fromCharCode(...h.split(':').map(x => parseInt(x, 16)))).replace(/=+$/, '');
@@ -21636,32 +21638,36 @@ const LinkNet = (() => {
   });
 
   // ---------- the link
-  function reset() { try { dc && dc.close(); } catch (e) { } try { pc && pc.close(); } catch (e) { } pc = dc = null; role = null; peer = null; clearInterval(hb); }
+  function reset() { try { dc && dc.close(); } catch (e) { } try { pc && pc.close(); } catch (e) { } pc = dc = null; role = null; peer = null; relay = null; clearInterval(hb); }
+  // the link is up (directly, or through the relay): say hello and keep checking it's alive
+  function opened() {
+    last = Date.now(); send({ t: 'hello', n: (S && S.name) || 'Friend', look: (S && S.look && S.look.cc) || null, s: scene && scene.scene.key });
+    clearInterval(hb); hb = setInterval(() => { if (!direct() && !relay) return; send({ t: 'ping' }); if (peer && Date.now() - last > (relay && !direct() ? 15000 : 9000)) lost(); }, 2000);
+  }
   function wire(ch) {
     dc = ch;
-    dc.onopen = () => { last = Date.now(); send({ t: 'hello', n: (S && S.name) || 'Friend', look: (S && S.look && S.look.cc) || null, s: scene && scene.scene.key });
-      clearInterval(hb); hb = setInterval(() => { if (!dc || dc.readyState !== 'open') return; send({ t: 'ping' }); if (peer && Date.now() - last > 9000) lost(); }, 2000); };
+    dc.onopen = () => { relay = null; opened(); };
     dc.onmessage = e => { last = Date.now(); let m; try { m = JSON.parse(e.data); } catch (x) { return; } recv(m); };
-    dc.onclose = () => lost();
+    dc.onclose = () => { if (!relay) lost(); };
   }
-  function lost() { if (!peer && !dc) return; const n = peer && peer.n; reset(); if (n) { toast(`🔗 Lost the link with ${n}.`, 3000); fire({ t: 'bye' }); } }
+  function lost() { if (!peer && !dc && !relay) return; const n = peer && peer.n; reset(); if (n) { toast(`🔗 Lost the link with ${n}.`, 3000); fire({ t: 'bye' }); } }
   function recv(m) {
-    if (m.t === 'hello') { const first = !peer; peer = { n: String(m.n || 'Friend').slice(0, 20), look: m.look, s: m.s }; if (first) { toast(`🔗 Linked with ${peer.n}!`, 3000); Sound.play('levelup'); } if (typeof closeLinkPanel === 'function') closeLinkPanel(); }
+    if (m.t === 'hello') { const first = !peer; peer = { n: String(m.n || 'Friend').slice(0, 20), look: m.look, s: m.s }; if (first) { toast(`🔗 Linked with ${peer.n}!${st.relayed ? ' (through the relay)' : ''}`, 3000); Sound.play('levelup'); } if (typeof closeLinkPanel === 'function') closeLinkPanel(); }
     if (m.t === 'pos' && peer) Object.assign(peer, { s: m.s, x: m.x, y: m.y, d: m.d, m: m.m, at: Date.now() });
     if (m.t === 'bye') { const n = peer && peer.n; reset(); if (n) toast(`🔗 ${n} closed the link.`, 3000); }
     fire(m);
   }
   const fire = m => { for (const f of onMsg) try { f(m); } catch (e) { console.warn('link', e); } };
-  function send(m) { if (dc && dc.readyState === 'open') try { dc.send(JSON.stringify(m)); return true; } catch (e) { } return false; }
+  function send(m) { if (direct()) try { dc.send(JSON.stringify(m)); return true; } catch (e) { } if (relay) { relay.out(m); return true; } return false; }
   async function host() {
-    reset(); role = 'host'; pc = new RTCPeerConnection({ iceServers: ICE });
+    reset(); role = 'host'; pc = mkPC();
     wire(pc.createDataChannel('fablemon', { ordered: true }));
     await pc.setLocalDescription(await pc.createOffer()); await gathered(pc);
     return pack(pc.localDescription.sdp, 'o');
   }
   async function join(code) {
     const o = unpack(code); if (!o || o.kind !== 'o') throw new Error('not an invite');
-    reset(); role = 'guest'; pc = new RTCPeerConnection({ iceServers: ICE }); pc.ondatachannel = e => wire(e.channel);
+    reset(); role = 'guest'; pc = mkPC(); pc.ondatachannel = e => wire(e.channel);
     await pc.setRemoteDescription({ type: 'offer', sdp: o.sdp });
     await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
     return pack(pc.localDescription.sdp, 'a');
@@ -21754,19 +21760,36 @@ const LinkNet = (() => {
     });
     return chans;
   }
+  // The relay (25 Nov 2026): when the phones can't reach each other directly (two iPhones on the same home Wi-Fi
+  // couldn't: routers often block it, and iPhones hide their local address), the link carries on through the
+  // room's own channels instead. Each message goes out on every channel ({k:'d', f, to, q, m}) and the other phone
+  // keeps the first copy of each. Slower than direct (about 0.1–0.3 s), fine for the hall, emotes and codes.
+  function startRelay(me, other) {
+    if (relay || direct()) return;
+    relay = { me, other, q: 0, seen: new Set(), out: m => { const msg = { k: 'd', f: me, to: other, q: relay.q++, m }; for (const c of chans) c.send(msg); } };
+    onLate = null; opened();
+  }
+  function relayIn(m, me) {
+    if (!m || m.k !== 'd' || m.to !== me || !relay || m.f !== relay.other) return false;
+    if (relay.seen.has(m.q)) return true; relay.seen.add(m.q); if (relay.seen.size > 400) relay.seen = new Set([...relay.seen].slice(-200));
+    last = Date.now(); recv(m.m); return true;
+  }
   // host: open a room and wait for a friend
   async function hostRoom(onCode) {
-    reset(); const code = roomCode(); let guest = null;
+    reset(); const code = roomCode(), hid = 'h' + Math.random().toString(36).slice(2, 10); let guest = null;
     await openChans(code, null, true, async (m, ch) => {
+      if (m && m.k === 'd' && m.to === hid && guest && m.f === guest) { if (!relay && !direct()) startRelay(hid, guest); relayIn(m, hid); return; }
       if (!m || m.k !== 'offer' || !m.sdp || !m.f) return;
       if (guest && guest !== m.f) return;   // someone already joined
-      if (guest) { if (pc && pc.localDescription && pc.localDescription.type === 'answer') ch.send({ k: 'answer', to: m.f, sdp: pc.localDescription.sdp }); return; }
-      for (const c of chans) c.send({ k: 'here', to: m.f });   // tell them straight away that the room is real
+      if (guest) { if (pc && pc.localDescription && pc.localDescription.type === 'answer') ch.send({ k: 'answer', f: hid, to: m.f, sdp: pc.localDescription.sdp }); return; }
+      for (const c of chans) c.send({ k: 'here', f: hid, to: m.f });   // tell them straight away that the room is real
       guest = m.f; role = 'host';
-      pc = new RTCPeerConnection({ iceServers: ICE }); pc.ondatachannel = e => { wire(e.channel); e.channel.addEventListener('open', sigClose); };
+      pc = mkPC(); pc.ondatachannel = e => { wire(e.channel); e.channel.addEventListener('open', sigClose); };
       await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
       await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
-      for (const c of chans) c.send({ k: 'answer', to: guest, sdp: pc.localDescription.sdp });
+      for (const c of chans) c.send({ k: 'answer', f: hid, to: guest, sdp: pc.localDescription.sdp });
+      const fb = () => { if (guest && !direct() && pc) startRelay(hid, guest); };   // no direct link: carry on through the relay
+      pc.addEventListener('iceconnectionstatechange', () => { if (pc && pc.iceConnectionState === 'failed') fb(); }); setTimeout(fb, 6000);
     });
     role = 'host'; onCode(code); return code;
   }
@@ -21776,13 +21799,14 @@ const LinkNet = (() => {
     if (code.length !== 6) throw new Error('code');
     reset(); role = 'guest'; const t0 = Date.now();
     const me = Math.random().toString(36).slice(2, 12);
-    pc = new RTCPeerConnection({ iceServers: ICE }); const ch = pc.createDataChannel('fablemon', { ordered: true }); wire(ch); ch.addEventListener('open', sigClose);
+    pc = mkPC(); const ch = pc.createDataChannel('fablemon', { ordered: true }); wire(ch); ch.addEventListener('open', sigClose);
     const offerP = pc.setLocalDescription(await pc.createOffer()).then(() => gathered(pc));
-    let answered = false, here = false;
+    let answered = false, here = false, hostId = null;
     await openChans(code, me, false, async m => {
-      if (m && m.k === 'here' && m.to === me) here = true;
+      if (m && m.k === 'd' && m.to === me && hostId && m.f === hostId) { if (!relay && !direct()) startRelay(me, hostId); relayIn(m, me); return; }
+      if (m && m.k === 'here' && m.to === me) { here = true; hostId = hostId || m.f; }
       if (!m || m.k !== 'answer' || m.to !== me || answered || !pc) return;
-      answered = true; try { await pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }); } catch (e) { answered = false; }
+      answered = true; hostId = m.f || hostId; try { await pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }); } catch (e) { answered = false; }
     });
     await offerP;
     const msg = { k: 'offer', f: me, sdp: pc.localDescription.sdp };
@@ -21793,7 +21817,11 @@ const LinkNet = (() => {
       const t2 = setTimeout(() => { if (!here && !answered && !st.on) { clearTimeout(t); clearInterval(again); rej(new Error('noroom')); reset(); } }, Math.max(1500, 9000 - (Date.now() - t0)));   // nobody said "here" within 9 s of tapping Join
       ch.addEventListener('open', () => clearTimeout(t2));
       ch.addEventListener('open', () => { clearTimeout(t); clearInterval(again); res(); });
-      const chk = setInterval(() => { if (answered) { clearInterval(chk); clearTimeout(t); setTimeout(() => { clearInterval(again); if (!st.on) { rej(new Error('blocked')); reset(); } }, 15000); } }, 300);
+      // answered but no direct link (it failed, or 5 s passed): carry on through the relay (the host does the same)
+      const fb = () => { clearInterval(again); if (direct() || relay) return; if (hostId) startRelay(me, hostId); else { clearTimeout(t); rej(new Error('blocked')); reset(); } };
+      pc.addEventListener('iceconnectionstatechange', () => { if (pc && answered && pc.iceConnectionState === 'failed') fb(); });
+      const chk = setInterval(() => { if (answered) { clearInterval(chk); setTimeout(fb, 5000); } }, 300);
+      const ok = setInterval(() => { if (st.on) { clearInterval(ok); clearInterval(chk); clearTimeout(t); clearTimeout(t2); clearInterval(again); res(); } }, 250);
     });
   }
   const _reset = reset; reset = function () { _reset(); sigClose(); };
