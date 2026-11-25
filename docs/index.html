@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261125-100934">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261125-100934">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261125-100934">
+<link rel="manifest" href="manifest.webmanifest?v=20261125-103329">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261125-103329">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261125-103329">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-100934').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261125-103329').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -21685,66 +21685,126 @@ const LinkNet = (() => {
   function bye() { send({ t: 'bye' }); setTimeout(reset, 150); }
 
   // ---------- rooms (25 Nov 2026): a 6-character code instead of swapping two long ones.
-  // A free public PeerJS server (only a go-between: it passes the two phones' first hello and their addresses,
-  // then the phones talk directly and the room closes). The host's room is the server id 'fablemon-room-<CODE>'.
-  // Protocol: wss://host/peerjs?key&id&token; server says OPEN / ID-TAKEN / ERROR / EXPIRE; OFFER, ANSWER and
-  // CANDIDATE {type, payload, dst} are passed on to dst with src added; HEARTBEAT every 5 s keeps it open.
+  // Something on the internet has to introduce the two phones, and free public services come and go, so a room
+  // listens on several at once and the first to pass the hello along wins (first tried with PeerJS alone, which
+  // didn't pass the friend's hello on between two real iPhones):
+  //   - PeerJS's public server (WebSocket; the host is the server id 'fablemon-room-<CODE>');
+  //   - three public MQTT brokers (MQTT 3.1.1 over WebSocket, written here: CONNECT, SUBSCRIBE, PUBLISH at QoS 0,
+  //     PINGREQ), all on the topic 'fablemon-link/v1/<CODE>'.
+  // The friend sends one message, { k: 'offer', f: their id, sdp } (the whole offer, addresses included, so nothing
+  // else needs to cross), and the host answers { k: 'answer', to, sdp } on every channel it heard from. Once the
+  // phones are linked directly, every channel is closed.
   const ROOM_AB = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // no 0/O or 1/I
-  let ws = null, wsHb = null;
   const roomCode = () => Array.from({ length: 6 }, () => ROOM_AB[Math.floor(Math.random() * ROOM_AB.length)]).join('');
-  function sigClose() { clearInterval(wsHb); if (ws) { try { ws.onclose = null; ws.close(); } catch (e) { } } ws = null; }
-  function sigOpen(id) {
-    const S0 = window.LINK_SIGNAL || { url: 'wss://0.peerjs.com:443/peerjs', key: 'peerjs' };
-    return new Promise((res, rej) => {
-      sigClose();
-      const w = ws = new WebSocket(`${S0.url}?key=${S0.key}&id=${encodeURIComponent(id)}&token=${Math.random().toString(36).slice(2)}&version=1.5.4`);
-      const t = setTimeout(() => { rej(new Error('server')); sigClose(); }, 9000);
-      w.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; }
-        if (m.type === 'OPEN') { clearTimeout(t); wsHb = setInterval(() => w.readyState === 1 && w.send(JSON.stringify({ type: 'HEARTBEAT' })), 5000); res(w); }
-        else if (m.type === 'ID-TAKEN') { clearTimeout(t); rej(new Error('taken')); }
-        else if (m.type === 'ERROR') { clearTimeout(t); rej(new Error('server')); }
-        else if (w.onsig) w.onsig(m); };
-      w.onerror = () => { clearTimeout(t); rej(new Error('server')); };
-    });
+  const SIGNALS = () => window.LINK_SIGNALS || [
+    { kind: 'peerjs', url: 'wss://0.peerjs.com:443/peerjs', key: 'peerjs' },
+    { kind: 'mqtt', url: 'wss://broker.emqx.io:8084/mqtt' },
+    { kind: 'mqtt', url: 'wss://broker.hivemq.com:8884/mqtt' },
+    { kind: 'mqtt', url: 'wss://test.mosquitto.org:8081/mqtt' },
+  ];
+  let chans = [];
+  function sigClose() { for (const c of chans) try { c.close(); } catch (e) { } chans = []; onLate = null; openChans.gen = (openChans.gen || 0) + 1; }
+  // one channel: open(onMsg) resolves once it's ready; send(msg); close()
+  function peerjsChan(cfg, code, me, host) {
+    let w = null, hb = null; const myId = host ? 'fablemon-room-' + code : 'fablemon-g-' + me;
+    return {
+      name: 'peerjs',
+      open: onMsg => new Promise((res, rej) => {
+        w = new WebSocket(`${cfg.url}?key=${cfg.key}&id=${encodeURIComponent(myId)}&token=${Math.random().toString(36).slice(2)}&version=1.5.4`);
+        const t = setTimeout(() => rej(new Error('timeout')), 8000);
+        w.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (x) { return; }
+          if (m.type === 'OPEN') { clearTimeout(t); hb = setInterval(() => w.readyState === 1 && w.send(JSON.stringify({ type: 'HEARTBEAT' })), 5000); res(); }
+          else if (m.type === 'ID-TAKEN' || m.type === 'ERROR') { clearTimeout(t); rej(new Error(m.type === 'ID-TAKEN' ? 'taken' : 'error')); }
+          else if ((m.type === 'OFFER' || m.type === 'ANSWER') && m.payload && m.payload.m) onMsg(m.payload.m); };
+        w.onerror = () => { clearTimeout(t); rej(new Error('error')); };
+      }),
+      send: msg => { if (w && w.readyState === 1) w.send(JSON.stringify({ type: msg.k === 'offer' ? 'OFFER' : 'ANSWER', dst: msg.k === 'offer' ? 'fablemon-room-' + code : 'fablemon-g-' + msg.to, payload: { m: msg, type: 'data' } })); },
+      close: () => { clearInterval(hb); if (w) { w.onclose = w.onmessage = null; try { w.close(); } catch (e) { } } },
+    };
   }
-  const sig = (type, payload, dst) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type, payload, dst })); };
-  const trickle = (c, dst) => { c.onicecandidate = e => { if (e.candidate) sig('CANDIDATE', { candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate }, dst()); }; };
-  const addCand = (c, p) => p && p.candidate && c.addIceCandidate(p.candidate).catch(() => { });
+  function mqttChan(cfg, code) {
+    const te = new TextEncoder(), td = new TextDecoder(), topic = 'fablemon-link/v1/' + code;
+    const str = s => { const b = te.encode(s); return [b.length >> 8, b.length & 255, ...b]; };
+    const pkt = (h, body) => { const len = []; let n = body.length; do { let d = n % 128; n = Math.floor(n / 128); if (n) d |= 128; len.push(d); } while (n); return new Uint8Array([h, ...len, ...body]); };
+    let w = null, ping = null, buf = new Uint8Array(0);
+    return {
+      name: 'mqtt ' + cfg.url.split('/')[2],
+      open: onMsg => new Promise((res, rej) => {
+        w = new WebSocket(cfg.url, ['mqtt']); w.binaryType = 'arraybuffer';
+        const t = setTimeout(() => rej(new Error('timeout')), 8000);
+        w.onopen = () => w.send(pkt(0x10, [...str('MQTT'), 4, 2, 0, 60, ...str('fm' + Math.random().toString(36).slice(2, 14))]));
+        w.onmessage = e => {
+          const a = new Uint8Array(e.data), nb = new Uint8Array(buf.length + a.length); nb.set(buf); nb.set(a, buf.length); buf = nb;
+          for (;;) {
+            if (buf.length < 2) break; let len = 0, mul = 1, i = 1, d;
+            do { if (i >= buf.length) return; d = buf[i++]; len += (d & 127) * mul; mul *= 128; } while (d & 128);
+            if (buf.length < i + len) break; const head = buf[0], type = head >> 4, body = buf.slice(i, i + len); buf = buf.slice(i + len);
+            if (type === 2) { if (body[1] !== 0) { clearTimeout(t); return rej(new Error('refused')); } w.send(pkt(0x82, [0, 1, ...str(topic), 0])); }
+            else if (type === 9) { clearTimeout(t); ping = setInterval(() => w.readyState === 1 && w.send(new Uint8Array([0xC0, 0])), 30000); res(); }
+            else if (type === 3) { const tl = (body[0] << 8) | body[1], off = 2 + tl + (((head >> 1) & 3) ? 2 : 0); try { onMsg(JSON.parse(td.decode(body.slice(off)))); } catch (x) { } }
+          }
+        };
+        w.onerror = () => { clearTimeout(t); rej(new Error('error')); };
+      }),
+      send: msg => { if (w && w.readyState === 1) w.send(pkt(0x30, [...str(topic), ...te.encode(JSON.stringify(msg))])); },
+      close: () => { clearInterval(ping); if (w) { w.onmessage = null; try { if (w.readyState === 1) w.send(new Uint8Array([0xE0, 0])); w.close(); } catch (e) { } } },
+    };
+  }
+  // open every channel; resolves with the ones that came up (or throws if none did)
+  let onLate = null;
+  async function openChans(code, me, host, onMsg) {
+    const list = SIGNALS().map(cfg => cfg.kind === 'peerjs' ? peerjsChan(cfg, code, me, host) : mqttChan(cfg, code));
+    chans = []; const gen = openChans.gen = (openChans.gen || 0) + 1;
+    // go as soon as one is ready (plus a moment for the others); any that come up later join in
+    await new Promise((res, rej) => {
+      let left = list.length, first = false;
+      for (const c of list) c.open(m => onMsg(m, c)).then(() => {
+        if (gen !== openChans.gen) return c.close();
+        chans.push(c); if (onLate && first) onLate(c); if (!first) { first = true; setTimeout(res, 1200); }
+      }, () => { try { c.close(); } catch (e) { } }).finally(() => { if (--left === 0) (first ? res : rej)(new Error('server')); });
+    });
+    return chans;
+  }
   // host: open a room and wait for a friend
   async function hostRoom(onCode) {
-    reset(); let code, tries = 0;
-    for (;;) { code = roomCode(); try { await sigOpen('fablemon-room-' + code); break; } catch (e) { if (e.message !== 'taken' || ++tries > 4) throw e; } }
-    role = 'host'; onCode(code);
-    let guest = null; const early = [];
-    ws.onsig = async m => {
-      if (m.type === 'OFFER' && !pc) {
-        guest = m.src; pc = new RTCPeerConnection({ iceServers: ICE }); pc.ondatachannel = e => { wire(e.channel); e.channel.addEventListener('open', sigClose); };
-        trickle(pc, () => guest);
-        await pc.setRemoteDescription({ type: 'offer', sdp: m.payload.sdp });
-        await pc.setLocalDescription(await pc.createAnswer()); sig('ANSWER', { sdp: pc.localDescription.sdp }, guest);
-        for (const p of early.splice(0)) addCand(pc, p);
-      } else if (m.type === 'CANDIDATE' && m.src === guest) { if (pc && pc.remoteDescription) addCand(pc, m.payload); else early.push(m.payload); }
-      else if (m.type === 'CANDIDATE' && !guest) early.push(m.payload);
-    };
-    return code;
+    reset(); const code = roomCode(); let guest = null;
+    await openChans(code, null, true, async (m, ch) => {
+      if (!m || m.k !== 'offer' || !m.sdp || !m.f) return;
+      if (guest && guest !== m.f) return;   // someone already joined
+      if (guest) { if (pc && pc.localDescription && pc.localDescription.type === 'answer') ch.send({ k: 'answer', to: m.f, sdp: pc.localDescription.sdp }); return; }
+      for (const c of chans) c.send({ k: 'here', to: m.f });   // tell them straight away that the room is real
+      guest = m.f; role = 'host';
+      pc = new RTCPeerConnection({ iceServers: ICE }); pc.ondatachannel = e => { wire(e.channel); e.channel.addEventListener('open', sigClose); };
+      await pc.setRemoteDescription({ type: 'offer', sdp: m.sdp });
+      await pc.setLocalDescription(await pc.createAnswer()); await gathered(pc);
+      for (const c of chans) c.send({ k: 'answer', to: guest, sdp: pc.localDescription.sdp });
+    });
+    role = 'host'; onCode(code); return code;
   }
   // guest: join with the code
   async function joinRoom(code) {
     code = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     if (code.length !== 6) throw new Error('code');
-    reset(); await sigOpen('fablemon-g-' + Math.random().toString(36).slice(2, 12)); role = 'guest';
-    const room = 'fablemon-room-' + code;
+    reset(); role = 'guest'; const t0 = Date.now();
+    const me = Math.random().toString(36).slice(2, 12);
     pc = new RTCPeerConnection({ iceServers: ICE }); const ch = pc.createDataChannel('fablemon', { ordered: true }); wire(ch); ch.addEventListener('open', sigClose);
-    trickle(pc, () => room);
-    return new Promise(async (res, rej) => {
-      const t = setTimeout(() => { if (!st.on) { rej(new Error('noroom')); sigClose(); reset(); } }, 15000);
-      ws.onsig = async m => {
-        if (m.type === 'ANSWER') { await pc.setRemoteDescription({ type: 'answer', sdp: m.payload.sdp }); }
-        else if (m.type === 'CANDIDATE') addCand(pc, m.payload);
-        else if (m.type === 'EXPIRE' || m.type === 'LEAVE') { clearTimeout(t); rej(new Error('noroom')); sigClose(); reset(); }
-      };
-      ch.addEventListener('open', () => { clearTimeout(t); res(); });
-      await pc.setLocalDescription(await pc.createOffer()); sig('OFFER', { sdp: pc.localDescription.sdp, type: 'data' }, room);
+    const offerP = pc.setLocalDescription(await pc.createOffer()).then(() => gathered(pc));
+    let answered = false, here = false;
+    await openChans(code, me, false, async m => {
+      if (m && m.k === 'here' && m.to === me) here = true;
+      if (!m || m.k !== 'answer' || m.to !== me || answered || !pc) return;
+      answered = true; try { await pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }); } catch (e) { answered = false; }
+    });
+    await offerP;
+    const msg = { k: 'offer', f: me, sdp: pc.localDescription.sdp };
+    for (const c of chans) c.send(msg); onLate = c => c.send(msg);
+    const again = setInterval(() => { if (!answered) for (const c of chans) c.send(msg); }, 3000);   // in case the host's channel was a moment late
+    return new Promise((res, rej) => {
+      const t = setTimeout(() => { clearInterval(again); if (!st.on) { rej(new Error(answered || here ? 'blocked' : 'noroom')); reset(); } }, 25000);
+      const t2 = setTimeout(() => { if (!here && !answered && !st.on) { clearTimeout(t); clearInterval(again); rej(new Error('noroom')); reset(); } }, Math.max(1500, 9000 - (Date.now() - t0)));   // nobody said "here" within 9 s of tapping Join
+      ch.addEventListener('open', () => clearTimeout(t2));
+      ch.addEventListener('open', () => { clearTimeout(t); clearInterval(again); res(); });
+      const chk = setInterval(() => { if (answered) { clearInterval(chk); clearTimeout(t); setTimeout(() => { clearInterval(again); if (!st.on) { rej(new Error('blocked')); reset(); } }, 15000); } }, 300);
     });
   }
   const _reset = reset; reset = function () { _reset(); sigClose(); };
@@ -21787,7 +21847,7 @@ function linkConnect() {
       <div class="row"><button class="btn" data-a="back">Back</button></div>`, b => b === 'host' ? linkHostFlow() : b === 'join' ? linkJoinFlow() : linkConnect());
     closeModal(); });
 }
-const linkRoomErr = e => ({ server: "Couldn't reach the room service. Check you're online, or use Link by QR code.", noroom: "No room with that code. Check it with your friend (they need to keep the Host screen open).", code: 'Room codes are 6 letters and numbers.' }[e && e.message] || `Couldn't link (${(e && e.message) || e}).`);
+const linkRoomErr = e => ({ server: "Couldn't reach the room service. Check you're online, or use Link by QR code.", noroom: "No room with that code. Check it with your friend (they need to keep the Host screen open).", blocked: "Found the room, but the two phones couldn't reach each other. Try both on the same Wi-Fi, or one of you on mobile data.", code: 'Room codes are 6 letters and numbers.' }[e && e.message] || `Couldn't link (${(e && e.message) || e}).`);
 async function linkRoomHost() {
   LINK_PANEL = true; let handoff = false;
   openModal('Host a room', '<p>Opening a room…</p>', null, () => { if (handoff) return; LINK_PANEL = false; if (!LinkNet.on) LinkNet.cancelRoom(); });
