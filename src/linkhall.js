@@ -420,10 +420,14 @@ function ghostRead(code) {
   } catch (e) { return null; }
 }
 const linkTracks = () => [...new Set(DERBY_CUPS.filter(c => { try { return c.unlock(); } catch (e) { return false; } }).map(c => c.track))].filter(k => DERBY_TRACKS[k]);
-const LINK_CAPS = [[100, 'Your own'], [25, 'Cap 25'], [50, 'Cap 50'], [75, 'Cap 75']];
+// 26 Nov: races set a level, like battles: every racer grows or shrinks to it (with its form), so a friend far behind
+// can still race you. 100 means "own levels" (older saves and ghost codes call this field cap).
+const LINK_CAPS = [[100, 'Own levels'], [25, 'Lv 25'], [50, 'Lv 50'], [75, 'Lv 75']];
+const linkRacer = (m, lv) => lv && lv < 100 ? linkScale(m, lv, 'r' + m.uid) : m;
+const linkLvTag = (m, lv) => lv && lv < 100 ? ` → ${SPECIES[linkFormAt(m.sp, lv)].name} Lv ${lv}` : '';
 function linkRaces() {
   const L = lk(), best = L.trial || {};
-  const rows = Object.entries(best).filter(([k]) => DERBY_TRACKS[k]).map(([k, b]) => `<li>${DERBY_TRACKS[k].name}: <b>${fmtLap(b.ms)}</b> <small>(${b.who}${b.cap < 100 ? `, cap ${b.cap}` : ''})</small></li>`).join('');
+  const rows = Object.entries(best).filter(([k]) => DERBY_TRACKS[k]).map(([k, b]) => `<li>${DERBY_TRACKS[k].name}: <b>${fmtLap(b.ms)}</b> <small>(${b.who}${b.cap < 100 ? `, Lv ${b.cap}` : ''})</small></li>`).join('');
   openModal('Race corner', `<p>Race a track on your own against the clock, then share your run as a code. Your friend races your ghost, a see-through copy of your run, and can send theirs back.</p>
     <button class="btn gold" data-a="trial" style="width:100%;margin:3px 0">⏱️ Time trial</button>
     <button class="btn" data-a="ghost" style="width:100%;margin:3px 0">👻 Race a friend's ghost</button>
@@ -447,7 +451,7 @@ function linkTrialSetup() {
   if (!linkTracks().includes(C.track)) C.track = linkTracks()[0] || 'meadow';
   const chip = (k, v, t) => `<button class="btn ${C[k] === v ? 'gold' : ''}" data-a="o" data-k="${k}" data-v="${v}" style="flex:1 1 auto;padding:4px 6px;font-size:12px;margin:2px">${t}</button>`;
   linkRacerPick('Time trial', `<p style="margin:2px 0"><b>Track</b> <small>(any whose cup you can enter)</small></p><div style="display:flex;flex-wrap:wrap">${linkTracks().map(k => chip('track', k, DERBY_TRACKS[k].name)).join('')}</div>
-    <p style="margin:6px 0 2px"><b>Level cap</b> <small>(anyone over it races as if at the cap)</small></p><div style="display:flex;flex-wrap:wrap">${LINK_CAPS.map(([v, t]) => chip('cap', v, t)).join('')}</div>`,
+    <p style="margin:6px 0 2px"><b>Level</b> <small>(your racer grows or shrinks to it, evolutions too)</small></p><div style="display:flex;flex-wrap:wrap">${LINK_CAPS.map(([v, t]) => chip('cap', v, t)).join('')}</div>`,
   (m, a, d) => { if (a === 'o') { C[d.k] = d.k === 'cap' ? +d.v : d.v; return linkTrialSetup(); } if (m) linkRun(m, C.track, C.cap, null); }, linkRaces);
 }
 function linkGhostPaste() {
@@ -455,16 +459,17 @@ function linkGhostPaste() {
     if (a === 'back') return linkRaces(); if (a !== 'go') return;
     const g = ghostRead(document.querySelector('#mBody textarea').value), msg = t => { document.getElementById('lkMsg').textContent = t; };
     if (!g) return msg("❌ That isn't a ghost code."); if (g.bad) return msg('❌ ' + g.bad);
-    linkRacerPick(`${g.who}'s ghost`, `<p>👻 <b>${g.who}</b> raced <b>${g.nick || SPECIES[g.sp].name}</b> round <b>${DERBY_TRACKS[g.track].name}</b> in <b>${fmtLap(g.ms)}</b>${g.cap < 100 ? `, level cap ${g.cap}` : ''}. Can you beat it?</p>`, m => m && linkRun(m, g.track, g.cap, g), linkGhostPaste);
+    linkRacerPick(`${g.who}'s ghost`, `<p>👻 <b>${g.who}</b> raced <b>${g.nick || SPECIES[g.sp].name}</b> round <b>${DERBY_TRACKS[g.track].name}</b> in <b>${fmtLap(g.ms)}</b>${g.cap < 100 ? ` at Lv ${g.cap}` : ''}. Can you beat it?</p>`, m => m && linkRun(m, g.track, g.cap, g), linkGhostPaste);
   });
 }
 async function linkRun(m, track, cap, ghost) {
   const rec = {}, seed = ghost ? ghost.seed : (Math.random() * 1e9) | 0;
-  const res = await derbyRace({ id: 'link', track, cap }, m, [], 1, { trial: 1, seed, rec, ghost: ghost ? { pts: ghost.pts, dt: GHOST_DT, who: ghost.who, sp: ghost.sp, ms: ghost.ms } : null });
+  const r = linkRacer(m, cap);
+  const res = await derbyRace({ id: 'link', track, cap: 100 }, r, [], 1, { trial: 1, seed, rec, ghost: ghost ? { pts: ghost.pts, dt: GHOST_DT, who: ghost.who, sp: ghost.sp, ms: ghost.ms } : null });
   if (!res || !rec.ms) return;   // left early
   const L = lk(), T0 = L.trial = L.trial || {}, ms = rec.ms, b = T0[track], pb = !b || ms < b.ms;
   if (pb) T0[track] = { ms, who: monName(m), cap };
-  const run = { track, seed, cap, sp: m.sp, nick: m.nick, ms, pts: rec.pts }, code = ghostCode(run);
+  const run = { track, seed, cap, sp: r.sp, nick: m.nick, ms, pts: rec.pts }, code = ghostCode(run);
   let head;
   if (ghost) { const dd = (ghost.ms - ms) / 1000; if (dd > 0) L.ghostWins = (L.ghostWins || 0) + 1; head = dd > 0 ? `🏆 You beat ${ghost.who}'s ghost by <b>${dd.toFixed(2)}s</b>!` : dd === 0 ? `A dead heat with ${ghost.who}'s ghost!` : `👻 ${ghost.who}'s ghost was <b>${(-dd).toFixed(2)}s</b> faster.`; }
   else head = `⏱️ ${monName(m)} got round ${DERBY_TRACKS[track].name} in <b>${fmtLap(ms)}</b>.`;

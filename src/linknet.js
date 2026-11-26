@@ -565,9 +565,9 @@ function linkChallengeSetup(k) {
          <p style="margin:6px 0 2px"><b>Level</b> <small>(both teams grow or shrink to it, evolutions too)</small></p><div style="display:flex;flex-wrap:wrap">${chip('lv', 0, 'Own levels')}${[25, 50, 75, 100].map(v => chip('lv', v, 'Lv ' + v)).join('')}</div>
          <p style="margin:6px 0 2px"><b>Team size</b></p><div style="display:flex;flex-wrap:wrap">${[1, 3, 6].map(v => chip('size', v, v + ' each')).join('')}</div>`
       : `<p style="margin:2px 0"><b>Track</b></p><div style="display:flex;flex-wrap:wrap">${linkTracks().map(t => chip('track', t, DERBY_TRACKS[t].name)).join('')}</div>
-         <p style="margin:6px 0 2px"><b>Level cap</b></p><div style="display:flex;flex-wrap:wrap">${LINK_CAPS.map(([v, t]) => chip('cap', v, t)).join('')}</div>`;
+         <p style="margin:6px 0 2px"><b>Level</b> <small>(both racers grow or shrink to it, evolutions too)</small></p><div style="display:flex;flex-wrap:wrap">${LINK_CAPS.map(([v, t]) => chip('cap', v, t)).join('')}</div>`;
     openModal(k === 'battle' ? `Battle ${P.n}` : `Race ${P.n}`, `${opts}<p style="margin:6px 0 2px"><b>${k === 'battle' ? 'Your team' : 'Your racer'}</b> ${pick.length}/${size}</p>
-      <div style="max-height:26vh;overflow:auto">${all.map(m => { const i = pick.indexOf(m.uid); return linkRow(m, i >= 0 ? (size > 1 ? `#${i + 1}` : '✓') + (k === 'battle' && C.lv ? ` → ${SPECIES[linkFormAt(m.sp, C.lv)].name} Lv ${C.lv}` : '') : ''); }).join('')}</div>
+      <div style="max-height:26vh;overflow:auto">${all.map(m => { const i = pick.indexOf(m.uid); return linkRow(m, i >= 0 ? (size > 1 ? `#${i + 1}` : '✓') + (k === 'battle' && C.lv ? ` → ${SPECIES[linkFormAt(m.sp, C.lv)].name} Lv ${C.lv}` : k === 'race' ? linkLvTag(m, C.cap) : '') : ''); }).join('')}</div>
       <div class="row"><button class="btn" data-a="back">Back</button><button class="btn gold" data-a="go" ${pick.length ? '' : 'disabled'}>Send challenge</button></div>`, (a, d) => {
       if (a === 'o') { C[d.k] = ['lv', 'size', 'cap'].includes(d.k) ? +d.v : d.v; return draw(); }
       if (a === 't') { const u = linkUid(d.u), i = pick.indexOf(u); if (i >= 0) pick.splice(i, 1); else if (pick.length < size) pick.push(u); else { pick.pop(); pick.push(u); } C.team = pick.slice(); return draw(); }
@@ -582,7 +582,7 @@ function linkChallengeSetup(k) {
   };
   draw();
 }
-const chDesc = (k, c) => k === 'battle' ? `${c.arena === 'Link' ? 'the Link Hall' : (ARENAS[c.arena] || {}).title || c.arena} · ${c.lv ? 'Lv ' + c.lv : 'own levels'} · ${c.size} each` : `${(DERBY_TRACKS[c.track] || {}).name || c.track}${c.cap < 100 ? ` · level cap ${c.cap}` : ''}`;
+const chDesc = (k, c) => k === 'battle' ? `${c.arena === 'Link' ? 'the Link Hall' : (ARENAS[c.arena] || {}).title || c.arena} · ${c.lv ? 'Lv ' + c.lv : 'own levels'} · ${c.size} each` : `${(DERBY_TRACKS[c.track] || {}).name || c.track}${c.cap < 100 ? ` · Lv ${c.cap}` : ' · own levels'}`;
 function challenged(m) {
   const P = LinkNet.peer; if (!P || (m.k !== 'battle' && m.k !== 'race')) return;
   if (RTB.active || (LINK_CH && LINK_CH.started) || (m.k === 'race' && !DERBY_TRACKS[m.cfg.track]) || (m.k === 'battle' && !(ARENAS[m.cfg.arena] && ASSET['arena_' + ARENAS[m.cfg.arena].k]))) return LinkNet.send({ t: 'ch.no' });
@@ -592,14 +592,14 @@ function challenged(m) {
     const size = m.k === 'battle' ? m.cfg.size : 1, all = S.mons.slice().filter(q => m.k === 'battle' || !SPECIES[q.sp].legend).sort((a, b) => (a.loc === 'team' ? 0 : 1) - (b.loc === 'team' ? 0 : 1) || b.lv - a.lv);
     let pick = all.filter(q => q.loc === 'team').slice(0, size).map(q => q.uid);
     const draw = () => openModal(m.k === 'battle' ? 'Pick your team' : 'Pick your racer', `<p style="font-size:13px">${chDesc(m.k, m.cfg)}</p><p style="margin:4px 0 2px"><b>${pick.length}/${size}</b></p>
-      <div style="max-height:40vh;overflow:auto">${all.map(q => { const i = pick.indexOf(q.uid); return linkRow(q, i >= 0 ? (size > 1 ? `#${i + 1}` : '✓') + (m.k === 'battle' && m.cfg.lv ? ` → ${SPECIES[linkFormAt(q.sp, m.cfg.lv)].name} Lv ${m.cfg.lv}` : '') : ''); }).join('')}</div>
+      <div style="max-height:40vh;overflow:auto">${all.map(q => { const i = pick.indexOf(q.uid); return linkRow(q, i >= 0 ? (size > 1 ? `#${i + 1}` : '✓') + (m.k === 'battle' && m.cfg.lv ? ` → ${SPECIES[linkFormAt(q.sp, m.cfg.lv)].name} Lv ${m.cfg.lv}` : m.k === 'race' ? linkLvTag(q, m.cfg.cap) : '') : ''); }).join('')}</div>
       <div class="row"><button class="btn" data-a="no">Back out</button><button class="btn gold" data-a="go" ${pick.length ? '' : 'disabled'}>Ready!</button></div>`, (b, d) => {
       if (b === 't') { const u = linkUid(d.u), i = pick.indexOf(u); if (i >= 0) pick.splice(i, 1); else if (pick.length < size) pick.push(u); else { pick.pop(); pick.push(u); } return draw(); }
       if (b === 'no') { LinkNet.send({ t: 'ch.no' }); LINK_CH = null; return closeModal(); }
       if (b === 'go' && pick.length) {
         const mine = pick.map(u => all.find(q => q.uid === u)); LINK_CH.mine = mine;
         if (m.k === 'battle') { LINK_CH.myTeam = linkBattleTeam(mine, m.cfg, 'g'); LinkNet.send({ t: 'ch.ok', team: LINK_CH.myTeam }); }
-        else LinkNet.send({ t: 'ch.ok', racer: { sp: mine[0].sp, nk: mine[0].nick || '' } });
+        else LinkNet.send({ t: 'ch.ok', racer: { sp: linkRacer(mine[0], m.cfg.cap).sp, nk: mine[0].nick || '' } });
         openModal('Ready!', `<p>⏳ Starting…</p>`);
       }
     });
@@ -616,7 +616,7 @@ function challengeOk(m) {
     C.myTeam = linkBattleTeam(C.mine, C.cfg, 'h'); LinkNet.send({ t: 'ch.go', team: C.myTeam });
     linkLiveBattle(C.myTeam, theirs, C.cfg, false);
   } else {
-    LinkNet.send({ t: 'ch.go', racer: { sp: C.mine[0].sp, nk: C.mine[0].nick || '' } });
+    LinkNet.send({ t: 'ch.go', racer: { sp: linkRacer(C.mine[0], C.cfg.cap).sp, nk: C.mine[0].nick || '' } });
     linkLiveRace(C.mine[0], m.racer, C.cfg);
   }
 }
@@ -660,7 +660,7 @@ async function linkLiveRace(mine, racer, cfg) {
   if (!racer || !SPECIES[racer.sp] || !DERBY_TRACKS[cfg.track]) { LINK_CH = null; return toast("That race couldn't start. Try again."); }
   const R = LINK_RACE = { pos: null, fin: null }, rec = {}; let sent = 0;
   const live = R.ghost = { who: n, sp: racer.sp, pos: () => R.pos };
-  const res = await derbyRace({ id: 'link', track: cfg.track, cap: cfg.cap }, mine, [], 1, { trial: 1, seed: cfg.seed | 0, rec, live,
+  const res = await derbyRace({ id: 'link', track: cfg.track, cap: 100 }, linkRacer(mine, cfg.cap), [], 1, { trial: 1, seed: cfg.seed | 0, rec, live,
     tick: (me, clock) => { const now = performance.now(); if (now - sent > 100) { sent = now; LinkNet.send({ t: 'r.p', x: Math.round(me.x), y: Math.round(me.y) }); } } });
   LINK_CH = null;
   if (!res || !rec.ms) { LinkNet.send({ t: 'r.fin', ms: 0 }); LINK_RACE = null; return; }   // you left the race
