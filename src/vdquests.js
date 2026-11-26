@@ -72,33 +72,33 @@ const QV = [
   // 1. Who bought the valley?
   ['repair', [
     vqTask('vdq_gl1', 'Find out who bought the fields around your farm', 'Bramble said men in grey-green jackets bought up every field for miles. Marigold at the general store has lived in Smallroot all her life.', () => (vq().gl || 0) >= 1, () => vdReveal(), {}, { k: 'town', ready: () => S.vd && vd().mail.offer }),
-    vqTask('vdq_gl2', 'Ask Tobias Gleam who Greenline Holdings are', 'Gleam has a kiosk in the Smallroot square. Ask him about Greenline Holdings and watch his face.', () => (vq().gl || 0) >= 2, () => vdReveal(), {}, { k: 'town' }),
-    vqTask('vdq_gl3', 'Show Elder Bramble the business card', 'Gleam dropped a Greenline business card. Elder Bramble wanders the Smallroot square in the daytime.', () => (vq().gl || 0) >= 3, () => vdReveal(), { gold: 800 }, { k: 'town' }),
+    vqTask('vdq_gl2', 'Ask Tobias Gleam in Smallroot who Greenline Holdings are', 'Gleam has a kiosk in the Smallroot square. Ask him about Greenline Holdings and watch his face.', () => (vq().gl || 0) >= 2, () => vdReveal(), {}, { k: 'town' }),
+    vqTask('vdq_gl3', 'Show Elder Bramble in Smallroot the business card', 'Gleam dropped a Greenline business card. Elder Bramble wanders the Smallroot square in the daytime.', () => (vq().gl || 0) >= 3, () => vdReveal(), { gold: 800 }, { k: 'town' }),
   ]],
   // 2. Grey water
   ['fen', [
-    vqTask('vdq_fen1', 'Ask Nurse Willa about the sick Fablemon from the fen', () => `Willa's clinic is at the top right of Smallroot: tap its door${isOpen('clinic') ? '' : " (she's working there even though it's still boarded up)"}. She's been treating Fablemon with grey patches in their fur.`, () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
+    vqTask('vdq_fen1', 'Ask Nurse Willa in Smallroot about the sick Fablemon from the fen', () => `Willa's clinic is at the top right of Smallroot: tap its door${isOpen('clinic') ? '' : " (she's working there even though it's still boarded up)"}. She's been treating Fablemon with grey patches in their fur.`, () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
     vqTask('vdq_fen2', "Fill Willa's sample jar at the grey pool in Sluice Fen", 'Look for a pool of grey, filmy water near the Verdance pipe, by the way to Brookholt.', () => (vq().fen || 0) >= 2, () => vdShut('fen'), {}, { k: 'route4' }),
-    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa', 'Back to the clinic at the top right of Smallroot: tap its door.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
-    vqTask('vdq_fen4', 'Ask Warden Delphine about the old fen locks', 'Delphine keeps the locks at Brookholt. Knock at the Lock House.', () => (vq().fen || 0) >= 4, () => vdShut('fen'), {}, { k: 'brookholt' }),
+    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa in Smallroot', 'Back to the clinic at the top right of Smallroot: tap its door.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
+    vqTask('vdq_fen4', 'Ask Warden Delphine in Brookholt about the old fen locks', 'Delphine keeps the locks at Brookholt. Knock at the Lock House.', () => (vq().fen || 0) >= 4, () => vdShut('fen'), {}, { k: 'brookholt' }),
     vqTask('vdq_fen5', 'Turn the three old lock wheels in Sluice Fen', "Delphine's order: the heron wakes, the otter swims, the eel slips home. The wheels are near the siphon.", () => !!vq().flooded, () => vdShut('fen') || beatTrainer('vd_fen_boss'), { gold: 1000 }, { k: 'route4' }),
   ]],
   // 3. Brask's notebook
   ['stone', [
     vqTask('vdq_mine1', () => `Find the torn pages of Brask's notebook (${vqPages()}/3)`, 'Torn pages are scattered through the tunnels of the Old Mine.', () => vqPages() >= 3, () => vdShut('mine'), {}, { k: 'crag3', ready: () => (S.visited || {}).cragmine }),
-    vqTask('vdq_mine2', 'Beat Foreman Brask, then talk to him about his notebook', 'Brask guards the drill at the top of the Old Mine. The drill only stops with the override key on his belt.', () => !!vq().mineKey, () => vdShut('mine'), { gold: 1500 }, { k: 'crag3' }),
+    vqTask('vdq_mine2', 'Beat Foreman Brask at the top of the Old Mine, then talk to him about his notebook', 'Brask guards the drill at the top of the Old Mine. The drill only stops with the override key on his belt.', () => !!vq().mineKey, () => vdShut('mine'), { gold: 1500 }, { k: 'crag3' }),
   ]],
   // 4. Lights out
   ['whale', [
-    vqTask('vdq_rig1', 'Ask Warden Orrin why the lighthouse lamp keeps dimming', 'Orrin keeps the lamp in Beaconreach.', () => (vq().rig || 0) >= 1, () => vdShut('rig'), {}, { k: 'beaconreach', ready: () => S.flags.whaleBeaten }),
-    vqTask('vdq_rig2', `Bring Hal ${VQ_LADDER.wood} wood, ${VQ_LADDER.fiber} fiber and ${VQ_LADDER.stone} stone for a boarding ladder`, "Hal's shipyard is in Driftwood Cove.", () => !!vq().ladder, () => vdShut('rig'), {}, { k: 'driftwood' }),
+    vqTask('vdq_rig1', 'Ask Warden Orrin in Beaconreach why the lighthouse lamp keeps dimming', 'Orrin keeps the lamp in Beaconreach.', () => (vq().rig || 0) >= 1, () => vdShut('rig'), {}, { k: 'beaconreach', ready: () => S.flags.whaleBeaten }),
+    vqTask('vdq_rig2', `Bring Hal in Driftwood Cove ${VQ_LADDER.wood} wood, ${VQ_LADDER.fiber} fiber and ${VQ_LADDER.stone} stone for a boarding ladder`, "Hal's shipyard is in Driftwood Cove.", () => !!vq().ladder, () => vdShut('rig'), {}, { k: 'driftwood' }),
     vqTask('vdq_rig3', "Board the rig in Stormwatch Strait and cut its valve lines", 'Sail up to the rig and climb aboard. Cut the valve lines from the highest pressure to the lowest.', () => !!vq().valves, () => vdShut('rig') || beatTrainer('vd_rigchief'), { gold: 1500 }, { k: 'stormwatch' }),
   ]],
   // 5. The petition
   ['millwind', [
-    vqTask('vdq_tow1', 'Ask Warden Tamsin about the tower on Windcrown Peak', 'Tamsin is in Highmoor, by her mill.', () => (vq().tow || 0) >= 1, () => vdShut('tower'), {}, { k: 'highmoor', ready: () => typeof millFixed === 'function' && millFixed() }),
+    vqTask('vdq_tow1', 'Ask Warden Tamsin in Highmoor about the tower on Windcrown Peak', 'Tamsin is in Highmoor, by her mill.', () => (vq().tow || 0) >= 1, () => vdShut('tower'), {}, { k: 'highmoor', ready: () => typeof millFixed === 'function' && millFixed() }),
     vqTask('vdq_tow2', () => `Gather names for Tamsin's petition (${Math.min(VQ_SIGS, vqSigCount())}/${VQ_SIGS})`, () => `Villagers you're friends with (2 hearts or more) and townsfolk in Quarrydown, Beaconreach, Driftwood Cove and Highmoor will sign if you talk to them. Every Warden whose Crest you hold has already signed (${vqWardens()}).`, () => vqSigCount() >= VQ_SIGS || (vq().tow || 0) >= 3, () => vdShut('tower'), {}, { k: 'highmoor' }),
-    vqTask('vdq_tow3', 'Take the petition back to Tamsin', 'Tamsin is in Highmoor.', () => (vq().tow || 0) >= 3, () => vdShut('tower') || beatTrainer('vd_ash'), { gold: 2000 }, { k: 'highmoor' }),
+    vqTask('vdq_tow3', 'Take the petition back to Tamsin in Highmoor', 'Tamsin is in Highmoor.', () => (vq().tow || 0) >= 3, () => vdShut('tower') || beatTrainer('vd_ash'), { gold: 2000 }, { k: 'highmoor' }),
   ]],
 ];
 for (const [before, steps] of QV) {

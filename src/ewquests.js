@@ -48,16 +48,16 @@ const EW_Q = [
   ewTask('ew_deer', 'Find a way past the Verdance checkpoint on Fernwalk', 'Verdance has blocked the road through Fernwalk. Someone in the ferns by the road seems to know the forest well.', () => ew().deer, {}, 'fernwalk'),
   ewTask('ew_town', 'Reach Elderwood', 'Follow the old deer path round the checkpoint, then the trail north through the Elder Glade.', () => (S.visited || {}).elderwood, { gold: 3000, items: { tonic: 3 } }, 'eldglade'),
   // 2. A town split in two
-  ewTask('ew_alder1', "Visit Warden Alder at his Lodge", "Alder's Lodge is at the north end of Elderwood's grand avenue, past the market square.", () => ew().alder, {}, 'elderwood'),
+  ewTask('ew_alder1', "Visit Warden Alder at his Lodge in Elderwood", "Alder's Lodge is at the north end of Elderwood's grand avenue, past the market square.", () => ew().alder, {}, 'elderwood'),
   ewTask('ew_mayor', 'Hear Mayor Pruett out', "The grand Town Hall is on the west side of the market square. Tansy says Pruett is at the Antler Inn most days, avoiding everyone.", () => ew().mayor, {}, 'elderwood'),
   ewTask('ew_bridge', 'Fund the paddock footbridge', () => `Use the notice board in Elderwood's market square. The herd paddock is across the river. (${EW_PROJECTS.ew_bridge.gold}g, ${Object.entries(EW_PROJECTS.ew_bridge.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_bridge'), { gold: 1500 }, 'elderwood'),
   // 3. The Scattered Herds
-  ewTask('ew_ask', 'Talk to Alder about the herds', "Now the footbridge is up, Alder wants a word at his Lodge.", () => ew().herdAsk, {}, 'elderwood'),
+  ewTask('ew_ask', 'Talk to Alder in Elderwood about the herds', "Now the footbridge is up, Alder wants a word at his Lodge.", () => ew().herdAsk, {}, 'elderwood'),
   ewTask('ew_herds', () => `Bring the herd leaders home (${ewHerds()}/3)`, () => [
     ew().herds.stag ? '✔ the stag' : "The stag: in the Elder Glade's west woods. Follow its hoofprints, and don't stray from them. It loves a salt lick.",
     ew().herds.boar ? '✔ the bear matriarch' : 'The bear matriarch: trapped in a logging pit in the clear-cut, east of the Glade. You\'ll need strong Fablemon, and something tasty.',
     ew().herds.owl ? '✔ the night wolf' : 'The night wolf: only at night, at the Eldest Tree, west of the Glade.'].join('<br>'), () => ewHerds() >= 3, { gold: 4000, items: { mon_treat: 3 } }, 'eldglade'),
-  ewTask('ew_home', 'Tell Alder the herds are home', 'Alder is at his Lodge in Elderwood.', () => ew().herdsHome, { gold: 3000 }, 'elderwood'),
+  ewTask('ew_home', 'Tell Alder in Elderwood the herds are home', 'Alder is at his Lodge in Elderwood.', () => ew().herdsHome, { gold: 3000 }, 'elderwood'),
 ];
 {
   const i = QUESTS.findIndex(q => q.id === 'galecrest');
@@ -271,9 +271,9 @@ const EW_Q2 = [
   // 4. Rootwood
   ewTask('ew_night', 'Sneak into the timber camp after dark', "The camp is at the east end of the haul road through the Elder Glade. Greenline guards it in the day. Tansy says the night shift is lazy.", () => ew().inCamp, {}, 'eldglade'),
   ewTask('ew_papers', () => `Find Greenline's papers in the camp (${ewPapers()}/3)`, 'Look round the camp for dropped papers. Mind the Field Techs.', () => ewPapers() >= 3, { gold: 3000 }, 'ewcamp'),
-  ewTask('ew_alder2', 'Show Alder the papers', 'Alder is at his Lodge in Elderwood.', () => ew().papers, {}, 'elderwood'),
+  ewTask('ew_alder2', 'Show Alder in Elderwood the papers', 'Alder is at his Lodge in Elderwood.', () => ew().papers, {}, 'elderwood'),
   ewTask('ew_mill', 'Fund the Old Town Mill', () => `On Elderwood's notice board. With the mill working, locals won't need Greenline's wages. (${EW_PROJECTS.ew_mill.gold}g, ${Object.entries(EW_PROJECTS.ew_mill.need).map(([k, n]) => n + ' ' + ITEMS[k].name).join(', ')})`, () => ewRepaired('ew_mill'), { gold: 4000 }, 'elderwood'),
-  ewTask('ew_dunn', 'Talk to Gaffer Dunn at the mill', 'An old logger in Greenline hi-vis is standing outside the mill, staring at it.', () => ew().dunn, {}, 'elderwood'),
+  ewTask('ew_dunn', 'Talk to Gaffer Dunn at the Elderwood mill', 'An old logger in Greenline hi-vis is standing outside the mill, staring at it.', () => ew().dunn, {}, 'elderwood'),
   // 5. Replant the Glade
   ewTask('ew_seeds', () => `Gather elder seeds from the felled stumps (${Math.min(12, ew().seeds || 0)}/12)`, 'The great stumps in the clear-cut still drop seeds. Each gives two a day. Look for the green glow.', () => (ew().seeds || 0) >= 12, {}, 'eldglade'),
   ewTask('ew_grow', () => `Grow 12 Elder Saplings on your farm (${Math.min(12, ewHaveSaplings())}/12)`, 'Plant the elder seeds in tilled soil on your farm and water them. They grow in any season and take 5 days.', () => ewHaveSaplings() >= 12, {}, 'farm'),

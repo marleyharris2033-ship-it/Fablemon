@@ -940,7 +940,7 @@ const GH_Q = [
       : "The tunnel is at the back of the Greenline timber camp. Go round the collapse through the flooded galleries, and look out for Brask's pick, lamp and gauge.",
     () => !!(gh().door || gh().toolsBack), { gold: 4000 }, 'undercroft'),
   ewTask('gh_town', 'Reach Gloamhollow', 'The far end of the Undercroft opens into the hollow.', () => gh().town, { gold: 3000, items: { tonic: 3 } }, 'undercroft'),
-  ewTask('gh_isolde1', 'Visit Warden Isolde at the lamp tower', "The lamp tower is north of Gloamhollow's square.", () => gh().isolde, {}, 'gloamhollow'),
+  ewTask('gh_isolde1', 'Visit Warden Isolde at the Gloamhollow lamp tower', "The lamp tower is north of Gloamhollow's square.", () => gh().isolde, {}, 'gloamhollow'),
   ewTask('gh_lanterns', () => `Relight Lanternmere's great lanterns (${Math.min(3, ghLit())}/3)`, "Lanternmere is south of the village. The Ember Lantern needs an Ember Fablemon; the Spark Lantern a Spark Fablemon; the Gourd Lantern a Lantern Gourd from your farm.", () => ghLit() >= 3, { gold: 5000 }, 'lanternmere'),
   ewTask('gh_deep', 'Climb down the Mill Pool well into Glimmerdeep', "The well is by the Mill Pool, on the east side of Gloamhollow.", () => S.visited && S.visited.glimmerdeep, {}, 'gloamhollow'),
   ewTask('gh_siphons', () => `Shut down the three light siphons (${ghSiph()}/3)`, "Isolde says: one in the Lamp Quarter, one in the churchyard, one in Glimmerdeep. Each has a Field Tech on guard.", () => ghSiph() >= 3, { gold: 8000, items: { sturdy_charm: 5 } }, 'gloamhollow'),
@@ -951,7 +951,7 @@ const GH_Q = [
 ];
 const GH_SIDE = [
   ewTask('gh_round', "The Lamplighter's Round", "Help Tobin light Gloamhollow's 8 street lamps between 6pm and 9pm. He pays every evening you finish.", () => (gh().rounds || 0) >= 1, { gold: 1000 }, 'gloamhollow'),
-  ewTask('gh_market', 'Visit the Night Market', "After 7pm, stalls open in Gloamhollow's square: charms, lamps, a rare seed every night, and crops bartered for goods.", () => gh().market, {}, 'gloamhollow'),
+  ewTask('gh_market', 'Visit the Night Market in Gloamhollow', "After 7pm, stalls open in Gloamhollow's square: charms, lamps, a rare seed every night, and crops bartered for goods.", () => gh().market, {}, 'gloamhollow'),
   ewTask('gh_lost', 'Lost in the Undercroft', "Wren's Jinglynx, Pip, bolted into the tunnel. Follow his glowing pawprints through the old galleries.", () => gh().lostHome, {}, 'undercroft'),
   ewTask('gh_noon', () => `Noon Bloom (${Math.min(GH_BLOOM_KEYS.length, Object.keys(gh().blooms).length)}/${GH_BLOOM_KEYS.length})`, 'Rare flowers that only open from noon till one: three round Gloamhollow, two in Lanternmere, one in Glimmerdeep.', () => Object.keys(gh().blooms).length >= GH_BLOOM_KEYS.length, { gold: 3000 }, 'gloamhollow'),
   ewTask('gh_bells', 'The Old Church bells', 'Ring the four churchyard bells in the order the carvings on the church show.', () => !!gh().cryptLoot, {}, 'gloamhollow'),
