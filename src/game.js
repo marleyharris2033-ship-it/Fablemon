@@ -1860,9 +1860,10 @@ Object.assign(World.prototype, {
   refreshFollower() { if (this.p) this.makeFollower(); },
   followStep(ox, oy, nx, ny) {
     const f = this.fol; if (!f) return;
-    // big Fablemon hang back an extra tile so they don't crowd you
+    // it walks two tiles behind (26 Nov: one tile overlapped you while running, now the art is bigger than a tile);
+    // big Fablemon, and anyone following a mount, hang back one more
     f.trail = f.trail || []; f.trail.push([ox, oy]);
-    const gap = f.spr.displayWidth > 30 || this.rideKey ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    const gap = f.spr.displayWidth > 30 || this.rideKey ? 3 : 2; if (f.trail.length > gap) f.trail.shift();
     if (f.trail.length < gap) return;
     [ox, oy] = f.trail[0];
     if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait

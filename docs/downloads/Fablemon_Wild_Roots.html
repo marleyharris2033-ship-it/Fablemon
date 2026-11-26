@@ -2507,9 +2507,10 @@ Object.assign(World.prototype, {
   refreshFollower() { if (this.p) this.makeFollower(); },
   followStep(ox, oy, nx, ny) {
     const f = this.fol; if (!f) return;
-    // big Fablemon hang back an extra tile so they don't crowd you
+    // it walks two tiles behind (26 Nov: one tile overlapped you while running, now the art is bigger than a tile);
+    // big Fablemon, and anyone following a mount, hang back one more
     f.trail = f.trail || []; f.trail.push([ox, oy]);
-    const gap = f.spr.displayWidth > 30 || this.rideKey ? 2 : 1; if (f.trail.length > gap) f.trail.shift();
+    const gap = f.spr.displayWidth > 30 || this.rideKey ? 3 : 2; if (f.trail.length > gap) f.trail.shift();
     if (f.trail.length < gap) return;
     [ox, oy] = f.trail[0];
     if (ox === nx && oy === ny) { f.trail = [[nx, ny]]; return; }   // you doubled back onto it: let it wait
@@ -22613,8 +22614,42 @@ function lazyFetch(sc, groups, cb) {
   sc.load.once('complete', done); sc.load.start();
 }
 // before each area starts: the groups it uses (and the farm's, for the start-up scene)
+// 26 Nov: free what the last area used and this one doesn't. Before this, every area's pictures stayed loaded, so a
+// walk round the valley took the farm's 115 MB of pictures past 220 MB, and the friend's iPhone went to a black
+// screen on entering a new area. Town and indoor sheets go, and so do Fablemon walk sheets this area doesn't need
+// (with their walk animations: monAnims makes them again when the sheet comes back).
+function lazyGroupsFor(sc) {
+  const out = new Set();
+  for (const g0 of SCENE_TEX[sc.scene.key] || []) out.add(/^room_/.test(g0) ? 'room_' + ((S && S.house) || 0) : g0);
+  return out;
+}
+function freeTex(sc, key) {
+  if (!sc.textures.exists(key)) return;
+  for (const an of [...sc.anims.anims.values()]) { const f = an.frames && an.frames[0]; if (f && f.textureKey === key) sc.anims.remove(an.key); }
+  sc.textures.remove(key);
+}
+function lazyFree(sc) {
+  if (window.LAZY_OFF || window.LAZY_KEEP) return;
+  const others = sc.game.scene.getScenes(true).filter(o => o !== sc && o.sys.settings.key !== 'boot');
+  const keep = lazyGroupsFor(sc); for (const o of others) for (const g of lazyGroupsFor(o)) keep.add(g);
+  for (const g of Object.keys(LAZY_REC)) if (!keep.has(g)) for (const [, key] of LAZY_REC[g]) { freeTex(sc, key); freeTex(sc, key + '__hd'); }
+  if (typeof monNeed === 'function' && S && S.mons) {
+    const need = new Set(monNeed(sc.scene.key)); for (const o of others) for (const n of monNeed(o.scene.key)) need.add(n);
+    for (const m of (typeof team === 'function' ? team() : [])) need.add(walkSp(m.sp));
+    for (const key of sc.textures.getTextureKeys()) if (/^mon_/.test(key) && !need.has(key.slice(4)) && !MON_LOADING[key.slice(4)]) freeTex(sc, key);
+  }
+}
+// a slow area load shows a "Loading…" note instead of a silent black screen, and a stuck download gives up after 20 s
+function lazyNote(show) {
+  let d = document.getElementById('fmLoadNote');
+  if (!d) { d = document.createElement('div'); d.id = 'fmLoadNote'; d.style.cssText = 'position:fixed;left:50%;bottom:22%;transform:translateX(-50%);z-index:99;padding:8px 16px;border-radius:12px;background:rgba(30,22,12,.82);color:#fff6dc;font:700 15px system-ui,sans-serif;pointer-events:none;display:none'; d.textContent = 'Loading…'; document.body.appendChild(d); }
+  d.style.display = show ? 'block' : 'none';
+}
 const _lazyWP = World.prototype.preload;
 World.prototype.preload = function () {
+  try { lazyFree(this); } catch (e) { console.warn('lazy free', e); }
+  this.load.timeout = 20000;
+  const note = setTimeout(() => lazyNote(true), 1500), unnote = () => { clearTimeout(note); lazyNote(false); }; this.load.once('complete', unnote); this.events.once('create', unnote);
   _lazyWP.call(this);
   if (window.LAZY_OFF) return;
   let n = 0; for (const g0 of SCENE_TEX[this.scene.key] || []) { const g = /^room_/.test(g0) ? 'room_' + ((S && S.house) || 0) : g0; if (/^an_/.test(g) && typeof myAnimals === 'function' && !myAnimals().some(a => lvSheet(a) === g)) continue; if (lazyQueue(this, g)) n++; }   // (26 Nov: only the animals you own)
