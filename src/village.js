@@ -20,29 +20,30 @@ function vClearSpot(start, areaFor) {
 /* ---------- 1. the farm branches */
 const isSeed = i => ITEMS[i] && (ITEMS[i].seed || /_seeds?$/.test(i));
 const BRANCH = {
-  bh: { town: 'Brookholt', shop: 'Fenroot Seeds', frame: 'br_bh', gold: 2000, cost: { wood: 80, stone: 40 }, open: () => !!(S.visited || {}).brookholt,
+  bh: { warden: 'Delphine', crest: 'brook', town: 'Brookholt', shop: 'Fenroot Seeds', frame: 'br_bh', gold: 2000, cost: { wood: 80, stone: 40 }, open: null,
     keeper: 'Bog seeds and peat, sent up the canal every morning. Peat makes any tilled soil waterlogged for bog crops.',
     stock: () => BH_SHOP.filter(([i]) => isSeed(i) || i === 'bog_peat') },
-  qd: { town: 'Quarrydown', shop: 'Stone & Supply', frame: 'br_qd', gold: 2500, cost: { wood: 100, stone: 80 }, open: () => !!(S.visited || {}).quarrydown,
+  qd: { warden: 'Granger', crest: 'stone', town: 'Quarrydown', shop: 'Stone & Supply', frame: 'br_qd', gold: 2500, cost: { wood: 100, stone: 80 }, open: null,
     keeper: 'Quarry seeds and building bundles, brought over on the morning cart.',
     stock: () => QD_SHOP.filter(([i]) => isSeed(i) || ['stone', 'wood', 'fiber'].includes(i)) },
-  br: { town: 'Beaconreach', shop: 'Beaconreach Chandlery', frame: 'br_br', gold: 3000, cost: { wood: 120, stone: 60 }, open: () => !!(S.visited || {}).beaconreach,
+  br: { warden: 'Orrin', crest: 'spark', town: 'Beaconreach', shop: 'Beaconreach Chandlery', frame: 'br_br', gold: 3000, cost: { wood: 120, stone: 60 }, open: null,
     keeper: 'Coast seeds, kept dry in oilcloth.',
     stock: () => BR_SHOP.filter(([i]) => isSeed(i)) },
-  hm: { town: 'Highmoor', shop: 'The Weathervane', frame: 'br_hm', gold: 3500, cost: { wood: 120, stone: 80 }, open: () => !!(S.visited || {}).highmoor,
+  hm: { warden: 'Tamsin', crest: 'gale', town: 'Highmoor', shop: 'The Weathervane', frame: 'br_hm', gold: 3500, cost: { wood: 120, stone: 80 }, open: null,
     keeper: 'Moorland seeds, flown down by Kestrel Kites.',
     stock: () => HM_SHOP.filter(([i]) => isSeed(i)) },
-  ew: { town: 'Elderwood', shop: 'Forest Stores', frame: 'br_ew', gold: 4000, cost: { wood: 150, stone: 100 }, open: () => typeof ewRepaired === 'function' && ewRepaired('ew_mill'),
-    lockTxt: 'Once the Elderwood mill is running again.',
+  ew: { warden: 'Alder', crest: 'wild', town: 'Elderwood', shop: 'Forest Stores', frame: 'br_ew', gold: 4000, cost: { wood: 150, stone: 100 }, open: null,
     keeper: 'Elder seeds and salt licks from Oliver\'s shelves.',
     stock: () => EW_SHOP.filter(([i]) => isSeed(i) || i === 'salt_lick') },
-  gh: { town: 'Gloamhollow', shop: 'Hollow Stores', frame: 'br_gh', gold: 5000, cost: { wood: 150, stone: 120 }, open: () => !!(S.visited || {}).gloamhollow,
+  gh: { warden: 'Isolde', crest: 'shade', town: 'Gloamhollow', shop: 'Hollow Stores', frame: 'br_gh', gold: 5000, cost: { wood: 150, stone: 120 }, open: null,
     keeper: 'Lanterns for your farm, and the Noonbell seed once the town has found it.',
     stock: () => {
       const G = S.gh || {}, bloom = typeof GH_BLOOM_KEYS !== 'undefined' && Object.keys(G.blooms || {}).length >= GH_BLOOM_KEYS.length;
       return [...(bloom && ITEMS.noonbell_seed ? [['noonbell_seed', Math.max(300, (ITEMS.noonbell_seed.sell || 50) * 6)]] : []), ['lantern', 400], ['stone_lantern', 650], ['hearth_lantern', 1400]].filter(([i]) => ITEMS[i]);
     } },
 };
+// 26 Nov: a branch unlocks once you've beaten that town's Warden (the user's call)
+for (const B of Object.values(BRANCH)) B.open = () => !!(S.crests || {})[B.crest];
 const BR_D = 3;   // rows deep (the doorstep row below is kept clear when building)
 const branches = () => (S.branches = S.branches || {});
 const brW = k => { const f = HDW.fv && HDW.fv.frames['br_' + k] || HDW.fv && HDW.fv.frames[BRANCH[k].frame]; return f ? Math.ceil(f.w / 3 / T) : 6; };
@@ -84,11 +85,11 @@ svcCarpenter = SERVICE.carpenter = function () {
       const have = branches()[k], ok = S.gold >= B.gold && Object.entries(B.cost).every(([i, n]) => stock(i) >= n);
       const icon = `<img src="${iconFor('br_' + k)}">`;
       if (have) return `<div class="shoprow">${icon}<div class="g"><b>${B.shop} branch</b><small>Built on your farm. Use move mode to move it.</small></div></div>`;
-      if (!B.open()) return `<div class="shoprow" style="opacity:.55">${icon}<div class="g"><b>🔒 ${B.town} store branch</b><small>${B.lockTxt || `Reach ${B.town} first.`}</small></div></div>`;
+      if (!B.open()) return `<div class="shoprow" style="opacity:.55">${icon}<div class="g"><b>🔒 ${B.town} store branch</b><small>Beat Warden ${B.warden} in ${B.town} first.</small></div></div>`;
       const needs = Object.entries(B.cost).map(([i, n]) => `<span class="need ${stock(i) < n ? 'no' : ''}"><img src="${iconFor(i)}">${itemNm(i)} ${Math.min(stock(i), n)}/${n}</span>`).join('') + `<span class="need ${S.gold < B.gold ? 'no' : ''}"><img src="${ICONS.coin}">${B.gold.toLocaleString()}g</span>`;
       return `<div class="shoprow">${icon}<div class="g"><b>${B.shop} branch</b><small>Sells ${B.town}'s ${k === 'gh' ? 'lanterns and rare seed' : 'seeds and farm supplies'} on your farm.</small><div>${needs}</div></div><button class="btn gold" data-br="${k}" ${ok ? '' : 'disabled'}>Build</button></div>`;
     }).join('');
-    const list = b.querySelector('.mlist'); (list || b).insertAdjacentHTML('beforeend', `<div id="brList"><p style="margin:10px 0 4px"><b>Farm branches</b> <small>Stores from the towns you've reached, built on your farm.</small></p>${rows}</div>`);
+    const list = b.querySelector('.mlist'); (list || b).insertAdjacentHTML('beforeend', `<div id="brList"><p style="margin:10px 0 4px"><b>Farm branches</b> <small>Beat a town's Warden and Robin can build a branch of its store here.</small></p>${rows}</div>`);
     b.querySelectorAll('[data-br]').forEach(el => el.onclick = () => buildBranch(el.dataset.br));
   });
 };
