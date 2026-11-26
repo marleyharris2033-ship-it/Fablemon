@@ -727,7 +727,7 @@ folkTalk = function (sc, id) {
   return _vdFolk(sc, id);
 };
 
-// the shops: Marigold won't stock it, the mason won't either, the Chandlery does (and isn't happy about it)
+// the shops: Marigold won't stock it, the mason won't either, Fenroot Seeds in Brookholt does (and isn't happy about it)
 const _vdMarigold = marigoldLines;
 marigoldLines = function (open) {
   if (S.town.met.marigold && S.vd && vd().metGleam && !vd().react?.marigold) { (vd().react = vd().react || {}).marigold = S.day;

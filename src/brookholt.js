@@ -1,5 +1,5 @@
 /* ============================================================ Brookholt
-   A small canal town past Sluice Fen: a clinic, the Chandlery (bog crops and peat), two repairs,
+   A small canal town past Sluice Fen: a clinic, Fenroot Seeds (bog crops and peat; called the Chandlery before 26 Nov), two repairs,
    the train back to Smallroot, and Warden Delphine's Lock House. Stand-in art from Smallroot for now. */
 const CREST_INFO = { root: ['🌿 Root Crest', '#4e9a3a'], brook: ['💧 Brook Crest', '#3a7ab0'], hearth: ['🔥 Hearth Crest', '#c0602a'] };
 const BH_PROJECTS = {
@@ -50,7 +50,7 @@ function bhDoor(sc, id) {
   });
   if (id === 'bh_shop') {
     const render = () => `<p>"Seeds for wet ground, love. Nothing else grows like it out here." Watercress only grows right beside your pond; the rest need waterlogged soil. Spread <b>Bog Peat</b> on tilled soil to waterlog it anywhere on your farm. Waterlogged soil never needs watering, but only bog crops will grow in it.</p><div class="mlist">${BH_SHOP.map(([i, p]) => shopRow(i, p)).join('')}</div>`;
-    return openModal('The Chandlery', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
+    return openModal('Fenroot Seeds', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
   }
   if (id === 'bh_station') {
     if (!S.town.done.station) return openModal('Brookholt Halt', `<p>The halt is swept and tidy, and the rails run off west towards Smallroot. A faded notice reads: <i>"Service suspended until Smallroot Station reopens."</i></p><p class="hint">Restore Smallroot Station from the notice board in Smallroot, and the trains will run between the two towns.</p>`);

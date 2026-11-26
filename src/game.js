@@ -294,6 +294,11 @@ const mineHits = () => [4, 3, 2, 1][(S.tools && S.tools.pickaxe) || 0];   // pic
 const MINE_TIME = [0, 40, 20, 10];   // seconds per stone from the mine, by evolution stage
 let objReady = o => (o.t === 'compost' && o.n && S.day >= o.doneDay) || (o.t === 'beehive' && o.honey > 0) || (o.t === 'fishhut' && Object.values(o.fish || {}).some(Boolean));
 const objW = it => it && it.place === 'obj' ? (OBJ_ART[it.obj][2] || 1) : 1;
+// 26 Nov: placed things can be deeper than one row (Village cottages, fountains). The object sits on its bottom-left
+// tile (o.w wide, o.d deep); every other tile it covers holds { part: <that tile> }.
+const objD = it => it && it.place === 'obj' ? (OBJ_ART[it.obj][3] || 1) : 1;
+function objClaim(x, y, w = 1, d = 1) { const k = x + ',' + y; for (let j = 0; j < d; j++) for (let i = 0; i < w; i++) if (i || j) S.objs[(x + i) + ',' + (y - j)] = { part: k }; }
+function objUnclaim(k) { for (const [kk, v] of Object.entries(S.objs)) if (v && v.part === k) delete S.objs[kk]; }
 const SAPLING_TREE = { sap_oak: 'oak', sap_pine: 'pine', sap_apple: 'apple' };
 // little sapling sprites drawn in code
 const SAP_CANVAS = {};
@@ -997,7 +1002,7 @@ function openCraft() {
       return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${ITEMS[r.out].name}${r.n > 1 ? ' ×' + r.n : ''}</b><small>${need}</small></div>
         <button class="btn gold" data-a="craft" data-k="${k}" ${can ? '' : 'disabled'}>Craft</button></div>`;
     }).join('');
-    return `${tabs}<div class="mlist">${rows}</div><p><small>${farmChests().length ? 'Materials in your farm\'s chests count too. ' : ''}Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits.</small></p>`;
+    return `${tabs}<div class="mlist">${rows}</div><p><small>${farmChests().length ? 'Materials in your farm\'s chests count too. ' : ''}Crafted items go into your backpack. Select one in the hotbar and place it in front of you. Wide items fill tiles to the right; a green box means it fits. Cottages and fountains let you choose the spot on the map.</small></p>`;
   };
   openModal('Crafting', render(), (a, d) => {
     if (a === 'tab') { craftTab = +d.k; $('mBody').innerHTML = render(); $('mBody').scrollTop = 0; return; }
@@ -2436,12 +2441,12 @@ class Farm extends World {
     if (S.objs[k] && S.objs[k].part) k = S.objs[k].part;
     const o = S.objs[k];
     if (o) {
-      const [ox, oy] = k.split(',').map(Number), w = o.w || 1, [key, frame] = this.objTex(o.t);
-      const it = Object.values(ITEMS).find(i => i.obj === o.t);
-      return { name: it ? it.name : 'Item', ghostKey: key, ghostFrame: frame, at: { cx: ox, by: oy }, areaFor: a => [a.cx, a.by, a.cx + w - 1, a.by], ghostAt: a => [a.cx * T + w * 8, a.by * T + 16],
-        ignore: own(ox, oy, ox + w - 1, oy), onBuild: a => {
-          for (let i = 0; i < w; i++) delete S.objs[(ox + i) + ',' + oy];
-          const nk = a.cx + ',' + a.by; S.objs[nk] = o; for (let i = 1; i < w; i++) S.objs[(a.cx + i) + ',' + a.by] = { part: nk };
+      const [ox, oy] = k.split(',').map(Number), w = o.w || 1, d = o.d || 1, [key, frame] = this.objTex(o.art || o.t);
+      const it = Object.values(ITEMS).find(i => i.obj === (o.art || o.t));
+      return { name: it ? it.name : 'Item', ghostKey: key, ghostFrame: frame, at: { cx: ox, by: oy }, areaFor: a => [a.cx, a.by - d + 1, a.cx + w - 1, a.by], ghostAt: a => [a.cx * T + w * 8, a.by * T + 16],
+        ignore: own(ox, oy - d + 1, ox + w - 1, oy), onBuild: a => {
+          objUnclaim(k); delete S.objs[k];
+          const nk = a.cx + ',' + a.by; S.objs[nk] = o; objClaim(a.cx, a.by, w, d);
           restart();
         } };
     }
@@ -2820,11 +2825,11 @@ class Farm extends World {
       }
       let ok = S.gold >= def.gold;
       if (def.move) {
-        $('buildbar').innerHTML = `<div class="bt"><b>Move: ${def.name}</b></div><small>Drag it on the map, or use the arrows. Trees, rocks and weeds in the way are cleared for you.</small>
+        $('buildbar').innerHTML = `<div class="bt"><b>${def.verb || 'Move'}: ${def.name}</b></div><small>Drag it on the map, or use the arrows. Trees, rocks and weeds in the way are cleared for you.</small>
           <div class="legend"><i style="background:#7cf27a"></i>Free <i style="background:#ffb03a"></i>Cleared for you <i style="background:#ff4a3a"></i>In the way</div>
           <div class="mv"><button class="btn" data-a="mv" data-dx="-1" data-dy="0">◀</button><button class="btn" data-a="mv" data-dx="0" data-dy="-1">▲</button><button class="btn" data-a="mv" data-dx="0" data-dy="1">▼</button><button class="btn" data-a="mv" data-dx="1" data-dy="0">▶</button></div>
           <div style="font-size:13px;margin:3px 0">${mustClear ? `<b style="color:#b03a2e">${mustClear} red tile${mustClear > 1 ? 's' : ''} in the way.</b>` : '<b style="color:var(--green2)">It fits here.</b>'}</div>
-          <div class="row"><button class="btn gold" data-a="build" ${mustClear ? 'disabled' : ''}>Move here</button><button class="btn" data-a="close">Cancel</button></div>`;
+          <div class="row"><button class="btn gold" data-a="build" ${mustClear ? 'disabled' : ''}>${def.verb || 'Move'} here</button><button class="btn" data-a="close">Cancel</button></div>`;
         return;
       }
       const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
@@ -2842,7 +2847,7 @@ class Farm extends World {
       const el = e.target.closest('[data-a]'); if (!el) return; const a = el.dataset.a;
       Sound.play('click');
       if (a === 'mv') return move(at.cx + +el.dataset.dx, at.by + +el.dataset.dy, true);
-      if (a === 'close') { close(); if (def.move) this.moveMode(); return; }
+      if (a === 'close') { close(); if (def.move && !def.verb) this.moveMode(); return; }
       if (a === 'build' && def.zone) { close(); def.onBuild(at); return; }
       if (a === 'build' && def.move) { if (mustClear) return Sound.play('error'); const [x0, y0, x1, y1] = def.areaFor(at); close(); this.clearDebrisIn(x0, y0, x1, y1); Sound.play('place'); def.onBuild(at); return; }
       if (a === 'build') {
@@ -2897,7 +2902,7 @@ class Farm extends World {
       return this.swing(tool, () => {
         if (!S.objs[k]) return;
         const left = inv.add(o.item || o.t, 1); if (left) { toast('Your backpack is full!'); return; }
-        for (let i = 1; i < (o.w || 1); i++) delete S.objs[(x + i) + ',' + y];
+        objUnclaim(k);
         delete S.objs[k]; this.drawObj(x, y); this.glows = this.glows.filter(g => g.active); Sound.play('pop'); renderHotbar();
       }, 0);
     }
@@ -4670,7 +4675,7 @@ const ROUTES = {
     zones: [], pickups: [],
     buildings: [
       { id: 'bh_clinic', atlas: 'bh', frame: 'bh_clinic', cx: 6, by: 10, door: -1, name: 'Brookholt Clinic' },
-      { id: 'bh_shop', atlas: 'bh', frame: 'bh_shop', cx: 15, by: 10, door: 0, name: 'The Chandlery' },
+      { id: 'bh_shop', atlas: 'bh', frame: 'bh_shop', cx: 15, by: 10, door: 0, name: 'Fenroot Seeds' },
       { id: 'bh_station', atlas: 'bh', frame: 'bh_halt', cx: 7, by: 23, door: -3, name: 'Brookholt Halt' },
       { id: 'bh_cottage', atlas: 'bh', frame: 'bh_cottage', old: 'bh_cottage_old', cx: 19, by: 23, door: 0, name: 'Lock Cottage', repair: true },
       { id: 'bh_lock', atlas: 'bh', frame: 'bh_lockhouse', cx: 36, by: 10, door: 0, name: "Warden's Lock House" },
