@@ -227,7 +227,10 @@ function linkShare(pre) {
   draw();
 }
 const linkUid = u => isNaN(+u) ? u : +u;
-const linkRow = (m, tag, col) => `<button class="btn" data-a="t" data-u="${m.uid}" style="display:flex;align-items:center;gap:6px;width:100%;margin:3px 0;padding:3px 6px;text-align:left;${tag ? 'background:#cfe8c0;border-color:#3a7a2a' : ''}"><img src="${monPicOf(m)}" style="width:30px;height:30px;image-rendering:pixelated">${monName(m)} <small style="opacity:.75">Lv ${m.lv}</small><b style="margin-left:auto;font-size:12px">${tag}</b></button>`;
+const linkRow = (m, tag, col, sub) => `<button class="btn" data-a="t" data-u="${m.uid}" style="display:flex;align-items:center;gap:6px;width:100%;margin:3px 0;padding:3px 6px;text-align:left;${tag ? 'background:#cfe8c0;border-color:#3a7a2a' : ''}"><img src="${monPicOf(m)}" style="width:30px;height:30px;image-rendering:pixelated"><span style="line-height:1.15">${monName(m)} <small style="opacity:.75">Lv ${m.lv}</small>${sub ? `<br><small>${sub}</small>` : ''}</span><b style="margin-left:auto;font-size:12px">${tag}</b></button>`;
+// 26 Nov: race pickers show each racer's race speed at the race's level (the user wanted to gauge who to send)
+const linkSpd = (m, lv) => Math.round(raceStats(linkRacer(m, lv), 100).spd);
+const linkSpdTag = (m, lv) => `⚡ Speed <b>${linkSpd(m, lv)}</b>${m.held === 'swift_feather' ? ' (Swift Feather)' : ''}`;
 
 // ---------- setting up a battle
 const LINK_ARENAS = [['Link', null], ['Mabel', 'root'], ['Delphine', 'brook'], ['Granger', 'stone'], ['Orrin', 'spark'], ['Tamsin', 'gale'], ['Alder', 'wild'], ['Isolde', 'shade'], ['Rowan', 'hearth']];
@@ -438,10 +441,10 @@ function linkRaces() {
     if (a === 'ghost') return linkGhostPaste();
   });
 }
-function linkRacerPick(title, head, onPick, back) {
+function linkRacerPick(title, head, onPick, back, lv = 100) {
   const all = S.mons.filter(m => !SPECIES[m.sp].legend).sort((a, b) => (a.loc === 'team' ? 0 : 1) - (b.loc === 'team' ? 0 : 1) || b.lv - a.lv);
   if (!all.length) return toast('You need a Fablemon to race!');
-  openModal(title, `${head}<p style="margin:6px 0 2px"><b>Who's racing?</b></p><div style="max-height:34vh;overflow:auto">${all.map(m => linkRow(m, '')).join('')}</div><div class="row"><button class="btn" data-a="back">Back</button></div>`, (a, d) => {
+  openModal(title, `${head}<p style="margin:6px 0 2px"><b>Who's racing?</b></p><div style="max-height:34vh;overflow:auto">${all.map(m => linkRow(m, '', 0, linkSpdTag(m, lv))).join('')}</div><div class="row"><button class="btn" data-a="back">Back</button></div>`, (a, d) => {
     if (a === 't') { const m = S.mons.find(x => x.uid === linkUid(d.u)); if (m) { closeModal(); onPick(m); } return; }
     if (a === 'back') return back(); onPick(null, a, d);
   });
@@ -452,14 +455,14 @@ function linkTrialSetup() {
   const chip = (k, v, t) => `<button class="btn ${C[k] === v ? 'gold' : ''}" data-a="o" data-k="${k}" data-v="${v}" style="flex:1 1 auto;padding:4px 6px;font-size:12px;margin:2px">${t}</button>`;
   linkRacerPick('Time trial', `<p style="margin:2px 0"><b>Track</b> <small>(any whose cup you can enter)</small></p><div style="display:flex;flex-wrap:wrap">${linkTracks().map(k => chip('track', k, DERBY_TRACKS[k].name)).join('')}</div>
     <p style="margin:6px 0 2px"><b>Level</b> <small>(your racer grows or shrinks to it, evolutions too)</small></p><div style="display:flex;flex-wrap:wrap">${LINK_CAPS.map(([v, t]) => chip('cap', v, t)).join('')}</div>`,
-  (m, a, d) => { if (a === 'o') { C[d.k] = d.k === 'cap' ? +d.v : d.v; return linkTrialSetup(); } if (m) linkRun(m, C.track, C.cap, null); }, linkRaces);
+  (m, a, d) => { if (a === 'o') { C[d.k] = d.k === 'cap' ? +d.v : d.v; return linkTrialSetup(); } if (m) linkRun(m, C.track, C.cap, null); }, linkRaces, C.cap);
 }
 function linkGhostPaste() {
   openModal("Race a friend's ghost", `<textarea data-a="code" placeholder="Paste the FMG1- ghost code here" style="width:100%;height:80px;font-size:11px"></textarea><p id="lkMsg" style="font-size:12px;margin:4px 0"></p><div class="row"><button class="btn" data-a="back">Back</button><button class="btn gold" data-a="go">Next</button></div>`, a => {
     if (a === 'back') return linkRaces(); if (a !== 'go') return;
     const g = ghostRead(document.querySelector('#mBody textarea').value), msg = t => { document.getElementById('lkMsg').textContent = t; };
     if (!g) return msg("❌ That isn't a ghost code."); if (g.bad) return msg('❌ ' + g.bad);
-    linkRacerPick(`${g.who}'s ghost`, `<p>👻 <b>${g.who}</b> raced <b>${g.nick || SPECIES[g.sp].name}</b> round <b>${DERBY_TRACKS[g.track].name}</b> in <b>${fmtLap(g.ms)}</b>${g.cap < 100 ? ` at Lv ${g.cap}` : ''}. Can you beat it?</p>`, m => m && linkRun(m, g.track, g.cap, g), linkGhostPaste);
+    linkRacerPick(`${g.who}'s ghost`, `<p>👻 <b>${g.who}</b> raced <b>${g.nick || SPECIES[g.sp].name}</b> round <b>${DERBY_TRACKS[g.track].name}</b> in <b>${fmtLap(g.ms)}</b>${g.cap < 100 ? ` at Lv ${g.cap}` : ''}. Can you beat it?</p>`, m => m && linkRun(m, g.track, g.cap, g), linkGhostPaste, g.cap);
   });
 }
 async function linkRun(m, track, cap, ghost) {
