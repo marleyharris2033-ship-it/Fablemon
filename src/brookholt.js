@@ -58,8 +58,8 @@ function bhDoor(sc, id) {
       closeModal(); if (a === 'go') travel(sc, 'town', { x: 63, y: 25, dir: 'down' }); if (a === 'qd') travel(sc, 'quarrydown', { x: 12, y: 22, dir: 'down' });
     });
   }
-  if (id === 'bh_cottage') return toast('The Lock Cottage is cosy and freshly painted. Someone will move in soon.', 2600);
-  if (id === 'bh_mill') return toast('The great wheel creaks round, and the whole canal seems happier for it.', 2600);
+  if (id === 'bh_cottage') return toast("The Lock Cottage is cosy and freshly painted. Nobody answers: they'll be out on the canal.", 2600);
+  if (id === 'bh_mill') return toast(typeof tqQuestDone === 'function' && !tqQuestDone('tq_wheel') ? "The Old Watermill. The great wheel shudders and sticks. Miller Ada's around here somewhere." : 'The great wheel creaks round, and the whole canal seems happier for it.', 2600);
   if (id === 'bh_lock') {
     if (!lockHouseOpen()) return delphine(sc);
     Sound.play('door'); return travel(sc, 'bhgym', { x: 10, y: 26, dir: 'up' });
@@ -70,11 +70,8 @@ function delphine(sc) {
   const D = (t, f = 0) => ({ who: 'trainer', name: 'Warden Delphine', img: trainerPic('delphine', f), t });
   if (S.crests && S.crests.brook) return Talk.say([D(pick(["The canal runs smoother with you around. Keep that Brook Crest bright.", "Every lock needs a keeper. Every keeper needs a team they trust. You have one.", "Mind the fen on your way home!"]), 1)]);
   if (!S.crests || !S.crests.root) return Talk.say([D("A keeper without Mabel's Crest? Go and see her first, at the end of Brookside Lane.")]);
-  if (bhRepairs() < 2) return Talk.say([D("You've come through the fen to see me? Good. I'm Delphine, keeper of the locks, and Warden of this stretch of water."),
-    D(`But a Warden looks after a place, not just their Fablemon. Brookholt needs a hand: two repairs on the notice board. You've done ${bhRepairs()}.`),
-    D('Help the town, and the lock gates are open to you.', 1)]);
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
-  Talk.say([D("The mill's turning and the cottage is lived in. You kept your word."), D("Water is patient. It wears down stone, given time. Let's see if your team can hold back the tide!")], () => {
+  Talk.say([D(typeof townHelped !== 'undefined' && townHelped.brook() ? "The ledger's whole again, Ada's wheel turns and the canal's had its lanterns. You kept your word." : "You've come a long way through the fen to see me. Good."), D("Water is patient. It wears down stone, given time. Let's see if your team can hold back the tide!")], () => {
     const tm = DELPHINE_TEAM.map(wardenMon);
     Battle.start(tm[0], { label: 'Warden', name: 'Delphine', team: tm, prize: 3000, boss: true, heals: 2, lose: 'Well, the tide turns for everyone eventually.', onWin: () => {
       S.crests = S.crests || {}; S.crests.brook = 1; giveSigil('tide'); S.trainers = S.trainers || {}; S.trainers.delphine = 1;

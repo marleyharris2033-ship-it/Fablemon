@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261126-152846">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261126-152846">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261126-152846">
+<link rel="manifest" href="manifest.webmanifest?v=20261126-162405">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261126-162405">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261126-162405">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-152846').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-162405').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -4295,6 +4295,9 @@ class Town extends World {
       const br = this.npcs.find(n => n.id === 'bramble');
       return toast(br.home ? 'Bramble calls through the door: "It\'s late, dear! Come and find me in the square tomorrow."' : "Nobody's home. Bramble is usually out in the square.", 3000);
     }
+    if (id === 'hall' && typeof vdRevealReady === 'function' && vdRevealReady()) {   // 26 Nov: Rowan's Verdance talk, even before the Hall is restored
+      Sound.play('door'); if (!isOpen(id)) toast('Rowan is waiting inside the old Hall.', 2000); return vdRevealTalk();
+    }
     if (id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory()) {   // 26 Nov: the fen story, even before the clinic is restored
       Sound.play('door');
       if (isOpen(id) && this.npcs.find(q => q.id === 'willa')) return villChat('willa', typeof isSettled !== 'function' || isSettled(id) ? SERVICE.clinic : () => {});
@@ -6356,8 +6359,8 @@ function bhDoor(sc, id) {
       closeModal(); if (a === 'go') travel(sc, 'town', { x: 63, y: 25, dir: 'down' }); if (a === 'qd') travel(sc, 'quarrydown', { x: 12, y: 22, dir: 'down' });
     });
   }
-  if (id === 'bh_cottage') return toast('The Lock Cottage is cosy and freshly painted. Someone will move in soon.', 2600);
-  if (id === 'bh_mill') return toast('The great wheel creaks round, and the whole canal seems happier for it.', 2600);
+  if (id === 'bh_cottage') return toast("The Lock Cottage is cosy and freshly painted. Nobody answers: they'll be out on the canal.", 2600);
+  if (id === 'bh_mill') return toast(typeof tqQuestDone === 'function' && !tqQuestDone('tq_wheel') ? "The Old Watermill. The great wheel shudders and sticks. Miller Ada's around here somewhere." : 'The great wheel creaks round, and the whole canal seems happier for it.', 2600);
   if (id === 'bh_lock') {
     if (!lockHouseOpen()) return delphine(sc);
     Sound.play('door'); return travel(sc, 'bhgym', { x: 10, y: 26, dir: 'up' });
@@ -6368,11 +6371,8 @@ function delphine(sc) {
   const D = (t, f = 0) => ({ who: 'trainer', name: 'Warden Delphine', img: trainerPic('delphine', f), t });
   if (S.crests && S.crests.brook) return Talk.say([D(pick(["The canal runs smoother with you around. Keep that Brook Crest bright.", "Every lock needs a keeper. Every keeper needs a team they trust. You have one.", "Mind the fen on your way home!"]), 1)]);
   if (!S.crests || !S.crests.root) return Talk.say([D("A keeper without Mabel's Crest? Go and see her first, at the end of Brookside Lane.")]);
-  if (bhRepairs() < 2) return Talk.say([D("You've come through the fen to see me? Good. I'm Delphine, keeper of the locks, and Warden of this stretch of water."),
-    D(`But a Warden looks after a place, not just their Fablemon. Brookholt needs a hand: two repairs on the notice board. You've done ${bhRepairs()}.`),
-    D('Help the town, and the lock gates are open to you.', 1)]);
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
-  Talk.say([D("The mill's turning and the cottage is lived in. You kept your word."), D("Water is patient. It wears down stone, given time. Let's see if your team can hold back the tide!")], () => {
+  Talk.say([D(typeof townHelped !== 'undefined' && townHelped.brook() ? "The ledger's whole again, Ada's wheel turns and the canal's had its lanterns. You kept your word." : "You've come a long way through the fen to see me. Good."), D("Water is patient. It wears down stone, given time. Let's see if your team can hold back the tide!")], () => {
     const tm = DELPHINE_TEAM.map(wardenMon);
     Battle.start(tm[0], { label: 'Warden', name: 'Delphine', team: tm, prize: 3000, boss: true, heals: 2, lose: 'Well, the tide turns for everyone eventually.', onWin: () => {
       S.crests = S.crests || {}; S.crests.brook = 1; giveSigil('tide'); S.trainers = S.trainers || {}; S.trainers.delphine = 1;
@@ -7882,8 +7882,8 @@ function qdDoor(sc, id) {
     return openModal('Stone & Supply', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
   }
   if (id === 'qd_station') return qdStation(sc);
-  if (id === 'qd_cottage') return toast('The Stone Cottage is warm and lived-in again. Lavender by the gate, smoke from the chimney.', 2600);
-  if (id === 'qd_crane') return toast('The Old Crane creaks round and sets a block down as gently as an egg. The whole quarry cheers.', 2600);
+  if (id === 'qd_cottage') return toast('The Stone Cottage is warm and lived-in. Lavender by the gate, smoke from the chimney: Old Hew\'s home.', 2600);
+  if (id === 'qd_crane') return toast(typeof tqQuestDone === 'function' && !tqQuestDone('tq_crane') ? "The Old Crane, sound but still. It hasn't lifted a stone since the landslide. Fergus is usually close by." : 'The Old Crane creaks round and sets a block down as gently as an egg. The whole quarry cheers.', 2600);
 }
 function qdStation(sc) {
   if (!S.town.done.station) return openModal('Quarrydown Station', '<p>The platform is swept and the clock is right, but no trains are running. A notice reads: <i>"Service will resume when Smallroot Station reopens."</i></p>');
@@ -7900,13 +7900,10 @@ TRAINER_ROW.granger = 11;
 const GRANGER_TEAM = [['clinkit_2', 32], ['cindhop_2', 33], ['craglet_2', 34], ['flintburrow', 34], ['ramruff_2', 35], ['flintcairn', 36]];
 function granger(sc) {
   const G = (t, f = 0) => ({ who: 'trainer', name: 'Warden Granger', img: trainerPic('granger', f), t });
-  if (S.crests && S.crests.stone) return Talk.say([G(pick(["Stone doesn't hurry. Neither do I. Come back any time.", "The crane's working, the cottage is lived in. Town's in good shape. So's your team.", "Keep that Crest polished. It's cut from the same rock as the quarry."]), 1)]);
+  if (S.crests && S.crests.stone) return Talk.say([G(pick(["Stone doesn't hurry. Neither do I. Come back any time.", "The crane's lifting again and Hew's happy in his cottage. Town's in good shape. So's your team.", "Keep that Crest polished. It's cut from the same rock as the quarry."]), 1)]);
   if (!S.crests || !S.crests.brook) return Talk.say([G("You'll want Delphine's Brook Crest before you come knocking here. Brookholt, down past the fen.")]);
-  if (qdRepairs() < 2) return Talk.say([G("Granger. I run the quarry. And the Pit, when there's someone worth fighting in it."),
-    G(`A Warden looks after a town before anything else. Ours has two jobs on the notice board: the Stone Cottage and the Old Crane. You've seen to ${qdRepairs()}.`),
-    G("Get them done, and I'll take the barrier down myself.", 1)]);
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
-  Talk.say([G("Crane's turning. Cottage is warm. You kept your word."), G("You don't break rock by hitting it hard. You hit it right. Show me you know the difference.")], () => {
+  Talk.say([G(typeof townHelped !== 'undefined' && townHelped.stone() ? "Crane's lifting again, Opal's got her geodes and Hew's met his Stone types. You kept your word." : "Granger. I run the quarry. And the Pit, when there's someone worth fighting in it."), G("You don't break rock by hitting it hard. You hit it right. Show me you know the difference.")], () => {
     const tm = GRANGER_TEAM.map(wardenMon);
     Battle.start(tm[0], { label: 'Warden', name: 'Granger', team: tm, prize: 4500, boss: true, heals: 2, lose: "Rock's patient. Come back when you've found the crack.", onWin: () => {
       S.crests = S.crests || {}; S.crests.stone = 1; giveSigil('stone'); S.trainers = S.trainers || {}; S.trainers.granger = 1;
@@ -9147,7 +9144,7 @@ const BEACON_SCENES = [class extends Crag { constructor() { super('beaconreach')
 const TOWNSFOLK = {
   quarrydown: [
     { kind: 'miner', name: 'Dougie', at: [20, 26], lines: ["Granger? Best foreman I ever had. Never raises his voice. Never needs to.", "Mind the carts on the avenue. They've no brakes to speak of.", "Thirty years I've swung a pick in that pit. Still find something new every week."] },
-    { kind: 'climber', name: 'Bryn', at: [30, 18], lines: ["You came up through Cragside Heights? Those boulders still give me nightmares.", "Best view in the valley from the top of the Old Crane, once it's fixed.", "Granger's twin runs a shipyard on the coast. Can you imagine? Granger on a boat!"] },
+    { kind: 'climber', name: 'Bryn', at: [30, 18], lines: ["You came up through Cragside Heights? Those boulders still give me nightmares.", "Best view in the valley from the top of the Old Crane, once Fergus gets it lifting again.", "Granger's twin runs a shipyard on the coast. Can you imagine? Granger on a boat!"] },
     { kind: 'rambler', name: 'Meg', at: [14, 20], lines: ["Stone & Supply sells seeds you won't find anywhere else. Geode Melons! Try them!", "Flintcorn's the only thing that'll grow through a frost round here.", "I walk the quarry rim every morning. Keeps the knees honest."] },
     { kind: 'forager', name: 'Nell', at: [34, 26], lines: ["Wild Fablemon come down from the heights when it rains. Little rock ones, mostly.", "I sell my mushrooms at the station. The train crews love them.", "If you find a Flintcairn, leave it be. They sulk for weeks if you wake them."] },
   ],
@@ -11825,7 +11822,7 @@ QUESTS.splice(QUESTS.findIndex(q => q.id === 'fen') + 1, 0,
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'stone') + 1, 0,
   { id: 'vd_mine', name: 'Stop the drill in the Old Mine', hint: "The rock in the Old Mine sings at night. Something is drilling towards it. Take the tunnel at the top of the Old Rail Cutting.", done: () => vdShut('mine'), reward: { gold: 3000, items: { sturdy_charm: 3 } } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'west') + 1, 0,
-  { id: 'vd_rowan', name: 'Hear what Rowan has to say', hint: "Rowan wants a word about Verdance. Find him in Smallroot: in the square, or at the Warden's Hall.", done: () => vdReveal(), reward: { gold: 1000 } });
+  { id: 'vd_rowan', name: 'Hear what Rowan has to say', hint: "Rowan wants a word about Verdance. He's waiting at the Warden's Hall in Smallroot (top of the square): tap its door.", done: () => vdReveal(), reward: { gold: 1000 } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'whale') + 1, 0,
   { id: 'vd_rig', name: 'Shut down the Verdance rig in Stormwatch Strait', hint: 'A Verdance rig is drilling the sea root in the middle of the strait. Sail up to it.', done: () => vdShut('rig'), reward: { gold: 4000, items: { tonic: 3 } } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'millwind'), 0,
@@ -14776,17 +14773,20 @@ function openSettle(id) {
     <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div>${sourceText(Z.need)}<p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
   openModal(`Moving in: ${PROJECTS[id].name}`, render(), a => { if (a === 'give') { closeModal(); settleIn(id); } });
 }
+// 26 Nov: a story conversation comes before the moving-in request (Willa's fen story, Rowan's Verdance talk)
+const storyFirst = id => (id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory()) || (id === 'rowan' && typeof vdRevealReady === 'function' && vdRevealReady());
+const STORY_HOME = { clinic: 'willa', hall: 'rowan' };
 const _t2Chat = villChat;
 villChat = function (id, after, door) {
   const home = VILL[id] && VILL[id].home, Z = home && SETTLE[home];
-  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !(id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory())) {   // (26 Nov: Willa's fen story comes first)
+  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !storyFirst(id)) {
     return Talk.say([{ who: id, name: VILL[id].name, img: VPIC[id + '0'], t: Z.ask }], () => openSettle(home));
   }
   return _t2Chat(id, after, door);
 };
 const _t2Enter = Town.prototype.enter;
 Town.prototype.enter = function (id) {
-  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory())) { Sound.play('door'); return openSettle(id); }
+  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(STORY_HOME[id] && storyFirst(STORY_HOME[id]))) { Sound.play('door'); return openSettle(id); }
   return _t2Enter.call(this, id);
 };
 
@@ -17668,7 +17668,7 @@ const QUEST_MAIL = {
   tq_crane: { from: 'Fergus, Quarrydown', subj: 'The Old Crane', body: n => `Dear ${n},\n\nFergus here, crane-man at the quarry. The old girl's fixed and itching to lift, but there's rockfall all over: two heaps round town, one up on Cragside Heights.\n\nA Stone or Spark Fablemon could shift them. Clear them and I'll give you a ride you won't forget.\n\nFergus` },
   vdq_mine1: { from: 'Warden Granger', subj: 'The Old Mine', body: n => `${n},\n\nThe rock in the Old Mine sings at night. Never done that in forty years. There's a notebook of Brask's down there, torn up. Find the pages.\n\nGranger` },
   west: { from: 'Elder Bramble', subj: 'News!', body: n => `Dear ${n},\n\nCongratulations on the Stone Crest! Come and see me in the square when you can. I've news about the woods west of your farm.\n\nElder Bramble` },
-  vd_rowan: { from: 'Rowan', subj: 'Verdance', body: n => `${n},\n\nI'd like a word about Verdance, away from listening ears. Find me in the square, or at the Warden's Hall.\n\nRowan` },
+  vd_rowan: { from: 'Rowan', subj: 'Verdance', body: n => `${n},\n\nI'd like a word about Verdance, away from listening ears. I'll be waiting at the Warden's Hall in Smallroot, whatever state it's in.\n\nRowan` },
   tq_tools: { from: 'Hal, Driftwood Cove', subj: 'Lost my tools', body: n => `Dear ${n},\n\nHeard you were coming my way. I'd build you anything, but a wave took my tool box off the pier. Four tools, all glinting in the shallows of the Cove and the Dunes.\n\nA Tide Fablemon could dive for them. Bring them back and we'll talk boats.\n\nHal` },
   sail: { from: 'Hal, Driftwood Cove', subj: 'She floats!', body: n => `Dear ${n},\n\nYour boat's in the water beside the pier. Sail north across the Glimmer Sea and find a way through the torrents in Stormwatch Strait. Beaconreach is on the far side.\n\nHal` },
   tq_lamps: { from: 'Warden Orrin', subj: 'Lanterns out!', body: n => `${n}!\n\nThe gale blew out all three storm lanterns round the harbour. Ships can't see the rocks! An Ember or Spark Fablemon could light them again.\n\nOrrin` },

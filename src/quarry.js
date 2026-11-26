@@ -120,8 +120,8 @@ function qdDoor(sc, id) {
     return openModal('Stone & Supply', render(), (a, d) => { if (a === 'buy') buy(d.id, +d.p, +d.n || 1); $('mBody').innerHTML = render(); });
   }
   if (id === 'qd_station') return qdStation(sc);
-  if (id === 'qd_cottage') return toast('The Stone Cottage is warm and lived-in again. Lavender by the gate, smoke from the chimney.', 2600);
-  if (id === 'qd_crane') return toast('The Old Crane creaks round and sets a block down as gently as an egg. The whole quarry cheers.', 2600);
+  if (id === 'qd_cottage') return toast('The Stone Cottage is warm and lived-in. Lavender by the gate, smoke from the chimney: Old Hew\'s home.', 2600);
+  if (id === 'qd_crane') return toast(typeof tqQuestDone === 'function' && !tqQuestDone('tq_crane') ? "The Old Crane, sound but still. It hasn't lifted a stone since the landslide. Fergus is usually close by." : 'The Old Crane creaks round and sets a block down as gently as an egg. The whole quarry cheers.', 2600);
 }
 function qdStation(sc) {
   if (!S.town.done.station) return openModal('Quarrydown Station', '<p>The platform is swept and the clock is right, but no trains are running. A notice reads: <i>"Service will resume when Smallroot Station reopens."</i></p>');
@@ -138,13 +138,10 @@ TRAINER_ROW.granger = 11;
 const GRANGER_TEAM = [['clinkit_2', 32], ['cindhop_2', 33], ['craglet_2', 34], ['flintburrow', 34], ['ramruff_2', 35], ['flintcairn', 36]];
 function granger(sc) {
   const G = (t, f = 0) => ({ who: 'trainer', name: 'Warden Granger', img: trainerPic('granger', f), t });
-  if (S.crests && S.crests.stone) return Talk.say([G(pick(["Stone doesn't hurry. Neither do I. Come back any time.", "The crane's working, the cottage is lived in. Town's in good shape. So's your team.", "Keep that Crest polished. It's cut from the same rock as the quarry."]), 1)]);
+  if (S.crests && S.crests.stone) return Talk.say([G(pick(["Stone doesn't hurry. Neither do I. Come back any time.", "The crane's lifting again and Hew's happy in his cottage. Town's in good shape. So's your team.", "Keep that Crest polished. It's cut from the same rock as the quarry."]), 1)]);
   if (!S.crests || !S.crests.brook) return Talk.say([G("You'll want Delphine's Brook Crest before you come knocking here. Brookholt, down past the fen.")]);
-  if (qdRepairs() < 2) return Talk.say([G("Granger. I run the quarry. And the Pit, when there's someone worth fighting in it."),
-    G(`A Warden looks after a town before anything else. Ours has two jobs on the notice board: the Stone Cottage and the Old Crane. You've seen to ${qdRepairs()}.`),
-    G("Get them done, and I'll take the barrier down myself.", 1)]);
   if (!team().some(m => m.hp > 0)) return toast('Your Fablemon are too tired to battle. Rest them first.', 2400);
-  Talk.say([G("Crane's turning. Cottage is warm. You kept your word."), G("You don't break rock by hitting it hard. You hit it right. Show me you know the difference.")], () => {
+  Talk.say([G(typeof townHelped !== 'undefined' && townHelped.stone() ? "Crane's lifting again, Opal's got her geodes and Hew's met his Stone types. You kept your word." : "Granger. I run the quarry. And the Pit, when there's someone worth fighting in it."), G("You don't break rock by hitting it hard. You hit it right. Show me you know the difference.")], () => {
     const tm = GRANGER_TEAM.map(wardenMon);
     Battle.start(tm[0], { label: 'Warden', name: 'Granger', team: tm, prize: 4500, boss: true, heals: 2, lose: "Rock's patient. Come back when you've found the crack.", onWin: () => {
       S.crests = S.crests || {}; S.crests.stone = 1; giveSigil('stone'); S.trainers = S.trainers || {}; S.trainers.granger = 1;

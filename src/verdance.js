@@ -657,7 +657,7 @@ QUESTS.splice(QUESTS.findIndex(q => q.id === 'fen') + 1, 0,
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'stone') + 1, 0,
   { id: 'vd_mine', name: 'Stop the drill in the Old Mine', hint: "The rock in the Old Mine sings at night. Something is drilling towards it. Take the tunnel at the top of the Old Rail Cutting.", done: () => vdShut('mine'), reward: { gold: 3000, items: { sturdy_charm: 3 } } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'west') + 1, 0,
-  { id: 'vd_rowan', name: 'Hear what Rowan has to say', hint: "Rowan wants a word about Verdance. Find him in Smallroot: in the square, or at the Warden's Hall.", done: () => vdReveal(), reward: { gold: 1000 } });
+  { id: 'vd_rowan', name: 'Hear what Rowan has to say', hint: "Rowan wants a word about Verdance. He's waiting at the Warden's Hall in Smallroot (top of the square): tap its door.", done: () => vdReveal(), reward: { gold: 1000 } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'whale') + 1, 0,
   { id: 'vd_rig', name: 'Shut down the Verdance rig in Stormwatch Strait', hint: 'A Verdance rig is drilling the sea root in the middle of the strait. Sail up to it.', done: () => vdShut('rig'), reward: { gold: 4000, items: { tonic: 3 } } });
 QUESTS.splice(QUESTS.findIndex(q => q.id === 'millwind'), 0,

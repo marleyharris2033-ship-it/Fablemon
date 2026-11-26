@@ -3637,6 +3637,9 @@ class Town extends World {
       const br = this.npcs.find(n => n.id === 'bramble');
       return toast(br.home ? 'Bramble calls through the door: "It\'s late, dear! Come and find me in the square tomorrow."' : "Nobody's home. Bramble is usually out in the square.", 3000);
     }
+    if (id === 'hall' && typeof vdRevealReady === 'function' && vdRevealReady()) {   // 26 Nov: Rowan's Verdance talk, even before the Hall is restored
+      Sound.play('door'); if (!isOpen(id)) toast('Rowan is waiting inside the old Hall.', 2000); return vdRevealTalk();
+    }
     if (id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory()) {   // 26 Nov: the fen story, even before the clinic is restored
       Sound.play('door');
       if (isOpen(id) && this.npcs.find(q => q.id === 'willa')) return villChat('willa', typeof isSettled !== 'function' || isSettled(id) ? SERVICE.clinic : () => {});

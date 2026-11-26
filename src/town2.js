@@ -86,17 +86,20 @@ function openSettle(id) {
     <div class="row"><button class="btn gold" data-a="give" ${haveAll(Z.need) ? '' : 'disabled'}>Give everything</button></div>${sourceText(Z.need)}<p class="hint">Dishes are cooked at a Cooking Pot or the stove at home. Quality crops count too.</p>`;
   openModal(`Moving in: ${PROJECTS[id].name}`, render(), a => { if (a === 'give') { closeModal(); settleIn(id); } });
 }
+// 26 Nov: a story conversation comes before the moving-in request (Willa's fen story, Rowan's Verdance talk)
+const storyFirst = id => (id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory()) || (id === 'rowan' && typeof vdRevealReady === 'function' && vdRevealReady());
+const STORY_HOME = { clinic: 'willa', hall: 'rowan' };
 const _t2Chat = villChat;
 villChat = function (id, after, door) {
   const home = VILL[id] && VILL[id].home, Z = home && SETTLE[home];
-  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !(id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory())) {   // (26 Nov: Willa's fen story comes first)
+  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !storyFirst(id)) {
     return Talk.say([{ who: id, name: VILL[id].name, img: VPIC[id + '0'], t: Z.ask }], () => openSettle(home));
   }
   return _t2Chat(id, after, door);
 };
 const _t2Enter = Town.prototype.enter;
 Town.prototype.enter = function (id) {
-  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory())) { Sound.play('door'); return openSettle(id); }
+  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(STORY_HOME[id] && storyFirst(STORY_HOME[id]))) { Sound.play('door'); return openSettle(id); }
   return _t2Enter.call(this, id);
 };
 

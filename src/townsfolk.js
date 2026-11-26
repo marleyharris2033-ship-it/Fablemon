@@ -5,7 +5,7 @@
 const TOWNSFOLK = {
   quarrydown: [
     { kind: 'miner', name: 'Dougie', at: [20, 26], lines: ["Granger? Best foreman I ever had. Never raises his voice. Never needs to.", "Mind the carts on the avenue. They've no brakes to speak of.", "Thirty years I've swung a pick in that pit. Still find something new every week."] },
-    { kind: 'climber', name: 'Bryn', at: [30, 18], lines: ["You came up through Cragside Heights? Those boulders still give me nightmares.", "Best view in the valley from the top of the Old Crane, once it's fixed.", "Granger's twin runs a shipyard on the coast. Can you imagine? Granger on a boat!"] },
+    { kind: 'climber', name: 'Bryn', at: [30, 18], lines: ["You came up through Cragside Heights? Those boulders still give me nightmares.", "Best view in the valley from the top of the Old Crane, once Fergus gets it lifting again.", "Granger's twin runs a shipyard on the coast. Can you imagine? Granger on a boat!"] },
     { kind: 'rambler', name: 'Meg', at: [14, 20], lines: ["Stone & Supply sells seeds you won't find anywhere else. Geode Melons! Try them!", "Flintcorn's the only thing that'll grow through a frost round here.", "I walk the quarry rim every morning. Keeps the knees honest."] },
     { kind: 'forager', name: 'Nell', at: [34, 26], lines: ["Wild Fablemon come down from the heights when it rains. Little rock ones, mostly.", "I sell my mushrooms at the station. The train crews love them.", "If you find a Flintcairn, leave it be. They sulk for weeks if you wake them."] },
   ],
