@@ -70,9 +70,15 @@ early(['fleecebolt', 'whirlwyn', 'cloverguard', 'flintburrow', 'staticwing', 'du
 early(['rampartoad', 'pyrebrash'], battle='battle_rampartoad-pyrebrash'); early(['brookstride'], battle='battle_brookstride')
 early(['muddlebub', 'lotling', 'unused_chick', 'sundrowse', 'tipplecup', 'glimmerjel', 'logloom'], battle='battle_muddlebub-lotling-puffpiper_cotton-sundrowse-tipplecup-glimmerjel-logloom')
 for s_ in ['duskcloak', 'staticwing', 'brookstride', 'rampartoad', 'pyrebrash']: early([s_], walk='walk_' + s_)
-for s_ in ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']: early([s_], walk='walk_' + s_, cols=4, stand=0)
+# 26 Nov 2026: these six walk sheets (13 Nov) show the third forms (Mirelure, Lotmancer, Slumberdew, Pitchfiend, Stormcrown,
+# Grimbark), not the second forms, so the second forms use stand-ins from their own battle art until matching sheets come.
+# The files are kept: walk_<id>.png in art_incoming/early.
+WRONG_WALK = ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']
 # bog walk sheets from the zip (13 Nov), 4 frames per row
-for s_ in ['marshviper', 'muddlebub', 'puffpiper', 'puffpiper_cotton', 'logloom', 'glimmerjel', 'lotling', 'sundrowse', 'tipplecup']: early([s_], walk='walk_' + s_, cols=4, stand=0)
+for s_ in ['muddlebub', 'puffpiper', 'puffpiper_cotton', 'logloom', 'glimmerjel', 'lotling', 'sundrowse', 'tipplecup']: early([s_], walk='walk_' + s_, cols=4, stand=0)
+# 26 Nov 2026: 'walk_marshviper.png' is really Fenfang (its evolution: the hooded viper), so Fenfang walks with it and
+# Marshviper uses a stand-in from its own battle art until a matching sheet comes.
+early(['fenfang'], walk='walk_marshviper', cols=4, stand=0)
 # five crag second stages on one sheet, strips of different widths (x ranges measured from the gaps)
 for sid, x0, x1, c in [('craglet_2', 0, 418, 4), ('clinkit_2', 1129, 1604, 4), ('ramruff_2', 1604, 2172, 4)]:
     MONS.setdefault(sid, {})['w'] = (E + 'walk_crag2_all.png', 1, 0, c, 0, (x0, x1)); early(['cindhop_2'], walk='walk_cindhop_2', cols=4, stand=0)
