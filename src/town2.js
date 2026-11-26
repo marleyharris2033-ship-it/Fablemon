@@ -53,7 +53,7 @@ const settled = () => {
 const isSettled = id => !SETTLE[id] ? !!S.town.done[id] : !!settled()[id];
 const settledCount = () => settled() && Object.keys(PROJECTS).filter(id => S.town.done[id] && isSettled(id)).length;
 const waitingIn = () => Object.keys(SETTLE).filter(id => S.town.done[id] && !isSettled(id));
-const needText = need => Object.entries(need).map(([id, n]) => `<span class="need ${reqCount(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${Math.min(reqCount(id), n)}/${n}</span>`).join(' ');
+const needText = need => Object.entries(need).map(([id, n]) => `<span class="need ${reqCount(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${itemNm(id)} ${Math.min(reqCount(id), n)}/${n}</span>`).join(' ');
 const haveAll = need => Object.entries(need).every(([id, n]) => reqCount(id) >= n);
 function settleIn(id) {
   const Z = SETTLE[id]; if (!Z || isSettled(id) || !haveAll(Z.need)) return false;

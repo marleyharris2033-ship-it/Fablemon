@@ -892,7 +892,7 @@ const COOKING = [
 function openCooking() {
   const render = () => COOKING.map((r, k) => [r, k]).filter(([r]) => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest)).map(([r, k]) => {
     const it = ITEMS[r.out], need = { ...r.need, wood: 1 }, ok = Object.entries(need).every(([id, n]) => stock(id) >= n);
-    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${stock(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${n}</span>`).join('');
+    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${stock(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${itemNm(id)} ${n}</span>`).join('');
     return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : it.heal ? `♥ Heals ${it.heal}% of a Fablemon` : '✚ Cures status problems'}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
   }).join('');
   openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire.${farmChests().length ? ' Ingredients in your farm\'s chests count too.' : ''} Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
@@ -1917,7 +1917,7 @@ function openRanch() {
     const r = sorted(at().filter(F[V.f][1]));
     const slots = Array.from({ length: TEAM_MAX }, (_, i) => t[i] ? card(t[i], i === 0 ? ' lead' : '') : `<button class="rcard empty" data-a="slot">${sel != null && S.mons.find(m => m.uid === sel)?.loc === 'ranch' ? '＋<small>Add here</small>' : '<small>Empty</small>'}</button>`).join('');
     const st = Object.entries(S.workStore || {}).filter(([, n]) => n);
-    const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
+    const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${itemNm(id)} ${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
     const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
     const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44, m)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
         <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}${typeof jobLvTxt === 'function' ? jobLvTxt(m) : ''}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
@@ -2106,6 +2106,8 @@ const toStore = (id, n) => { const left = jobChests.length ? chestPut(jobChests,
    in your chests as well as your backpack: the cooking pot, crafting, the compost bin and the troughs. The backpack goes
    first, then the chests (farm chests, then the house's chest furniture). Chest locks are for helper Fablemon only. */
 const FARM_SCENES = ['farm', 'house', 'barn', 'coop'];
+/* Name shown beside an item's picture wherever something asks for items (26 Nov: the user found picture-only lists confusing). */
+const itemNm = k => (ITEMS[k] || {}).name || k;
 function farmChests() {
   if (typeof scene === 'undefined' || !scene || !scene.scene || !FARM_SCENES.includes(scene.scene.key)) return [];
   const out = chestsIn([-1e9, -1e9, 1e9, 1e9]);
@@ -2825,7 +2827,7 @@ class Farm extends World {
           <div class="row"><button class="btn gold" data-a="build" ${mustClear ? 'disabled' : ''}>Move here</button><button class="btn" data-a="close">Cancel</button></div>`;
         return;
       }
-      const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
+      const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
       const blocked = mustClear ? `<b style="color:#b03a2e">${mustClear} red tile${mustClear > 1 ? 's' : ''} in the way.</b> Clear them or move the plot.` : '<b style="color:var(--green2)">The plot is ready.</b>';
       $('buildbar').innerHTML = `<div class="bt"><b>${def.name}</b> <small>${x1 - x0 + 1}×${y1 - y0 + 1} tiles</small></div><small>${def.fixed ? def.desc : 'Drag the plot on the map, or use the arrows, to choose where it goes.'}</small>
         <div class="legend"><i style="background:#7cf27a"></i>Free <i style="background:#ffb03a"></i>Cleared for you <i style="background:#ff4a3a"></i>In the way</div>
@@ -3325,7 +3327,7 @@ function openBoard() {
       if (p.needs && !p.needs()) return `<div class="proj" style="opacity:.6"><b>${p.name}</b><span class="st">🔒</span><br><small>${p.lockText}</small></div>`;
       if (p.stage && st < p.stage) return `<div class="proj" style="opacity:.6"><b>${p.name}</b><span class="st">🔒</span><br><small>Unlocks when the Hearthroot grows stronger (stage ${p.stage + 1}).</small></div>`;
       let ok = S.gold >= p.gold;
-      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund it</button></div></div>`;
     }).join('');
     return `<p>Repairs for Smallroot. Every one helps the Hearthroot grow. <b>Hearthroot: stage ${st + 1} of 5</b> (${hearthLife()} life). Tap the tree to see how it grows.</p><div class="mlist">${rows}</div>`;

@@ -24,7 +24,7 @@ function bhBoard() {
       if (bhDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
-      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
     return `<p>Brookholt's notice board. The canal folk keep the town in good order: nothing needs fixing. Warden Delphine waits at the Lock House.</p><div class="mlist">${rows}</div>`;

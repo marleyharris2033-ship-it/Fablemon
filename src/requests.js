@@ -53,7 +53,7 @@ function openRequests() {
       const v = VILL[r.who], I = ITEMS[r.item], have = reqCount(r.item), left = r.due - S.day;
       return `<div class="recipe" style="align-items:flex-start"><img src="${VPIC[r.who + '1'] || VPIC[r.who + '0'] || ''}" style="width:46px;height:46px;object-fit:cover;border-radius:6px"><div class="g"><b>${v.name}</b>
         <small>"Could you bring me ${r.n} ${I.name} ${r.line}?"</small>
-        <div style="margin-top:3px"><span class="need ${have < r.n ? 'no' : ''}"><img src="${iconFor(r.item)}">${Math.min(have, r.n)}/${r.n}</span> <small>Reward ${r.gold.toLocaleString()}g and friendship · ${left <= 0 ? '<b style="color:#b03a2e">due today</b>' : `${left} day${left > 1 ? 's' : ''} left`}</small></div></div>
+        <div style="margin-top:3px"><span class="need ${have < r.n ? 'no' : ''}"><img src="${iconFor(r.item)}">${itemNm(r.item)} ${Math.min(have, r.n)}/${r.n}</span> <small>Reward ${r.gold.toLocaleString()}g and friendship · ${left <= 0 ? '<b style="color:#b03a2e">due today</b>' : `${left} day${left > 1 ? 's' : ''} left`}</small></div></div>
         <button class="btn gold" data-a="give" data-i="${i}" ${have < r.n ? 'disabled' : ''}>Give</button></div>`;
     }).join('');
     return `<p>Little jobs from your neighbours. A new one goes up most mornings.${R.done ? ` You've helped out ${R.done} time${R.done > 1 ? 's' : ''}.` : ''}</p>

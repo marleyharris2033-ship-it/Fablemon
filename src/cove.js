@@ -255,7 +255,7 @@ function openBoat(sc) {
       if (i === C.stage && C.pending) return `<div class="proj"><b>${i + 1}. ${s.name}</b><span class="st">⚒ Hal's working on it tonight</span></div>`;
       if (i > C.stage) return `<div class="proj" style="opacity:.55"><b>${i + 1}. ${s.name}</b><span class="st">Later</span></div>`;
       let ok = S.gold >= s.gold;
-      const needs = Object.entries(s.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(s.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj" style="border-color:#c9a64e;background:#fff6dc"><b>${i + 1}. ${s.name}</b><br><small>${s.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs} <span class="need ${S.gold < s.gold ? 'no' : ''}">🪙 ${s.gold.toLocaleString()}g</span></div><button class="btn ${ok ? 'gold' : ''} sm" data-a="fund" ${ok ? '' : 'disabled'}>Build</button></div></div>`;
     }).join('');
     return `<p>"Four jobs and she's seaworthy," Hal says, tapping a pencil on his plans. "One at a time, mind. I work through the night, and you'll see each one done the next morning."</p><div class="mlist">${rows}</div><p class="hint">Short on timber or rope? Quarrydown's Stone & Supply sells wood, stone and fiber by the bundle.</p>`;

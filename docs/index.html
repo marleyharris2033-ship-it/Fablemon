@@ -137,7 +137,7 @@ input[type=range]{accent-color:#2f6b3a;flex:1}
 .shoprow img{width:32px;height:32px;image-rendering:pixelated}
 .shoprow .g{flex:1;min-width:0}
 .shoprow .g b{display:block;font-size:15px}.shoprow .g small{font-size:13px;opacity:.85}
-.need{display:inline-flex;align-items:center;gap:2px;margin-right:8px;font-size:13px;font-weight:700}
+.need{display:inline-flex;align-items:center;gap:3px;margin:1px 10px 1px 0;font-size:13px;font-weight:700}
 .need img{width:18px;height:18px}
 .need.no{color:#b03a2e}
 .proj{padding:8px 4px;border-bottom:2px solid var(--cream2)}
@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261126-101644">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261126-101644">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261126-101644">
+<link rel="manifest" href="manifest.webmanifest?v=20261126-102655">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261126-102655">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261126-102655">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-101644').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-102655').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -562,7 +562,7 @@ function svcSmith() {
       if (!c) return `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name}</b><small>Fully upgraded. ${fx(id, t)}</small></div></div>`;
       if (crestCount() < TOOL_CREST[nx]) return `<div class="shoprow" style="opacity:.6"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name} → ${TOOL_TIERS[nx]}</b><small>🔒 After your ${ORD[TOOL_CREST[nx]]} Crest. "${TOOL_TIERS[nx]} ore only comes in from the Wardens' towns," says Gideon.</small></div></div>`;
       const ok = S.gold >= c.gold && inv.count('stone') >= c.stone;
-      return `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name} → ${TOOL_TIERS[nx]}</b><small>${fx(id, nx)}</small><div><span class="need ${S.gold < c.gold ? 'no' : ''}"><img src="${ICONS.coin}">${c.gold.toLocaleString()}g</span><span class="need ${inv.count('stone') < c.stone ? 'no' : ''}"><img src="${iconFor('stone')}">${c.stone}</span></div></div><button class="btn gold" data-a="up" data-id="${id}" ${ok ? '' : 'disabled'}>Upgrade</button></div>`;
+      return `<div class="shoprow"><img src="${iconFor(id)}"><div class="g"><b>${ITEMS[id].name} → ${TOOL_TIERS[nx]}</b><small>${fx(id, nx)}</small><div><span class="need ${S.gold < c.gold ? 'no' : ''}"><img src="${ICONS.coin}">${c.gold.toLocaleString()}g</span><span class="need ${inv.count('stone') < c.stone ? 'no' : ''}"><img src="${iconFor('stone')}">${itemNm('stone')} ${c.stone}</span></div></div><button class="btn gold" data-a="up" data-id="${id}" ${ok ? '' : 'disabled'}>Upgrade</button></div>`;
     }).join('');
     return `<p>Better tools work faster and take less effort.</p><div class="mlist">${rows}
       <p style="margin-top:8px"><b>Charms</b></p><div class="shoprow"><img src="${iconFor('sturdy_charm')}"><div class="g"><b>${ITEMS.sturdy_charm.name}</b><small>${ITEMS.sturdy_charm.desc}</small></div><button class="btn gold" data-a="charm" ${S.gold < 120 ? 'disabled' : ''}>120g</button></div>
@@ -1550,7 +1550,7 @@ const COOKING = [
 function openCooking() {
   const render = () => COOKING.map((r, k) => [r, k]).filter(([r]) => (!r.tavern || S.flags.tavernRecipes) && (!r.crest || (S.flags.tavernCrest || 0) >= r.crest)).map(([r, k]) => {
     const it = ITEMS[r.out], need = { ...r.need, wood: 1 }, ok = Object.entries(need).every(([id, n]) => stock(id) >= n);
-    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${stock(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${n}</span>`).join('');
+    const parts = Object.entries(need).map(([id, n]) => `<span class="need ${stock(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${itemNm(id)} ${n}</span>`).join('');
     return `<div class="recipe"><img src="${iconFor(r.out)}"><div class="g"><b>${it.name}</b><small>${it.eat ? `⚡ +${it.eat} energy` : it.heal >= 100 ? '♥ Fully heals a Fablemon' : it.heal ? `♥ Heals ${it.heal}% of a Fablemon` : '✚ Cures status problems'}</small><div>${parts}</div></div><button class="btn gold" data-a="cook" data-k="${k}" ${ok ? '' : 'disabled'}>Cook</button></div>`;
   }).join('');
   openModal('Cooking Pot', `<p class="hint">Each meal uses 1 wood for the fire.${farmChests().length ? ' Ingredients in your farm\'s chests count too.' : ''} Eat meals from your backpack, or hold one and press the action button.</p><div class="mlist">${render()}</div>`, (a, d) => {
@@ -2575,7 +2575,7 @@ function openRanch() {
     const r = sorted(at().filter(F[V.f][1]));
     const slots = Array.from({ length: TEAM_MAX }, (_, i) => t[i] ? card(t[i], i === 0 ? ' lead' : '') : `<button class="rcard empty" data-a="slot">${sel != null && S.mons.find(m => m.uid === sel)?.loc === 'ranch' ? '＋<small>Add here</small>' : '<small>Empty</small>'}</button>`).join('');
     const st = Object.entries(S.workStore || {}).filter(([, n]) => n);
-    const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
+    const store = st.length ? `<div class="subbar"><span>Your Fablemon gathered: ${st.map(([id, n]) => `<span class="need"><img src="${iconFor(id)}">${itemNm(id)} ${n}</span>`).join('')}</span><button class="btn gold sm" data-a="collect">Collect</button></div>` : '';
     const m = S.mons.find(x => x.uid === sel), J = m && jobOf(m);
     const detail = m ? `<div class="rdetail" style="--tc:${TYPES[SPECIES[m.sp].type]}">${badge(m.sp, 44, m)}<div class="g"><b>${monName(m)}</b> <span class="lv">Lv ${m.lv}</span> ${typeChip(m.sp)}
         <small style="display:block">HP ${monStat(m, 'hp')} · Atk ${monStat(m, 'atk')}/${monStat(m, 'eatk')} · Def ${monStat(m, 'def')}/${monStat(m, 'edef')} · Spd ${monStat(m, 'spd')}${m.job ? ` · ⚒ ${J.name}${typeof jobLvTxt === 'function' ? jobLvTxt(m) : ''}` : m.out ? ' · 🌾 out on the farm' : ''}</small>
@@ -2764,6 +2764,8 @@ const toStore = (id, n) => { const left = jobChests.length ? chestPut(jobChests,
    in your chests as well as your backpack: the cooking pot, crafting, the compost bin and the troughs. The backpack goes
    first, then the chests (farm chests, then the house's chest furniture). Chest locks are for helper Fablemon only. */
 const FARM_SCENES = ['farm', 'house', 'barn', 'coop'];
+/* Name shown beside an item's picture wherever something asks for items (26 Nov: the user found picture-only lists confusing). */
+const itemNm = k => (ITEMS[k] || {}).name || k;
 function farmChests() {
   if (typeof scene === 'undefined' || !scene || !scene.scene || !FARM_SCENES.includes(scene.scene.key)) return [];
   const out = chestsIn([-1e9, -1e9, 1e9, 1e9]);
@@ -3483,7 +3485,7 @@ class Farm extends World {
           <div class="row"><button class="btn gold" data-a="build" ${mustClear ? 'disabled' : ''}>Move here</button><button class="btn" data-a="close">Cancel</button></div>`;
         return;
       }
-      const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
+      const needs = Object.entries(def.cost).map(([k, n]) => { const have = stock(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('') + `<span class="need ${S.gold < def.gold ? 'no' : ''}"><img src="${ICONS.coin}">${def.gold.toLocaleString()}g</span>`;
       const blocked = mustClear ? `<b style="color:#b03a2e">${mustClear} red tile${mustClear > 1 ? 's' : ''} in the way.</b> Clear them or move the plot.` : '<b style="color:var(--green2)">The plot is ready.</b>';
       $('buildbar').innerHTML = `<div class="bt"><b>${def.name}</b> <small>${x1 - x0 + 1}×${y1 - y0 + 1} tiles</small></div><small>${def.fixed ? def.desc : 'Drag the plot on the map, or use the arrows, to choose where it goes.'}</small>
         <div class="legend"><i style="background:#7cf27a"></i>Free <i style="background:#ffb03a"></i>Cleared for you <i style="background:#ff4a3a"></i>In the way</div>
@@ -3983,7 +3985,7 @@ function openBoard() {
       if (p.needs && !p.needs()) return `<div class="proj" style="opacity:.6"><b>${p.name}</b><span class="st">🔒</span><br><small>${p.lockText}</small></div>`;
       if (p.stage && st < p.stage) return `<div class="proj" style="opacity:.6"><b>${p.name}</b><span class="st">🔒</span><br><small>Unlocks when the Hearthroot grows stronger (stage ${p.stage + 1}).</small></div>`;
       let ok = S.gold >= p.gold;
-      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund it</button></div></div>`;
     }).join('');
     return `<p>Repairs for Smallroot. Every one helps the Hearthroot grow. <b>Hearthroot: stage ${st + 1} of 5</b> (${hearthLife()} life). Tap the tree to see how it grows.</p><div class="mlist">${rows}</div>`;
@@ -6310,7 +6312,7 @@ function bhBoard() {
       if (bhDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
-      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs}<span class="need ${S.gold < p.gold ? 'no' : ''}"><img src="${ICONS.coin}">${p.gold}g</span></div><button class="btn gold" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
     return `<p>Brookholt's notice board. The canal folk keep the town in good order: nothing needs fixing. Warden Delphine waits at the Lock House.</p><div class="mlist">${rows}</div>`;
@@ -7839,7 +7841,7 @@ function qdBoard() {
       if (qdDone(id)) return `<div class="proj"><b>${p.name}</b><span class="st">✔ In good repair</span></div>`;
       if (B.pending[id]) return `<div class="proj"><b>${p.name}</b><span class="st">⚒ Work starts tonight</span></div>`;
       let ok = S.gold >= p.gold;
-      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(p.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj"><b>${p.name}</b><br><small>${p.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs} <span class="need ${S.gold < p.gold ? 'no' : ''}">🪙 ${p.gold.toLocaleString()}g</span></div><button class="btn ${ok ? 'gold' : ''} sm" data-a="fund" data-id="${id}" ${ok ? '' : 'disabled'}>Fund</button></div></div>`;
     }).join('');
     return `<p>Quarrydown's notice board. The quarry crews keep the town sound: nothing needs fixing. Warden Granger waits in the Quarry Pit at the top of town.</p><div class="mlist">${rows}</div><p class="hint">Stone & Supply sells stone, wood and fiber if you're short.</p>`;
@@ -8254,7 +8256,7 @@ function openBoat(sc) {
       if (i === C.stage && C.pending) return `<div class="proj"><b>${i + 1}. ${s.name}</b><span class="st">⚒ Hal's working on it tonight</span></div>`;
       if (i > C.stage) return `<div class="proj" style="opacity:.55"><b>${i + 1}. ${s.name}</b><span class="st">Later</span></div>`;
       let ok = S.gold >= s.gold;
-      const needs = Object.entries(s.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${Math.min(have, n)}/${n}</span>`; }).join('');
+      const needs = Object.entries(s.need).map(([k, n]) => { const have = inv.count(k); if (have < n) ok = false; return `<span class="need ${have < n ? 'no' : ''}"><img src="${iconFor(k)}">${itemNm(k)} ${Math.min(have, n)}/${n}</span>`; }).join('');
       return `<div class="proj" style="border-color:#c9a64e;background:#fff6dc"><b>${i + 1}. ${s.name}</b><br><small>${s.blurb}</small><div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;flex-wrap:wrap"><div>${needs} <span class="need ${S.gold < s.gold ? 'no' : ''}">🪙 ${s.gold.toLocaleString()}g</span></div><button class="btn ${ok ? 'gold' : ''} sm" data-a="fund" ${ok ? '' : 'disabled'}>Build</button></div></div>`;
     }).join('');
     return `<p>"Four jobs and she's seaworthy," Hal says, tapping a pencil on his plans. "One at a time, mind. I work through the night, and you'll see each one done the next morning."</p><div class="mlist">${rows}</div><p class="hint">Short on timber or rope? Quarrydown's Stone & Supply sells wood, stone and fiber by the bundle.</p>`;
@@ -13880,7 +13882,7 @@ function openRequests() {
       const v = VILL[r.who], I = ITEMS[r.item], have = reqCount(r.item), left = r.due - S.day;
       return `<div class="recipe" style="align-items:flex-start"><img src="${VPIC[r.who + '1'] || VPIC[r.who + '0'] || ''}" style="width:46px;height:46px;object-fit:cover;border-radius:6px"><div class="g"><b>${v.name}</b>
         <small>"Could you bring me ${r.n} ${I.name} ${r.line}?"</small>
-        <div style="margin-top:3px"><span class="need ${have < r.n ? 'no' : ''}"><img src="${iconFor(r.item)}">${Math.min(have, r.n)}/${r.n}</span> <small>Reward ${r.gold.toLocaleString()}g and friendship · ${left <= 0 ? '<b style="color:#b03a2e">due today</b>' : `${left} day${left > 1 ? 's' : ''} left`}</small></div></div>
+        <div style="margin-top:3px"><span class="need ${have < r.n ? 'no' : ''}"><img src="${iconFor(r.item)}">${itemNm(r.item)} ${Math.min(have, r.n)}/${r.n}</span> <small>Reward ${r.gold.toLocaleString()}g and friendship · ${left <= 0 ? '<b style="color:#b03a2e">due today</b>' : `${left} day${left > 1 ? 's' : ''} left`}</small></div></div>
         <button class="btn gold" data-a="give" data-i="${i}" ${have < r.n ? 'disabled' : ''}>Give</button></div>`;
     }).join('');
     return `<p>Little jobs from your neighbours. A new one goes up most mornings.${R.done ? ` You've helped out ${R.done} time${R.done > 1 ? 's' : ''}.` : ''}</p>
@@ -14729,7 +14731,7 @@ const settled = () => {
 const isSettled = id => !SETTLE[id] ? !!S.town.done[id] : !!settled()[id];
 const settledCount = () => settled() && Object.keys(PROJECTS).filter(id => S.town.done[id] && isSettled(id)).length;
 const waitingIn = () => Object.keys(SETTLE).filter(id => S.town.done[id] && !isSettled(id));
-const needText = need => Object.entries(need).map(([id, n]) => `<span class="need ${reqCount(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${Math.min(reqCount(id), n)}/${n}</span>`).join(' ');
+const needText = need => Object.entries(need).map(([id, n]) => `<span class="need ${reqCount(id) < n ? 'no' : ''}"><img src="${iconFor(id)}">${itemNm(id)} ${Math.min(reqCount(id), n)}/${n}</span>`).join(' ');
 const haveAll = need => Object.entries(need).every(([id, n]) => reqCount(id) >= n);
 function settleIn(id) {
   const Z = SETTLE[id]; if (!Z || isSettled(id) || !haveAll(Z.need)) return false;
