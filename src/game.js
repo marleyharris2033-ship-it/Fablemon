@@ -293,6 +293,9 @@ const OBJ_ART = {
 const mineHits = () => [4, 3, 2, 1][(S.tools && S.tools.pickaxe) || 0];   // pickaxe swings per stone; Gideon's upgrades lower it
 const MINE_TIME = [0, 40, 20, 10];   // seconds per stone from the mine, by evolution stage
 let objReady = o => (o.t === 'compost' && o.n && S.day >= o.doneDay) || (o.t === 'beehive' && o.honey > 0) || (o.t === 'fishhut' && Object.values(o.fish || {}).some(Boolean));
+// 26 Nov: the farm draws its few Smallroot pieces from the small farm sheet ('fv'), so it needn't load the town sheet
+const farmTownKey = fr => typeof HDW !== 'undefined' && HDW.fv && HDW.fv.frames['tw_' + fr] ? 'fv' : 'town';
+const farmTownFrame = fr => farmTownKey(fr) === 'fv' ? 'tw_' + fr : fr;
 const objW = it => it && it.place === 'obj' ? (OBJ_ART[it.obj][2] || 1) : 1;
 // 26 Nov: placed things can be deeper than one row (Village cottages, fountains). The object sits on its bottom-left
 // tile (o.w wide, o.d deep); every other tile it covers holds { part: <that tile> }.
@@ -1889,7 +1892,7 @@ const ranchPos = () => S.ranchAt || { cx: RANCH.cx, by: RANCH.by };
 const ranchArea = (at = ranchPos()) => [at.cx - 5, at.by - 6, at.cx + 5, at.by + 1];
 const ranchDoor = () => { const at = ranchPos(); return { x: at.cx + RANCH.door, y: at.by }; };
 const RANCH_BUILD = () => ({
-  name: 'Ranch', atlas: 'town', frame: 'ranch', at: { ...ranchPos() }, areaFor: ranchArea, cost: RANCH.cost, gold: goldCut(RANCH.gold),
+  name: 'Ranch', get atlas() { return farmTownKey('ranch'); }, get frame() { return farmTownFrame('ranch'); }, at: { ...ranchPos() }, areaFor: ranchArea, cost: RANCH.cost, gold: goldCut(RANCH.gold),
   desc: "A barn and pens for Fablemon you aren't taking with you. Built overnight by the villagers.",
   onBuild: at => { S.ranchAt = at; S.ranch = 1; toast('The villagers will build your ranch tonight!', 2600); },
 });
@@ -2435,7 +2438,7 @@ class Farm extends World {
         ignore: own(MAILBOX.x, MAILBOX.y, MAILBOX.x, MAILBOX.y), onBuild: a => { S.layout = { ...(S.layout || {}), mail: { x: a.cx, y: a.by } }; applyLayout(); restart(); } };
     if (S.ranch === 2 && this.ranchImg && this.ranchImg.getBounds().contains(wx, wy)) {
       const ra = ranchArea();
-      return { name: 'Ranch', ghostKey: 'town', ghostFrame: 'ranch', at: { ...ranchPos() }, areaFor: ranchArea, ignore: own(...ra), onBuild: a => { S.ranchAt = { cx: a.cx, by: a.by }; restart(); } };
+      return { name: 'Ranch', ghostKey: farmTownKey('ranch'), ghostFrame: farmTownFrame('ranch'), at: { ...ranchPos() }, areaFor: ranchArea, ignore: own(...ra), onBuild: a => { S.ranchAt = { cx: a.cx, by: a.by }; restart(); } };
     }
     let k = tx + ',' + ty; if (!S.objs[k] && S.objs[tx + ',' + (ty + 1)]) k = tx + ',' + (ty + 1);
     if (S.objs[k] && S.objs[k].part) k = S.objs[k].part;
@@ -2882,6 +2885,7 @@ class Farm extends World {
   objTex(t) {
     const [tex, fr] = OBJ_ART[t];
     if (tex === 'ic' || tex === 'cv') { const key = tex + '_' + fr; if (!this.textures.exists(key)) this.textures.addCanvas(key, tex === 'ic' ? ICON_CANVAS[fr] : SAP_CANVAS[fr]); return [key, undefined]; }
+    if (tex === 'town' && HDW.fv && HDW.fv.frames['tw_' + fr]) return ['fv', 'tw_' + fr];   // 26 Nov: the farm's copy (see cut_fv.py)
     return [tex, fr];
   }
   useObj(x, y) {
@@ -2942,7 +2946,7 @@ class Farm extends World {
       const f = ASSET.townJson.frames.ranch.frame, cxp = at.cx * T + 8;
       const bx0 = Math.floor((cxp - f.w / 2 + 4) / T), bx1 = Math.floor((cxp + f.w / 2 - 5) / T);
       for (let y = at.by - 2; y <= at.by; y++) for (let x = bx0; x <= bx1; x++) farm.blocked[y * W + x] = 1;
-      this.ranchImg = this.add.image(cxp, at.by * T + 16, 'town', 'ranch').setOrigin(.5, 1).setDepth(at.by * T + 15);
+      this.ranchImg = this.add.image(cxp, at.by * T + 16, farmTownKey('ranch'), farmTownFrame('ranch')).setOrigin(.5, 1).setDepth(at.by * T + 15);
       this.tall.push(this.ranchImg);
     } else {
       this.clearDebrisIn(sg.x, sg.y, sg.x, sg.y); farm.blocked[sg.y * W + sg.x] = 1;

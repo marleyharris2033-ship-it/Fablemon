@@ -52,7 +52,10 @@ head = f'''<link rel="manifest" href="manifest.webmanifest?v={version}">
 <meta name="theme-color" content="#1f2a1e">
 <script>if ('serviceWorker' in navigator) {{ addEventListener('load', () => navigator.serviceWorker.register('sw.js?v={version}').catch(() => {{}}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
-  let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => {{ if (!had) {{ had = true; return; }} if (typeof S === 'undefined' || !S) location.reload(); }}); }}</script>
+  let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => {{ if (!had) {{ had = true; return; }} if (typeof S === 'undefined' || !S) location.reload(); }});
+  // 26 Nov: fetch the rest of the art for offline play only after a minute in the game, so it doesn't slow the first start
+  // (a friend's iPhone failed to load after the intro while it was also downloading every picture)
+  setTimeout(function ask() {{ const c = navigator.serviceWorker.controller; if (c) c.postMessage('offline'); else setTimeout(ask, 30000); }}, 60000); }}</script>
 '''
 app = split.replace('</head>', head + '</head>', 1)
 open(os.path.join(DOCS, 'index.html'), 'w').write(app)
@@ -69,16 +72,20 @@ const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png',
 self.addEventListener('install', e => {{ e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); }});
 self.addEventListener('activate', e => {{
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE && k !== ART).map(k => caches.delete(k))))); self.clients.claim();
-  // tidy art that neither this version nor the one before uses (a game still open may be the one before),
-  // then quietly fetch the rest so the game also works offline
-  fetch('a/files.json', {{ cache: 'no-store' }}).then(r => r.json()).then(async list => {{
+  // tidy art that neither this version nor the one before uses (a game still open may be the one before)
+  tidyArt(false);
+}});
+// the page asks for the rest of the art (for offline play) once the game has been running a minute; one file at a time
+self.addEventListener('message', e => {{ if (e.data === 'offline') e.waitUntil(tidyArt(true)); }});
+function tidyArt(fetchRest) {{
+  return fetch('a/files.json', {{ cache: 'no-store' }}).then(r => r.json()).then(async list => {{
     const c = await caches.open(ART), abs = f => new URL(f, self.registration.scope).href, want = new Set(list.map(abs)), PREV = abs('a/prev-list.json');
     const old = await c.match(PREV).then(r => r ? r.json() : []).catch(() => []), keep = new Set([...want, ...old.map(abs), PREV]);
     for (const q of await c.keys()) if (!keep.has(q.url)) await c.delete(q);
     await c.put(PREV, new Response(JSON.stringify(list), {{ headers: {{ 'Content-Type': 'application/json' }} }}));
-    for (const u of want) if (!(await c.match(u))) {{ try {{ const r = await fetch(u); if (r.ok) await c.put(u, r); }} catch (err) {{ return; }} }}
+    if (fetchRest) for (const u of want) if (!(await c.match(u))) {{ try {{ const r = await fetch(u); if (r.ok) await c.put(u, r); }} catch (err) {{ return; }} }}
   }}).catch(() => {{}});
-}});
+}}
 self.addEventListener('fetch', e => {{
   if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
   if (new URL(e.request.url).pathname.includes('/a/')) {{

@@ -34,6 +34,10 @@ PICK = {
     'v_firewood': ('seasonal', 'w_firewood', None), 'v_garden_umbrella': ('seasonal', 's_umbrella', None), 'v_tulips': ('seasonal', 'p_tulips', None), 'v_daffodils': ('seasonal', 'p_daffs', None),
     'v_street_lamp': ('gh', 'gh_streetlamp_lit', None), 'v_market_cart': ('gh', 'gh_cart', None), 'v_old_well': ('gh', 'gh_well', None),
 }
+# 26 Nov: the farm's own pieces of the Smallroot sheet (the ranch and the placeable street pieces), copied exactly
+# (no trimming, so they sit where they always have), so the farm no longer loads the whole 16 MB town sheet
+for f in ['ranch', 'bench', 'flowerbed', 'hedge', 'lamp', 'planter', 'stall', 'wall_end', 'wall_h']: PICK['tw_' + f] = ('town', f, None)
+EXACT = lambda name: name.startswith('tw_')
 
 
 def frames_of(name):
@@ -54,6 +58,7 @@ def main():
     pics = {}
     for name, (sheet, frame, width) in PICK.items():
         im = source(sheet, frame)
+        if EXACT(name): pics[name] = im; continue
         bb = im.getbbox()
         if bb: im = im.crop(bb)
         if width and abs(im.width - width * 3) > 2:

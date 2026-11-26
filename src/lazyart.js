@@ -47,7 +47,7 @@ const _lazyWP = World.prototype.preload;
 World.prototype.preload = function () {
   _lazyWP.call(this);
   if (window.LAZY_OFF) return;
-  let n = 0; for (const g0 of SCENE_TEX[this.scene.key] || []) { const g = /^room_/.test(g0) ? 'room_' + ((S && S.house) || 0) : g0; if (lazyQueue(this, g)) n++; }
+  let n = 0; for (const g0 of SCENE_TEX[this.scene.key] || []) { const g = /^room_/.test(g0) ? 'room_' + ((S && S.house) || 0) : g0; if (/^an_/.test(g) && typeof myAnimals === 'function' && !myAnimals().some(a => lvSheet(a) === g)) continue; if (lazyQueue(this, g)) n++; }   // (26 Nov: only the animals you own)
   if (n) this.load.once('complete', () => { try { hdWorldSwap(this); } catch (e) { console.warn('lazy swap', e); } });
 };
 // a picture asked for from a group that isn't here yet: an invisible stand-in, swapped for the real one when it lands
@@ -70,3 +70,16 @@ World.prototype.preload = function () {
 // a new game (bootGame) starts over with a fresh loader, so the notes start over too
 const _lazyBoot = bootGame;
 bootGame = async function (...a) { LAZY_REC = {}; for (const k in MON_LOADING) delete MON_LOADING[k]; for (const k in LAZY_WAIT) delete LAZY_WAIT[k]; return _lazyBoot.apply(this, a); };
+
+/* 26 Nov: Phaser's canvas textures keep a full copy of their pixels in JavaScript (getImageData of the whole canvas,
+   when the texture is made). The game never reads those copies, and the farm's ground alone (six 1536px chunks) kept
+   about 44 MB of them, on top of the picture itself. A friend's iPhone failed to load after the intro and then ran
+   slowly. Drop the copies as soon as a canvas texture is made. */
+{
+  const TM = Phaser.Textures.TextureManager.prototype, _addCanvas = TM.addCanvas;
+  TM.addCanvas = function () {
+    const t = _addCanvas.apply(this, arguments);
+    if (t && t.imageData) { t.imageData = null; t.data = null; t.pixels = null; t.buffer = null; }
+    return t;
+  };
+}
