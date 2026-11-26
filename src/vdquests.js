@@ -77,9 +77,9 @@ const QV = [
   ]],
   // 2. Grey water
   ['fen', [
-    vqTask('vdq_fen1', 'Ask Nurse Willa about the sick Fablemon from the fen', "Willa's clinic is in Smallroot. She's been treating Fablemon with grey patches in their fur.", () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
+    vqTask('vdq_fen1', 'Ask Nurse Willa about the sick Fablemon from the fen', () => `Willa's clinic is at the top right of Smallroot: tap its door${isOpen('clinic') ? '' : " (she's working there even though it's still boarded up)"}. She's been treating Fablemon with grey patches in their fur.`, () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
     vqTask('vdq_fen2', "Fill Willa's sample jar at the grey pool in Sluice Fen", 'Look for a pool of grey, filmy water near the Verdance pipe, by the way to Brookholt.', () => (vq().fen || 0) >= 2, () => vdShut('fen'), {}, { k: 'route4' }),
-    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa', 'Back to the clinic in Smallroot.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
+    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa', 'Back to the clinic at the top right of Smallroot: tap its door.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
     vqTask('vdq_fen4', 'Ask Warden Delphine about the old fen locks', 'Delphine keeps the locks at Brookholt. Knock at the Lock House.', () => (vq().fen || 0) >= 4, () => vdShut('fen'), {}, { k: 'brookholt' }),
     vqTask('vdq_fen5', 'Turn the three old lock wheels in Sluice Fen', "Delphine's order: the heron wakes, the otter swims, the eel slips home. The wheels are near the siphon.", () => !!vq().flooded, () => vdShut('fen') || beatTrainer('vd_fen_boss'), { gold: 1000 }, { k: 'route4' }),
   ]],
@@ -325,6 +325,8 @@ function vqSign(name, key, img, line) {
   q.sig[key] = S.day;
   return [{ ...img, t: line || pick(["A petition against the tower? Give it here. Where do I sign?", "Verdance? I'll sign twice if you let me.", "Course I'll sign. Anything to keep those grey-green jackets out.", "There. Neatest signature on the page, that is."]) }];
 }
+// 26 Nov: Willa's fen story steps (the clinic door uses this so the story isn't skipped for the healing menu)
+const vqWillaStory = () => vqStep('vdq_fen1') || vqStep('vdq_fen2') || vqStep('vdq_fen3');
 const _vqVillChat = villChat;
 villChat = function (id, after, door) {
   if (id === 'willa' && vqWilla(after) !== false) return;

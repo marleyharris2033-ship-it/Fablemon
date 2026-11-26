@@ -89,14 +89,14 @@ function openSettle(id) {
 const _t2Chat = villChat;
 villChat = function (id, after, door) {
   const home = VILL[id] && VILL[id].home, Z = home && SETTLE[home];
-  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id]) {
+  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !(id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory())) {   // (26 Nov: Willa's fen story comes first)
     return Talk.say([{ who: id, name: VILL[id].name, img: VPIC[id + '0'], t: Z.ask }], () => openSettle(home));
   }
   return _t2Chat(id, after, door);
 };
 const _t2Enter = Town.prototype.enter;
 Town.prototype.enter = function (id) {
-  if (SETTLE[id] && S.town.done[id] && !isSettled(id)) { Sound.play('door'); return openSettle(id); }
+  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory())) { Sound.play('door'); return openSettle(id); }
   return _t2Enter.call(this, id);
 };
 

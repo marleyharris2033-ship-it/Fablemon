@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261126-112818">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261126-112818">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261126-112818">
+<link rel="manifest" href="manifest.webmanifest?v=20261126-130830">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261126-130830">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261126-130830">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-112818').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-130830').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); }); }</script>
 </head>
@@ -4294,6 +4294,11 @@ class Town extends World {
     if (id === 'bramble') {
       const br = this.npcs.find(n => n.id === 'bramble');
       return toast(br.home ? 'Bramble calls through the door: "It\'s late, dear! Come and find me in the square tomorrow."' : "Nobody's home. Bramble is usually out in the square.", 3000);
+    }
+    if (id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory()) {   // 26 Nov: the fen story, even before the clinic is restored
+      Sound.play('door');
+      if (isOpen(id) && this.npcs.find(q => q.id === 'willa')) return villChat('willa', typeof isSettled !== 'function' || isSettled(id) ? SERVICE.clinic : () => {});
+      toast('Nurse Willa is working out of the old clinic until it\'s restored.', 2200); return vqWilla(() => {});
     }
     if (!isOpen(id)) return toast(`${b.name}: boarded up. Its restoration can be funded at the notice board.`, 2600);
     const vid = BUILD_VILL[id] || VILL_IDS.find(v => VILL[v].home === id && VILL[v].row !== 8);
@@ -14245,9 +14250,9 @@ const QV = [
   ]],
   // 2. Grey water
   ['fen', [
-    vqTask('vdq_fen1', 'Ask Nurse Willa about the sick Fablemon from the fen', "Willa's clinic is in Smallroot. She's been treating Fablemon with grey patches in their fur.", () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
+    vqTask('vdq_fen1', 'Ask Nurse Willa about the sick Fablemon from the fen', () => `Willa's clinic is at the top right of Smallroot: tap its door${isOpen('clinic') ? '' : " (she's working there even though it's still boarded up)"}. She's been treating Fablemon with grey patches in their fur.`, () => (vq().fen || 0) >= 1, () => vdShut('fen'), {}, { k: 'town', ready: () => (S.visited || {}).route4 }),
     vqTask('vdq_fen2', "Fill Willa's sample jar at the grey pool in Sluice Fen", 'Look for a pool of grey, filmy water near the Verdance pipe, by the way to Brookholt.', () => (vq().fen || 0) >= 2, () => vdShut('fen'), {}, { k: 'route4' }),
-    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa', 'Back to the clinic in Smallroot.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
+    vqTask('vdq_fen3', 'Take the fen sample back to Nurse Willa', 'Back to the clinic at the top right of Smallroot: tap its door.', () => (vq().fen || 0) >= 3, () => vdShut('fen'), { items: { tonic: 2 } }, { k: 'town' }),
     vqTask('vdq_fen4', 'Ask Warden Delphine about the old fen locks', 'Delphine keeps the locks at Brookholt. Knock at the Lock House.', () => (vq().fen || 0) >= 4, () => vdShut('fen'), {}, { k: 'brookholt' }),
     vqTask('vdq_fen5', 'Turn the three old lock wheels in Sluice Fen', "Delphine's order: the heron wakes, the otter swims, the eel slips home. The wheels are near the siphon.", () => !!vq().flooded, () => vdShut('fen') || beatTrainer('vd_fen_boss'), { gold: 1000 }, { k: 'route4' }),
   ]],
@@ -14493,6 +14498,8 @@ function vqSign(name, key, img, line) {
   q.sig[key] = S.day;
   return [{ ...img, t: line || pick(["A petition against the tower? Give it here. Where do I sign?", "Verdance? I'll sign twice if you let me.", "Course I'll sign. Anything to keep those grey-green jackets out.", "There. Neatest signature on the page, that is."]) }];
 }
+// 26 Nov: Willa's fen story steps (the clinic door uses this so the story isn't skipped for the healing menu)
+const vqWillaStory = () => vqStep('vdq_fen1') || vqStep('vdq_fen2') || vqStep('vdq_fen3');
 const _vqVillChat = villChat;
 villChat = function (id, after, door) {
   if (id === 'willa' && vqWilla(after) !== false) return;
@@ -14772,14 +14779,14 @@ function openSettle(id) {
 const _t2Chat = villChat;
 villChat = function (id, after, door) {
   const home = VILL[id] && VILL[id].home, Z = home && SETTLE[home];
-  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id]) {
+  if (Z && S.town.done[home] && !isSettled(home) && S.town.met[id] && !(id === 'willa' && typeof vqWillaStory === 'function' && vqWillaStory())) {   // (26 Nov: Willa's fen story comes first)
     return Talk.say([{ who: id, name: VILL[id].name, img: VPIC[id + '0'], t: Z.ask }], () => openSettle(home));
   }
   return _t2Chat(id, after, door);
 };
 const _t2Enter = Town.prototype.enter;
 Town.prototype.enter = function (id) {
-  if (SETTLE[id] && S.town.done[id] && !isSettled(id)) { Sound.play('door'); return openSettle(id); }
+  if (SETTLE[id] && S.town.done[id] && !isSettled(id) && !(id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory())) { Sound.play('door'); return openSettle(id); }
   return _t2Enter.call(this, id);
 };
 
@@ -16307,7 +16314,7 @@ const RTB = (() => {
   const later = (sc, ms, fn) => sc && sc.time ? sc.time.delayedCall(ms, () => { try { fn(); } catch (e) { console.warn('rtb timer', e); } }) : null;
   // Phaser 4 dropped setTintFill: a solid-colour flash is a tint in FILL mode, put back to normal afterwards
   const fillTint = (o, col) => { if (!o || !o.active) return o; if (o.setTintMode && Phaser.TintModes) o.setTint(col).setTintMode(Phaser.TintModes.FILL); else o.setTintFill(col); return o; };
-  const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); };
+  const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); if (o._drain) o.setTint(o._drain); };
   let st = null;
   const ARENA_KEY = 'rtb';
   // 2-vs-1 (25 Nov, the Warden Gauntlet): a partner Fablemon (st.ally, side 'ally') fights beside yours, and the
@@ -16396,6 +16403,18 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const wid = walkId(sc, m); monAnims(sc, wid);
     const spr = hdSpr(sc.add.sprite(x, y, 'mon_' + wid, side !== 'foe' ? 12 : 0).setOrigin(.5, 1), wid);
     const sh = sc.add.ellipse(x, y - 1, Math.max(12, spr.displayWidth * .55), 5, 0x1a1206, .35).setDepth(1);
+    // 26 Nov: a Fablemon on a Verdance drain collar looks drained here too (faded grey-green, its energy drifting off),
+    // like in turn battles (vdCollarPics / drainFx)
+    if (m.collar) {
+      spr._drain = 0x9fb59a; spr.setTint(spr._drain);
+      const ev = sc.time.addEvent({ delay: 140, loop: true, callback: () => {
+        if (!spr.active) return ev.remove();
+        if (!sc.textures.exists('fx_dot')) return;
+        const px = spr.x + (Math.random() - .5) * spr.displayWidth * .7, py = spr.y - Math.random() * spr.displayHeight * .8;
+        const d = sc.add.image(px, py, 'fx_dot').setDepth(spr.depth + 1).setTint(Math.random() < .5 ? 0xb8f0a0 : 0x8fd18a).setScale(.18 + Math.random() * .14).setAlpha(.85);
+        sc.tweens.add({ targets: d, y: py - 18 - Math.random() * 14, x: px + (Math.random() * 16 - 4), alpha: 0, scale: .05, duration: 1300 + Math.random() * 700, onComplete: () => d.destroy() });
+      } });
+    }
     return { m, side, wid, spr, sh, x, y, dir: side !== 'foe' ? 'up' : 'down', cd: {}, stg: {}, dodgeT: 0, iframe: 0, stun: 0, protect: 0, dotT: 2, lunge: null, ai: { strafe: Math.random() < .5 ? 1 : -1, t: 0, dodgeT: 0, think: 0 }, r: Math.max(7, spr.displayWidth * .32) };
   }
   function place(f) {

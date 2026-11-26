@@ -3637,6 +3637,11 @@ class Town extends World {
       const br = this.npcs.find(n => n.id === 'bramble');
       return toast(br.home ? 'Bramble calls through the door: "It\'s late, dear! Come and find me in the square tomorrow."' : "Nobody's home. Bramble is usually out in the square.", 3000);
     }
+    if (id === 'clinic' && typeof vqWillaStory === 'function' && vqWillaStory()) {   // 26 Nov: the fen story, even before the clinic is restored
+      Sound.play('door');
+      if (isOpen(id) && this.npcs.find(q => q.id === 'willa')) return villChat('willa', typeof isSettled !== 'function' || isSettled(id) ? SERVICE.clinic : () => {});
+      toast('Nurse Willa is working out of the old clinic until it\'s restored.', 2200); return vqWilla(() => {});
+    }
     if (!isOpen(id)) return toast(`${b.name}: boarded up. Its restoration can be funded at the notice board.`, 2600);
     const vid = BUILD_VILL[id] || VILL_IDS.find(v => VILL[v].home === id && VILL[v].row !== 8);
     if (!vid) return toast(`${b.name} is fixed up and ready.`);

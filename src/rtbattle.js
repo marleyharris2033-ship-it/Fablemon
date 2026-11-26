@@ -18,7 +18,7 @@ const RTB = (() => {
   const later = (sc, ms, fn) => sc && sc.time ? sc.time.delayedCall(ms, () => { try { fn(); } catch (e) { console.warn('rtb timer', e); } }) : null;
   // Phaser 4 dropped setTintFill: a solid-colour flash is a tint in FILL mode, put back to normal afterwards
   const fillTint = (o, col) => { if (!o || !o.active) return o; if (o.setTintMode && Phaser.TintModes) o.setTint(col).setTintMode(Phaser.TintModes.FILL); else o.setTintFill(col); return o; };
-  const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); };
+  const unTint = o => { if (!o || !o.active) return; o.clearTint(); if (o.setTintMode && Phaser.TintModes) o.setTintMode(Phaser.TintModes.MULTIPLY); if (o._drain) o.setTint(o._drain); };
   let st = null;
   const ARENA_KEY = 'rtb';
   // 2-vs-1 (25 Nov, the Warden Gauntlet): a partner Fablemon (st.ally, side 'ally') fights beside yours, and the
@@ -107,6 +107,18 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
     const wid = walkId(sc, m); monAnims(sc, wid);
     const spr = hdSpr(sc.add.sprite(x, y, 'mon_' + wid, side !== 'foe' ? 12 : 0).setOrigin(.5, 1), wid);
     const sh = sc.add.ellipse(x, y - 1, Math.max(12, spr.displayWidth * .55), 5, 0x1a1206, .35).setDepth(1);
+    // 26 Nov: a Fablemon on a Verdance drain collar looks drained here too (faded grey-green, its energy drifting off),
+    // like in turn battles (vdCollarPics / drainFx)
+    if (m.collar) {
+      spr._drain = 0x9fb59a; spr.setTint(spr._drain);
+      const ev = sc.time.addEvent({ delay: 140, loop: true, callback: () => {
+        if (!spr.active) return ev.remove();
+        if (!sc.textures.exists('fx_dot')) return;
+        const px = spr.x + (Math.random() - .5) * spr.displayWidth * .7, py = spr.y - Math.random() * spr.displayHeight * .8;
+        const d = sc.add.image(px, py, 'fx_dot').setDepth(spr.depth + 1).setTint(Math.random() < .5 ? 0xb8f0a0 : 0x8fd18a).setScale(.18 + Math.random() * .14).setAlpha(.85);
+        sc.tweens.add({ targets: d, y: py - 18 - Math.random() * 14, x: px + (Math.random() * 16 - 4), alpha: 0, scale: .05, duration: 1300 + Math.random() * 700, onComplete: () => d.destroy() });
+      } });
+    }
     return { m, side, wid, spr, sh, x, y, dir: side !== 'foe' ? 'up' : 'down', cd: {}, stg: {}, dodgeT: 0, iframe: 0, stun: 0, protect: 0, dotT: 2, lunge: null, ai: { strafe: Math.random() < .5 ? 1 : -1, t: 0, dodgeT: 0, think: 0 }, r: Math.max(7, spr.displayWidth * .32) };
   }
   function place(f) {
