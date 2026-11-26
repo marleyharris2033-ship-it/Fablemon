@@ -74,6 +74,10 @@ for s_ in ['duskcloak', 'staticwing', 'brookstride', 'rampartoad', 'pyrebrash']:
 # Grimbark), not the second forms, so the second forms use stand-ins from their own battle art until matching sheets come.
 # The files are kept: walk_<id>.png in art_incoming/early.
 WRONG_WALK = ['stormveil', 'yawnox', 'lotveil', 'brimbramble', 'mirebellows', 'hollowbark']
+# 26 Nov 2026: the matching sheets turned up in the user's old files (Fablemon_Bog_Evolutions_Walking_Sheets.zip):
+# 4 rows (down, left, right, up) x 3 columns (standing, step A, step B). Hollowbark's is named Hollowarden there.
+# Also the two Reefarer forms, which had stand-ins.
+for s_ in WRONG_WALK + ['marshviper', 'reefarer', 'reefarer_cotton']: early([s_], walk='walk2_' + s_, cols=3, stand=0)
 # bog walk sheets from the zip (13 Nov), 4 frames per row
 for s_ in ['muddlebub', 'puffpiper', 'puffpiper_cotton', 'logloom', 'glimmerjel', 'lotling', 'sundrowse', 'tipplecup']: early([s_], walk='walk_' + s_, cols=4, stand=0)
 # 26 Nov 2026: 'walk_marshviper.png' is really Fenfang (its evolution: the hooded viper), so Fenfang walks with it and

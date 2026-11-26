@@ -1,0 +1,1 @@
+Nine bog evolution movement sheets. Each sheet: 4 rows x 3 columns. Rows: down, left, right, up. Columns: neutral, movement A, movement B. Stormveil bobs; Marshviper slithers. Includes corrected Stormveil only. Original generated images on magenta; not yet resized, aligned or sliced into engine-ready frames.
