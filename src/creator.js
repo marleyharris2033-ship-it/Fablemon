@@ -219,7 +219,7 @@ const CCX = (() => {
   }
 
   // ---- the creator screen (a new game, and the Wardrobe)
-  function open({ first, name, start, onDone }) {
+  function open({ first, name, start, onDone, back }) {
     const L = fix(start), st = { dir: 0, step: 1, play: true };
     const ROWS = [
       ['Outfit', 'o', () => CC.outfits.length, () => CC.outfits.findIndex(o => o.name === L.o), i => { L.o = CC.outfits[i].name; }, i => CC.outfits[i].name],
@@ -243,7 +243,7 @@ const CCX = (() => {
         <button class="ccbtn" data-a="turn" data-d="-1" style="left:8px;bottom:8px">⟲</button><button class="ccbtn" data-a="turn" data-d="1" style="right:8px;bottom:8px">⟳</button>
         <button class="ccbtn" data-a="dice" style="right:8px;top:8px">🎲</button><button class="ccbtn" data-a="walk" style="left:8px;top:8px">${st.play ? '⏸' : '▶'}</button></div>
       ${ROWS.map(row).join('')}
-      <div class="row"><button class="btn gold" data-a="ok">${first ? 'Start farming' : 'Done'}</button></div></div>`;
+      <div class="row">${back ? '<button class="btn" data-a="back">◀ Back</button>' : ''}<button class="btn gold" data-a="ok">${first ? 'Start farming' : 'Done'}</button></div></div>`;
     let timer = null, drawn = 0;
     const draw = async () => {
       const my = ++drawn; await ready(L); if (my !== drawn) return; const cv = $('ccCv'); if (!cv) return;
@@ -261,6 +261,7 @@ const CCX = (() => {
       if (a === 'walk') { st.play = !st.play; if (!st.play) st.step = 1; refresh(); }
       if (a === 'dice') { rand(); refresh(); }
       if (a === 'ok') { clearInterval(timer); closeModal(); onDone({ cc: { ...L } }); }
+      if (a === 'back' && back) { clearInterval(timer); back(); }
     }, () => clearInterval(timer));
     draw(); timer = setInterval(() => { if (!$('ccCv')) return clearInterval(timer); if (st.play) { st.step = (st.step + 1) % 4; draw(); } }, 170);
   }
@@ -286,8 +287,24 @@ if (CCX) {
     loader.spritesheet('tools', LOOK_SRC.tools, { frameWidth: CC_FRAME.tw, frameHeight: CC_FRAME.th });
     return true;
   };
-  openLook = function ({ first, name, onDone }) {
-    CCX.open({ first, name, start: !first && S && S.look && S.look.cc, onDone });
+  // 27 Nov: choose a classic farmer (the six drawn ones, look.js) or build your own in the creator
+  const _classicLook = openLook;
+  openLook = function lookChooser({ first, name, onDone }) {
+    const again = () => lookChooser({ first, name, onDone });
+    const wasClassic = !first && S && S.look && !S.look.cc;
+    const portOf = p => (HD['port_' + LOOKS[p].port] || [''])[0];
+    const classics = Object.keys(LOOKS).filter(lookOk);
+    const card = (a, title, sub, pics, on) => `<button data-a="${a}" style="all:unset;box-sizing:border-box;cursor:pointer;display:block;width:100%;margin:6px 0;padding:10px;border:3px solid ${on ? 'var(--gold,#d9a62e)' : '#c9a24a'};border-radius:12px;background:${on ? '#fff4d2' : '#fffaf0'}">
+      <div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px">${pics}</div><b style="display:block;text-align:center;font-size:16px">${title}</b><small style="display:block;text-align:center;opacity:.8">${sub}</small></button>`;
+    const pic = src => `<img src="${src}" style="width:52px;height:52px;object-fit:cover;object-position:50% 20%;border-radius:8px;border:2px solid #0002;background:#cfe3b2">`;
+    const ccPic = `<div style="width:52px;height:52px;border-radius:8px;border:2px solid #0002;background:#cfe3b2;display:flex;align-items:center;justify-content:center;font-size:30px">🎨</div>`;
+    openModal(first ? 'Your farmer' : 'Wardrobe', `${first ? `<p class="hint" style="text-align:center;margin:0 0 4px">Who's heading out to Wild Roots Farm, ${name}?</p>` : ''}
+      ${card('classic', 'Classic farmer', 'Pick one of the six original farmers, in any outfit colour', classics.slice(0, 6).map(p => pic(portOf(p))).join(''), wasClassic)}
+      ${card('create', 'Create your own', '24 outfits, faces, skin, hair and beards, in any colours', ccPic, !first && !wasClassic)}`,
+      a => {
+        if (a === 'classic') _classicLook({ first, name, onDone, back: again });
+        if (a === 'create') CCX.open({ first, name, start: !first && S && S.look && S.look.cc, onDone, back: again });
+      });
   };
   openWardrobe = function () {
     if (!scene || !['house', 'farm'].includes(scene.scene.key)) return toast('Change your look at home: on the farm or in the farmhouse.', 2600);

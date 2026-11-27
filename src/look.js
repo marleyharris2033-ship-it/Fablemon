@@ -75,8 +75,8 @@ startFrom = function (n, fresh, name) {
 };
 
 // the creator itself
-function openLook({ first, name, onDone }) {
-  const cur = first ? { p: 'straw', c: 0 } : { ...look() };
+function openLook({ first, name, onDone, back }) {
+  const cur = first || !(S && S.look && S.look.p) ? { p: 'straw', c: 0 } : { ...look() };   // (a creator farmer starts the classic list on the straw hat)
   let preview = null, frame = 0, dir = 0, timer = null;
   const presets = Object.keys(LOOKS).filter(lookOk);
   const render = () => `<p class="hint" style="text-align:center">${first ? `Who's heading out to Wild Roots Farm, ${name}?` : 'Change how you look. Your Fablemon will still know you.'}</p>
@@ -87,7 +87,7 @@ function openLook({ first, name, onDone }) {
     <div style="display:grid;grid-template-columns:repeat(${presets.length},minmax(0,1fr));gap:5px">${presets.map(p => `<button data-a="p" data-p="${p}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px;border-radius:8px;border:3px solid ${p === cur.p ? 'var(--gold2)' : 'var(--green)'};background:${p === cur.p ? '#e9f5d0' : '#fffaea'};min-width:0"><img src="${(HD['port_' + LOOKS[p].port] || [''])[0]}" style="width:100%;aspect-ratio:1;object-fit:cover;object-position:50% 20%;border-radius:5px;display:block"></button>`).join('')}</div>
     <p style="margin:10px 0 4px"><b>Outfit colour</b> <small>${LOOK_COLOURS[cur.c].n}</small></p>
     <div style="display:grid;grid-template-columns:repeat(5,34px);gap:8px;justify-content:center">${LOOK_COLOURS.map((c, i) => `<button data-a="c" data-c="${i}" title="${c.n}" style="width:34px;height:34px;border-radius:50%;cursor:pointer;border:3px solid ${i === cur.c ? 'var(--gold2)' : '#fff'};box-shadow:0 0 0 2px var(--green);background:${c.sw || 'conic-gradient(#2f437e,#3c7a35,#c9982a,#a33d27,#7b3c7a,#2f437e)'}"></button>`).join('')}</div>
-    <div class="row" style="margin-top:12px"><button class="btn gold" data-a="ok">${first ? 'Start farming' : 'Done'}</button></div>`;
+    <div class="row" style="margin-top:12px">${back ? '<button class="btn" data-a="back">◀ Back</button>' : ''}<button class="btn gold" data-a="ok">${first ? 'Start farming' : 'Done'}</button></div>`;
   const refresh = async () => {
     $('mBody').innerHTML = render();
     const L = LOOKS[cur.p], col = LOOK_COLOURS[cur.c];
@@ -99,6 +99,7 @@ function openLook({ first, name, onDone }) {
     if (a === 'p') { cur.p = d.p; refresh(); }
     if (a === 'c') { cur.c = +d.c; refresh(); }
     if (a === 'ok') { clearInterval(timer); closeModal(); onDone({ ...cur }); }
+    if (a === 'back' && back) { clearInterval(timer); back(); }
   });
   refresh(); timer = setInterval(tick, 200);
 }
