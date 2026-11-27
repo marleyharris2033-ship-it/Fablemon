@@ -17142,7 +17142,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);
   }
-  return { start, netIn, netGone, get active() { return !!st; }, get st() { return st; } };
+  return { start, netIn, netGone, get active() { return !!st; }, get waiting() { return !!start.waited; }, get st() { return st; } };   // (waiting: fetching the Fablemon sheets it needs before starting)
 })();
 
 
@@ -17564,7 +17564,7 @@ class ArenaScene extends World {
     this.time.delayedCall(900, () => {
       if (![...((g.rt && g.rt.myTeam) || team()), ...((g.rt && g.rt.allyTeam) || [])].some(m => m.hp > 0)) return this.leave();
       this.started = 1; RTB.start(this, g.foe, { x: A.at[0], y: A.at[1] + 40 }, g.T, this.boss, g.rt);
-      if (!RTB.active) { this.started = 0; this.leave(); }
+      if (!RTB.active && !RTB.waiting) { this.started = 0; this.leave(); }   // (27 Nov: a fight still fetching its Fablemon sheets is starting, not failed)
     });
   }
   // a little further out than the towns, so the arena shows round the fight
@@ -17574,7 +17574,7 @@ class ArenaScene extends World {
   onTap() { } tapGoal() { } act() { } actFacing() { } arrived() { }
   update(time, dms) {
     super.update(time, dms);
-    if (this.started && !this.sleeping && !RTB.active && !Battle.active) this.leave();
+    if (this.started && !this.sleeping && !RTB.active && !RTB.waiting && !Battle.active) this.leave();
   }
   leave() {
     if (this.sleeping || this.gone || (this.g && (this.g.gauntlet || this.g.hold))) return; this.gone = 1;   // (a Gauntlet run decides where you go next)

@@ -852,6 +852,6 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);
   }
-  return { start, netIn, netGone, get active() { return !!st; }, get st() { return st; } };
+  return { start, netIn, netGone, get active() { return !!st; }, get waiting() { return !!start.waited; }, get st() { return st; } };   // (waiting: fetching the Fablemon sheets it needs before starting)
 })();
 

@@ -383,15 +383,15 @@ body.dpad #joy .knob{display:none} body.dpad #joy .dpad{display:block}
 #qty .quick .btn{padding:3px 10px;font-size:13px}
 #qty .tot{text-align:center;margin:8px 0 2px;font-weight:700}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261126-173049">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261126-173049">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261126-173049">
+<link rel="manifest" href="manifest.webmanifest?v=20261127-222219">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261127-222219">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261127-222219">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261126-173049').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261127-222219').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); });
   // 26 Nov: fetch the rest of the art for offline play only after a minute in the game, so it doesn't slow the first start
@@ -17156,7 +17156,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
       Battle.resolveRT(foe, out, [...done.used], done.T, done.beaten);
     }, out === 'win' ? 650 : 250);
   }
-  return { start, netIn, netGone, get active() { return !!st; }, get st() { return st; } };
+  return { start, netIn, netGone, get active() { return !!st; }, get waiting() { return !!start.waited; }, get st() { return st; } };   // (waiting: fetching the Fablemon sheets it needs before starting)
 })();
 
 
@@ -17578,7 +17578,7 @@ class ArenaScene extends World {
     this.time.delayedCall(900, () => {
       if (![...((g.rt && g.rt.myTeam) || team()), ...((g.rt && g.rt.allyTeam) || [])].some(m => m.hp > 0)) return this.leave();
       this.started = 1; RTB.start(this, g.foe, { x: A.at[0], y: A.at[1] + 40 }, g.T, this.boss, g.rt);
-      if (!RTB.active) { this.started = 0; this.leave(); }
+      if (!RTB.active && !RTB.waiting) { this.started = 0; this.leave(); }   // (27 Nov: a fight still fetching its Fablemon sheets is starting, not failed)
     });
   }
   // a little further out than the towns, so the arena shows round the fight
@@ -17588,7 +17588,7 @@ class ArenaScene extends World {
   onTap() { } tapGoal() { } act() { } actFacing() { } arrived() { }
   update(time, dms) {
     super.update(time, dms);
-    if (this.started && !this.sleeping && !RTB.active && !Battle.active) this.leave();
+    if (this.started && !this.sleeping && !RTB.active && !RTB.waiting && !Battle.active) this.leave();
   }
   leave() {
     if (this.sleeping || this.gone || (this.g && (this.g.gauntlet || this.g.hold))) return; this.gone = 1;   // (a Gauntlet run decides where you go next)
