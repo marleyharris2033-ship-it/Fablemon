@@ -20,3 +20,8 @@ function icon(n, cls) {
   const i = UI_ICONS.indexOf(n); if (i < 0) return '';
   return `<i class="ico${cls ? ' ' + cls : ''}" style="background-position:${(i % 8) / 7 * 100}% ${Math.floor(i / 8) / 5 * 100}%"></i>`;
 }
+// battle icons (run, dodge, auto, swap, stat boosts and drops, status): bicon('up_atk')
+function bicon(n, cls) {
+  const i = ['run', 'dodge', 'auto', 'swap', 'up_atk', 'up_def', 'up_spd', 'up_eatk', 'dn_atk', 'dn_def', 'dn_spd', 'dn_eatk', 'psn', 'brn', 'par', 'slp'].indexOf(n); if (i < 0) return '';
+  return `<i class="bico${cls ? ' ' + cls : ''}" style="background-position:${(i % 4) / 3 * 100}% ${Math.floor(i / 4) / 3 * 100}%"></i>`;
+}

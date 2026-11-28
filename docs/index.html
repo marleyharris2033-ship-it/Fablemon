@@ -519,16 +519,24 @@ body:has(.modal.show) #toast,body:has(#battle.show) #toast{top:auto !important;b
   #rtbJoy{bottom:calc(10px + env(safe-area-inset-bottom)) !important}
 }
 #rtbTeam.wait button:not(.on){opacity:.5;filter:grayscale(.6)}
+.bico{display:inline-block;width:1.3em;height:1.3em;vertical-align:-.3em;background:url(a/42d2f92f6061f952.webp) 0 0/400% 400% no-repeat}
+#rtbSide button .bico{width:30px;height:30px;position:absolute;left:50%;top:4px;margin-left:-15px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+#rtbSide #rtbDodge .bico{width:38px;height:38px;margin-left:-19px;top:5px}
+#rtbAuto .bico{width:22px;height:22px;vertical-align:-6px;margin-right:2px}
+#rtb .rchip.bc{background:none !important;padding:0 !important;margin-left:1px !important;font-size:9px;color:#5a3414;font-weight:800;vertical-align:-2px}
+#rtb .rchip.bc .bico{width:20px;height:20px;vertical-align:-6px}
+#rtb .rbox{max-width:calc(50vw - 12px);min-width:0 !important}
+@media (orientation:portrait){#rtbTeam{top:calc(100px + env(safe-area-inset-top)) !important}#rtb.duo #rtbTeam{top:calc(150px + env(safe-area-inset-top)) !important}}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261128-004641">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261128-004641">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261128-004641">
+<link rel="manifest" href="manifest.webmanifest?v=20261128-011617">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261128-011617">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261128-011617">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261128-004641').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261128-011617').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); });
   // 26 Nov: fetch the rest of the art for offline play only after a minute in the game, so it doesn't slow the first start
@@ -16525,7 +16533,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
   ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div class="rbox" id="rtbAlly"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
-    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">🤖 Auto</button><div id="rtbMoves"></div>`;
+    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">${bicon('run')}<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">${bicon('dodge')}<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">${bicon('auto')}Auto</button><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
 
@@ -17254,7 +17262,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // ---------- the panels
   function hpBox(f, el) {
     const m = f.m, mx = monStat(m, 'hp'), pc = Math.max(0, m.hp) / mx;
-    const chips = (m.status ? `<span class="rchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '') + Object.entries(f.stg).filter(([, n]) => n).map(([k, n]) => `<span class="rchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k]}${n > 0 ? '▲' : '▼'}</span>`).join('');
+    // painted icons (28 Nov): the status, then a sword/shield/boot/orb with an up or down arrow per raised or lowered stat (EDef: shield marked E)
+    const chips = (m.status ? `<span class="rchip bc" title="${STATUS[m.status][0]}">${bicon(m.status) || STATUS[m.status][0]}</span>` : '') + Object.entries(f.stg).filter(([, n]) => n).map(([k, n]) => `<span class="rchip bc" title="${{ atk: 'Attack', def: 'Defence', eatk: 'Energy attack', edef: 'Energy defence', spd: 'Speed' }[k]} ${n > 0 ? 'up' : 'down'}">${bicon((n > 0 ? 'up_' : 'dn_') + ({ edef: 'def' }[k] || k))}${k === 'edef' ? 'E' : ''}</span>`).join('');
     el.innerHTML = `${f.side === 'ally' ? `<span class="who">${st.allyName || 'Partner'}</span>` : ''}<b>${f.side === 'foe' && S.caught[m.sp] ? '<span style="color:#c0392b">♥</span> ' : ''}${monName(m)}</b> <small>Lv ${m.lv}</small>${chips}<div class="rhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d0402a'}"></i></div>${f.side !== 'foe' ? `<small>${Math.max(0, Math.ceil(m.hp))}/${mx}</small>` : ''}`;
   }
   function refresh() {
@@ -23123,6 +23132,11 @@ const UI_ICONS = ['coin', 'energy', 'heart', 'star', 'sparkle', 'trophy', 'medal
 function icon(n, cls) {
   const i = UI_ICONS.indexOf(n); if (i < 0) return '';
   return `<i class="ico${cls ? ' ' + cls : ''}" style="background-position:${(i % 8) / 7 * 100}% ${Math.floor(i / 8) / 5 * 100}%"></i>`;
+}
+// battle icons (run, dodge, auto, swap, stat boosts and drops, status): bicon('up_atk')
+function bicon(n, cls) {
+  const i = ['run', 'dodge', 'auto', 'swap', 'up_atk', 'up_def', 'up_spd', 'up_eatk', 'dn_atk', 'dn_def', 'dn_spd', 'dn_eatk', 'psn', 'brn', 'par', 'slp'].indexOf(n); if (i < 0) return '';
+  return `<i class="bico${cls ? ' ' + cls : ''}" style="background-position:${(i % 4) / 3 * 100}% ${Math.floor(i / 4) / 3 * 100}%"></i>`;
 }
 
 </script>

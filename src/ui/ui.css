@@ -135,3 +135,11 @@ body:has(.modal.show) #toast,body:has(#battle.show) #toast{top:auto !important;b
   #rtbJoy{bottom:calc(10px + env(safe-area-inset-bottom)) !important}
 }
 #rtbTeam.wait button:not(.on){opacity:.5;filter:grayscale(.6)}
+.bico{display:inline-block;width:1.3em;height:1.3em;vertical-align:-.3em;background:url(__UI_bicons__) 0 0/400% 400% no-repeat}
+#rtbSide button .bico{width:30px;height:30px;position:absolute;left:50%;top:4px;margin-left:-15px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+#rtbSide #rtbDodge .bico{width:38px;height:38px;margin-left:-19px;top:5px}
+#rtbAuto .bico{width:22px;height:22px;vertical-align:-6px;margin-right:2px}
+#rtb .rchip.bc{background:none !important;padding:0 !important;margin-left:1px !important;font-size:9px;color:#5a3414;font-weight:800;vertical-align:-2px}
+#rtb .rchip.bc .bico{width:20px;height:20px;vertical-align:-6px}
+#rtb .rbox{max-width:calc(50vw - 12px);min-width:0 !important}
+@media (orientation:portrait){#rtbTeam{top:calc(100px + env(safe-area-inset-top)) !important}#rtb.duo #rtbTeam{top:calc(150px + env(safe-area-inset-top)) !important}}

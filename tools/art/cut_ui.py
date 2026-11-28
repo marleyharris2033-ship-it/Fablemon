@@ -1,6 +1,7 @@
 """Cosy carved-wood UI kit (27 Nov 2026), from art_incoming/ui/:
 kit_menus.png, kit_controls.png -> src/ui/<piece>.webp (each piece keyed, despilled, trimmed)
-icons1.png (8x6 grid)            -> src/ui/icons.webp (8x6 cells of 96px) + names in ICONS below"""
+icons1.png (8x6 grid)            -> src/ui/icons.webp (8x6 cells of 96px) + names in ICONS below
+icons_battle.png (4x4 grid)      -> src/ui/bicons.webp (4x4 cells of 96px) + names in BICONS"""
 import os, numpy as np
 from PIL import Image
 from scipy import ndimage as nd
@@ -59,6 +60,18 @@ ICONS = ['coin', 'energy', 'heart', 'star', 'sparkle', 'trophy', 'medal', 'gift'
          't_leaf', 't_ember', 't_tide', 't_stone', 't_gale', 't_spark', 't_frost', 't_shade',
          't_glow', 't_wild', 'rod', 'saddle', 'boot', 'spring', 'summer', 'autumn']
 
+BICONS = ['run', 'dodge', 'auto', 'swap', 'up_atk', 'up_def', 'up_spd', 'up_eatk', 'dn_atk', 'dn_def', 'dn_spd', 'dn_eatk', 'psn', 'brn', 'par', 'slp']
+
+def grid(f, names, cols, rows, out, C=96):
+    s = key(os.path.join(IN, f)); W, H = s.size
+    atlas = Image.new('RGBA', (C * cols, C * rows), (0, 0, 0, 0))
+    for i, n in enumerate(names):
+        r, c = divmod(i, cols); cell = s.crop((c * W // cols, r * H // rows, (c + 1) * W // cols, (r + 1) * H // rows))
+        cell = cell.crop(cell.getbbox()); k = (C - 4) / max(cell.size)
+        cell = cell.resize((round(cell.width * k), round(cell.height * k)), Image.LANCZOS)
+        atlas.paste(cell, (c * C + (C - cell.width) // 2, r * C + (C - cell.height) // 2), cell)
+    atlas.save(os.path.join(OUT, out), quality=90, method=6)
+
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     for f, table in (('kit_menus.png', MENUS), ('kit_controls.png', CTRL)):
@@ -72,4 +85,5 @@ if __name__ == '__main__':
         cell = cell.resize((round(cell.width * k), round(cell.height * k)), Image.LANCZOS)
         atlas.paste(cell, (c * C + (C - cell.width) // 2, r * C + (C - cell.height) // 2), cell)
     atlas.save(os.path.join(OUT, 'icons.webp'), quality=90, method=6)
+    grid('icons_battle.png', BICONS, 4, 4, 'bicons.webp')
     print('done', sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT)) // 1024, 'KB')

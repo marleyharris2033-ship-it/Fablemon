@@ -66,7 +66,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   document.head.appendChild(css);
   const ui = document.createElement('div'); ui.id = 'rtb';
   ui.innerHTML = `<div class="rbox" id="rtbFoe"></div><div class="rbox" id="rtbMe"></div><div class="rbox" id="rtbAlly"></div><div id="rtbTeam"></div><div id="rtbMsg"></div><div id="rtbHelp"></div>
-    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">🏃<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">💨<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">🤖 Auto</button><div id="rtbMoves"></div>`;
+    <div id="rtbJoy"><i></i></div><div id="rtbPick"><div class="pk"><h3></h3><div class="pl"></div></div></div><div id="rtbSide"><button id="rtbRun" data-a="run">${bicon('run')}<small>Run</small></button><button id="rtbHeal" data-a="heal"><img class="ic"><small>Heal</small><div class="cd"></div></button><button id="rtbCharm" data-a="charm"><img class="ic"><small>Catch</small><div class="cd"></div></button><button id="rtbDodge" data-a="dodge">${bicon('dodge')}<small>Dodge</small><div class="cd"></div></button></div><button id="rtbAuto" data-a="auto">${bicon('auto')}Auto</button><div id="rtbMoves"></div>`;
   document.body.appendChild(ui);
   const $r = id => document.getElementById(id);
 
@@ -795,7 +795,8 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   // ---------- the panels
   function hpBox(f, el) {
     const m = f.m, mx = monStat(m, 'hp'), pc = Math.max(0, m.hp) / mx;
-    const chips = (m.status ? `<span class="rchip" style="background:${STATUS[m.status][1]}">${STATUS[m.status][0]}</span>` : '') + Object.entries(f.stg).filter(([, n]) => n).map(([k, n]) => `<span class="rchip" style="background:${n > 0 ? '#3a8a4a' : '#9a4a3a'}">${{ atk: 'Atk', def: 'Def', eatk: 'EAtk', edef: 'EDef', spd: 'Spd' }[k]}${n > 0 ? '▲' : '▼'}</span>`).join('');
+    // painted icons (28 Nov): the status, then a sword/shield/boot/orb with an up or down arrow per raised or lowered stat (EDef: shield marked E)
+    const chips = (m.status ? `<span class="rchip bc" title="${STATUS[m.status][0]}">${bicon(m.status) || STATUS[m.status][0]}</span>` : '') + Object.entries(f.stg).filter(([, n]) => n).map(([k, n]) => `<span class="rchip bc" title="${{ atk: 'Attack', def: 'Defence', eatk: 'Energy attack', edef: 'Energy defence', spd: 'Speed' }[k]} ${n > 0 ? 'up' : 'down'}">${bicon((n > 0 ? 'up_' : 'dn_') + ({ edef: 'def' }[k] || k))}${k === 'edef' ? 'E' : ''}</span>`).join('');
     el.innerHTML = `${f.side === 'ally' ? `<span class="who">${st.allyName || 'Partner'}</span>` : ''}<b>${f.side === 'foe' && S.caught[m.sp] ? '<span style="color:#c0392b">♥</span> ' : ''}${monName(m)}</b> <small>Lv ${m.lv}</small>${chips}<div class="rhp"><i style="width:${100 * pc}%;background:${pc > .5 ? '#4caf50' : pc > .2 ? '#e0a020' : '#d0402a'}"></i></div>${f.side !== 'foe' ? `<small>${Math.max(0, Math.ceil(m.hp))}/${mx}</small>` : ''}`;
   }
   function refresh() {
