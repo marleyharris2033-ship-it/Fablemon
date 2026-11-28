@@ -1,0 +1,85 @@
+/* ===== Cosy carved-wood UI (27 Nov 2026). Loaded last, so it restyles the older pixel frames.
+   Each UI-piece placeholder is swapped by build.py for src/ui/<piece>.webp. Slices are in source pixels; widths in CSS px. */
+@font-face{font-family:"Fable";src:url(__UI_FONT__) format("woff");font-weight:700;font-display:block}
+:root{--pix:"Fable",Georgia,serif;--wood:#6b3a17;--wood2:#8a4f1f;--cream:#ffe9c2;--cream2:#f3d6a2;--ink:#3b2412;--leaf:#4f7d24}
+
+/* ---- windows */
+.modal{background:radial-gradient(ellipse at center,rgba(20,12,6,.35),rgba(10,6,2,.62))}
+.modal .panel,#talk,#bui,#icap,#buildbar,#qty .panel{border-style:solid !important;border-width:22px !important;border-color:transparent !important;border-image:url(__UI_frame__) 52 fill stretch !important;background:none !important;box-shadow:none !important;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45)) !important;image-rendering:auto !important;border-radius:0 !important}
+.modal .panel{padding:0 6px 8px !important}
+.modal.show .panel{animation:uiPop .22s cubic-bezier(.2,1.4,.4,1)}
+@keyframes uiPop{from{transform:scale(.86);opacity:0}to{transform:none;opacity:1}}
+.modal h2{background:linear-gradient(#ffe3b4 78%,rgba(255,227,180,0)) !important;border:0 !important;box-shadow:none !important;margin:-4px -6px 8px !important;padding:4px 4px 10px !important;justify-content:center !important;position:sticky}
+#mTitle{display:inline-block;min-width:46%;max-width:calc(100% - 84px);text-align:center;font-size:clamp(14px,4.4vw,19px);line-height:1.1;color:#fff3d6;text-shadow:0 2px 0 #4a2208,0 0 6px rgba(60,25,5,.6);padding:12px 4px 13px;border-style:solid;border-width:0 30px;border-color:transparent;border-image:url(__UI_plaque__) 0 118 fill stretch;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.modal h2 .x{position:absolute !important;right:2px;top:6px;width:38px !important;height:38px !important;background:url(__UI_rb_x__) center/contain no-repeat !important;border:0 !important;box-shadow:none !important;font-size:0 !important;color:transparent !important;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.modal h2 .x:active{transform:scale(.9)}
+
+/* ---- buttons */
+.btn{border-style:solid !important;border-color:transparent !important;border-width:13px 18px !important;border-image:url(__UI_tab_off__) 40 44 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:0 4px !important;min-height:42px;font-family:var(--pix) !important;font-weight:700;color:#5a3414 !important;text-shadow:0 1px 0 rgba(255,255,255,.6);letter-spacing:.2px;filter:drop-shadow(0 2px 1px rgba(60,30,8,.35));transition:transform .08s}
+.btn.gold{border-image-source:url(__UI_btn_g__) !important;border-image-slice:36 44 fill !important;color:#fff8e2 !important;text-shadow:0 1px 0 #2c4a10,0 0 3px rgba(30,50,10,.6)}
+.btn.sm{min-height:36px;border-width:11px 15px !important;font-size:14px}
+.btn:active:not(:disabled){transform:translateY(2px) scale(.97) !important;box-shadow:none !important;filter:drop-shadow(0 1px 0 rgba(60,30,8,.35)) brightness(.94)}
+.btn.gold:active:not(:disabled){border-image-source:url(__UI_btn_g_dn__) !important}
+.btn:disabled{opacity:.5;filter:grayscale(.5)}
+.btn.red,.btn.danger{border-image-source:url(__UI_btn_r__) !important;border-image-slice:36 44 fill !important;color:#fff3e6 !important;text-shadow:0 1px 0 #5a1208}
+
+/* ---- cards and rows */
+.shoprow,.recipe,.proj,.mcard,.jcard,.letter,.showcase,.mrow,.setc{border-style:solid !important;border-color:transparent !important;border-width:11px !important;border-image:url(__UI_slot__) 34 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:2px 4px !important;margin-bottom:5px !important}
+.mcard{border-left-width:11px !important}
+.shoprow img,.recipe img{filter:drop-shadow(0 2px 1px rgba(60,30,8,.3))}
+.subbar,.hint{border-style:solid !important;border-color:transparent !important;border-width:10px 14px !important;border-image:url(__UI_pill__) 36 fill stretch !important;background:none !important;border-radius:0 !important;padding:0 2px !important}
+.mtile{font-size:12px !important;border:0 !important;background:url(__UI_slot__) center/100% 100% no-repeat !important;box-shadow:none !important;border-radius:0 !important;font-family:var(--pix);color:var(--ink) !important;filter:drop-shadow(0 2px 1px rgba(60,30,8,.3))}
+.mtile:active{transform:scale(.95) !important;box-shadow:none !important}
+.mtile.on,.mtile.sel{background-image:url(__UI_slot_sel__) !important}
+
+/* ---- tabs */
+.seg{border:0 !important;gap:4px;background:none !important}
+.seg button{border-style:solid !important;border-color:transparent !important;border-width:10px 14px !important;border-image:url(__UI_tab_off__) 40 fill stretch !important;background:none !important;padding:0 2px !important;font-family:var(--pix) !important;color:#5a3414 !important}
+.seg button+button{border-left:10px solid transparent !important}
+.seg button.on{border-image-source:url(__UI_tab_on__) !important;color:#fff8e2 !important;text-shadow:0 1px 0 #2c4a10}
+
+/* ---- item slots */
+.slot{border:0 !important;background:url(__UI_hslot__) center/100% 100% no-repeat !important;box-shadow:none !important;border-radius:0 !important}
+.slot.sel{background-image:url(__UI_hslot_sel__) !important;box-shadow:none !important}
+.slot.pick{background-image:url(__UI_slot_rare__) !important;box-shadow:none !important}
+.slot.locked,.slot.trash{background-image:url(__UI_slot_lock__) !important}
+
+/* ---- HUD */
+#clock,#quest,#toast,.bbox,#topbtns .sq,#ctlbar,#hotbar,#energy{border-radius:0 !important;box-shadow:none !important;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4)) !important;image-rendering:auto !important}
+#clock,.bbox,#ctlbar{border-style:solid !important;border-color:transparent !important;border-width:14px !important;border-image:url(__UI_frame__) 52 fill stretch !important;background:none !important;padding:0 4px !important}
+#clock{font-family:var(--pix);color:var(--ink)}
+#clock .gold{border-top:0 !important;margin-top:2px;padding:2px 8px 2px 4px !important;background:url(__UI_pill__) center/100% 100% no-repeat;color:#7a4b00 !important;display:inline-block}
+#quest{border-style:solid !important;border-color:transparent !important;border-width:14px 12px 10px !important;border-image:url(__UI_card__) 30 fill stretch !important;background:none !important;padding:2px 2px 0 !important;font-family:var(--pix);color:var(--ink)}
+#toast{border-style:solid !important;border-color:transparent !important;border-width:12px 20px !important;border-image:url(__UI_toast__) 40 fill stretch !important;background:none !important;padding:0 4px !important;color:var(--ink)}
+#toast.show{animation:uiToast .3s cubic-bezier(.2,1.4,.4,1)}
+@keyframes uiToast{from{transform:translate(-50%,-14px) scale(.9)}to{transform:translate(-50%,0)}}
+#topbtns .sq{border:0 !important;width:52px !important;height:52px !important;background:url(__UI_sq__) center/100% 100% no-repeat !important}
+#topbtns .sq:active{background-image:url(__UI_sq_dn__) !important;transform:scale(.94)}
+#topbtns .sq img{width:30px !important;height:30px !important}
+#hotbar{border-style:solid !important;border-color:transparent !important;border-width:9px 12px !important;border-image:url(__UI_tray__) 34 fill stretch !important;background:none !important;padding:0 !important;gap:3px !important}
+#energy{border:0 !important;background:url(__UI_energy__) center/100% 100% no-repeat !important;width:26px !important;padding:15px 8px !important}
+#energy .fill{background:url(__UI_energy_fill__) center/100% 100% no-repeat !important;border-radius:6px !important}
+#energy .lbl{font-family:var(--pix);top:-18px !important}
+#joy{background:url(__UI_joy__) center/100% 100% no-repeat !important;border:0 !important;box-shadow:none !important;opacity:.92}
+#joy .knob{background:url(__UI_knob__) center/100% 100% no-repeat !important;border:0 !important;box-shadow:none !important;width:60px !important;height:60px !important;margin:-30px 0 0 -30px !important}
+body.dpad #joy{background:none !important}
+#joy .dp{background:center/contain no-repeat !important;border:0 !important;box-shadow:none !important;color:transparent !important;font-size:0 !important}
+#joy .dp[data-d=u]{background-image:url(__UI_d_u__) !important}#joy .dp[data-d=d]{background-image:url(__UI_d_d__) !important}
+#joy .dp[data-d=l]{background-image:url(__UI_d_l__) !important}#joy .dp[data-d=r]{background-image:url(__UI_d_r__) !important}
+#joy .dp.on[data-d=u]{background-image:url(__UI_d_u_dn__) !important}#joy .dp.on[data-d=d]{background-image:url(__UI_d_d_dn__) !important}
+#joy .dp.on[data-d=l]{background-image:url(__UI_d_l_dn__) !important}#joy .dp.on[data-d=r]{background-image:url(__UI_d_r_dn__) !important}
+#actBtn{background:url(__UI_act__) center/100% 100% no-repeat !important;border:0 !important;box-shadow:none !important;width:78px !important;height:78px !important;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+#actBtn.down{background-image:url(__UI_act_dn__) !important;transform:scale(.95) !important;box-shadow:none !important}
+#actBtn img{width:40px !important;height:40px !important;filter:drop-shadow(0 2px 1px rgba(0,0,0,.45))}
+
+/* ---- dialogue */
+#talk{padding:0 4px 2px !important}
+#tname{font-family:var(--pix)}
+#ttext{color:var(--ink)}
+
+/* ---- inputs */
+input[type=range]{-webkit-appearance:none;appearance:none;height:20px;background:url(__UI_bar__) center/100% 100% no-repeat;border:0 !important}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border:0;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#e0a520 55%,#8a5a08)}
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:26px;height:26px;background:url(__UI_chk__) center/contain no-repeat;border:0;vertical-align:middle}
+input[type=checkbox]:checked{background-image:url(__UI_chk_on__)}
+.ico{display:inline-block;width:1.25em;height:1.25em;vertical-align:-.25em;background:url(__UI_icons__) 0 0/800% 600% no-repeat}
