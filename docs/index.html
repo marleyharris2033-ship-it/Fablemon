@@ -486,16 +486,49 @@ body:has(.modal.show) #toast,body:has(#battle.show) #toast{top:auto !important;b
   #talk{width:min(70vw,640px) !important}
   #battle.rt #bui{max-height:calc(100vh - 16px) !important}
 }
+
+/* ---- live battles (28 Nov) */
+#rtb button{color:var(--ink) !important;font-family:var(--pix)}
+#rtb .rbox{border-style:solid !important;border-color:transparent !important;border-width:12px !important;border-image:url(a/daa85a2fe0af0436.webp) 52 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:0 4px !important;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+#rtb .rhp{background:#3b2412 !important;border:2px solid #c98a3a;height:9px !important;border-radius:6px !important}
+#rtbTeam button{border:0 !important;box-shadow:none !important;border-radius:0 !important;background:url(a/9b407c25237d09f3.webp) center/100% 100% no-repeat !important;width:42px !important;height:42px !important;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+#rtbTeam button.on{background-image:url(a/5b268a8462dd085f.webp) !important;box-shadow:none !important}
+#rtbTeam button img{width:32px !important;height:32px !important}
+#rtbTeam button i{left:6px !important;right:6px !important;bottom:5px !important}
+#rtbMoves button{background:linear-gradient(#fff6df,#f3dcae) !important;border-width:3px !important;border-radius:14px !important;box-shadow:0 0 0 3px #7a4519,0 4px 0 2px #4a2408,inset 0 2px 0 rgba(255,255,255,.7) !important;margin:3px}
+#rtbMoves button:active{transform:translateY(2px);box-shadow:0 0 0 3px #7a4519,0 2px 0 2px #4a2408 !important}
+#rtbMoves button .cd{border-radius:11px}
+#rtbSide button{border:0 !important;background:url(a/65a3f8411b35319c.webp) center/100% 100% no-repeat !important;box-shadow:none !important;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+#rtbSide button small{color:#fff3d6;text-shadow:0 1px 0 #3b1a05,0 0 3px #3b1a05}
+#rtbSide button .cd{border-radius:50%}
+#rtbSide #rtbDodge{background-image:url(a/334bf74de0429cfb.webp) !important}
+#rtbAuto{border-style:solid !important;border-color:transparent !important;border-width:10px 14px !important;border-image:url(a/486391be245e7d44.webp) 40 44 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:0 2px !important;font-family:var(--pix) !important}
+#rtbAuto.on{border-image-source:url(a/2fa780abb92b744a.webp) !important;color:#fff8e2 !important}
+#rtbJoy{background:url(a/9cc73469da23f4a9.webp) center/100% 100% no-repeat !important;border:0 !important}
+#rtbJoy i{background:url(a/a82a7d5430659733.webp) center/100% 100% no-repeat !important;border:0 !important;width:56px !important;height:56px !important;left:32px !important;top:32px !important}
+#rtbPick .pk{border-style:solid !important;border-color:transparent !important;border-width:20px !important;border-image:url(a/daa85a2fe0af0436.webp) 52 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:2px !important}
+#rtbPick button{border-style:solid !important;border-color:transparent !important;border-width:9px !important;border-image:url(a/ee2c8057e4258b70.webp) 34 fill stretch !important;background:none !important;border-radius:0 !important;padding:0 4px !important}
+/* short landscape screens: moves in one row along the bottom, the team up the right-hand side, Run/Heal/Catch/Dodge above the moves */
+@media (orientation:landscape) and (max-height:560px){
+  #rtbTeam{top:calc(74px + env(safe-area-inset-top)) !important;right:calc(8px + env(safe-area-inset-right)) !important;gap:4px !important}
+  #rtb.duo #rtbTeam{top:calc(112px + env(safe-area-inset-top)) !important}
+  #rtb.duo #rtbTeam button{width:36px !important;height:36px !important}#rtb.duo #rtbTeam button img{width:27px !important;height:27px !important}
+  #rtbMoves{grid-template-columns:repeat(4,1fr) !important;width:min(calc(100vw - 236px),640px) !important;right:calc(62px + env(safe-area-inset-right)) !important;bottom:calc(8px + env(safe-area-inset-bottom)) !important}
+  #rtbMoves button{min-height:50px}
+  #rtbSide{right:calc(62px + env(safe-area-inset-right)) !important;bottom:calc(76px + env(safe-area-inset-bottom)) !important}
+  #rtbJoy{bottom:calc(10px + env(safe-area-inset-bottom)) !important}
+}
+#rtbTeam.wait button:not(.on){opacity:.5;filter:grayscale(.6)}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261128-001840">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261128-001840">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261128-001840">
+<link rel="manifest" href="manifest.webmanifest?v=20261128-004641">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261128-004641">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261128-004641">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261128-001840').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261128-004641').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); });
   // 26 Nov: fetch the rest of the art for offline play only after a minute in the game, so it doesn't slow the first start
@@ -17240,6 +17273,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
   function cdUi() {
     const bs = $r('rtbMoves').children; st.me.m.moves.forEach((id, i) => { const b = bs[i]; if (!b) return; const left = Math.max(0, st.me.cd[id] || 0), tot = cdOf(id) * (st.me.m.status === 'par' ? 1.4 : 1); b.querySelector('.cd').style.transform = `scaleY(${left > 0 ? left / tot : 0})`; });
+    $r('rtbTeam').classList.toggle('wait', (st.swT || 0) > 0);   // swapping recharges for 3s: the team dims until it's ready
     $r('rtbDodge').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.me.dodgeT) / 1.2})`;
     $r('rtbCharm').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.charmT || 0) / 3})`;
     $r('rtbHeal').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.healT || 0) / 10})`;

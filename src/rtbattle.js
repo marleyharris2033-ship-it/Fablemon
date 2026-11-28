@@ -814,6 +814,7 @@ body.rtb-on #hud,body.rtb-on #hotbar,body.rtb-on #joy,body.rtb-on #actBtn,body.r
   }
   function cdUi() {
     const bs = $r('rtbMoves').children; st.me.m.moves.forEach((id, i) => { const b = bs[i]; if (!b) return; const left = Math.max(0, st.me.cd[id] || 0), tot = cdOf(id) * (st.me.m.status === 'par' ? 1.4 : 1); b.querySelector('.cd').style.transform = `scaleY(${left > 0 ? left / tot : 0})`; });
+    $r('rtbTeam').classList.toggle('wait', (st.swT || 0) > 0);   // swapping recharges for 3s: the team dims until it's ready
     $r('rtbDodge').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.me.dodgeT) / 1.2})`;
     $r('rtbCharm').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.charmT || 0) / 3})`;
     $r('rtbHeal').querySelector('.cd').style.transform = `scaleY(${Math.max(0, st.healT || 0) / 10})`;

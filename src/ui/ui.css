@@ -102,3 +102,36 @@ body:has(.modal.show) #toast,body:has(#battle.show) #toast{top:auto !important;b
   #talk{width:min(70vw,640px) !important}
   #battle.rt #bui{max-height:calc(100vh - 16px) !important}
 }
+
+/* ---- live battles (28 Nov) */
+#rtb button{color:var(--ink) !important;font-family:var(--pix)}
+#rtb .rbox{border-style:solid !important;border-color:transparent !important;border-width:12px !important;border-image:url(__UI_frame__) 52 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:0 4px !important;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+#rtb .rhp{background:#3b2412 !important;border:2px solid #c98a3a;height:9px !important;border-radius:6px !important}
+#rtbTeam button{border:0 !important;box-shadow:none !important;border-radius:0 !important;background:url(__UI_hslot__) center/100% 100% no-repeat !important;width:42px !important;height:42px !important;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+#rtbTeam button.on{background-image:url(__UI_hslot_sel__) !important;box-shadow:none !important}
+#rtbTeam button img{width:32px !important;height:32px !important}
+#rtbTeam button i{left:6px !important;right:6px !important;bottom:5px !important}
+#rtbMoves button{background:linear-gradient(#fff6df,#f3dcae) !important;border-width:3px !important;border-radius:14px !important;box-shadow:0 0 0 3px #7a4519,0 4px 0 2px #4a2408,inset 0 2px 0 rgba(255,255,255,.7) !important;margin:3px}
+#rtbMoves button:active{transform:translateY(2px);box-shadow:0 0 0 3px #7a4519,0 2px 0 2px #4a2408 !important}
+#rtbMoves button .cd{border-radius:11px}
+#rtbSide button{border:0 !important;background:url(__UI_rb__) center/100% 100% no-repeat !important;box-shadow:none !important;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+#rtbSide button small{color:#fff3d6;text-shadow:0 1px 0 #3b1a05,0 0 3px #3b1a05}
+#rtbSide button .cd{border-radius:50%}
+#rtbSide #rtbDodge{background-image:url(__UI_act__) !important}
+#rtbAuto{border-style:solid !important;border-color:transparent !important;border-width:10px 14px !important;border-image:url(__UI_tab_off__) 40 44 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:0 2px !important;font-family:var(--pix) !important}
+#rtbAuto.on{border-image-source:url(__UI_tab_on__) !important;color:#fff8e2 !important}
+#rtbJoy{background:url(__UI_joy__) center/100% 100% no-repeat !important;border:0 !important}
+#rtbJoy i{background:url(__UI_knob__) center/100% 100% no-repeat !important;border:0 !important;width:56px !important;height:56px !important;left:32px !important;top:32px !important}
+#rtbPick .pk{border-style:solid !important;border-color:transparent !important;border-width:20px !important;border-image:url(__UI_frame__) 52 fill stretch !important;background:none !important;box-shadow:none !important;border-radius:0 !important;padding:2px !important}
+#rtbPick button{border-style:solid !important;border-color:transparent !important;border-width:9px !important;border-image:url(__UI_slot__) 34 fill stretch !important;background:none !important;border-radius:0 !important;padding:0 4px !important}
+/* short landscape screens: moves in one row along the bottom, the team up the right-hand side, Run/Heal/Catch/Dodge above the moves */
+@media (orientation:landscape) and (max-height:560px){
+  #rtbTeam{top:calc(74px + env(safe-area-inset-top)) !important;right:calc(8px + env(safe-area-inset-right)) !important;gap:4px !important}
+  #rtb.duo #rtbTeam{top:calc(112px + env(safe-area-inset-top)) !important}
+  #rtb.duo #rtbTeam button{width:36px !important;height:36px !important}#rtb.duo #rtbTeam button img{width:27px !important;height:27px !important}
+  #rtbMoves{grid-template-columns:repeat(4,1fr) !important;width:min(calc(100vw - 236px),640px) !important;right:calc(62px + env(safe-area-inset-right)) !important;bottom:calc(8px + env(safe-area-inset-bottom)) !important}
+  #rtbMoves button{min-height:50px}
+  #rtbSide{right:calc(62px + env(safe-area-inset-right)) !important;bottom:calc(76px + env(safe-area-inset-bottom)) !important}
+  #rtbJoy{bottom:calc(10px + env(safe-area-inset-bottom)) !important}
+}
+#rtbTeam.wait button:not(.on){opacity:.5;filter:grayscale(.6)}
