@@ -467,16 +467,35 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;heigh
 input[type=checkbox]{-webkit-appearance:none;appearance:none;width:26px;height:26px;background:url(a/3583b4bd451d440d.webp) center/contain no-repeat;border:0;vertical-align:middle}
 input[type=checkbox]:checked{background-image:url(a/9e6d79244254a3be.webp)}
 .ico{display:inline-block;width:1.25em;height:1.25em;vertical-align:-.25em;background:url(a/a8680029fac11c8b.webp) 0 0/800% 600% no-repeat}
+
+/* ---- both orientations (28 Nov) */
+/* battle cards: a long results list scrolls between the title and the Continue button instead of running under it */
+#bui{min-height:0}
+#bmsg{flex:1 1 auto;min-height:0 !important;overflow:auto;overscroll-behavior:contain}
+#bmenu{flex:0 0 auto}
+/* while a window is open, notes drop to the bottom so they never sit on its title */
+body:has(.modal.show) #toast,body:has(#battle.show) #toast{top:auto !important;bottom:calc(max(10px,env(safe-area-inset-bottom)) + 4px)}
+@media (orientation:landscape) and (max-height:560px){
+  .modal .panel{max-height:calc(100vh - 16px) !important;width:min(88vw,720px) !important;max-width:min(88vw,720px) !important;border-width:18px !important}
+  .modal h2{padding:0 4px 6px !important;margin-bottom:4px !important}
+  #mTitle{padding:8px 4px 9px;font-size:clamp(14px,2.4vw,17px)}
+  .modal h2 .x{top:2px;width:34px !important;height:34px !important}
+  .mtiles{grid-template-columns:repeat(5,1fr) !important}
+  .mtile{aspect-ratio:1.7 !important}
+  #qty .panel{max-height:calc(100vh - 16px);overflow:auto}
+  #talk{width:min(70vw,640px) !important}
+  #battle.rt #bui{max-height:calc(100vh - 16px) !important}
+}
 </style>
-<link rel="manifest" href="manifest.webmanifest?v=20261127-235740">
-<link rel="apple-touch-icon" href="icon-180.png?v=20261127-235740">
-<link rel="icon" type="image/png" href="icon-192.png?v=20261127-235740">
+<link rel="manifest" href="manifest.webmanifest?v=20261128-001840">
+<link rel="apple-touch-icon" href="icon-180.png?v=20261128-001840">
+<link rel="icon" type="image/png" href="icon-192.png?v=20261128-001840">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Fablemon">
 <meta name="theme-color" content="#1f2a1e">
-<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261127-235740').catch(() => {}));
+<script>if ('serviceWorker' in navigator) { addEventListener('load', () => navigator.serviceWorker.register('sw.js?v=20261128-001840').catch(() => {}));
   // a new version took over: on the title screen, load it now; mid-game, leave it for next time
   let had = !!navigator.serviceWorker.controller; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!had) { had = true; return; } if (typeof S === 'undefined' || !S) location.reload(); });
   // 26 Nov: fetch the rest of the art for offline play only after a minute in the game, so it doesn't slow the first start
